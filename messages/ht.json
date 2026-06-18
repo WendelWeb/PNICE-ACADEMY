@@ -146,7 +146,27 @@
     "lessonsCount": "{count} leson",
     "lifetime": "Aksè a vi",
     "includedNote": "Oswa louvri l ak abonman an ({price}{per})",
-    "notFound": "Fòmasyon sa a pa egziste."
+    "notFound": "Fòmasyon sa a pa egziste.",
+    "promiseLabel": "Pwomès la",
+    "problemLabel": "Pwoblèm nan",
+    "deliverablesTitle": "Sa w ap genyen",
+    "requirementsTitle": "Sa w bezwen",
+    "programTitle": "Pwogram nan",
+    "faqTitle": "Kesyon sou fòmasyon sa a",
+    "levelLabel": "Nivo",
+    "durationLabel": "Dire",
+    "guaranteeTitle": "Tout sa enkli",
+    "guarantee": {
+      "lifetime": "Aksè a vi ak mizajou",
+      "languages": "An kreyòl ak an franse",
+      "certificate": "Sètifika ak abonman an",
+      "devices": "Sou telefòn ak òdinatè"
+    },
+    "minShort": "min",
+    "hourShort": "h",
+    "lessonsWord": "leson",
+    "ctaTitle": "Pare pou kòmanse?",
+    "ctaText": "Achte fòmasyon sa a poukont li, oswa pran abonman an pou louvri tout katalòg la."
   },
   "checkout": {
     "title": "Peman",

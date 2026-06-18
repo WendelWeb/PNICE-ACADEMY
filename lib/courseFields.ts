@@ -17,3 +17,14 @@ export function courseAudience(c: Course, locale: Loc): string {
 export function lessonTitle(l: Lesson, locale: Loc): string {
   return locale === 'ht' ? l.title_ht : l.title_fr;
 }
+
+export function formatDuration(
+  totalMinutes: number,
+  hourShort: string,
+  minShort: string,
+): string {
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  if (h > 0) return m > 0 ? `${h}${hourShort} ${m} ${minShort}` : `${h}${hourShort}`;
+  return `${m} ${minShort}`;
+}
