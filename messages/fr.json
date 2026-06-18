@@ -1,0 +1,189 @@
+{
+  "nav": {
+    "formations": "Formations",
+    "pricing": "Tarifs",
+    "login": "Connexion",
+    "cta": "Commencer"
+  },
+  "common": {
+    "perMonth": "/mois",
+    "oneTime": "une seule fois",
+    "lifetime": "à vie",
+    "included": "Inclus dans l'abonnement",
+    "buy": "Acheter la formation",
+    "subscribe": "Prendre l'abonnement",
+    "seeAll": "Voir toutes les formations",
+    "or": "ou",
+    "demo": "Démo — non actif"
+  },
+  "footer": {
+    "tagline": "Bâtis ta vie numérique, sans limites",
+    "madeFor": "Conçu pour Haïti et la diaspora",
+    "payments": "Moyens de paiement",
+    "explore": "Explorer",
+    "account": "Compte",
+    "rights": "Tous droits réservés",
+    "links": {
+      "formations": "Formations",
+      "pricing": "Tarifs",
+      "login": "Connexion",
+      "myAccount": "Mon compte"
+    }
+  },
+  "home": {
+    "hero": {
+      "title": "Bâtis ta vie numérique, sans limites",
+      "subtitle": "Carte virtuelle, e-commerce, business de shipping, IA pour créer sites et apps — tout ce qu'il faut pour gagner en dollars, depuis Haïti ou la diaspora.",
+      "ctaPrimary": "Commencer maintenant",
+      "ctaSecondary": "Voir les 9 formations",
+      "sealLabel": "formations",
+      "stats": {
+        "courses": "9 formations",
+        "languages": "2 langues · créole & français",
+        "online": "100% en ligne"
+      }
+    },
+    "blockers": {
+      "eyebrow": "Pourquoi tu restes bloqué",
+      "title": "Trois barrières qui retiennent beaucoup de monde",
+      "items": [
+        {
+          "title": "Tu ne peux pas payer à l'international",
+          "text": "Pas de carte qui marche sur Amazon, Shein ou pour les abonnements. L'argent est là, mais tu ne peux pas l'utiliser."
+        },
+        {
+          "title": "Tu ne sais pas acheter ni vendre en ligne",
+          "text": "Tu vois les autres le faire, mais tu ne sais pas par où commencer — quel site, quel fournisseur, quel prix."
+        },
+        {
+          "title": "Tu n'as pas de compétences techniques",
+          "text": "Créer un flyer, un site, une app ou un bot semble trop difficile. Mais avec l'IA, ce n'est plus le cas."
+        }
+      ]
+    },
+    "manifest": {
+      "eyebrow": "Le manifeste",
+      "title": "9 formations, chacune une compétence que tu peux vendre",
+      "subtitle": "Chaque ligne est une compétence embarquée à ton nom. Prends-les une par une, ou débloque tout avec l'abonnement.",
+      "included": "Dans l'abonnement"
+    },
+    "founder": {
+      "eyebrow": "Qui est derrière",
+      "title": "Du shipping aux compétences numériques",
+      "body": "PNICE Academy est une extension de PNICE Shipping, le business logistique Miami–Haïti. Comme nous connectons des marchandises entre deux pays, nous te connectons aux compétences qui rapportent en dollars.",
+      "points": [
+        "Un savoir issu d'un vrai business, pas de la théorie",
+        "Des exemples concrets pour le marché haïtien",
+        "Tout en créole et en français"
+      ]
+    },
+    "testimonials": {
+      "eyebrow": "Ce qu'ils en disent",
+      "title": "Les premiers résultats",
+      "exampleTag": "Exemple",
+      "note": "Exemples de structure — à remplacer par de vrais témoignages avant le lancement."
+    },
+    "seats": {
+      "text": "Places limitées pour cette cohorte",
+      "left": "places restantes",
+      "note": "Exemple — un vrai compteur sera mis avant le lancement."
+    },
+    "pricing": {
+      "eyebrow": "Tarifs",
+      "title": "Un seul prix pour tout le monde",
+      "subtitle": "Prends l'abonnement pour débloquer tout le catalogue, ou achète une formation seule, à vie.",
+      "popular": "Le plus populaire",
+      "subName": "Abonnement",
+      "subCta": "Prendre l'abonnement",
+      "unitName": "À l'unité",
+      "unitText": "Chaque formation a son propre prix. Paye une seule fois, garde-la à vie.",
+      "unitCta": "Voir toutes les formations",
+      "unitNote": "Prix exemples — à remplacer par les prix définitifs.",
+      "priceFrom": "À partir de"
+    },
+    "faq": {
+      "eyebrow": "Questions",
+      "title": "Questions fréquentes",
+      "items": [
+        {
+          "q": "Puis-je payer avec MonCash ou NatCash ?",
+          "a": "Oui. Tu peux payer avec MonCash, NatCash, PayPal, carte Visa/Mastercard ou en crypto. Le montant s'affiche en dollars avec son équivalent en gourdes."
+        },
+        {
+          "q": "Le prix est-il le même pour Haïti et la diaspora ?",
+          "a": "Oui, un seul prix pour tout le monde. Aucune différence entre Haïti et la diaspora."
+        },
+        {
+          "q": "Puis-je commencer avec une seule formation ?",
+          "a": "Oui. Tu peux acheter une formation seule à vie, ou prendre l'abonnement pour tout débloquer."
+        },
+        {
+          "q": "Le contenu est-il en créole ?",
+          "a": "Oui. Tout est disponible en créole et en français, tu changes de langue quand tu veux."
+        },
+        {
+          "q": "Faut-il savoir programmer ?",
+          "a": "Non. Les formations IA te montrent comment utiliser des outils existants, sans écrire de code."
+        }
+      ]
+    },
+    "finalCta": {
+      "title": "Commence à bâtir ta vie numérique aujourd'hui",
+      "subtitle": "Choisis une formation ou prends l'abonnement. Tout en ligne, depuis ton téléphone.",
+      "cta": "Commencer maintenant"
+    }
+  },
+  "catalog": {
+    "eyebrow": "Catalogue",
+    "title": "Toutes les formations",
+    "subtitle": "9 compétences concrètes. Prends-les une par une, ou débloque tout avec l'abonnement."
+  },
+  "course": {
+    "back": "Retour aux formations",
+    "learnTitle": "Ce que tu sauras faire",
+    "audienceTitle": "Pour qui",
+    "lessonsTitle": "Plan des leçons",
+    "lessonsCount": "{count} leçons",
+    "lifetime": "Accès à vie",
+    "includedNote": "Ou débloque-la avec l'abonnement ({price}{per})",
+    "notFound": "Cette formation n'existe pas."
+  },
+  "checkout": {
+    "title": "Paiement",
+    "summary": "Récapitulatif",
+    "subItem": "Abonnement — tout le catalogue",
+    "subPer": "Facturé chaque mois",
+    "unitLabel": "Formation · accès à vie",
+    "methodTitle": "Choisir le moyen de paiement",
+    "total": "Total",
+    "pay": "Payer",
+    "demoNote": "Ceci est une démo UI — aucun paiement réel n'est effectué à cette étape."
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "greeting": "Bienvenue",
+    "myCourses": "Mes formations",
+    "continue": "Continuer",
+    "progressDone": "{done}/{total} leçons",
+    "completed": "Terminé",
+    "demoNote": "Données exemple — pour montrer à quoi ressemble le tableau de bord."
+  },
+  "lesson": {
+    "lessonsList": "Leçons",
+    "markDone": "Marquer comme terminé",
+    "next": "Suivant",
+    "prev": "Précédent",
+    "playerNote": "Démo — les vidéos seront chargées avec Bunny Stream à une prochaine étape.",
+    "lessonOf": "Leçon {n} sur {total}"
+  },
+  "auth": {
+    "signInTitle": "Connexion",
+    "signUpTitle": "Créer un compte",
+    "accountTitle": "Mon compte",
+    "email": "E-mail",
+    "phone": "Téléphone (+509)",
+    "password": "Mot de passe",
+    "continueWith": "Continuer avec",
+    "soon": "La connexion avec Clerk arrive à une prochaine étape. Ceci est une coquille visuelle."
+  }
+}

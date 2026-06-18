@@ -1,0 +1,189 @@
+{
+  "nav": {
+    "formations": "Fòmasyon",
+    "pricing": "Pri",
+    "login": "Konekte",
+    "cta": "Kòmanse kounye a"
+  },
+  "common": {
+    "perMonth": "/mwa",
+    "oneTime": "yon sèl fwa",
+    "lifetime": "a vi",
+    "included": "Nan abonman an",
+    "buy": "Achte fòmasyon an",
+    "subscribe": "Pran abonman an",
+    "seeAll": "Wè tout fòmasyon yo",
+    "or": "oswa",
+    "demo": "Demo — pa aktif"
+  },
+  "footer": {
+    "tagline": "Bati lavi dijital ou, san limit",
+    "madeFor": "Fèt pou moun Ayiti ak dyaspora a",
+    "payments": "Mwayen pou peye",
+    "explore": "Eksplore",
+    "account": "Kont",
+    "rights": "Tout dwa rezève",
+    "links": {
+      "formations": "Fòmasyon",
+      "pricing": "Pri",
+      "login": "Konekte",
+      "myAccount": "Kont mwen"
+    }
+  },
+  "home": {
+    "hero": {
+      "title": "Bati lavi dijital ou, san limit",
+      "subtitle": "Kat vityèl, kòmès sou entènèt, biznis shipping, IA pou kreye sit ak app — tout sa ou bezwen pou fè lajan an dola, kit ou Ayiti, kit ou nan dyaspora a.",
+      "ctaPrimary": "Kòmanse kounye a",
+      "ctaSecondary": "Wè 9 fòmasyon yo",
+      "sealLabel": "fòmasyon",
+      "stats": {
+        "courses": "9 fòmasyon",
+        "languages": "2 lang · kreyòl & franse",
+        "online": "100% an liy"
+      }
+    },
+    "blockers": {
+      "eyebrow": "Poukisa ou bloke",
+      "title": "Twa baryè ki kenbe anpil moun dèyè",
+      "items": [
+        {
+          "title": "Ou pa ka peye entènasyonal",
+          "text": "Pa gen kat ki mache sou Amazon, Shein oswa pou abònman. Lajan an la, men ou pa ka itilize l."
+        },
+        {
+          "title": "Ou pa konn achte ni vann sou entènèt",
+          "text": "Ou wè lòt moun ap fè l, men ou pa konn ki kote pou kòmanse — ki sit, ki founisè, ki pri."
+        },
+        {
+          "title": "Ou pa gen konpetans teknik",
+          "text": "Kreye yon flyer, yon sit, yon app oswa yon bot sanble twò difisil. Men ak IA, se pa ka a ankò."
+        }
+      ]
+    },
+    "manifest": {
+      "eyebrow": "Manifès la",
+      "title": "9 fòmasyon, chak se yon konpetans ou ka vann",
+      "subtitle": "Chak liy se yon konpetans ki anbake sou non ou. Pran yo youn pa youn, oswa louvri tout ak abonman an.",
+      "included": "Nan abonman"
+    },
+    "founder": {
+      "eyebrow": "Ki moun ki dèyè l",
+      "title": "Soti nan shipping, rive nan konpetans dijital",
+      "body": "PNICE Academy se yon ekstansyon PNICE Shipping, biznis logistik Miami–Ayiti a. Menm jan nou konekte machandiz ant de peyi, n ap konekte ou ak konpetans ki fè lajan an dola.",
+      "points": [
+        "Konesans ki soti nan vrè biznis, pa nan teyori",
+        "Egzanp konkrè pou mache Ayisyen an",
+        "Tout bagay an kreyòl ak an franse"
+      ]
+    },
+    "testimonials": {
+      "eyebrow": "Sa moun ap di",
+      "title": "Premye rezilta yo",
+      "exampleTag": "Egzanp",
+      "note": "Egzanp estrikti — n ap ranplase yo ak vrè temwayaj anvan lansman an."
+    },
+    "seats": {
+      "text": "Plas limite pou kòwòt sa a",
+      "left": "plas ki rete",
+      "note": "Egzanp — n ap mete yon vrè kontè anvan lansman an."
+    },
+    "pricing": {
+      "eyebrow": "Pri",
+      "title": "Yon sèl pri pou tout moun",
+      "subtitle": "Pran abonman an pou louvri tout katalòg la, oswa achte yon fòmasyon poukont li, a vi.",
+      "popular": "Pi popilè",
+      "subName": "Abonman",
+      "subCta": "Pran abonman an",
+      "unitName": "A linite",
+      "unitText": "Chak fòmasyon gen pwòp pri li. Peye yon sèl fwa, gade l a vi.",
+      "unitCta": "Wè tout fòmasyon yo",
+      "unitNote": "Pri yo se egzanp — y ap ranplase ak pri final yo.",
+      "priceFrom": "Soti nan"
+    },
+    "faq": {
+      "eyebrow": "Kesyon",
+      "title": "Kesyon moun konn poze",
+      "items": [
+        {
+          "q": "Èske m ka peye ak MonCash oswa NatCash?",
+          "a": "Wi. Ou ka peye ak MonCash, NatCash, PayPal, kat Visa/Mastercard oswa kripto. Montan an parèt an dola ak ekivalan li an goud."
+        },
+        {
+          "q": "Èske se yon sèl pri pou Ayiti ak dyaspora?",
+          "a": "Wi, yon sèl pri pou tout moun. Pa gen diferans ant Ayiti ak dyaspora."
+        },
+        {
+          "q": "Èske m ka kòmanse ak yon sèl fòmasyon?",
+          "a": "Wi. Ou ka achte yon fòmasyon poukont li a vi, oswa pran abonman an pou louvri tout."
+        },
+        {
+          "q": "Èske kontni an an kreyòl?",
+          "a": "Wi. Tout bagay disponib an kreyòl ak an franse, ou chanje lang lè ou vle."
+        },
+        {
+          "q": "Èske m bezwen konn pwograme?",
+          "a": "Non. Fòmasyon IA yo montre w kijan pou itilize zouti ki egziste deja, san ekri kòd."
+        }
+      ]
+    },
+    "finalCta": {
+      "title": "Kòmanse bati lavi dijital ou jodi a",
+      "subtitle": "Chwazi yon fòmasyon oswa pran abonman an. Tout bagay an liy, depi telefòn ou.",
+      "cta": "Kòmanse kounye a"
+    }
+  },
+  "catalog": {
+    "eyebrow": "Katalòg",
+    "title": "Tout fòmasyon yo",
+    "subtitle": "9 konpetans konkrè. Pran yo youn pa youn, oswa louvri tout ak abonman an."
+  },
+  "course": {
+    "back": "Tounen nan fòmasyon yo",
+    "learnTitle": "Sa w ap konn fè",
+    "audienceTitle": "Pou ki moun",
+    "lessonsTitle": "Plan leson yo",
+    "lessonsCount": "{count} leson",
+    "lifetime": "Aksè a vi",
+    "includedNote": "Oswa louvri l ak abonman an ({price}{per})",
+    "notFound": "Fòmasyon sa a pa egziste."
+  },
+  "checkout": {
+    "title": "Peman",
+    "summary": "Rezime kòmand",
+    "subItem": "Abonman — tout katalòg la",
+    "subPer": "Faktire chak mwa",
+    "unitLabel": "Fòmasyon · aksè a vi",
+    "methodTitle": "Chwazi mwayen pou peye",
+    "total": "Total",
+    "pay": "Peye",
+    "demoNote": "Sa se yon demo UI — pa gen okenn vrè peman ki fèt nan etap sa a."
+  },
+  "dashboard": {
+    "title": "Tablo debò",
+    "greeting": "Byenveni",
+    "myCourses": "Fòmasyon mwen yo",
+    "continue": "Kontinye",
+    "progressDone": "{done}/{total} leson",
+    "completed": "Fini",
+    "demoNote": "Done egzanp — pou montre kijan tablo a ap ye."
+  },
+  "lesson": {
+    "lessonsList": "Leson yo",
+    "markDone": "Make kòm fini",
+    "next": "Pwochen",
+    "prev": "Anvan",
+    "playerNote": "Demo — videyo yo ap chaje ak Bunny Stream nan yon pwochen etap.",
+    "lessonOf": "Leson {n} sou {total}"
+  },
+  "auth": {
+    "signInTitle": "Konekte",
+    "signUpTitle": "Kreye yon kont",
+    "accountTitle": "Kont mwen",
+    "email": "Imèl",
+    "phone": "Telefòn (+509)",
+    "password": "Modpas",
+    "continueWith": "Kontinye ak",
+    "soon": "Koneksyon ak Clerk ap vini nan yon pwochen etap. Sa a se yon koki vizyèl."
+  }
+}
