@@ -49,6 +49,17 @@ export function courseImageSrcB(code: string): string {
   return resolve(`images/courses/${code.toLowerCase()}-b`);
 }
 
+/** Gallery of secondary "in action" images: pa-0X-b, pa-0X-b-2, pa-0X-b-3, … */
+export function courseImagesB(code: string): string[] {
+  const slug = code.toLowerCase();
+  const images = [resolve(`images/courses/${slug}-b`)];
+  for (let n = 2; n <= MAX_GALLERY_FRAMES; n++) {
+    const extra = resolveRaster(`images/courses/${slug}-b-${n}`);
+    if (extra) images.push(extra);
+  }
+  return images;
+}
+
 /** name 'hero' -> /images/hero.(jpg|webp|…|svg) */
 export function siteImageSrc(name: string): string {
   return resolve(`images/${name}`);
