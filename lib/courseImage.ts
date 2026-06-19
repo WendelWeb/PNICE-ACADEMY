@@ -6,8 +6,9 @@ import path from 'node:path';
 // it is used and optimised; otherwise the branded SVG placeholder is served.
 
 const RASTER_EXTS = ['jpg', 'jpeg', 'webp', 'avif', 'png'];
+const MAX_GALLERY_FRAMES = 8;
 
-function resolve(relBase: string): string {
+function resolveRaster(relBase: string): string | null {
   for (const ext of RASTER_EXTS) {
     const abs = path.join(process.cwd(), 'public', `${relBase}.${ext}`);
     try {
@@ -16,12 +17,31 @@ function resolve(relBase: string): string {
       /* ignore */
     }
   }
-  return `/${relBase}.svg`;
+  return null;
+}
+
+function resolve(relBase: string): string {
+  return resolveRaster(relBase) ?? `/${relBase}.svg`;
 }
 
 /** code 'PA-01' -> /images/courses/pa-01.(jpg|webp|…|svg) */
 export function courseImageSrc(code: string): string {
   return resolve(`images/courses/${code.toLowerCase()}`);
+}
+
+/**
+ * Gallery for a course card slideshow: the primary image (real raster or SVG
+ * placeholder) followed by any extra frames named pa-0X-2, pa-0X-3, … (raster
+ * only). Drop more files in to grow the slideshow — no code change needed.
+ */
+export function courseImages(code: string): string[] {
+  const slug = code.toLowerCase();
+  const images = [resolve(`images/courses/${slug}`)];
+  for (let n = 2; n <= MAX_GALLERY_FRAMES; n++) {
+    const extra = resolveRaster(`images/courses/${slug}-${n}`);
+    if (extra) images.push(extra);
+  }
+  return images;
 }
 
 /** Secondary "in action" image. code 'PA-01' -> /images/courses/pa-01-b.* */
@@ -32,4 +52,14 @@ export function courseImageSrcB(code: string): string {
 /** name 'hero' -> /images/hero.(jpg|webp|…|svg) */
 export function siteImageSrc(name: string): string {
   return resolve(`images/${name}`);
+}
+
+/** Gallery for a site image slideshow: name + name-2, name-3, … (raster only). */
+export function siteImages(name: string): string[] {
+  const images = [resolve(`images/${name}`)];
+  for (let n = 2; n <= MAX_GALLERY_FRAMES; n++) {
+    const extra = resolveRaster(`images/${name}-${n}`);
+    if (extra) images.push(extra);
+  }
+  return images;
 }

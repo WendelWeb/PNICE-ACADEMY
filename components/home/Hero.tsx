@@ -1,10 +1,10 @@
 import { getTranslations } from 'next-intl/server';
-import { SmartImage } from '@/components/ui/SmartImage';
 import { Link } from '@/i18n/routing';
 import { Container } from '@/components/ui/Section';
 import { Sceau } from '@/components/ui/Sceau';
 import { buttonClasses } from '@/components/ui/Button';
-import { siteImageSrc } from '@/lib/courseImage';
+import { CourseSlideshow } from '@/components/courses/CourseSlideshow';
+import { siteImages } from '@/lib/courseImage';
 
 export async function Hero() {
   const t = await getTranslations('home.hero');
@@ -54,13 +54,11 @@ export async function Hero() {
 
         {/* showcase image */}
         <div className="relative mt-14 aspect-[16/9] overflow-hidden rounded-2xl border border-ink/12 bg-ink sm:aspect-[21/9]">
-          <SmartImage
-            src={siteImageSrc('hero')}
+          <CourseSlideshow
+            images={siteImages('hero')}
             alt="Moun Ayisyen k ap sèvi ak zouti dijital pou fè biznis — PNICE Academy"
-            fill
-            priority
             sizes="(max-width: 1120px) 100vw, 1120px"
-            className="object-cover"
+            priority
           />
         </div>
       </Container>

@@ -1,8 +1,8 @@
 import { getTranslations } from 'next-intl/server';
-import { SmartImage } from '@/components/ui/SmartImage';
 import { IconCheck } from '@tabler/icons-react';
 import { Section, Container, Eyebrow } from '@/components/ui/Section';
-import { siteImageSrc } from '@/lib/courseImage';
+import { CourseSlideshow } from '@/components/courses/CourseSlideshow';
+import { siteImages } from '@/lib/courseImage';
 
 export async function Founder() {
   const t = await getTranslations('home.founder');
@@ -14,12 +14,10 @@ export async function Founder() {
         <div className="grid items-center gap-10 md:grid-cols-[0.9fr_1.1fr]">
           <div className="order-2 md:order-1">
             <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-ink/10 bg-ink">
-              <SmartImage
-                src={siteImageSrc('founder')}
+              <CourseSlideshow
+                images={siteImages('founder')}
                 alt="PNICE Shipping — koneksyon ant Miami ak Ayiti"
-                fill
                 sizes="(max-width: 768px) 100vw, 45vw"
-                className="object-cover"
               />
               <span className="absolute bottom-3 left-4 rounded bg-ink/55 px-2 py-1 font-mono text-[11px] text-paper-light/80 backdrop-blur-sm">
                 PNICE Shipping · Miami ⇄ Ayiti

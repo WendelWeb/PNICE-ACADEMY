@@ -1,10 +1,10 @@
 import { getLocale, getTranslations } from 'next-intl/server';
-import { SmartImage } from '@/components/ui/SmartImage';
 import { IconArrowRight } from '@tabler/icons-react';
 import { Link } from '@/i18n/routing';
 import { Reveal } from '@/components/ui/Reveal';
 import { CourseIcon } from '@/components/courses/CourseIcon';
-import { courseImageSrc } from '@/lib/courseImage';
+import { CourseSlideshow } from '@/components/courses/CourseSlideshow';
+import { courseImages } from '@/lib/courseImage';
 import { courseTitle, courseTagline } from '@/lib/courseFields';
 import { formatUsd, htgLabel } from '@/lib/money';
 import type { Course } from '@/data/courses';
@@ -23,12 +23,10 @@ export async function CourseCardGrid({ courses }: { courses: Course[] }) {
           >
             {/* media */}
             <div className="relative aspect-[4/3] overflow-hidden bg-paper">
-              <SmartImage
-                src={courseImageSrc(c.code)}
+              <CourseSlideshow
+                images={courseImages(c.code)}
                 alt={`${courseTitle(c, locale)} — PNICE Academy`}
-                fill
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
               />
               <span className="absolute left-3 top-3 flex h-9 min-w-9 items-center justify-center rounded-full bg-paper-light/95 px-2 font-display text-lg font-black leading-none text-ink shadow-sm">
                 {String(i + 1).padStart(2, '0')}
