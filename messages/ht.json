@@ -177,6 +177,8 @@
     "methodTitle": "Chwazi mwayen pou peye",
     "total": "Total",
     "pay": "Peye",
+    "secure": "Peman ou an sekirize",
+    "secureSub": "PayPal · Visa/Mastercard · MonCash · NatCash · Kripto",
     "demoNote": "Sa se yon demo UI — pa gen okenn vrè peman ki fèt nan etap sa a."
   },
   "dashboard": {

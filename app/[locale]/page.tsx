@@ -2,7 +2,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Section, Container, Eyebrow } from '@/components/ui/Section';
 import { Link } from '@/i18n/routing';
 import { buttonClasses } from '@/components/ui/Button';
-import { ManifestList } from '@/components/courses/ManifestList';
+import { CourseCardGrid } from '@/components/courses/CourseCardGrid';
 import { courses } from '@/data/courses';
 import { Hero } from '@/components/home/Hero';
 import { Blockers } from '@/components/home/Blockers';
@@ -35,7 +35,7 @@ export default async function Home({
           </h2>
           <p className="mt-3 max-w-xl text-graphite">{tm('subtitle')}</p>
           <div className="mt-10">
-            <ManifestList courses={courses} />
+            <CourseCardGrid courses={courses} />
           </div>
           <div className="mt-8 text-center">
             <Link href="/formations" className={buttonClasses('ghost', 'md')}>

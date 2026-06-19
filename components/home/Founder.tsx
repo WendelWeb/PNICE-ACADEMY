@@ -1,7 +1,8 @@
 import { getTranslations } from 'next-intl/server';
+import { SmartImage } from '@/components/ui/SmartImage';
 import { IconCheck } from '@tabler/icons-react';
 import { Section, Container, Eyebrow } from '@/components/ui/Section';
-import { Sceau } from '@/components/ui/Sceau';
+import { siteImageSrc } from '@/lib/courseImage';
 
 export async function Founder() {
   const t = await getTranslations('home.founder');
@@ -12,22 +13,15 @@ export async function Founder() {
       <Container>
         <div className="grid items-center gap-10 md:grid-cols-[0.9fr_1.1fr]">
           <div className="order-2 md:order-1">
-            <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-xl border border-ink/10 bg-ink">
-              <div
-                aria-hidden
-                className="route-thread absolute left-10 top-0 h-full w-px opacity-40"
+            <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-ink/10 bg-ink">
+              <SmartImage
+                src={siteImageSrc('founder')}
+                alt="PNICE Shipping — koneksyon ant Miami ak Ayiti"
+                fill
+                sizes="(max-width: 768px) 100vw, 45vw"
+                className="object-cover"
               />
-              <div
-                aria-hidden
-                className="route-thread absolute right-10 top-0 h-full w-px opacity-40"
-              />
-              <Sceau size="lg" tone="ochre" rotate={-6}>
-                <span className="font-display text-3xl font-black leading-none">
-                  PA
-                </span>
-                <span className="mt-1 text-[9px] tracking-[0.16em]">shipping</span>
-              </Sceau>
-              <span className="absolute bottom-3 left-4 font-mono text-[11px] text-paper-light/45">
+              <span className="absolute bottom-3 left-4 rounded bg-ink/55 px-2 py-1 font-mono text-[11px] text-paper-light/80 backdrop-blur-sm">
                 PNICE Shipping · Miami ⇄ Ayiti
               </span>
             </div>

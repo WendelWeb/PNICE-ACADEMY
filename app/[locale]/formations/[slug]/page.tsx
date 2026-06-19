@@ -18,8 +18,10 @@ import { Sceau } from '@/components/ui/Sceau';
 import { buttonClasses } from '@/components/ui/Button';
 import { CourseIcon } from '@/components/courses/CourseIcon';
 import { CourseFaqList } from '@/components/courses/CourseFaqList';
+import { SmartImage } from '@/components/ui/SmartImage';
 import { courses, getCourse } from '@/data/courses';
 import { getCourseDetail } from '@/data/courseDetails';
+import { courseImageSrc, courseImageSrcB } from '@/lib/courseImage';
 import { subscription } from '@/data/pricing';
 import {
   courseTitle,
@@ -97,7 +99,22 @@ export default async function CourseDetail({
             {t('back')}
           </Link>
 
-          <div className="mt-6 grid gap-10 lg:grid-cols-[1fr_340px]">
+          {/* cover */}
+          <div className="relative mt-6 aspect-[16/9] overflow-hidden rounded-2xl border border-ink/12 bg-paper">
+            <SmartImage
+              src={courseImageSrc(course.code)}
+              alt={`${courseTitle(course, locale)} — PNICE Academy`}
+              fill
+              priority
+              sizes="(max-width: 1120px) 100vw, 1120px"
+              className="object-cover"
+            />
+            <span className="absolute left-4 top-4 rounded bg-ink/85 px-2.5 py-1 font-mono text-[11px] uppercase tracking-wide text-paper-light">
+              {course.code}
+            </span>
+          </div>
+
+          <div className="mt-8 grid gap-10 lg:grid-cols-[1fr_340px]">
             {/* ---------- Content ---------- */}
             <div className="min-w-0">
               {/* meta */}
@@ -179,6 +196,21 @@ export default async function CourseDetail({
                   </li>
                 ))}
               </ul>
+
+              {/* in-context band */}
+              <div className="relative mt-12 aspect-[3/2] overflow-hidden rounded-2xl border border-ink/12 bg-paper sm:aspect-[2/1]">
+                <SmartImage
+                  src={courseImageSrcB(course.code)}
+                  alt={`${courseTitle(course, locale)} — ${promise}`}
+                  fill
+                  sizes="(max-width: 1120px) 100vw, 720px"
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-ink/10 to-transparent" />
+                <p className="absolute bottom-0 left-0 right-0 p-6 font-display text-xl font-bold leading-snug text-paper-light md:text-2xl">
+                  {promise}
+                </p>
+              </div>
 
               {/* program */}
               <h2 className="mt-12 font-display text-2xl font-bold text-ink">

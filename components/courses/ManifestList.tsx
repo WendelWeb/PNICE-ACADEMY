@@ -3,6 +3,8 @@ import { IconChevronRight } from '@tabler/icons-react';
 import { Link } from '@/i18n/routing';
 import { Reveal } from '@/components/ui/Reveal';
 import { CourseIcon } from '@/components/courses/CourseIcon';
+import { SmartImage } from '@/components/ui/SmartImage';
+import { courseImageSrc } from '@/lib/courseImage';
 import { courseTitle, courseTagline } from '@/lib/courseFields';
 import { formatUsd, htgLabel } from '@/lib/money';
 import type { Course } from '@/data/courses';
@@ -22,11 +24,21 @@ export async function ManifestList({ courses }: { courses: Course[] }) {
           <Reveal delay={i * 55}>
             <Link
               href={`/formations/${c.slug}`}
-              className="group grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-md px-1 py-5 transition-colors hover:bg-ochre/[0.06] md:gap-6 md:px-3"
+              className="group grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-md px-1 py-5 transition-colors hover:bg-ochre/[0.06] sm:grid-cols-[auto_auto_1fr_auto] md:gap-5 md:px-3"
             >
               <span className="font-display text-3xl font-black leading-none text-ochre tabular-nums md:text-4xl">
                 {String(i + 1).padStart(2, '0')}
               </span>
+
+              <div className="relative hidden h-12 w-[72px] shrink-0 overflow-hidden rounded-md border border-ink/10 bg-paper sm:block">
+                <SmartImage
+                  src={courseImageSrc(c.code)}
+                  alt=""
+                  fill
+                  sizes="72px"
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+              </div>
 
               <div className="min-w-0">
                 <div className="flex items-center gap-2">

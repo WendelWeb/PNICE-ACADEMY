@@ -8,6 +8,7 @@ export type Testimonial = {
   id: string;
   name: string;
   location: string;
+  avatar: string; // resolved via siteImageSrc('avatars/<avatar>')
   quote_ht: string;
   quote_fr: string;
   isPlaceholder: true;
@@ -18,6 +19,7 @@ export const testimonials: Testimonial[] = [
     id: 't1',
     name: 'Djenane',
     location: 'Okap',
+    avatar: 'avatars/avatar-1',
     quote_ht:
       'Mwen te kreye premye kat vityèl mwen menm jou a epi mwen kòmanse achte sou Shein san pwoblèm.',
     quote_fr:
@@ -28,6 +30,7 @@ export const testimonials: Testimonial[] = [
     id: 't2',
     name: 'Peterson',
     location: 'Miami',
+    avatar: 'avatars/avatar-2',
     quote_ht:
       'Fòmasyon shipping lan ban mwen yon plan klè pou louvri pwòp biznis ekspedisyon mwen.',
     quote_fr:
@@ -38,6 +41,7 @@ export const testimonials: Testimonial[] = [
     id: 't3',
     name: 'Naomie',
     location: 'Pòtoprens',
+    avatar: 'avatars/avatar-3',
     quote_ht:
       'Ak IA a, mwen fè flyer pou biznis mwen nan kèk minit, san peye yon grafis.',
     quote_fr:

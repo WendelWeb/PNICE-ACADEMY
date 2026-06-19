@@ -3,6 +3,8 @@ import { IconBrandGoogle } from '@tabler/icons-react';
 import { Link } from '@/i18n/routing';
 import { Container } from '@/components/ui/Section';
 import { Sceau } from '@/components/ui/Sceau';
+import { SmartImage } from '@/components/ui/SmartImage';
+import { siteImageSrc } from '@/lib/courseImage';
 import { buttonClasses } from '@/components/ui/Button';
 
 function Field({
@@ -36,62 +38,91 @@ function Field({
 
 export async function AuthShell({ mode }: { mode: 'signIn' | 'signUp' }) {
   const t = await getTranslations('auth');
+  const tf = await getTranslations('footer');
   const isSignUp = mode === 'signUp';
   const title = isSignUp ? t('signUpTitle') : t('signInTitle');
 
   return (
-    <Container className="flex min-h-[70vh] items-center justify-center py-16">
-      <div className="w-full max-w-md rounded-2xl border border-ink/12 bg-paper p-8">
-        <div className="flex flex-col items-center text-center">
-          <Sceau size="sm" tone="ochre" rotate={-6}>
-            <span className="font-display text-base font-black leading-none">
-              PA
-            </span>
-          </Sceau>
-          <h1 className="mt-5 font-display text-3xl font-black text-ink">
-            {title}
-          </h1>
+    <Container className="py-12 md:py-16">
+      <div className="mx-auto grid max-w-4xl overflow-hidden rounded-2xl border border-ink/12 lg:grid-cols-2">
+        {/* brand image panel */}
+        <div className="relative hidden min-h-[560px] bg-ink lg:block">
+          <SmartImage
+            src={siteImageSrc('hero')}
+            alt=""
+            fill
+            sizes="50vw"
+            className="object-cover opacity-70"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-ink/10" />
+          <div className="absolute inset-0 flex flex-col justify-between p-8 text-paper-light">
+            <div className="flex items-center gap-3">
+              <Sceau size="xs" tone="ochre" rotate={-6}>
+                PA
+              </Sceau>
+              <span className="font-display text-lg font-extrabold lowercase tracking-tight">
+                pnice academy
+              </span>
+            </div>
+            <p className="font-display text-3xl font-black leading-tight">
+              {tf('tagline')}
+            </p>
+          </div>
         </div>
 
-        <div className="mt-6 rounded-lg border border-dashed border-ochre/50 bg-ochre/[0.06] px-4 py-3 text-center font-mono text-[11px] leading-relaxed text-graphite/70">
-          {t('soon')}
-        </div>
+        {/* form */}
+        <div className="bg-paper p-8 sm:p-10">
+          <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
+            <Sceau size="sm" tone="ochre" rotate={-6} className="lg:hidden">
+              <span className="font-display text-base font-black leading-none">
+                PA
+              </span>
+            </Sceau>
+            <h1 className="mt-5 font-display text-3xl font-black text-ink lg:mt-0">
+              {title}
+            </h1>
+          </div>
 
-        <button
-          type="button"
-          className={buttonClasses('ghost', 'lg', 'mt-6 w-full')}
-        >
-          <IconBrandGoogle size={18} />
-          {t('continueWith')} Google
-        </button>
+          <div className="mt-6 rounded-lg border border-dashed border-ochre/50 bg-ochre/[0.06] px-4 py-3 text-center font-mono text-[11px] leading-relaxed text-graphite/70">
+            {t('soon')}
+          </div>
 
-        <div className="my-5 h-px bg-ink/10" />
-
-        <form className="space-y-4">
-          <Field id="email" label={t('email')} type="email" placeholder="ou@imel.com" />
-          {isSignUp && (
-            <Field id="phone" label={t('phone')} type="tel" placeholder="+509 0000 0000" />
-          )}
-          <Field id="password" label={t('password')} type="password" placeholder="••••••••" />
           <button
             type="button"
-            className={buttonClasses('primary', 'lg', 'w-full')}
+            className={buttonClasses('ghost', 'lg', 'mt-6 w-full')}
           >
-            {title}
+            <IconBrandGoogle size={18} />
+            {t('continueWith')} Google
           </button>
-        </form>
 
-        <p className="mt-6 text-center font-mono text-xs text-ink/55">
-          {isSignUp ? (
-            <Link href="/sign-in" className="text-teal hover:text-ochre">
-              {t('signInTitle')}
-            </Link>
-          ) : (
-            <Link href="/sign-up" className="text-teal hover:text-ochre">
-              {t('signUpTitle')}
-            </Link>
-          )}
-        </p>
+          <div className="my-5 h-px bg-ink/10" />
+
+          <form className="space-y-4">
+            <Field id="email" label={t('email')} type="email" placeholder="ou@imel.com" />
+            {isSignUp && (
+              <Field id="phone" label={t('phone')} type="tel" placeholder="+509 0000 0000" />
+            )}
+            <Field id="password" label={t('password')} type="password" placeholder="••••••••" />
+            <button
+              type="button"
+              className={buttonClasses('primary', 'lg', 'w-full')}
+            >
+              {title}
+            </button>
+          </form>
+
+          <p className="mt-6 text-center font-mono text-xs text-ink/55">
+            {isSignUp ? (
+              <Link href="/sign-in" className="text-teal hover:text-ochre">
+                {t('signInTitle')}
+              </Link>
+            ) : (
+              <Link href="/sign-up" className="text-teal hover:text-ochre">
+                {t('signUpTitle')}
+              </Link>
+            )}
+          </p>
+        </div>
       </div>
     </Container>
   );

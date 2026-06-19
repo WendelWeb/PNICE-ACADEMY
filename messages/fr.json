@@ -177,6 +177,8 @@
     "methodTitle": "Choisir le moyen de paiement",
     "total": "Total",
     "pay": "Payer",
+    "secure": "Ton paiement est sécurisé",
+    "secureSub": "PayPal · Visa/Mastercard · MonCash · NatCash · Crypto",
     "demoNote": "Ceci est une démo UI — aucun paiement réel n'est effectué à cette étape."
   },
   "dashboard": {

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <rect width="800" height="600" fill="#EDE6D6"/>
+  <line x1="128" y1="0" x2="128" y2="600" stroke="#10204A" stroke-opacity="0.1" stroke-width="2" stroke-dasharray="2 12"/><line x1="672" y1="0" x2="672" y2="600" stroke="#10204A" stroke-opacity="0.1" stroke-width="2" stroke-dasharray="2 12"/>
+  <circle cx="400" cy="300" r="170" fill="none" stroke="#D98E2B" stroke-opacity="0.22" stroke-width="2"/>
+  <circle cx="400" cy="300" r="158" fill="none" stroke="#D98E2B" stroke-opacity="0.14" stroke-width="1"/>
+  <text x="400" y="300" font-family="Arial Black, Impact, sans-serif" font-weight="900" font-size="150" fill="#D98E2B" fill-opacity="0.30" text-anchor="middle" dominant-baseline="central" letter-spacing="2">PA-09</text>
+  <text x="44" y="86" font-family="Arial Black, Impact, sans-serif" font-weight="900" font-size="58" fill="#10204A" fill-opacity="0.85" text-anchor="start">09</text>
+  <text x="400" y="560" font-family="Courier New, monospace" font-size="18" fill="#10204A" fill-opacity="0.45" text-anchor="middle" letter-spacing="6">PNICE ACADEMY</text>
+</svg>

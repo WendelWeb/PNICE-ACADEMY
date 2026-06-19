@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { getLocale, getTranslations, setRequestLocale } from 'next-intl/server';
 import { Section, Container } from '@/components/ui/Section';
 import { Sceau } from '@/components/ui/Sceau';
+import { SmartImage } from '@/components/ui/SmartImage';
+import { courseImageSrc, siteImageSrc } from '@/lib/courseImage';
 import { getCourse } from '@/data/courses';
 import { subscription } from '@/data/pricing';
 import { formatUsd, formatHtg, htgLabel } from '@/lib/money';
@@ -47,6 +49,18 @@ export default async function CheckoutPage({
               {t('summary')}
             </h2>
 
+            {course && (
+              <div className="relative mt-5 aspect-[16/9] overflow-hidden rounded-xl border border-ink/10 bg-paper-light">
+                <SmartImage
+                  src={courseImageSrc(course.code)}
+                  alt={itemName}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 480px"
+                  className="object-cover"
+                />
+              </div>
+            )}
+
             <div className="mt-5 flex items-start gap-4">
               <Sceau size="sm" tone="ochre" rotate={-6} className="shrink-0">
                 <span className="font-display text-sm font-black leading-none">
@@ -88,6 +102,25 @@ export default async function CheckoutPage({
           <PaymentMethods
             payLabel={`${t('pay')} ${formatUsd(amountUsd)}`}
           />
+        </div>
+
+        {/* trust band */}
+        <div className="relative mt-10 aspect-[3/1] overflow-hidden rounded-2xl bg-ink sm:aspect-[4/1]">
+          <SmartImage
+            src={siteImageSrc('secure')}
+            alt={t('secure')}
+            fill
+            sizes="(max-width: 1120px) 100vw, 896px"
+            className="object-cover opacity-60"
+          />
+          <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
+            <p className="font-display text-2xl font-black text-paper-light md:text-3xl">
+              {t('secure')}
+            </p>
+            <p className="mt-1.5 font-mono text-[11px] tracking-wide text-paper-light/70">
+              {t('secureSub')}
+            </p>
+          </div>
         </div>
       </Container>
     </Section>

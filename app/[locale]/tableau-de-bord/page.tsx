@@ -4,6 +4,8 @@ import { Section, Container } from '@/components/ui/Section';
 import { Link } from '@/i18n/routing';
 import { buttonClasses } from '@/components/ui/Button';
 import { CourseIcon } from '@/components/courses/CourseIcon';
+import { SmartImage } from '@/components/ui/SmartImage';
+import { courseImageSrc } from '@/lib/courseImage';
 import { getCourse } from '@/data/courses';
 import { courseTitle } from '@/lib/courseFields';
 
@@ -49,19 +51,33 @@ export default async function DashboardPage({
             return (
               <div
                 key={slug}
-                className="flex flex-col rounded-xl border border-ink/12 bg-paper-light p-6"
+                className="flex flex-col overflow-hidden rounded-xl border border-ink/12 bg-paper-light"
               >
-                <div className="flex items-center gap-2">
-                  <CourseIcon name={course.icon} size={18} className="text-teal" />
-                  <span className="font-mono text-[11px] uppercase tracking-wide text-ink/45">
+                <div className="relative aspect-[16/9] bg-paper">
+                  <SmartImage
+                    src={courseImageSrc(course.code)}
+                    alt={courseTitle(course, locale)}
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="object-cover"
+                  />
+                  <span className="absolute left-3 top-3 rounded bg-ink/85 px-2 py-1 font-mono text-[10px] uppercase tracking-wide text-paper-light">
                     {course.code}
                   </span>
                 </div>
-                <h3 className="mt-2 font-display text-xl font-bold leading-tight text-ink">
-                  {courseTitle(course, locale)}
-                </h3>
 
-                <div className="mt-5">
+                <div className="flex flex-1 flex-col p-6">
+                  <div className="flex items-center gap-2">
+                    <CourseIcon name={course.icon} size={18} className="text-teal" />
+                    <span className="font-mono text-[11px] uppercase tracking-wide text-ink/45">
+                      {course.code}
+                    </span>
+                  </div>
+                  <h3 className="mt-2 font-display text-xl font-bold leading-tight text-ink">
+                    {courseTitle(course, locale)}
+                  </h3>
+
+                  <div className="mt-5">
                   <div className="flex items-center justify-between font-mono text-xs text-graphite/60">
                     <span>{t('progressDone', { done, total })}</span>
                     <span>{complete ? t('completed') : `${pct}%`}</span>
@@ -80,6 +96,7 @@ export default async function DashboardPage({
                 >
                   {t('continue')}
                 </Link>
+                </div>
               </div>
             );
           })}
