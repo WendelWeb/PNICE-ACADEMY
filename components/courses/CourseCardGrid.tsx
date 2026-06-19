@@ -15,7 +15,10 @@ export async function CourseCardGrid({ courses }: { courses: Course[] }) {
 
   return (
     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-      {courses.map((c, i) => (
+      {courses.map((c, i) => {
+        const images = courseImages(c.code);
+        const hasImage = !images[0].endsWith('.svg');
+        return (
         <Reveal key={c.code} delay={(i % 3) * 70}>
           <Link
             href={`/formations/${c.slug}`}
@@ -24,16 +27,18 @@ export async function CourseCardGrid({ courses }: { courses: Course[] }) {
             {/* media */}
             <div className="relative aspect-[4/3] overflow-hidden bg-paper">
               <CourseSlideshow
-                images={courseImages(c.code)}
+                images={images}
                 alt={`${courseTitle(c, locale)} — PNICE Academy`}
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               />
               <span className="absolute left-3 top-3 flex h-9 min-w-9 items-center justify-center rounded-full bg-paper-light/95 px-2 font-display text-lg font-black leading-none text-ink shadow-sm">
                 {String(i + 1).padStart(2, '0')}
               </span>
-              <span className="absolute right-3 top-3 rounded bg-ink/85 px-2 py-1 font-mono text-[10px] uppercase tracking-wide text-paper-light">
-                {c.code}
-              </span>
+              {!hasImage && (
+                <span className="absolute right-3 top-3 rounded bg-ink/85 px-2 py-1 font-mono text-[10px] uppercase tracking-wide text-paper-light">
+                  {c.code}
+                </span>
+              )}
             </div>
 
             {/* body */}
@@ -68,7 +73,8 @@ export async function CourseCardGrid({ courses }: { courses: Course[] }) {
             </div>
           </Link>
         </Reveal>
-      ))}
+        );
+      })}
     </div>
   );
 }
