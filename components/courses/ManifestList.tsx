@@ -6,7 +6,7 @@ import { CourseIcon } from '@/components/courses/CourseIcon';
 import { SmartImage } from '@/components/ui/SmartImage';
 import { courseImageSrc } from '@/lib/courseImage';
 import { courseTitle, courseTagline } from '@/lib/courseFields';
-import { formatUsd, htgLabel } from '@/lib/money';
+import { Price, PriceSecondary } from '@/components/ui/Price';
 import type { Course } from '@/data/courses';
 
 /**
@@ -57,12 +57,14 @@ export async function ManifestList({ courses }: { courses: Course[] }) {
 
               <div className="flex items-center gap-3 md:gap-5">
                 <div className="text-right">
-                  <div className="font-mono text-lg font-semibold text-ink transition-transform duration-150 group-hover:-rotate-2">
-                    {formatUsd(c.priceUsd)}
-                  </div>
-                  <div className="font-mono text-[11px] text-graphite/55">
-                    ~{htgLabel(c.priceUsd)}
-                  </div>
+                  <Price
+                    usd={c.priceUsd}
+                    className="block font-mono text-lg font-semibold text-ink transition-transform duration-150 group-hover:-rotate-2"
+                  />
+                  <PriceSecondary
+                    usd={c.priceUsd}
+                    className="block font-mono text-[11px] text-graphite/55"
+                  />
                   <div className="mt-1 inline-block rounded bg-ochre/15 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-ochre">
                     {t('included')}
                   </div>

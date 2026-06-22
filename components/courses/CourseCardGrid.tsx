@@ -6,7 +6,7 @@ import { CourseIcon } from '@/components/courses/CourseIcon';
 import { CourseSlideshow } from '@/components/courses/CourseSlideshow';
 import { courseImages } from '@/lib/courseImage';
 import { courseTitle, courseTagline } from '@/lib/courseFields';
-import { formatUsd, htgLabel } from '@/lib/money';
+import { Price, PriceSecondary } from '@/components/ui/Price';
 import type { Course } from '@/data/courses';
 
 export async function CourseCardGrid({ courses }: { courses: Course[] }) {
@@ -58,12 +58,14 @@ export async function CourseCardGrid({ courses }: { courses: Course[] }) {
 
               <div className="mt-4 flex items-end justify-between border-t border-ink/10 pt-4">
                 <div>
-                  <span className="font-mono text-lg font-semibold text-ink">
-                    {formatUsd(c.priceUsd)}
-                  </span>
-                  <span className="ml-1 font-mono text-[11px] text-graphite/55">
-                    ~{htgLabel(c.priceUsd)}
-                  </span>
+                  <Price
+                    usd={c.priceUsd}
+                    className="font-mono text-lg font-semibold text-ink"
+                  />
+                  <PriceSecondary
+                    usd={c.priceUsd}
+                    className="ml-1 font-mono text-[11px] text-graphite/55"
+                  />
                 </div>
                 <IconArrowRight
                   size={18}

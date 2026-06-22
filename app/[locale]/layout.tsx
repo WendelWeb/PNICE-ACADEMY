@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { ClerkProvider } from '@clerk/nextjs';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { routing, type Locale } from '@/i18n/routing';
-import { Nav } from '@/components/layout/Nav';
-import { Footer } from '@/components/layout/Footer';
-import { RouteLine } from '@/components/layout/RouteLine';
+import { clerkEnabled } from '@/lib/clerk';
+import { clerkAppearance, clerkLocalization } from '@/lib/clerkTheme';
+import { PreferenceApplier } from '@/components/PreferenceApplier';
 import '../globals.css';
 
 export function generateStaticParams() {
@@ -52,14 +53,19 @@ export default async function LocaleLayout({
       </head>
       <body className="font-body antialiased">
         <NextIntlClientProvider messages={messages}>
-          <div className="flex min-h-screen flex-col">
-            <Nav />
-            <main className="relative flex-1">
-              <RouteLine />
-              <div className="relative z-10">{children}</div>
-            </main>
-            <Footer />
-          </div>
+          {clerkEnabled ? (
+            <ClerkProvider
+              appearance={clerkAppearance}
+              localization={clerkLocalization(locale)}
+              signInUrl={`/${locale}/sign-in`}
+              signUpUrl={`/${locale}/sign-up`}
+            >
+              <PreferenceApplier />
+              {children}
+            </ClerkProvider>
+          ) : (
+            children
+          )}
         </NextIntlClientProvider>
       </body>
     </html>

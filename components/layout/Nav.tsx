@@ -1,10 +1,37 @@
 import { getTranslations } from 'next-intl/server';
+import { SignedIn, SignedOut } from '@clerk/nextjs';
 import { Link } from '@/i18n/routing';
 import { LangToggle } from '@/components/LangToggle';
 import { buttonClasses } from '@/components/ui/Button';
+import { AuthCta } from '@/components/auth/AuthCta';
+import { AvatarLink } from '@/components/auth/AvatarLink';
+import { clerkEnabled } from '@/lib/clerk';
 
 export async function Nav() {
   const t = await getTranslations('nav');
+
+  const authSlot = clerkEnabled ? (
+    <>
+      <SignedOut>
+        <Link
+          href="/sign-in"
+          className="text-sm text-ink/75 transition-colors hover:text-ink"
+        >
+          {t('login')}
+        </Link>
+      </SignedOut>
+      <SignedIn>
+        <AvatarLink />
+      </SignedIn>
+    </>
+  ) : (
+    <Link
+      href="/sign-in"
+      className="hidden text-sm text-ink/75 transition-colors hover:text-ink sm:inline"
+    >
+      {t('login')}
+    </Link>
+  );
 
   return (
     <header className="sticky top-0 z-40 border-b border-ink/10 bg-paper-light/85 backdrop-blur supports-[backdrop-filter]:bg-paper-light/70">
@@ -30,12 +57,13 @@ export async function Nav() {
             {t('pricing')}
           </Link>
           <LangToggle />
-          <Link
+          {authSlot}
+          <AuthCta
             href="/checkout"
             className={buttonClasses('primary', 'md', 'hidden sm:inline-flex')}
           >
             {t('cta')}
-          </Link>
+          </AuthCta>
         </nav>
       </div>
     </header>

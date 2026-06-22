@@ -3,13 +3,14 @@ import { IconCheck } from '@tabler/icons-react';
 import { Section, Container, Eyebrow } from '@/components/ui/Section';
 import { Link } from '@/i18n/routing';
 import { buttonClasses } from '@/components/ui/Button';
+import { AuthCta } from '@/components/auth/AuthCta';
 import {
   subscription,
   subscriptionPerks_ht,
   subscriptionPerks_fr,
 } from '@/data/pricing';
 import { courses } from '@/data/courses';
-import { formatUsd, formatHtg, htgLabel } from '@/lib/money';
+import { Price, PriceSecondary } from '@/components/ui/Price';
 
 export async function Pricing() {
   const t = await getTranslations('home.pricing');
@@ -42,23 +43,24 @@ export async function Pricing() {
               {t('subName')}
             </h3>
             <div className="mt-4 flex items-baseline gap-1.5">
-              <span className="font-display text-6xl font-black leading-none text-ink">
-                {formatUsd(subscription.usd)}
-              </span>
+              <Price
+                usd={subscription.usd}
+                className="font-display text-6xl font-black leading-none text-ink"
+              />
               <span className="font-mono text-sm text-graphite/70">
                 {tc('perMonth')}
               </span>
             </div>
             <p className="mt-1.5 font-mono text-sm text-graphite/60">
-              ~{formatHtg(subscription.htg)}
+              <PriceSecondary usd={subscription.usd} />
               {tc('perMonth')}
             </p>
-            <Link
+            <AuthCta
               href="/checkout?plan=sub"
               className={buttonClasses('primary', 'lg', 'mt-6 w-full')}
             >
               {t('subCta')}
-            </Link>
+            </AuthCta>
             <ul className="mt-6 space-y-2.5">
               {perks.map((p, i) => (
                 <li key={i} className="flex gap-2.5 text-sm text-graphite">
@@ -78,15 +80,16 @@ export async function Pricing() {
               <span className="font-mono text-xs uppercase tracking-wide text-graphite/55">
                 {t('priceFrom')}
               </span>
-              <span className="font-display text-5xl font-black leading-none text-ink">
-                {formatUsd(min)}
-              </span>
+              <Price
+                usd={min}
+                className="font-display text-5xl font-black leading-none text-ink"
+              />
               <span className="font-mono text-sm text-graphite/55">
-                – {formatUsd(max)}
+                – <Price usd={max} />
               </span>
             </div>
             <p className="mt-1.5 font-mono text-sm text-graphite/55">
-              ~{htgLabel(min)} – {htgLabel(max)}
+              <PriceSecondary usd={min} /> – <PriceSecondary usd={max} />
             </p>
             <p className="mt-4 text-sm leading-relaxed text-graphite">
               {t('unitText')}

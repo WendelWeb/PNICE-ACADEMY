@@ -207,5 +207,357 @@
     "password": "Modpas",
     "continueWith": "Kontinye ak",
     "soon": "Koneksyon ak Clerk ap vini nan yon pwochen etap. Sa a se yon koki vizyèl."
+  },
+  "kont": {
+    "title": "Mon kont",
+    "loading": "N ap chaje enfòmasyon ou yo…",
+    "tabs": {
+      "profile": "Pwofil",
+      "security": "Sekirite",
+      "subscription": "Abonman",
+      "courses": "Fòmasyon mwen yo",
+      "certificates": "Sètifika",
+      "notifications": "Notifikasyon",
+      "preferences": "Preferans",
+      "privacy": "Konfidansyalite",
+      "support": "Sipò"
+    },
+    "comingSoon": {
+      "title": "Byento disponib",
+      "text": "Seksyon sa a ap vini talè."
+    },
+    "common": {
+      "save": "Anrejistre",
+      "saving": "N ap anrejistre…",
+      "cancel": "Anile",
+      "remove": "Retire",
+      "add": "Ajoute",
+      "errorGeneric": "Yon erè rive. Tanpri eseye ankò.",
+      "required": "Chan sa a obligatwa."
+    },
+    "profile": {
+      "photo": {
+        "title": "Foto pwofil",
+        "help": "JPG oswa PNG, 5 Mo maksimòm.",
+        "change": "Chanje foto",
+        "remove": "Retire foto",
+        "uploading": "N ap voye foto a…",
+        "errorSize": "Foto a twò lou. Maksimòm se 5 Mo.",
+        "errorFormat": "Fòma pa bon. Sèvi ak yon fichye JPG oswa PNG.",
+        "success": "Foto pwofil ou chanje.",
+        "removed": "Foto pwofil ou retire."
+      },
+      "identity": {
+        "title": "Non ak idantite",
+        "firstName": "Prenon",
+        "lastName": "Siyati",
+        "username": "Non itilizatè",
+        "usernameHelp": "Non inik ou sou platfòm nan.",
+        "usernameTaken": "Non itilizatè sa a deja pran. Chwazi yon lòt.",
+        "saved": "Enfòmasyon ou yo anrejistre."
+      },
+      "certificate": {
+        "title": "Non sou sètifika",
+        "label": "Non ki pral parèt sou sètifika ou yo",
+        "help": "Se non sa a ki pral parèt sou sètifika ou yo — li ka diferan de non itilizatè ou.",
+        "saved": "Non sètifika a anrejistre."
+      },
+      "details": {
+        "title": "Detay anplis",
+        "country": "Peyi",
+        "city": "Vil",
+        "cityPlaceholder": "Pòtoprens, Miami…",
+        "bio": "Yon ti mo sou ou",
+        "bioPlaceholder": "Di nou kiyès ou ye an de mo…",
+        "pronouns": "Tit",
+        "pronounsOtherPlaceholder": "Presize",
+        "saved": "Detay ou yo anrejistre.",
+        "countryOptions": {
+          "HT": "Ayiti",
+          "US": "Etazini",
+          "CA": "Kanada",
+          "FR": "Frans",
+          "DO": "Repiblik Dominikèn",
+          "OTHER": "Lòt"
+        },
+        "pronounsOptions": {
+          "student": "Etidyan",
+          "teacher": "Pwofesè",
+          "other": "Lòt"
+        }
+      }
+    },
+    "security": {
+      "emails": {
+        "title": "Imèl",
+        "primaryBadge": "Prensipal",
+        "addTitle": "Ajoute yon imèl",
+        "addPlaceholder": "lòt@imel.com",
+        "sendCode": "Voye kòd verifikasyon",
+        "codeSent": "Nou voye yon kòd nan imèl la.",
+        "codeLabel": "Kòd verifikasyon",
+        "verify": "Verifye",
+        "setPrimary": "Mete kòm prensipal",
+        "remove": "Retire",
+        "removed": "Imèl la retire.",
+        "pending": "Ap tann verifikasyon",
+        "addedVerified": "Imèl la ajoute epi verifye.",
+        "madePrimary": "Imèl prensipal la chanje.",
+        "errorExists": "Imèl sa a deja sou yon kont.",
+        "errorCode": "Kòd la pa bon oswa li ekspire."
+      },
+      "phone": {
+        "title": "Telefòn",
+        "label": "Nimewo telefòn",
+        "addTitle": "Ajoute yon nimewo",
+        "sendCode": "Voye kòd",
+        "codeSent": "Nou voye yon kòd pa SMS.",
+        "codeLabel": "Kòd SMS",
+        "verify": "Verifye",
+        "verified": "Verifye",
+        "pending": "Ap tann verifikasyon",
+        "remove": "Retire",
+        "removed": "Nimewo a retire.",
+        "errorCode": "Kòd la pa bon oswa li ekspire."
+      },
+      "password": {
+        "title": "Modpas",
+        "current": "Modpas aktyèl",
+        "new": "Nouvo modpas",
+        "confirm": "Konfime nouvo modpas",
+        "rulesTitle": "Modpas ou dwe genyen:",
+        "rules": [
+          "Omwen 8 karaktè",
+          "Yon lèt majiskil ak yon lèt miniskil",
+          "Omwen yon chif"
+        ],
+        "mismatch": "De modpas yo pa menm.",
+        "weak": "Modpas la twò fèb. Swiv règ ki anwo yo.",
+        "wrongCurrent": "Modpas aktyèl la pa bon.",
+        "saved": "Modpas ou chanje.",
+        "signOutOthers": "Dekonekte tout lòt aparèy",
+        "signOutOthersHelp": "Pou plis sekirite, fèmen sesyon yo sou tout lòt aparèy."
+      },
+      "connected": {
+        "title": "Kont konekte",
+        "linked": "Konekte",
+        "notLinked": "Pa konekte",
+        "link": "Konekte",
+        "unlink": "Dekonekte",
+        "unlinked": "Kont la dekonekte.",
+        "appleSoon": "Byento disponib"
+      },
+      "overview": {
+        "title": "Eta sekirite",
+        "signInMethod": "Metòd koneksyon",
+        "password": "Modpas",
+        "google": "Google",
+        "twoFactor": "Verifikasyon an 2 etap",
+        "on": "Aktive",
+        "off": "Pa aktive",
+        "cta": "Ajoute yon kouch sekirite anplis sou kont ou.",
+        "activeSessions": "Sesyon aktif",
+        "sessionsCount": "{count} aparèy"
+      },
+      "twofactor": {
+        "title": "Verifikasyon an 2 etap",
+        "intro": "Mande yon kòd anplis modpas ou lè w ap konekte.",
+        "totpTitle": "App authenticator",
+        "totpStep1": "Eskane kòd QR la ak yon app tankou Google Authenticator oswa Authy.",
+        "totpSecret": "Oswa antre kòd sa a alamen:",
+        "totpCodeLabel": "Kòd 6 chif",
+        "enable": "Aktive",
+        "enabled": "Aktive",
+        "disable": "Dezaktive",
+        "disableConfirm": "Èske ou sèten ou vle dezaktive verifikasyon an 2 etap?",
+        "smsTitle": "Kòd pa SMS",
+        "smsEnable": "Sèvi ak SMS",
+        "smsEnabled": "SMS aktive kòm dezyèm faktè",
+        "smsNoPhone": "Ajoute epi verifye yon nimewo nan seksyon Telefòn anwo a anvan.",
+        "backupTitle": "Kòd sekou",
+        "backupIntro": "Kòd pou yon sèl itilizasyon, si ou pèdi aksè ak telefòn ou.",
+        "generate": "Jenere kòd sekou",
+        "regenerate": "Rejenere",
+        "regenerateConfirm": "Sa ap anile ansyen kòd yo. Kontinye?",
+        "download": "Telechaje",
+        "backupWarning": "Konsève kòd sa yo yon kote an sekirite — ou p ap wè yo ankò.",
+        "codeError": "Kòd la pa bon. Eseye ankò.",
+        "enabledMsg": "Verifikasyon an 2 etap aktive.",
+        "disabledMsg": "Verifikasyon an 2 etap dezaktive.",
+        "smsEnabledMsg": "SMS aktive kòm dezyèm faktè."
+      },
+      "passkeys": {
+        "title": "Passkeys",
+        "intro": "Konekte san modpas, ak anprent oswa figi telefòn ou.",
+        "add": "Ajoute yon passkey",
+        "unnamed": "Passkey",
+        "none": "Ou poko gen passkey.",
+        "addedOn": "Ajoute {date}",
+        "remove": "Retire",
+        "removeConfirm": "Retire passkey sa a?",
+        "removed": "Passkey la retire.",
+        "added": "Passkey la ajoute.",
+        "error": "Nou pa t ka ajoute passkey la. Aparèy ou a ka pa sipòte l."
+      },
+      "sessions": {
+        "title": "Aparèy ak sesyon aktif",
+        "help": "Vil/peyi a soti nan adrès IP — se pa yon pozisyon egzak.",
+        "thisDevice": "Aparèy sa a",
+        "lastActive": "Dènye aktivite {date}",
+        "unknownDevice": "Aparèy enkoni",
+        "signOut": "Dekonekte",
+        "signOutConfirm": "Dekonekte aparèy sa a?",
+        "signedOut": "Aparèy la dekonekte.",
+        "signOutAll": "Dekonekte tout lòt aparèy",
+        "signOutAllTitle": "Dekonekte tout lòt aparèy?",
+        "signOutAllText": "Tout lòt sesyon yo ap fèmen. Aparèy sa a ap rete konekte.",
+        "signedOutAll": "Tout lòt aparèy yo dekonekte."
+      },
+      "history": {
+        "title": "Istorik koneksyon",
+        "help": "Koneksyon nan 90 dènye jou yo.",
+        "needsBackend": "Istorik konplè a ap disponib lè backend la prè (l ap anrejistre chak koneksyon)."
+      },
+      "notice": {
+        "title": "Notifikasyon sekirite",
+        "text": "Nou voye yon imèl otomatikman lè gen yon evènman enpòtan: nouvo koneksyon sou yon aparèy enkoni, chanjman modpas, oswa chanjman nan verifikasyon an 2 etap."
+      }
+    },
+    "preferences": {
+      "saved": "Preferans ou anrejistre.",
+      "language": {
+        "title": "Lang afichaj la",
+        "help": "Lang sa a ap kenbe sou tout aparèy ou yo apre ou konekte.",
+        "ht": "Kreyòl",
+        "fr": "Fransè"
+      },
+      "currency": {
+        "title": "Lajan afichaj",
+        "help": "Chwazi nan ki lajan pou wè pri yo.",
+        "USD": "Dola ($)",
+        "HTG": "Goud (HTG)"
+      },
+      "motion": {
+        "title": "Diminye animasyon yo",
+        "help": "Mwens mouvman sou tout sit la, menm si sistèm ou pa mande l."
+      },
+      "textSize": {
+        "title": "Gwosè tèks",
+        "normal": "Nòmal",
+        "large": "Gwo",
+        "xlarge": "Pi gwo"
+      },
+      "video": {
+        "title": "Kalite videyo pa defo",
+        "auto": "Otomatik",
+        "data-saver": "Ekonomi done",
+        "high": "Wo kalite",
+        "note": "Aplike lè lektè videyo a prè."
+      },
+      "wifi": {
+        "title": "Telechaje sou Wi-Fi sèlman",
+        "help": "Evite itilize done mobil ou pou telechajman."
+      },
+      "speed": {
+        "title": "Vitès lekti pa defo",
+        "note": "Aplike lè lektè videyo a prè."
+      },
+      "subtitles": {
+        "title": "Lang sou-tit",
+        "fr": "Fransè",
+        "ht": "Kreyòl",
+        "none": "Okenn",
+        "note": "Sou-tit yo ap disponib lè kontni videyo a prè."
+      }
+    },
+    "privacy": {
+      "export": {
+        "title": "Telechaje done ou yo",
+        "help": "Yon fichye ak enfòmasyon pwofil ak preferans ou yo.",
+        "button": "Telechaje (JSON)",
+        "generating": "N ap prepare…"
+      },
+      "delete": {
+        "title": "Efase kont mwen",
+        "warning": "Aksyon sa a pa ka defèt. W ap pèdi aksè ak fòmasyon ou yo, sètifika ou yo, ak tout istorik ou.",
+        "instruction": "Tape imèl ou pou konfime:",
+        "placeholder": "imèl ou",
+        "mismatch": "Imèl la pa koresponn.",
+        "button": "Efase kont mwen nèt",
+        "deleting": "N ap efase…",
+        "error": "Nou pa t ka efase kont lan. Eseye ankò."
+      }
+    }
+  },
+  "admin": {
+    "badge": "ADMIN",
+    "soon": "Talè",
+    "viewSite": "Wè sit la",
+    "clerkRequired": "Administrasyon an mande Clerk konfigire (otantifikasyon). Ajoute kle Clerk yo pou w ka antre.",
+    "a11y": {
+      "sidebar": "Meni administrasyon",
+      "openMenu": "Louvri meni",
+      "closeMenu": "Fèmen meni"
+    },
+    "nav": {
+      "overview": "Apèsi jeneral",
+      "users": "Itilizatè",
+      "courses": "Fòmasyon",
+      "subscriptions": "Abonman",
+      "payments": "Peman",
+      "progress": "Pwogresyon",
+      "testimonials": "Temwayaj",
+      "marketing": "Maketing",
+      "support": "Sipò",
+      "roles": "Wòl",
+      "settings": "Paramèt"
+    },
+    "roles": {
+      "super-admin": "Sipè-admin",
+      "admin": "Admin",
+      "support": "Sipò",
+      "editeur-contenu": "Editè kontni"
+    },
+    "require2fa": {
+      "title": "2FA obligatwa pou admin",
+      "body": "Pou pwoteje done elèv yo, chak kont admin dwe gen verifikasyon an de etap (2FA) aktive anvan li ka antre nan administrasyon an.",
+      "cta": "Aktive 2FA kounye a",
+      "back": "Tounen sou sit la"
+    },
+    "overview": {
+      "subtitle": "Apèsi jeneral sou aktivite platfòm nan.",
+      "groups": {
+        "volumes": "Volim & Revni",
+        "growth": "Kwasans",
+        "conversion": "Konvèsyon & Angajman",
+        "retention": "Retansyon & Risk"
+      },
+      "period": {
+        "today": "Jodi a",
+        "d7": "7 jou",
+        "d30": "30 jou"
+      },
+      "kpi": {
+        "totalUsers": "Total itilizatè",
+        "activeSubscribers": "Abonman aktif",
+        "mrr": "MRR (revni rekiran)",
+        "perMonth": "chak mwa",
+        "totalRevenue": "Revni total (a vi)",
+        "revenueThisMonth": "Revni mwa sa a",
+        "newUsers": "Nouvo enskripsyon",
+        "newEnrollments": "Nouvo enskripsyon nan fòmasyon",
+        "conversionVisitor": "Vizitè → kont",
+        "conversionPaying": "Kont → peyan",
+        "activeLearners": "Aprann aktif",
+        "churn": "To churn (anilasyon)",
+        "arpu": "ARPU (revni pa itilizatè)",
+        "ltv": "LTV (valè a vi)",
+        "refunds": "Ranbousman"
+      },
+      "note": {
+        "mock": "Tout chif sa yo se done egzanp (mock) pou tès — y ap ranplase ak vrè done pita.",
+        "visitors": "Estimasyon: ~{visitors} vizitè/mwa. Mezi reyèl mande yon zouti analytics trafik (pa baz done a sèlman)."
+      }
+    }
   }
 }

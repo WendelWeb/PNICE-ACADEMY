@@ -1,64 +1,106 @@
+Réalité préalable (à acter avant de coder l'admin)
+Un admin avec de vraies stats a besoin de choses qui n'existent pas encore (on est en mock) :
 
-Authentic documentary editorial photograph of real Haitian people, natural daylight, candid unposed moment, shot on a 35mm lens at f/2.0 with soft natural shadows, warm and trustworthy mood; restrained color grade of warm kraft and sand neutrals with deep indigo and a single ochre accent; realistic skin texture, true to life, photojournalistic, not a stock photo; no text, no logos, no watermark, no UI overlays; avoid plastic skin, oversaturation, HDR look, distorted hands, extra fingers, fake studio backdrop and cheesy posing. Scene: a confident young Haitian woman in her twenties standing in the sunlit doorway of a small shop in Port-au-Prince, holding a smartphone with a faint warm smile, a physical debit card resting on a wooden counter nearby, a softly blurred tropical street behind her. Composition: wide cinematic framing with generous negative space on the left. Aspect ratio 21:9.
-Authentic documentary editorial photograph of real Haitian people, natural daylight, candid unposed moment, shot on a 35mm lens at f/2.0 with soft natural shadows, warm and trustworthy mood; restrained color grade of warm kraft and sand neutrals with deep indigo and a single ochre accent; realistic skin texture, true to life, photojournalistic, not a stock photo; no text, no logos, no watermark, no UI overlays; avoid plastic skin, oversaturation, HDR look, distorted hands, extra fingers, fake studio backdrop and cheesy posing. Scene: a small Miami-to-Haiti shipping operation with stacked cardboard boxes and blue plastic barrels in a clean warehouse, a Haitian man in his thirties in a simple polo checking a paper manifest on a clipboard, golden late-afternoon light through a roller door, organized and hard-working. Composition: subject slightly off-center with room to breathe. Aspect ratio 4:3.
+Base de données réelle (Neon + Drizzle) : tables users, enrollments, payments, subscriptions, progress, certificates.
+Paiements réels branchés (Stripe/PayPal/MonCash/NatCash/crypto) + webhooks qui remplissent payments/subscriptions.
+Clerk en rôle admin (accès réservé) — dépend de Clerk résolu.
+Table subscriptions dédiée (l'ancien schéma ne gère pas le récurrent) + table events (vues, visionnages) pour l'engagement + tables coupons, refunds, audit_log.
+→ Donc soit on construit le backend d'abord, soit on fait l'admin en UI avec données mock puis on branche le réel. (Décision à prendre.)
 
+1. Vue d'ensemble (cartes KPI en haut)
+   Total utilisateurs inscrits
+   Abonnés actifs + MRR (revenu récurrent mensuel)
+   Revenu total (à vie) + ce mois-ci
+   Nouveaux inscrits aujourd'hui / 7j / 30j
+   Nouvelles inscriptions à un cours aujourd'hui / 7j / 30j
+   Taux de conversion (visiteur → compte → payant)
+   Apprenants actifs (ont regardé une leçon < 7/30j)
+   Taux de churn (abonnements annulés)
+   ARPU (revenu moyen par utilisateur) + LTV (valeur vie client)
+   Remboursements (nombre + montant)
+2. Graphiques / analytics
+   Revenu dans le temps (jour/semaine/mois) — séparé abonnement vs à l'unité
+   Inscriptions (signups) dans le temps
+   Inscriptions aux cours dans le temps
+   Revenu par méthode de paiement (camembert : PayPal, Visa/MC, MonCash, NatCash, Crypto)
+   Revenu par cours (lesquels vendent le plus)
+   Croissance des abonnements + rétention par cohorte
+   Répartition géo (Haïti vs diaspora, par pays)
+   Répartition langue (ht vs fr)
+   Tunnel de conversion : visite → compte → cours commencé → complété → certificat
+   Heures de pointe de visionnage
+3. Utilisateurs / inscrits
+   Liste users (recherche, tri, pagination) : nom, email, téléphone, pays, langue, date inscription, nb de cours, statut abonnement, total dépensé, dernière activité, dernier paiement
+   Segments par nb de cours : 1, 2, 3, 4, 5+ (exactement ce que tu demandes) ✅
+   Segments : abonnés / acheteurs à l'unité / inscrits gratuits (jamais payé)
+   Fiche user détaillée : profil, cours inscrits, historique paiements, progression par cours, certificats, journal d'activité
+   Actions manuelles : donner/retirer accès à un cours, offrir un abonnement, rembourser, suspendre/bannir, renvoyer la vérification, « se connecter en tant que » (impersonation) pour le support
+   Export CSV des users
+   Users inactifs (inscrits mais jamais acheté / jamais regardé)
+   Top dépensiers
+4. Cours / contenu (CMS)
+   Liste cours avec stats : inscriptions, revenu, taux de complétion, nb leçons, publié/brouillon
+   Créer/éditer un cours (titres ht/fr, accroche, points, prix, icône, images, publication)
+   Gérer les leçons : ajouter/éditer/réordonner, ID vidéo Bunny, durée, aperçu on/off
+   Analytics par cours : inscriptions, drop-off par leçon (où les élèves abandonnent), temps de visionnage moyen
+   Éditer le contenu page de vente (promesse, problème, livrables, prérequis, FAQ)
+   Gérer les images / diaporama d'un cours (upload, réordonner)
+   Gestion des prix (changer, voir l'impact)
+5. Abonnements
+   Liste des abonnements actifs + date de renouvellement + contribution MRR
+   Événements : nouveau, renouvelé, annulé, paiement échoué (relance/dunning)
+   Paiements en échec / abonnements en retard (à relancer)
+   Raisons d'annulation (si collectées)
+   Renouvellements à venir (7/30j) + revenu attendu
+6. Paiements / revenus
+   Liste des transactions : user, montant USD + HTG, méthode, réf provider, statut (pending/completed/failed/refunded), date, produit
+   Filtres par méthode, statut, période
+   Dernier paiement (par user et global) ✅
+   Transactions échouées/en attente à investiguer
+   Gestion des remboursements
+   Réconciliation par provider (ce que chaque provider a réglé)
+   Gestion du taux USD→HTG (le régler pour tout le site depuis l'admin) — important vu le contexte
+   Frais par provider (combien chaque provider mange sur la marge)
+   Reçus / factures générés
+7. Progression / engagement
+   Taux de complétion par cours
+   Certificats émis (liste, réémettre, révoquer)
+   Leçon où on perd les élèves (drop-off)
+   Temps moyen pour finir un cours
+   Leçons les plus / moins regardées
+8. Témoignages / preuve sociale
+   Gérer les témoignages (approuver, publier, marquer réel vs exemple) — lié à l'obligation « remplacer les placeholders avant lancement »
+   Demander un témoignage aux élèves qui ont fini
+   Compteur de places (« plas ki rete ») — régler la vraie valeur
+9. Marketing / acquisition
+   Codes promo / coupons (créer, suivre l'usage, réduction)
+   Parrainage (referral) si programme
+   Attribution de la source (UTM : d'où viennent les inscrits)
+   Annonces / emails aux utilisateurs
+   Paniers abandonnés (checkout commencé, pas payé) — à relancer
+10. Support / opérations
+    Boîte de support / messages de contact
+    Journal d'audit (quel admin a fait quoi)
+    Santé système : échecs de webhooks paiement, statut uploads Bunny, logs d'erreur
+    Notifications admin (nouvelle vente, paiement échoué, demande de remboursement)
+11. Rôles / sécurité admin
+    Rôles (super-admin, admin, support, éditeur de contenu) via Clerk metadata
+    Gérer les admins (inviter, attribuer un rôle)
+    2FA obligatoire pour les admins
+    Accès admin protégé (/admin réservé aux rôles admin)
+12. Paramètres / config
+    Réglages plateforme : prix abonnement, taux de change, providers de paiement on/off, mode maintenance
+    Gérer les textes ht/fr
+    Pages légales (CGU, confidentialité, remboursement)
+    Reco de construction (par phases, vu l'ampleur)
+    Phase A (essentiel) : /admin protégé + KPIs + liste users (avec segments 1-5+ cours) + transactions + dernier paiement + stats par cours.
+    Phase B : graphiques (revenu/signups/méthodes), abonnements, remboursements, taux de change.
+    Phase C : CMS cours/leçons/images, témoignages, certificats.
+    Phase D : marketing (coupons, sources, paniers abandonnés), support, audit, santé système.
+    Côté technique je proposerai une lib de graphiques légère (server-rendered ou Recharts en lazy) pour ne pas plomber le bundle (contexte Haïti).
 
-Authentic documentary editorial photograph of real Haitian people, natural daylight, candid unposed moment, shot on a 35mm lens at f/2.0 with soft natural shadows, warm and trustworthy mood; restrained color grade of warm kraft and sand neutrals with deep indigo and a single ochre accent; realistic skin texture, true to life, photojournalistic, not a stock photo; no text, no logos, no watermark, no UI overlays; avoid plastic skin, oversaturation, HDR look, distorted hands, extra fingers, fake studio backdrop and cheesy posing. Scene: a close warm shot of a young Haitian man's hands holding a smartphone that displays a clean virtual bank card, a physical card on a wooden table beside a cup of coffee, soft window light, calm and capable. Composition: subject centered with breathing room. Aspect ratio 16:9.
+Donc, avant le feu vert, deux décisions de ta part :
 
-Authentic documentary editorial photograph of real Haitian people, natural daylight, candid unposed moment, shot on a 35mm lens at f/2.0 with soft natural shadows, warm and trustworthy mood; restrained color grade of warm kraft and sand neutrals with deep indigo and a single ochre accent; realistic skin texture, true to life, photojournalistic, not a stock photo; no text, no logos, no watermark, no UI overlays; avoid plastic skin, oversaturation, HDR look, distorted hands, extra fingers, fake studio backdrop and cheesy posing. Scene: a Haitian woman at a small home table comparing products on a laptop and a phone, two opened shipping parcels and a few clothing items nearby, taking notes, bright daylight, smart and careful online shopping. Composition: subject centered with breathing room. Aspect ratio 16:9.
-
-
-Authentic documentary editorial photograph of real Haitian people, natural daylight, candid unposed moment, shot on a 35mm lens at f/2.0 with soft natural shadows, warm and trustworthy mood; restrained color grade of warm kraft and sand neutrals with deep indigo and a single ochre accent; realistic skin texture, true to life, photojournalistic, not a stock photo; no text, no logos, no watermark, no UI overlays; avoid plastic skin, oversaturation, HDR look, distorted hands, extra fingers, fake studio backdrop and cheesy posing. Scene: a young Haitian entrepreneur in a warehouse standing beside labeled boxes and a blue shipping barrel, holding a phone and a small notebook mid-conversation with a client off-frame, warm industrial light, proud small-business energy. Composition: subject centered with headroom. Aspect ratio 16:9.
-
-Authentic documentary editorial photograph of real Haitian people, natural daylight, candid unposed moment, shot on a 35mm lens at f/2.0 with soft natural shadows, warm and trustworthy mood; restrained color grade of warm kraft and sand neutrals with deep indigo and a single ochre accent; realistic skin texture, true to life, photojournalistic, not a stock photo; no text, no logos, no watermark, no UI overlays; avoid plastic skin, oversaturation, HDR look, distorted hands, extra fingers, fake studio backdrop and cheesy posing. Scene: a Haitian shop owner filming a product on her phone mounted on a small ring light, styling an item for an Instagram post, a tasteful colorful boutique background, natural light mixed with a soft ring glow, creative and entrepreneurial. Composition: subject centered with breathing room. Aspect ratio 16:9.
-
-Authentic documentary editorial photograph of real Haitian people, natural daylight, candid unposed moment, shot on a 35mm lens at f/2.0 with soft natural shadows, warm and trustworthy mood; restrained color grade of warm kraft and sand neutrals with deep indigo and a single ochre accent; realistic skin texture, true to life, photojournalistic, not a stock photo; no text, no logos, no watermark, no UI overlays; avoid plastic skin, oversaturation, HDR look, distorted hands, extra fingers, fake studio backdrop and cheesy posing. Scene: a young Haitian designer at a laptop holding up a freshly printed professional flyer for a small business, comparing it to the screen, satisfied, warm desk light with a few brand color swatches on the table. Composition: subject centered with breathing room. Aspect ratio 16:9.
-
-
-Authentic documentary editorial photograph of real Haitian people, natural daylight, candid unposed moment, shot on a 35mm lens at f/2.0 with soft natural shadows, warm and trustworthy mood; restrained color grade of warm kraft and sand neutrals with deep indigo and a single ochre accent; realistic skin texture, true to life, photojournalistic, not a stock photo; no text, no logos, no watermark, no UI overlays; avoid plastic skin, oversaturation, HDR look, distorted hands, extra fingers, fake studio backdrop and cheesy posing. Scene: a Haitian shopkeeper relaxed behind a counter glancing at a smartphone showing a messaging conversation while the shop runs calmly around her, a warm easy in-control mood, soft daylight. Composition: subject centered with breathing room. Aspect ratio 16:9.
-
-
-Authentic documentary editorial photograph of real Haitian people, natural daylight, candid unposed moment, shot on a 35mm lens at f/2.0 with soft natural shadows, warm and trustworthy mood; restrained color grade of warm kraft and sand neutrals with deep indigo and a single ochre accent; realistic skin texture, true to life, photojournalistic, not a stock photo; no text, no logos, no watermark, no UI overlays; avoid plastic skin, oversaturation, HDR look, distorted hands, extra fingers, fake studio backdrop and cheesy posing. Scene: a focused young Haitian creator at a laptop in a simple bright room, a smartphone on a stand beside the laptop showing a clean app mockup, hands on the keyboard, quiet excitement, natural light. Composition: subject centered with breathing room. Aspect ratio 16:9.
-
-
-Authentic documentary editorial photograph of real Haitian people, natural daylight, candid unposed moment, shot on a 35mm lens at f/2.0 with soft natural shadows, warm and trustworthy mood; restrained color grade of warm kraft and sand neutrals with deep indigo and a single ochre accent; realistic skin texture, true to life, photojournalistic, not a stock photo; no text, no logos, no watermark, no UI overlays; avoid plastic skin, oversaturation, HDR look, distorted hands, extra fingers, fake studio backdrop and cheesy posing. Scene: a thoughtful Haitian person sitting by a window calmly setting up two-step verification on a smartphone, a protective reassured expression, soft daylight, human and calm, not a clichéd hooded hacker. Composition: subject centered with breathing room. Aspect ratio 16:9.
-
-
-Authentic documentary editorial photograph of real Haitian people, natural daylight, candid unposed moment, shot on a 35mm lens at f/2.0 with soft natural shadows, warm and trustworthy mood; restrained color grade of warm kraft and sand neutrals with deep indigo and a single ochre accent; realistic skin texture, true to life, photojournalistic, not a stock photo; no text, no logos, no watermark, no UI overlays; avoid plastic skin, oversaturation, HDR look, distorted hands, extra fingers, fake studio backdrop and cheesy posing. Scene: a Haitian content creator filming themselves with a phone on a tripod and a soft light, headphones around the neck, a relaxed creative studio corner at home, warm light. Composition: subject centered with breathing room. Aspect ratio 16:9.
-
-Authentic documentary editorial photograph of real Haitian people, natural daylight, candid unposed moment, shot on a 35mm lens at f/2.0 with soft natural shadows, warm and trustworthy mood; restrained color grade of warm kraft and sand neutrals with deep indigo and a single ochre accent; realistic skin texture, true to life, photojournalistic, not a stock photo; no text, no logos, no watermark, no UI overlays; avoid plastic skin, oversaturation, HDR look, distorted hands, extra fingers, fake studio backdrop and cheesy posing. Scene: a Haitian person happily completing an online purchase on a phone with a virtual card screen visible, a relieved confident smile, the moment a payment finally works, warm light. Composition: subject centered with breathing room. Aspect ratio 16:9.
-
-
-Authentic documentary editorial photograph of real Haitian people, natural daylight, candid unposed moment, shot on a 35mm lens at f/2.0 with soft natural shadows, warm and trustworthy mood; restrained color grade of warm kraft and sand neutrals with deep indigo and a single ochre accent; realistic skin texture, true to life, photojournalistic, not a stock photo; no text, no logos, no watermark, no UI overlays; avoid plastic skin, oversaturation, HDR look, distorted hands, extra fingers, fake studio backdrop and cheesy posing. Scene: a Haitian reseller joyfully opening a delivered parcel of products at home, organizing items to resell, satisfied and motivated, bright daylight. Composition: subject centered with breathing room. Aspect ratio 16:9.
-
-
-Authentic documentary editorial photograph of real Haitian people, natural daylight, candid unposed moment, shot on a 35mm lens at f/2.0 with soft natural shadows, warm and trustworthy mood; restrained color grade of warm kraft and sand neutrals with deep indigo and a single ochre accent; realistic skin texture, true to life, photojournalistic, not a stock photo; no text, no logos, no watermark, no UI overlays; avoid plastic skin, oversaturation, HDR look, distorted hands, extra fingers, fake studio backdrop and cheesy posing. Scene: a Haitian shipping entrepreneur handing a labeled box to a happy client at a small storefront, warm trust between them, golden light. Composition: subjects centered with breathing room. Aspect ratio 16:9.
-
-
-Authentic documentary editorial photograph of real Haitian people, natural daylight, candid unposed moment, shot on a 35mm lens at f/2.0 with soft natural shadows, warm and trustworthy mood; restrained color grade of warm kraft and sand neutrals with deep indigo and a single ochre accent; realistic skin texture, true to life, photojournalistic, not a stock photo; no text, no logos, no watermark, no UI overlays; avoid plastic skin, oversaturation, HDR look, distorted hands, extra fingers, fake studio backdrop and cheesy posing. Scene: a Haitian vendor checking strong sales notifications on a phone, smiling, surrounded by her products, a feeling of momentum and growth, natural light. Composition: subject centered with breathing room. Aspect ratio 16:9.
-
-
-Authentic documentary editorial photograph of real Haitian people, natural daylight, candid unposed moment, shot on a 35mm lens at f/2.0 with soft natural shadows, warm and trustworthy mood; restrained color grade of warm kraft and sand neutrals with deep indigo and a single ochre accent; realistic skin texture, true to life, photojournalistic, not a stock photo; no text, no logos, no watermark, no UI overlays; avoid plastic skin, oversaturation, HDR look, distorted hands, extra fingers, fake studio backdrop and cheesy posing. Scene: a Haitian small-business owner pinning a freshly printed professional flyer on a shop wall, proud of the clean design, warm light. Composition: subject centered with breathing room. Aspect ratio 16:9.
-
-
-Authentic documentary editorial photograph of real Haitian people, natural daylight, candid unposed moment, shot on a 35mm lens at f/2.0 with soft natural shadows, warm and trustworthy mood; restrained color grade of warm kraft and sand neutrals with deep indigo and a single ochre accent; realistic skin texture, true to life, photojournalistic, not a stock photo; no text, no logos, no watermark, no UI overlays; avoid plastic skin, oversaturation, HDR look, distorted hands, extra fingers, fake studio backdrop and cheesy posing. Scene: a relaxed Haitian shop owner enjoying a quiet coffee break while the phone on the counter shows automated customer replies handling business, calm and free, soft daylight. Composition: subject centered with breathing room. Aspect ratio 16:9.
-
-
-Authentic documentary editorial photograph of real Haitian people, natural daylight, candid unposed moment, shot on a 35mm lens at f/2.0 with soft natural shadows, warm and trustworthy mood; restrained color grade of warm kraft and sand neutrals with deep indigo and a single ochre accent; realistic skin texture, true to life, photojournalistic, not a stock photo; no text, no logos, no watermark, no UI overlays; avoid plastic skin, oversaturation, HDR look, distorted hands, extra fingers, fake studio backdrop and cheesy posing. Scene: a Haitian creator proudly showing a finished website on a laptop and a live mobile app on a phone screen, accomplished and excited, natural light. Composition: subject centered with breathing room. Aspect ratio 16:9.
-
-
-Authentic documentary editorial photograph of real Haitian people, natural daylight, candid unposed moment, shot on a 35mm lens at f/2.0 with soft natural shadows, warm and trustworthy mood; restrained color grade of warm kraft and sand neutrals with deep indigo and a single ochre accent; realistic skin texture, true to life, photojournalistic, not a stock photo; no text, no logos, no watermark, no UI overlays; avoid plastic skin, oversaturation, HDR look, distorted hands, extra fingers, fake studio backdrop and cheesy posing. Scene: a Haitian person calm and reassured after securing their accounts on a phone, a confident protected posture by a window, warm light. Composition: subject centered with breathing room. Aspect ratio 16:9.
-
-
-Authentic documentary editorial photograph of real Haitian people, natural daylight, candid unposed moment, shot on a 35mm lens at f/2.0 with soft natural shadows, warm and trustworthy mood; restrained color grade of warm kraft and sand neutrals with deep indigo and a single ochre accent; realistic skin texture, true to life, photojournalistic, not a stock photo; no text, no logos, no watermark, no UI overlays; avoid plastic skin, oversaturation, HDR look, distorted hands, extra fingers, fake studio backdrop and cheesy posing. Scene: a Haitian content creator reviewing growing channel analytics on a laptop with headphones on, motivated by real results, warm desk light. Composition: subject centered with breathing room. Aspect ratio 16:9.
-
-
-Authentic editorial portrait of a real Haitian person, natural daylight, shot on an 85mm lens at f/2.0 with soft natural light and a warm trustworthy mood; restrained color grade of warm neutrals with deep indigo and a single ochre accent; realistic skin texture, photojournalistic, not a stock photo; no text, no logos, no watermark; avoid plastic skin, oversaturation, HDR look and distorted features. Subject: a Haitian woman in her late twenties in Cap-Haitien, warm genuine smile, simple everyday clothing, soft out-of-focus background. Composition: head-and-shoulders, face centered. Aspect ratio 1:1.
-
-
-Authentic editorial portrait of a real Haitian person, natural daylight, shot on an 85mm lens at f/2.0 with soft natural light and a warm trustworthy mood; restrained color grade of warm neutrals with deep indigo and a single ochre accent; realistic skin texture, photojournalistic, not a stock photo; no text, no logos, no watermark; avoid plastic skin, oversaturation, HDR look and distorted features. Subject: a Haitian man in his thirties in Miami, confident warm expression, casual polo, soft neutral background. Composition: head-and-shoulders, face centered. Aspect ratio 1:1.
-
-
-Authentic editorial portrait of a real Haitian person, natural daylight, shot on an 85mm lens at f/2.0 with soft natural light and a warm trustworthy mood; restrained color grade of warm neutrals with deep indigo and a single ochre accent; realistic skin texture, photojournalistic, not a stock photo; no text, no logos, no watermark; avoid plastic skin, oversaturation, HDR look and distorted features. Subject: a Haitian woman in her early twenties in Port-au-Prince, bright optimistic smile, simple modern style, soft background. Composition: head-and-shoulders, face centered. Aspect ratio 1:1.
-
-Authentic documentary editorial photograph of real Haitian people, natural daylight, candid unposed moment, shot on a 35mm lens at f/2.0 with soft natural shadows, warm and trustworthy mood; restrained color grade of warm kraft and sand neutrals with deep indigo and a single ochre accent; realistic skin texture, true to life, photojournalistic, not a stock photo; no text, no logos, no watermark, no UI overlays; avoid plastic skin, oversaturation, HDR look, distorted hands, extra fingers, fake studio backdrop and cheesy posing. Scene: a calm close shot of Haitian hands confidently completing a secure payment on a smartphone, soft warm light, a sense of safety and trust. Composition: ultra-wide banner with darker empty space on one side for an overlaid headline. Aspect ratio 4:1.
+Admin maintenant en données mock, puis on branche le réel quand le backend (DB + paiements) arrive — ou on fait le backend d'abord ?
+On confirme que Clerk est résolu (tu ajoutes les clés + on teste la connexion) avant de commencer l'admin, comme tu l'as dit.
+Dis-moi ce que tu ajustes/ajoutes à cette liste, et donne le feu vert quand tu veux. 🚦

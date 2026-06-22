@@ -19,6 +19,7 @@ import { buttonClasses } from '@/components/ui/Button';
 import { CourseIcon } from '@/components/courses/CourseIcon';
 import { CourseFaqList } from '@/components/courses/CourseFaqList';
 import { CourseSlideshow } from '@/components/courses/CourseSlideshow';
+import { AuthCta } from '@/components/auth/AuthCta';
 import { courses, getCourse } from '@/data/courses';
 import { getCourseDetail } from '@/data/courseDetails';
 import { courseImages, courseImagesB } from '@/lib/courseImage';
@@ -31,7 +32,8 @@ import {
   lessonTitle,
   formatDuration,
 } from '@/lib/courseFields';
-import { formatUsd, htgLabel } from '@/lib/money';
+import { formatUsd } from '@/lib/money';
+import { Price, PriceSecondary } from '@/components/ui/Price';
 
 export function generateStaticParams() {
   return courses.map((c) => ({ slug: c.slug }));
@@ -302,11 +304,12 @@ export default async function CourseDetail({
               <div className="rounded-2xl border border-ink/15 bg-paper-light p-7">
                 <div className="flex items-start justify-between">
                   <div>
-                    <span className="font-display text-5xl font-black leading-none text-ink">
-                      {formatUsd(course.priceUsd)}
-                    </span>
+                    <Price
+                      usd={course.priceUsd}
+                      className="font-display text-5xl font-black leading-none text-ink"
+                    />
                     <p className="mt-1.5 font-mono text-sm text-graphite/60">
-                      ~{htgLabel(course.priceUsd)}
+                      <PriceSecondary usd={course.priceUsd} />
                     </p>
                     <p className="mt-1 font-mono text-[11px] uppercase tracking-wide text-teal">
                       {t('lifetime')}
@@ -319,12 +322,12 @@ export default async function CourseDetail({
                   </Sceau>
                 </div>
 
-                <Link
+                <AuthCta
                   href={`/checkout?course=${course.slug}`}
                   className={buttonClasses('primary', 'lg', 'mt-6 w-full')}
                 >
                   {tc('buy')}
-                </Link>
+                </AuthCta>
 
                 <div className="my-4 flex items-center gap-3 text-xs text-ink/40">
                   <span className="h-px flex-1 bg-ink/10" />
@@ -332,12 +335,12 @@ export default async function CourseDetail({
                   <span className="h-px flex-1 bg-ink/10" />
                 </div>
 
-                <Link
+                <AuthCta
                   href="/checkout?plan=sub"
                   className={buttonClasses('ghost', 'lg', 'w-full')}
                 >
                   {tc('subscribe')}
-                </Link>
+                </AuthCta>
                 <p className="mt-3 text-center font-mono text-[11px] text-graphite/55">
                   {t('includedNote', {
                     price: formatUsd(subscription.usd),
@@ -372,18 +375,18 @@ export default async function CourseDetail({
             {t('ctaText')}
           </p>
           <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link
+            <AuthCta
               href={`/checkout?course=${course.slug}`}
               className={buttonClasses('primary', 'lg')}
             >
-              {tc('buy')} · {formatUsd(course.priceUsd)}
-            </Link>
-            <Link
+              {tc('buy')} · <Price usd={course.priceUsd} />
+            </AuthCta>
+            <AuthCta
               href="/checkout?plan=sub"
               className={buttonClasses('ghost', 'lg', '!border-paper-light/30 !text-paper-light hover:!border-paper-light/60')}
             >
               {tc('subscribe')}
-            </Link>
+            </AuthCta>
           </div>
         </Container>
       </section>

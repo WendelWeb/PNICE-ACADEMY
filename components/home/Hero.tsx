@@ -4,6 +4,7 @@ import { Container } from '@/components/ui/Section';
 import { Sceau } from '@/components/ui/Sceau';
 import { buttonClasses } from '@/components/ui/Button';
 import { CourseSlideshow } from '@/components/courses/CourseSlideshow';
+import { AuthCta } from '@/components/auth/AuthCta';
 import { siteImages } from '@/lib/courseImage';
 
 export async function Hero() {
@@ -32,9 +33,9 @@ export async function Hero() {
           </p>
 
           <div className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
-            <Link href="/checkout" className={buttonClasses('primary', 'lg')}>
+            <AuthCta href="/checkout" className={buttonClasses('primary', 'lg')}>
               {t('ctaPrimary')}
-            </Link>
+            </AuthCta>
             <Link href="/formations" className={buttonClasses('ghost', 'lg')}>
               {t('ctaSecondary')}
             </Link>

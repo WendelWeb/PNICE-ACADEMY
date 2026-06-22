@@ -3,10 +3,12 @@ import { getLocale, getTranslations, setRequestLocale } from 'next-intl/server';
 import { Section, Container } from '@/components/ui/Section';
 import { Sceau } from '@/components/ui/Sceau';
 import { SmartImage } from '@/components/ui/SmartImage';
-import { courseImageSrc, siteImageSrc } from '@/lib/courseImage';
+import { CourseSlideshow } from '@/components/courses/CourseSlideshow';
+import { courseImageSrc, siteImages } from '@/lib/courseImage';
 import { getCourse } from '@/data/courses';
 import { subscription } from '@/data/pricing';
-import { formatUsd, formatHtg, htgLabel } from '@/lib/money';
+import { formatUsd } from '@/lib/money';
+import { Price, PriceSecondary } from '@/components/ui/Price';
 import { courseTitle } from '@/lib/courseFields';
 import { PaymentMethods } from '@/components/checkout/PaymentMethods';
 
@@ -29,7 +31,6 @@ export default async function CheckoutPage({
   const isSub = !course;
 
   const amountUsd = isSub ? subscription.usd : course!.priceUsd;
-  const amountHtg = isSub ? subscription.htg : null;
   const itemName = isSub ? t('subItem') : courseTitle(course!, locale);
   const itemSub = isSub ? t('subPer') : t('unitLabel');
   const sealCode = isSub ? 'PA' : course!.code;
@@ -83,16 +84,17 @@ export default async function CheckoutPage({
                   {t('total')}
                 </span>
                 <div className="text-right">
-                  <span className="font-display text-3xl font-black text-ink">
-                    {formatUsd(amountUsd)}
-                  </span>
+                  <Price
+                    usd={amountUsd}
+                    className="font-display text-3xl font-black text-ink"
+                  />
                   <span className="font-mono text-sm text-graphite/60">
                     {perLabel}
                   </span>
                 </div>
               </div>
               <p className="mt-1 text-right font-mono text-xs text-graphite/55">
-                ~{amountHtg ? formatHtg(amountHtg) : htgLabel(amountUsd)}
+                <PriceSecondary usd={amountUsd} />
                 {perLabel}
               </p>
             </div>
@@ -106,13 +108,12 @@ export default async function CheckoutPage({
 
         {/* trust band */}
         <div className="relative mt-10 aspect-[3/1] overflow-hidden rounded-2xl bg-ink sm:aspect-[4/1]">
-          <SmartImage
-            src={siteImageSrc('secure')}
+          <CourseSlideshow
+            images={siteImages('secure')}
             alt={t('secure')}
-            fill
             sizes="(max-width: 1120px) 100vw, 896px"
-            className="object-cover opacity-60"
           />
+          <div className="absolute inset-0 bg-ink/55" />
           <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
             <p className="font-display text-2xl font-black text-paper-light md:text-3xl">
               {t('secure')}

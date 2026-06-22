@@ -1,7 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import { Container } from '@/components/ui/Section';
-import { Link } from '@/i18n/routing';
 import { buttonClasses } from '@/components/ui/Button';
+import { AuthCta } from '@/components/auth/AuthCta';
 
 const PAYMENTS = ['PayPal', 'Visa / Mastercard', 'MonCash', 'NatCash', 'Crypto'];
 
@@ -17,12 +17,9 @@ export async function FinalCta() {
         <p className="mx-auto mt-4 max-w-xl text-paper-light/75">
           {t('subtitle')}
         </p>
-        <Link
-          href="/checkout"
-          className={buttonClasses('primary', 'lg', 'mt-8')}
-        >
+        <AuthCta href="/checkout" className={buttonClasses('primary', 'lg', 'mt-8')}>
           {t('cta')}
-        </Link>
+        </AuthCta>
         <ul className="mt-10 flex flex-wrap items-center justify-center gap-2">
           {PAYMENTS.map((p) => (
             <li

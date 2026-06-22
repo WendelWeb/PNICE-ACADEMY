@@ -207,5 +207,357 @@
     "password": "Mot de passe",
     "continueWith": "Continuer avec",
     "soon": "La connexion avec Clerk arrive à une prochaine étape. Ceci est une coquille visuelle."
+  },
+  "kont": {
+    "title": "Mon compte",
+    "loading": "Chargement de tes informations…",
+    "tabs": {
+      "profile": "Profil",
+      "security": "Sécurité",
+      "subscription": "Abonnement",
+      "courses": "Mes formations",
+      "certificates": "Certificats",
+      "notifications": "Notifications",
+      "preferences": "Préférences",
+      "privacy": "Confidentialité",
+      "support": "Support"
+    },
+    "comingSoon": {
+      "title": "Bientôt disponible",
+      "text": "Cette section arrive bientôt."
+    },
+    "common": {
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "cancel": "Annuler",
+      "remove": "Retirer",
+      "add": "Ajouter",
+      "errorGeneric": "Une erreur est survenue. Réessaie.",
+      "required": "Ce champ est obligatoire."
+    },
+    "profile": {
+      "photo": {
+        "title": "Photo de profil",
+        "help": "JPG ou PNG, 5 Mo maximum.",
+        "change": "Changer la photo",
+        "remove": "Retirer la photo",
+        "uploading": "Envoi de la photo…",
+        "errorSize": "La photo est trop lourde. Maximum 5 Mo.",
+        "errorFormat": "Format invalide. Utilise un fichier JPG ou PNG.",
+        "success": "Ta photo de profil a été changée.",
+        "removed": "Ta photo de profil a été retirée."
+      },
+      "identity": {
+        "title": "Nom et identité",
+        "firstName": "Prénom",
+        "lastName": "Nom",
+        "username": "Nom d'utilisateur",
+        "usernameHelp": "Ton nom unique sur la plateforme.",
+        "usernameTaken": "Ce nom d'utilisateur est déjà pris. Choisis-en un autre.",
+        "saved": "Tes informations ont été enregistrées."
+      },
+      "certificate": {
+        "title": "Nom sur le certificat",
+        "label": "Nom qui apparaîtra sur tes certificats",
+        "help": "C'est ce nom qui apparaîtra sur tes certificats — il peut être différent de ton nom d'utilisateur.",
+        "saved": "Le nom du certificat a été enregistré."
+      },
+      "details": {
+        "title": "Détails supplémentaires",
+        "country": "Pays",
+        "city": "Ville",
+        "cityPlaceholder": "Port-au-Prince, Miami…",
+        "bio": "Un mot sur toi",
+        "bioPlaceholder": "Dis-nous qui tu es en deux mots…",
+        "pronouns": "Titre",
+        "pronounsOtherPlaceholder": "Précise",
+        "saved": "Tes détails ont été enregistrés.",
+        "countryOptions": {
+          "HT": "Haïti",
+          "US": "États-Unis",
+          "CA": "Canada",
+          "FR": "France",
+          "DO": "République dominicaine",
+          "OTHER": "Autre"
+        },
+        "pronounsOptions": {
+          "student": "Étudiant",
+          "teacher": "Professeur",
+          "other": "Autre"
+        }
+      }
+    },
+    "security": {
+      "emails": {
+        "title": "E-mails",
+        "primaryBadge": "Principal",
+        "addTitle": "Ajouter un e-mail",
+        "addPlaceholder": "autre@email.com",
+        "sendCode": "Envoyer le code de vérification",
+        "codeSent": "Un code a été envoyé à l'adresse.",
+        "codeLabel": "Code de vérification",
+        "verify": "Vérifier",
+        "setPrimary": "Définir comme principal",
+        "remove": "Retirer",
+        "removed": "L'e-mail a été retiré.",
+        "pending": "Non vérifié",
+        "addedVerified": "L'e-mail a été ajouté et vérifié.",
+        "madePrimary": "L'e-mail principal a été changé.",
+        "errorExists": "Cet e-mail est déjà associé à un compte.",
+        "errorCode": "Le code est invalide ou expiré."
+      },
+      "phone": {
+        "title": "Téléphone",
+        "label": "Numéro de téléphone",
+        "addTitle": "Ajouter un numéro",
+        "sendCode": "Envoyer le code",
+        "codeSent": "Un code a été envoyé par SMS.",
+        "codeLabel": "Code SMS",
+        "verify": "Vérifier",
+        "verified": "Vérifié",
+        "pending": "En attente de vérification",
+        "remove": "Retirer",
+        "removed": "Le numéro a été retiré.",
+        "errorCode": "Le code est invalide ou expiré."
+      },
+      "password": {
+        "title": "Mot de passe",
+        "current": "Mot de passe actuel",
+        "new": "Nouveau mot de passe",
+        "confirm": "Confirme le nouveau mot de passe",
+        "rulesTitle": "Ton mot de passe doit contenir :",
+        "rules": [
+          "Au moins 8 caractères",
+          "Une majuscule et une minuscule",
+          "Au moins un chiffre"
+        ],
+        "mismatch": "Les deux mots de passe ne correspondent pas.",
+        "weak": "Le mot de passe est trop faible. Suis les règles ci-dessus.",
+        "wrongCurrent": "Le mot de passe actuel est incorrect.",
+        "saved": "Ton mot de passe a été changé.",
+        "signOutOthers": "Déconnecter tous les autres appareils",
+        "signOutOthersHelp": "Pour plus de sécurité, ferme les sessions sur tous les autres appareils."
+      },
+      "connected": {
+        "title": "Comptes connectés",
+        "linked": "Connecté",
+        "notLinked": "Non connecté",
+        "link": "Connecter",
+        "unlink": "Déconnecter",
+        "unlinked": "Le compte a été déconnecté.",
+        "appleSoon": "Bientôt disponible"
+      },
+      "overview": {
+        "title": "État de sécurité",
+        "signInMethod": "Méthode de connexion",
+        "password": "Mot de passe",
+        "google": "Google",
+        "twoFactor": "Vérification en 2 étapes",
+        "on": "Activée",
+        "off": "Désactivée",
+        "cta": "Ajoute une couche de sécurité supplémentaire à ton compte.",
+        "activeSessions": "Sessions actives",
+        "sessionsCount": "{count} appareil(s)"
+      },
+      "twofactor": {
+        "title": "Vérification en 2 étapes",
+        "intro": "Demande un code en plus de ton mot de passe à la connexion.",
+        "totpTitle": "Application authenticator",
+        "totpStep1": "Scanne le QR code avec une application comme Google Authenticator ou Authy.",
+        "totpSecret": "Ou saisis ce code manuellement :",
+        "totpCodeLabel": "Code à 6 chiffres",
+        "enable": "Activer",
+        "enabled": "Activée",
+        "disable": "Désactiver",
+        "disableConfirm": "Confirmes-tu la désactivation de la vérification en 2 étapes ?",
+        "smsTitle": "Code par SMS",
+        "smsEnable": "Utiliser le SMS",
+        "smsEnabled": "SMS activé comme deuxième facteur",
+        "smsNoPhone": "Ajoute et vérifie un numéro dans la section Téléphone ci-dessus d'abord.",
+        "backupTitle": "Codes de secours",
+        "backupIntro": "Codes à usage unique, si tu perds l'accès à ton téléphone.",
+        "generate": "Générer les codes de secours",
+        "regenerate": "Régénérer",
+        "regenerateConfirm": "Cela invalidera les anciens codes. Continuer ?",
+        "download": "Télécharger",
+        "backupWarning": "Conserve ces codes en lieu sûr — ils ne seront plus jamais affichés.",
+        "codeError": "Le code est invalide. Réessaie.",
+        "enabledMsg": "Vérification en 2 étapes activée.",
+        "disabledMsg": "Vérification en 2 étapes désactivée.",
+        "smsEnabledMsg": "SMS activé comme deuxième facteur."
+      },
+      "passkeys": {
+        "title": "Passkeys",
+        "intro": "Connecte-toi sans mot de passe, avec l'empreinte ou le visage de ton téléphone.",
+        "add": "Ajouter une passkey",
+        "unnamed": "Passkey",
+        "none": "Tu n'as pas encore de passkey.",
+        "addedOn": "Ajoutée le {date}",
+        "remove": "Retirer",
+        "removeConfirm": "Retirer cette passkey ?",
+        "removed": "La passkey a été retirée.",
+        "added": "La passkey a été ajoutée.",
+        "error": "Impossible d'ajouter la passkey. Ton appareil ne la supporte peut-être pas."
+      },
+      "sessions": {
+        "title": "Appareils et sessions actives",
+        "help": "La ville/le pays sont déduits de l'adresse IP — ce n'est pas une position précise.",
+        "thisDevice": "Cet appareil",
+        "lastActive": "Dernière activité le {date}",
+        "unknownDevice": "Appareil inconnu",
+        "signOut": "Déconnecter",
+        "signOutConfirm": "Déconnecter cet appareil ?",
+        "signedOut": "L'appareil a été déconnecté.",
+        "signOutAll": "Déconnecter tous les autres appareils",
+        "signOutAllTitle": "Déconnecter tous les autres appareils ?",
+        "signOutAllText": "Toutes les autres sessions seront fermées. Cet appareil restera connecté.",
+        "signedOutAll": "Tous les autres appareils ont été déconnectés."
+      },
+      "history": {
+        "title": "Historique de connexion",
+        "help": "Connexions des 90 derniers jours.",
+        "needsBackend": "L'historique complet sera disponible quand le backend sera prêt (il enregistrera chaque connexion)."
+      },
+      "notice": {
+        "title": "Notifications de sécurité",
+        "text": "Nous envoyons un e-mail automatiquement lors d'un événement important : nouvelle connexion depuis un appareil inconnu, changement de mot de passe, ou changement de la vérification en 2 étapes."
+      }
+    },
+    "preferences": {
+      "saved": "Ta préférence a été enregistrée.",
+      "language": {
+        "title": "Langue d'affichage",
+        "help": "Cette langue sera conservée sur tous tes appareils après connexion.",
+        "ht": "Créole",
+        "fr": "Français"
+      },
+      "currency": {
+        "title": "Devise d'affichage",
+        "help": "Choisis dans quelle devise voir les prix.",
+        "USD": "Dollar ($)",
+        "HTG": "Gourde (HTG)"
+      },
+      "motion": {
+        "title": "Réduire les animations",
+        "help": "Moins de mouvement sur tout le site, même si ton système ne le demande pas."
+      },
+      "textSize": {
+        "title": "Taille du texte",
+        "normal": "Normale",
+        "large": "Grande",
+        "xlarge": "Très grande"
+      },
+      "video": {
+        "title": "Qualité vidéo par défaut",
+        "auto": "Automatique",
+        "data-saver": "Économie de données",
+        "high": "Haute qualité",
+        "note": "Appliqué quand le lecteur vidéo sera prêt."
+      },
+      "wifi": {
+        "title": "Télécharger en Wi-Fi uniquement",
+        "help": "Évite d'utiliser tes données mobiles pour les téléchargements."
+      },
+      "speed": {
+        "title": "Vitesse de lecture par défaut",
+        "note": "Appliqué quand le lecteur vidéo sera prêt."
+      },
+      "subtitles": {
+        "title": "Langue des sous-titres",
+        "fr": "Français",
+        "ht": "Créole",
+        "none": "Aucun",
+        "note": "Les sous-titres seront disponibles quand le contenu vidéo sera prêt."
+      }
+    },
+    "privacy": {
+      "export": {
+        "title": "Télécharger tes données",
+        "help": "Un fichier avec tes informations de profil et tes préférences.",
+        "button": "Télécharger (JSON)",
+        "generating": "Préparation…"
+      },
+      "delete": {
+        "title": "Supprimer mon compte",
+        "warning": "Cette action est irréversible. Tu perdras l'accès à tes formations, tes certificats et tout ton historique.",
+        "instruction": "Tape ton e-mail pour confirmer :",
+        "placeholder": "ton e-mail",
+        "mismatch": "L'e-mail ne correspond pas.",
+        "button": "Supprimer définitivement mon compte",
+        "deleting": "Suppression…",
+        "error": "Impossible de supprimer le compte. Réessaie."
+      }
+    }
+  },
+  "admin": {
+    "badge": "ADMIN",
+    "soon": "Bientôt",
+    "viewSite": "Voir le site",
+    "clerkRequired": "L'administration nécessite Clerk (authentification). Ajoute les clés Clerk pour y accéder.",
+    "a11y": {
+      "sidebar": "Menu d'administration",
+      "openMenu": "Ouvrir le menu",
+      "closeMenu": "Fermer le menu"
+    },
+    "nav": {
+      "overview": "Vue d'ensemble",
+      "users": "Utilisateurs",
+      "courses": "Cours",
+      "subscriptions": "Abonnements",
+      "payments": "Paiements",
+      "progress": "Progression",
+      "testimonials": "Témoignages",
+      "marketing": "Marketing",
+      "support": "Support",
+      "roles": "Rôles",
+      "settings": "Paramètres"
+    },
+    "roles": {
+      "super-admin": "Super-admin",
+      "admin": "Admin",
+      "support": "Support",
+      "editeur-contenu": "Éditeur contenu"
+    },
+    "require2fa": {
+      "title": "2FA obligatoire pour les admins",
+      "body": "Pour protéger les données des élèves, chaque compte admin doit activer la vérification en deux étapes (2FA) avant d'accéder à l'administration.",
+      "cta": "Activer la 2FA maintenant",
+      "back": "Retour au site"
+    },
+    "overview": {
+      "subtitle": "Vue d'ensemble de l'activité de la plateforme.",
+      "groups": {
+        "volumes": "Volumes & Revenus",
+        "growth": "Croissance",
+        "conversion": "Conversion & Engagement",
+        "retention": "Rétention & Risque"
+      },
+      "period": {
+        "today": "Aujourd'hui",
+        "d7": "7 j",
+        "d30": "30 j"
+      },
+      "kpi": {
+        "totalUsers": "Total utilisateurs",
+        "activeSubscribers": "Abonnés actifs",
+        "mrr": "MRR (revenu récurrent)",
+        "perMonth": "par mois",
+        "totalRevenue": "Revenu total (à vie)",
+        "revenueThisMonth": "Revenu ce mois-ci",
+        "newUsers": "Nouvelles inscriptions",
+        "newEnrollments": "Nouvelles inscriptions à une formation",
+        "conversionVisitor": "Visiteur → compte",
+        "conversionPaying": "Compte → payant",
+        "activeLearners": "Apprenants actifs",
+        "churn": "Taux de churn (annulations)",
+        "arpu": "ARPU (revenu/utilisateur)",
+        "ltv": "LTV (valeur vie client)",
+        "refunds": "Remboursements"
+      },
+      "note": {
+        "mock": "Tous ces chiffres sont des données d'exemple (mock) pour les tests — remplacées par de vraies données plus tard.",
+        "visitors": "Estimation : ~{visitors} visiteurs/mois. La mesure réelle nécessite un outil d’analytics de trafic (pas seulement la base de données)."
+      }
+    }
   }
 }

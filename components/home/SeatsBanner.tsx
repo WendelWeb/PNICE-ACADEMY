@@ -1,7 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import { Container } from '@/components/ui/Section';
-import { Link } from '@/i18n/routing';
 import { buttonClasses } from '@/components/ui/Button';
+import { AuthCta } from '@/components/auth/AuthCta';
 import { SEATS_LEFT_PLACEHOLDER } from '@/data/testimonials';
 
 export async function SeatsBanner() {
@@ -22,12 +22,12 @@ export async function SeatsBanner() {
             </p>
           </div>
         </div>
-        <Link
+        <AuthCta
           href="/checkout"
           className={buttonClasses('primary', 'lg', 'shrink-0')}
         >
           {tHero('ctaPrimary')}
-        </Link>
+        </AuthCta>
       </Container>
     </section>
   );
