@@ -179,7 +179,22 @@
     "pay": "Payer",
     "secure": "Ton paiement est sécurisé",
     "secureSub": "PayPal · Visa/Mastercard · MonCash · NatCash · Crypto",
-    "demoNote": "Ceci est une démo UI — aucun paiement réel n'est effectué à cette étape."
+    "demoNote": "Ceci est une démo UI — aucun paiement réel n'est effectué à cette étape.",
+    "promo": {
+      "label": "Code promo",
+      "placeholder": "Entrez un code",
+      "apply": "Appliquer",
+      "remove": "Retirer",
+      "newTotal": "Nouveau total :",
+      "error": {
+        "not_found": "Code introuvable.",
+        "inactive": "Ce code est désactivé.",
+        "expired": "Ce code a expiré.",
+        "depleted": "Ce code a atteint sa limite.",
+        "scheduled": "Ce code n'est pas encore actif.",
+        "wrong_product": "Ce code ne s'applique pas à cet article."
+      }
+    }
   },
   "dashboard": {
     "title": "Tableau de bord",
@@ -510,7 +525,12 @@
       "marketing": "Marketing",
       "support": "Support",
       "roles": "Rôles",
-      "settings": "Paramètres"
+      "settings": "Paramètres",
+      "analytics": "Analytics",
+      "engagement": "Engagement",
+      "certificates": "Certificats",
+      "audit": "Audit",
+      "platform": "Plateforme"
     },
     "roles": {
       "super-admin": "Super-admin",
@@ -558,6 +578,1139 @@
         "mock": "Tous ces chiffres sont des données d'exemple (mock) pour les tests — remplacées par de vraies données plus tard.",
         "visitors": "Estimation : ~{visitors} visiteurs/mois. La mesure réelle nécessite un outil d’analytics de trafic (pas seulement la base de données)."
       }
+    },
+    "users": {
+      "subtitle": "Gérer tous les utilisateurs, segments et actions.",
+      "empty": "Aucun utilisateur ne correspond aux filtres.",
+      "resultCount": "{count} utilisateurs",
+      "resultRange": "{from}–{to} sur {total}",
+      "pagination": "Pagination",
+      "coursesShort": "formations",
+      "col": {
+        "user": "Utilisateur",
+        "contact": "Contact",
+        "location": "Localisation",
+        "joined": "Inscription",
+        "status": "Statut",
+        "spent": "Total dépensé",
+        "lastActive": "Dernière activité",
+        "lastPayment": "Dernier paiement"
+      },
+      "country": {
+        "HT": "Haïti",
+        "diaspora": "Diaspora"
+      },
+      "types": {
+        "all": "Tous",
+        "active_subscriber": "Abonnés actifs",
+        "one_off": "À l'unité",
+        "free": "Gratuits"
+      },
+      "status": {
+        "active": "Actif",
+        "suspended": "Suspendu",
+        "banned": "Banni"
+      },
+      "sub": {
+        "active": "Abonné actif",
+        "canceled": "Annulé",
+        "past_due": "En retard"
+      },
+      "filters": {
+        "search": "Rechercher",
+        "searchPlaceholder": "Nom, email ou téléphone…",
+        "country": "Pays",
+        "countryAll": "Tous les pays",
+        "countryHt": "Haïti",
+        "countryDiaspora": "Diaspora",
+        "language": "Langue",
+        "langAll": "Toutes les langues",
+        "courses": "Formations",
+        "coursesAll": "Tout nombre",
+        "courses0": "0 (jamais payé)",
+        "from": "Du",
+        "to": "Au",
+        "clear": "Effacer",
+        "quickViews": "Vues rapides :",
+        "inactive": "Inactifs",
+        "topSpenders": "Top dépensiers",
+        "exportCsv": "Exporter CSV"
+      },
+      "detail": {
+        "back": "Retour à la liste",
+        "profile": "Profil",
+        "certName": "Nom sur le certificat",
+        "credits": "Crédits",
+        "totalSpent": "Total dépensé",
+        "courses": "Formations & accès",
+        "noCourses": "Aucune formation.",
+        "source": {
+          "purchase": "Achat",
+          "subscription": "Abonnement",
+          "granted": "Accordé par admin"
+        },
+        "access": {
+          "active": "Actif",
+          "expired": "Expiré"
+        },
+        "payments": "Paiements",
+        "noPayments": "Aucun paiement.",
+        "date": "Date",
+        "product": "Produit",
+        "method": "Méthode",
+        "amount": "Montant",
+        "status": "Statut",
+        "subscription": "Abonnement",
+        "pay": {
+          "succeeded": "Réussi",
+          "failed": "Échoué",
+          "refunded": "Remboursé",
+          "pending": "En attente"
+        },
+        "certificates": "Certificats",
+        "noCertificates": "Aucun certificat.",
+        "verifCode": "Code",
+        "pdfSoon": "PDF à venir (Phase 2)",
+        "activity": "Journal d'activité",
+        "audit": "Journal des actions admin",
+        "noAudit": "Aucune action admin.",
+        "by": "par"
+      },
+      "audit": {
+        "grant_course": "Accès formation accordé",
+        "revoke_course": "Accès formation retiré",
+        "grant_subscription": "Abonnement offert",
+        "suspend_user": "Compte suspendu",
+        "ban_user": "Compte banni",
+        "reactivate_user": "Compte réactivé",
+        "refund_payment": "Paiement remboursé",
+        "resend_verification": "Email de vérification renvoyé",
+        "impersonate": "Connexion en tant qu'utilisateur",
+        "create_promo": "Code promo créé",
+        "disable_promo": "Code promo désactivé",
+        "enable_promo": "Code promo activé",
+        "delete_promo": "Code promo supprimé",
+        "redeem_promo": "Code promo utilisé",
+        "cart_reminder": "Relance de panier",
+        "set_referral_credit": "Crédit de parrainage modifié",
+        "add_credit": "Crédit ajouté"
+      },
+      "actions": {
+        "title": "Actions manuelles",
+        "grantCourse": "Donner une formation",
+        "grantSub": "Offrir un abonnement",
+        "suspend": "Suspendre",
+        "ban": "Bannir",
+        "reactivate": "Réactiver",
+        "resendVerif": "Renvoyer l'email de vérification",
+        "impersonate": "Se connecter en tant que",
+        "done": "Action effectuée.",
+        "error": "Une erreur est survenue.",
+        "verifSent": "Email de vérification en route.",
+        "impersonateMock": "Disponible via Clerk (actor tokens) — non exécuté sur données mock.",
+        "confirmGrant": "Donner l'accès",
+        "reasonHelp": "La raison est obligatoire et sera enregistrée dans le journal d'audit.",
+        "reasonPlaceholder": "Raison…",
+        "cancel": "Annuler",
+        "confirm": "Confirmer",
+        "refund": "Rembourser",
+        "revoke": "Retirer"
+      }
+    },
+    "access": {
+      "subtitle": "Gère les administrateurs et ce que chaque rôle peut lire et faire.",
+      "forbidden": "Accès réservé aux super-admins.",
+      "add": {
+        "title": "Ajouter / promouvoir un admin",
+        "emailLabel": "Email du compte",
+        "emailPlaceholder": "personne@exemple.com",
+        "roleLabel": "Rôle",
+        "submit": "Ajouter",
+        "done": "Rôle attribué.",
+        "hint": "La personne doit déjà avoir un compte PNICE Academy (s'être connectée au moins une fois).",
+        "errorNotFound": "Aucun compte avec cet email. Demande-lui de créer un compte d'abord.",
+        "errorInvalid": "Rôle invalide.",
+        "error": "Une erreur est survenue."
+      },
+      "list": {
+        "title": "Administrateurs actuels",
+        "empty": "Aucun admin pour l'instant.",
+        "you": "vous",
+        "revoke": "Retirer",
+        "revoked": "Rôle retiré.",
+        "roleChanged": "Rôle mis à jour.",
+        "cannotSelf": "Tu ne peux pas retirer ton propre rôle."
+      },
+      "matrix": {
+        "title": "Permissions par rôle",
+        "capability": "Capacité",
+        "legend": "✓ = autorisé. Appliqué côté serveur sur chaque action."
+      },
+      "caps": {
+        "overview": {
+          "read": "Voir le tableau de bord"
+        },
+        "users": {
+          "read": "Voir les utilisateurs",
+          "act": "Agir sur les utilisateurs (accès, suspension…)"
+        },
+        "transactions": {
+          "read": "Voir les transactions",
+          "refund": "Rembourser des paiements"
+        },
+        "courses": {
+          "read": "Voir les stats des cours",
+          "edit": "Éditer le contenu des cours"
+        },
+        "settings": {
+          "manage": "Gérer les paramètres (taux, etc.)"
+        },
+        "roles": {
+          "manage": "Gérer les rôles admin"
+        }
+      },
+      "forbiddenSection": "Tu n'as pas accès à cette section."
+    },
+    "tx": {
+      "subtitle": "Toutes les transactions de paiement.",
+      "empty": "Aucune transaction ne correspond aux filtres.",
+      "stale": "En attente > 24h",
+      "col": {
+        "user": "Utilisateur",
+        "product": "Produit",
+        "method": "Méthode",
+        "ref": "Référence",
+        "amount": "Montant",
+        "status": "Statut",
+        "date": "Date",
+        "actions": "Actions"
+      },
+      "method": {
+        "moncash": "MonCash",
+        "natcash": "NatCash",
+        "card": "Visa/MC",
+        "paypal": "PayPal",
+        "crypto": "Crypto"
+      },
+      "status": {
+        "succeeded": "Complété",
+        "pending": "En attente",
+        "failed": "Échoué",
+        "refunded": "Remboursé"
+      },
+      "filters": {
+        "search": "Rechercher",
+        "searchPlaceholder": "Utilisateur, email, réf…",
+        "method": "Méthode",
+        "methodAll": "Toutes méthodes",
+        "status": "Statut",
+        "statusAll": "Tous statuts",
+        "product": "Produit",
+        "productAll": "Tous produits",
+        "productCourse": "Formation",
+        "productSub": "Abonnement",
+        "from": "Du",
+        "to": "Au",
+        "failedPending": "Échouées & en attente",
+        "clear": "Effacer"
+      },
+      "fx": {
+        "title": "Taux USD → HTG",
+        "help": "Source unique du taux affiché partout dans l'admin. Tiens-le à jour.",
+        "label": "Taux de change",
+        "save": "Enregistrer",
+        "saved": "Taux mis à jour.",
+        "invalid": "Taux invalide.",
+        "error": "Erreur.",
+        "updated": "Dernière mise à jour",
+        "readonly": "Lecture seule (réservé aux admins)."
+      },
+      "fees": {
+        "title": "Frais par provider (simulation)",
+        "help": "Estimation manuelle de l'impact des frais sur la marge. Pas une réconciliation réelle.",
+        "method": "Méthode",
+        "volume": "Volume collecté",
+        "pct": "Frais %",
+        "fixed": "Fixe/tx ($)",
+        "estFees": "Frais estimés",
+        "net": "Marge nette",
+        "total": "Total"
+      },
+      "receipt": {
+        "view": "Reçu",
+        "viewSoon": "PDF à venir (Phase 2)",
+        "resend": "Renvoyer",
+        "sent": "Envoyé ✓",
+        "error": "Erreur"
+      },
+      "fxMovedNote": "Géré dans Paramètres plateforme"
+    },
+    "courses": {
+      "subtitle": "Statistiques de vente et de complétion par formation.",
+      "published": "Publié",
+      "draft": "Brouillon",
+      "col": {
+        "course": "Formation",
+        "price": "Prix",
+        "enrollments": "Inscriptions",
+        "revenue": "Revenu",
+        "completions": "Complétions",
+        "completionRate": "Taux complétion",
+        "lessons": "Leçons",
+        "status": "Statut"
+      },
+      "detail": {
+        "back": "Retour aux cours",
+        "enrolled": "Inscrits",
+        "funnel": "Abandon par leçon",
+        "completed": "Complétée",
+        "started": "Commencée non finie",
+        "neverOpened": "Jamais ouverte",
+        "drop": "Chute",
+        "avgWatch": "Temps moyen",
+        "biggestDrop": "Plus grande chute"
+      }
+    },
+    "analytics": {
+      "subtitle": "Graphiques et analytics — réagissent au sélecteur de période.",
+      "period": {
+        "today": "Aujourd'hui",
+        "7d": "7 j",
+        "30d": "30 j",
+        "90d": "90 j",
+        "year": "Cette année",
+        "from": "Du",
+        "to": "Au",
+        "apply": "Appliquer"
+      },
+      "method": {
+        "moncash": "MonCash",
+        "natcash": "NatCash",
+        "card": "Visa/MC",
+        "paypal": "PayPal",
+        "crypto": "Crypto"
+      },
+      "charts": {
+        "revenue": "Revenu dans le temps",
+        "subscription": "Abonnements",
+        "course": "À l'unité",
+        "signups": "Nouvelles inscriptions",
+        "enrollments": "Inscriptions aux cours",
+        "enrollmentsLabel": "Formations",
+        "subscriptionsLabel": "Abonnements",
+        "byMethod": "Revenu par méthode",
+        "byCourse": "Revenu par cours",
+        "enrollmentsShort": "insc.",
+        "subGrowth": "Croissance des abonnements",
+        "active": "Actifs cumulés",
+        "created": "Nouveaux",
+        "canceled": "Annulations",
+        "geo": "Répartition géographique",
+        "language": "Répartition par langue",
+        "langUsers": "Utilisateurs",
+        "langRevenue": "Revenu",
+        "funnel": "Tunnel de conversion",
+        "heatmap": "Heures de pointe de visionnage"
+      },
+      "geo": {
+        "ht": "Haïti",
+        "diaspora": "Diaspora",
+        "country": "Pays",
+        "users": "Utilisateurs",
+        "revenue": "Revenu"
+      },
+      "funnel": {
+        "mockVisitors": "Visiteurs = estimation (nécessite un outil analytics trafic)",
+        "steps": {
+          "visitors": "Visiteurs",
+          "accounts": "Comptes créés",
+          "firstPurchase": "Premier achat/abo",
+          "firstLesson": "Première leçon",
+          "completed": "Formation complétée",
+          "certificate": "Certificat obtenu"
+        }
+      },
+      "heatmap": {
+        "timezone": "Fuseau Haïti (UTC-5)",
+        "days": [
+          "Dim",
+          "Lun",
+          "Mar",
+          "Mer",
+          "Jeu",
+          "Ven",
+          "Sam"
+        ]
+      }
+    },
+    "subs": {
+      "subtitle": "Abonnements, dunning, renouvellements et rétention.",
+      "empty": "Aucun abonnement ne correspond aux filtres.",
+      "auto": "Auto",
+      "manual": "Manuel",
+      "provider": {
+        "moncash": "MonCash",
+        "natcash": "NatCash",
+        "card": "Visa/MC",
+        "paypal": "PayPal",
+        "crypto": "Crypto"
+      },
+      "status": {
+        "active": "Actif",
+        "pending_renewal": "Renouv. en attente",
+        "past_due": "En retard",
+        "canceled": "Annulé"
+      },
+      "col": {
+        "user": "Utilisateur",
+        "provider": "Provider",
+        "started": "Début",
+        "renewal": "Renouvellement",
+        "mrr": "MRR",
+        "status": "Statut"
+      },
+      "filters": {
+        "search": "Rechercher",
+        "searchPlaceholder": "Nom ou email…",
+        "status": "Statut",
+        "statusAll": "Tous statuts",
+        "provider": "Provider",
+        "providerAll": "Tous providers",
+        "from": "Du",
+        "to": "Au",
+        "renew7": "À renouveler 7j",
+        "dunning": "Dunning",
+        "clear": "Effacer"
+      },
+      "kpi": {
+        "mrr": "MRR actuel",
+        "prevMonth": "MRR mois préc.",
+        "projected": "MRR projeté",
+        "projectedHint": "Si tous les renouvellements 30j se confirment.",
+        "churn": "Churn MRR (ce mois)",
+        "churnHint": "MRR perdu sur les annulations du mois.",
+        "atRisk": "MRR à risque 30j",
+        "atRiskHint": "Abonnements manuels à renouveler (action humaine).",
+        "active": "abonnés actifs"
+      },
+      "events": {
+        "title": "Activité récente (30j)",
+        "empty": "Aucun événement récent.",
+        "type": {
+          "new": "Nouvel abonnement",
+          "renewed": "Renouvelé",
+          "canceled": "Annulé",
+          "failed": "Paiement échoué",
+          "reminder": "Relance envoyée"
+        }
+      },
+      "dunning": {
+        "title": "Paiements échoués (dunning)",
+        "note": "Stripe/PayPal : dunning auto possible côté provider. MonCash/NatCash/Crypto : dunning 100% manuel (pas de facturation récurrente native).",
+        "empty": "Aucun paiement en échec.",
+        "user": "Utilisateur",
+        "provider": "Provider",
+        "amount": "Montant",
+        "firstFailed": "Premier échec",
+        "attempts": "Relances",
+        "action": "Action",
+        "remind": "Relancer",
+        "sent": "Envoyé ✓"
+      },
+      "reasons": {
+        "title": "Raisons d'annulation",
+        "empty": "Aucune annulation sur la période.",
+        "reason": {
+          "too_expensive": "Trop cher",
+          "not_enough_time": "Pas assez de temps",
+          "finished_courses": "Formations terminées",
+          "technical_issues": "Problèmes techniques",
+          "found_alternative": "Alternative trouvée",
+          "other": "Autre"
+        }
+      },
+      "renewals": {
+        "next7": "Renouvellements — 7 jours",
+        "next30": "Renouvellements — 30 jours",
+        "manual": "Manuel (action requise)",
+        "auto": "Automatique",
+        "none": "Aucun.",
+        "chartCount": "Renouvellements",
+        "chartCumulative": "Revenu cumulé"
+      },
+      "cohorts": {
+        "title": "Rétention par cohorte",
+        "help": "Lignes = mois de souscription, colonnes = mois écoulés (M0 = 100%). Teal foncé = rétention élevée.",
+        "cohort": "Cohorte",
+        "size": "Taille"
+      }
+    },
+    "engagement": {
+      "subtitle": "Complétion, temps de visionnage, leçons et apprenants.",
+      "completion": {
+        "title": "Taux de complétion par cours",
+        "course": "Formation",
+        "enrolled": "Inscrits",
+        "started": "Démarré ≥1",
+        "completed": "Tout complété",
+        "rate": "Taux"
+      },
+      "times": {
+        "title": "Temps pour finir",
+        "note": "La médiane est plus fiable : la moyenne est faussée par ceux qui finissent très tard.",
+        "course": "Formation",
+        "completers": "Finisseurs",
+        "median": "Médiane",
+        "mean": "Moyenne",
+        "days": "j"
+      },
+      "lessons": {
+        "top": "Leçons les plus regardées",
+        "bottom": "Leçons les moins regardées",
+        "views": "vues",
+        "abandon": "abandon"
+      },
+      "dropoff": {
+        "title": "Drop-off agrégé (par position de leçon)",
+        "note": "Toutes formations confondues, normalisé par position. Un creux récurrent = problème structurel.",
+        "legend": "% encore actifs"
+      },
+      "active": {
+        "title": "Apprenants actifs",
+        "empty": "Aucun apprenant actif sur la période.",
+        "user": "Utilisateur",
+        "course": "Formation en cours",
+        "progress": "Progression",
+        "lastSeen": "Dernière leçon",
+        "lastDays": "{days} j",
+        "courseFilter": "Filtrer par cours",
+        "allCourses": "Tous les cours"
+      },
+      "stuck": {
+        "title": "Utilisateurs bloqués (payé, jamais commencé)",
+        "note": "Inscrits/abonnés actifs sans aucune leçon regardée.",
+        "empty": "Aucun utilisateur bloqué.",
+        "remind": "Envoyer un rappel",
+        "sent": "Envoyé ✓"
+      }
+    },
+    "certs": {
+      "subtitle": "Tous les certificats émis — révoquer, réémettre, émettre manuellement.",
+      "empty": "Aucun certificat.",
+      "valid": "Valide",
+      "revoked": "Révoqué",
+      "revoke": "Révoquer",
+      "reissue": "Réémettre",
+      "col": {
+        "user": "Utilisateur",
+        "course": "Formation",
+        "code": "Code",
+        "issued": "Émis le",
+        "state": "État",
+        "actions": "Actions"
+      },
+      "filters": {
+        "search": "Rechercher",
+        "searchPlaceholder": "Nom, email ou code…",
+        "course": "Formation",
+        "courseAll": "Toutes formations",
+        "state": "État",
+        "stateAll": "Tous",
+        "stateValid": "Valides",
+        "stateRevoked": "Révoqués",
+        "clear": "Effacer"
+      },
+      "issue": {
+        "title": "Émission manuelle",
+        "help": "Émet un certificat pour un apprenant ayant terminé (cas où le déclenchement auto a échoué).",
+        "email": "Email de l'apprenant",
+        "emailPlaceholder": "personne@gmail.com",
+        "course": "Formation",
+        "submit": "Émettre",
+        "done": "Émis ✓",
+        "error": "Erreur.",
+        "errorUser": "Aucun apprenant avec cet email.",
+        "errorFields": "Champs manquants.",
+        "ficheLabel": "Émettre un certificat"
+      }
+    },
+    "cms": {
+      "list": {
+        "new": "Nouveau cours",
+        "edit": "Éditer",
+        "actions": "Actions",
+        "pendingChanges": "modifs"
+      },
+      "create": {
+        "title": "Créer un cours",
+        "back": "Retour aux cours",
+        "help": "Le cours est créé en brouillon ; tu compléteras le reste dans l'éditeur.",
+        "code": "Code",
+        "titleHt": "Titre (Kreyòl)",
+        "titleFr": "Titre (Français)",
+        "price": "Prix ($)",
+        "draftNote": "Créé en brouillon — invisible sur le site public jusqu’à publication.",
+        "submit": "Créer en brouillon",
+        "titleRequired": "Un titre est requis.",
+        "error": "Erreur."
+      },
+      "editor": {
+        "back": "Retour aux cours",
+        "untitled": "(sans titre)",
+        "general": "Général & prix",
+        "code": "Code",
+        "slug": "Slug",
+        "icon": "Icône",
+        "title": "Titre",
+        "tagline": "Accroche",
+        "desc": "Description",
+        "audience": "Public",
+        "learn": "Tu sauras faire",
+        "price": "Prix",
+        "order": "Ordre",
+        "impact": "Impact prix",
+        "impactRevenue": "Revenu projeté : {count} ventes → {revenue}",
+        "impactWarn": "Ce prix dépasse {code}, la formation la plus chère — sûr ?",
+        "salesPage": "Page de vente",
+        "promise": "Promesse",
+        "problem": "Problème résolu",
+        "deliverables": "Livrables",
+        "requirements": "Prérequis",
+        "faq": "FAQ",
+        "q": "Question",
+        "a": "Réponse",
+        "addFaq": "+ Question",
+        "save": "Enregistrer",
+        "saved": "Enregistré ✓",
+        "saving": "Enregistrement…",
+        "unsaved": "Modifications non enregistrées",
+        "error": "Erreur"
+      },
+      "lessons": {
+        "title": "Leçons",
+        "empty": "Aucune leçon.",
+        "add": "Ajouter une leçon",
+        "titleHt": "Titre (ht)",
+        "titleFr": "Titre (fr)",
+        "bunnyId": "ID vidéo Bunny",
+        "validate": "Valider",
+        "bunnyOk": "✓ vidéo trouvée",
+        "bunnyBad": "✗ introuvable",
+        "bunnyMock": "non vérifié (Bunny non configuré)",
+        "preview": "Aperçu gratuit",
+        "noVideoWarn": "Aucune vidéo liée"
+      },
+      "images": {
+        "title": "Images",
+        "note": "Upload réel vers Bunny Storage + redimensionnement = à brancher. Pour l'instant, colle une URL d'image.",
+        "main": "Image principale",
+        "setMain": "Définir",
+        "secondary": "Images secondaires (diaporama)",
+        "add": "Ajouter",
+        "alt": "Texte alt",
+        "urlPlaceholder": "https://… (URL de l’image)"
+      },
+      "publish": {
+        "status": {
+          "draft": "Brouillon",
+          "published": "Publié"
+        },
+        "unpublishedChanges": "Modifs en attente",
+        "preview": "Prévisualiser",
+        "publish": "Publier",
+        "publishChanges": "Publier les modifications",
+        "published": "Publié ✓",
+        "unpublish": "Dépublier",
+        "unpublishWarn": "Le cours disparaît du catalogue public, mais les élèves déjà inscrits gardent leur accès.",
+        "confirmUnpublish": "Dépublier",
+        "delete": "Supprimer",
+        "deleteWarn": "Suppression définitive. Tape {code} pour confirmer.",
+        "confirmDelete": "Supprimer définitivement",
+        "hasEnrollments": "{count} élève(s) inscrit(s) — suppression bloquée. Dépublie plutôt.",
+        "codeMismatch": "Le code ne correspond pas.",
+        "cancel": "Annuler",
+        "error": "Erreur."
+      },
+      "preview": {
+        "back": "Retour à l'éditeur",
+        "badge": "Aperçu admin",
+        "learn": "Tu sauras faire",
+        "deliverables": "Livrables",
+        "lessons": "Programme",
+        "requirements": "Prérequis",
+        "previewLesson": "Gratuit"
+      }
+    },
+    "testimonials": {
+      "subtitle": "Preuves sociales — ne jamais publier de faux témoignages.",
+      "new": "Nouveau",
+      "editTitle": "Éditer le témoignage",
+      "filterStatus": "Tous statuts",
+      "filterCourse": "Toutes formations",
+      "neverPublish": "Jamais publier",
+      "publish": "Publier",
+      "unpublish": "Dépublier",
+      "location": "Localisation",
+      "noCourse": "Aucune formation",
+      "quoteHt": "Citation (Kreyòl)",
+      "quoteFr": "Citation (Français)",
+      "photoUrl": "URL photo (optionnel)",
+      "bothLangsNote": "Les deux langues doivent être remplies pour publier.",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "status": {
+        "placeholder": "Exemple",
+        "real": "Réel",
+        "published": "Publié"
+      },
+      "col": {
+        "name": "Nom",
+        "quote": "Citation",
+        "status": "Statut",
+        "actions": "Actions"
+      },
+      "request": {
+        "button": "Demander un témoignage",
+        "copyLink": "Copier le lien"
+      }
+    },
+    "settings": {
+      "subtitle": "Compteur de places, textes du site, pages légales.",
+      "places": {
+        "title": "Compteur de places",
+        "note": "Outil marketing — garde une valeur plausible et cohérente avec la réalité.",
+        "total": "Total / cohorte",
+        "taken": "Déjà prises",
+        "enabled": "Affiché sur l'accueil",
+        "preview": "{left} / {total} places restantes",
+        "save": "Enregistrer",
+        "saved": "Enregistré ✓"
+      },
+      "texts": {
+        "title": "Textes du site (ht/fr)",
+        "note": "Édite les textes ; ils priment sur les fichiers JSON (fallback). Créer/supprimer une clé reste une opération de code.",
+        "overridden": "modifié",
+        "save": "Enregistrer",
+        "reset": "Réinitialiser"
+      },
+      "legal": {
+        "title": "Pages légales",
+        "page": {
+          "cgu": "CGU",
+          "confidentialite": "Confidentialité",
+          "remboursement": "Remboursement"
+        },
+        "view": "Voir la page",
+        "markdownNote": "Markdown simple accepté.",
+        "save": "Enregistrer la version",
+        "saved": "Enregistré ✓",
+        "history": "Versions précédentes",
+        "emptyPublic": "Cette page n'a pas encore de contenu."
+      }
+    },
+    "marketing": {
+      "subtitle": "Annonces par email à un segment d'utilisateurs.",
+      "compose": "Composer une annonce",
+      "segment": "Destinataires",
+      "subject": "Sujet",
+      "body": "Corps",
+      "preview": "Aperçu",
+      "send": "Envoyer",
+      "sentOk": "Envoyé à {count} utilisateurs ✓",
+      "confirmTitle": "Confirmer l'envoi",
+      "confirmBody": "Tu vas envoyer cet email à {count} utilisateurs — confirmer ?",
+      "cancel": "Annuler",
+      "confirmSend": "Envoyer",
+      "seg": {
+        "all": "Tous",
+        "active_subscriber": "Abonnés actifs",
+        "one_off": "À l'unité",
+        "free": "Gratuits"
+      },
+      "tabs": {
+        "announcements": "Annonces",
+        "promos": "Codes promo",
+        "attribution": "Attribution",
+        "carts": "Paniers",
+        "referrals": "Parrainage"
+      },
+      "promos": {
+        "subtitle": "Crée et suis les codes de réduction.",
+        "createCta": "Nouveau code",
+        "backToList": "Retour à la liste",
+        "empty": "Aucun code promo.",
+        "col": {
+          "code": "Code",
+          "discount": "Réduction",
+          "applies": "S'applique à",
+          "usage": "Utilisations",
+          "expiry": "Expiration",
+          "status": "Statut",
+          "actions": ""
+        },
+        "status": {
+          "active": "Actif",
+          "scheduled": "Programmé",
+          "expired": "Expiré",
+          "depleted": "Épuisé",
+          "disabled": "Désactivé"
+        },
+        "type": {
+          "percent": "Pourcentage",
+          "fixed": "Montant fixe"
+        },
+        "applies": {
+          "all": "Tout",
+          "subscription": "Abonnement",
+          "course": "Formation"
+        },
+        "filters": {
+          "search": "Recherche",
+          "searchPlaceholder": "Code…",
+          "status": "Statut",
+          "statusAll": "Tous les statuts",
+          "type": "Type",
+          "typeAll": "Tous les types",
+          "sort": "Trier",
+          "sortExpiry": "Expiration",
+          "sortUsage": "Taux d'utilisation",
+          "dir": "Sens",
+          "clear": "Effacer"
+        },
+        "actions": {
+          "disable": "Désactiver",
+          "enable": "Activer",
+          "delete": "Supprimer",
+          "confirm": "Confirmer",
+          "cancel": "Annuler",
+          "disableTitle": "Désactiver le code",
+          "enableTitle": "Activer le code",
+          "deleteTitle": "Supprimer le code",
+          "disableBody": "« {code} » ne pourra plus être utilisé, mais l’historique est conservé.",
+          "enableBody": "« {code} » pourra de nouveau être utilisé.",
+          "deleteBody": "Supprimer définitivement « {code} » ? Possible uniquement car il n’a jamais été utilisé."
+        },
+        "errors": {
+          "has_redemptions": "Impossible : ce code a déjà été utilisé. Le désactiver à la place pour garder l’historique."
+        },
+        "create": {
+          "title": "Créer un code promo",
+          "code": "Code",
+          "generate": "Générer",
+          "taken": "Ce code existe déjà.",
+          "discountType": "Type de réduction",
+          "valuePercent": "Pourcentage (1–100)",
+          "valueFixed": "Montant en $",
+          "appliesTo": "S'applique à",
+          "course": "Formation",
+          "maxUses": "Utilisations max",
+          "unlimited": "Illimité",
+          "expiresAt": "Expire le",
+          "activation": "Activation",
+          "activeNow": "Actif dès la création",
+          "scheduled": "Programmé",
+          "submit": "Créer le code"
+        },
+        "detail": {
+          "usage": "Utilisations",
+          "generated": "Revenu généré",
+          "collected": "effectivement encaissé",
+          "undiscounted": "Sans réduction",
+          "atFullPrice": "au prix plein",
+          "discountGiven": "Réduction accordée",
+          "indicativeNote": "La comparaison « revenu généré vs sans réduction » est indicative : elle suppose que chaque acheteur aurait payé le prix plein, ce qui n’est pas rigoureux — un code peut convertir des gens qui n’auraient pas acheté.",
+          "expires": "Expire",
+          "starts": "Démarre",
+          "created": "Créé",
+          "redemptions": "Utilisations",
+          "noRedemptions": "Aucune utilisation pour l’instant.",
+          "user": "Utilisateur",
+          "date": "Date",
+          "payment": "Paiement",
+          "gross": "Prix",
+          "discount": "Réduction",
+          "net": "Payé",
+          "simulated": "Simulé"
+        },
+        "sim": {
+          "title": "Simuler une utilisation (mock)",
+          "note": "Tient lieu de la finalisation d’un paiement réel tant que les fournisseurs ne sont pas branchés. Enregistre une utilisation pour vérifier le flux complet.",
+          "run": "Simuler",
+          "done": "Utilisation enregistrée ✓"
+        }
+      },
+      "attribution": {
+        "subtitle": "Inscriptions et revenus par source d'acquisition (UTM).",
+        "from": "Du",
+        "to": "Au",
+        "clear": "Effacer",
+        "col": {
+          "source": "Source",
+          "medium": "Support",
+          "campaign": "Campagne",
+          "signups": "Inscrits",
+          "converted": "Convertis",
+          "rate": "Taux",
+          "revenue": "Revenu"
+        },
+        "empty": "Aucune donnée d’attribution sur cette période.",
+        "total": "Total",
+        "captureNote": "Les UTM sont capturés une seule fois à l’inscription (premier contact) et ne sont jamais écrasés si l’utilisateur revient via une autre source.",
+        "mockNote": "Données simulées. En production, les UTM proviennent des paramètres d’URL à l’inscription."
+      },
+      "carts": {
+        "subtitle": "Paniers commencés mais non finalisés sous 2 h.",
+        "kpi": {
+          "abandoned": "Abandonnés",
+          "reminded": "Relancés",
+          "converted": "Convertis après relance",
+          "rate": "Taux de conversion",
+          "rateNote": "convertis / relancés"
+        },
+        "open": {
+          "title": "Sessions en cours",
+          "note": "Simule le cron de 2 h : marque un panier comme abandonné sans attendre.",
+          "empty": "Aucune session en cours."
+        },
+        "col": {
+          "user": "Utilisateur",
+          "product": "Produit",
+          "amount": "Montant",
+          "abandonedAt": "Abandonné le",
+          "status": "Relance",
+          "action": ""
+        },
+        "reminderStatus": {
+          "never": "Jamais relancé",
+          "reminded": "Relancé",
+          "converted": "Converti"
+        },
+        "guest": "Visiteur",
+        "noEmail": "Pas d’email",
+        "remind": "Relancer",
+        "reminded": "Relancé",
+        "markAbandoned": "Marquer abandonné",
+        "empty": "Aucun panier abandonné.",
+        "mockNote": "Données simulées. En production, le marquage « abandonné » et l’email de relance (un seul, via Resend) sont automatiques."
+      },
+      "referrals": {
+        "subtitle": "Parrains, filleuls et crédits gagnés.",
+        "config": {
+          "title": "Crédit de parrainage",
+          "note": "Crédit accordé au parrain pour chaque filleul confirmé (premier achat). Modifiable sans redéploiement ; n’affecte pas les crédits déjà accordés.",
+          "amount": "Montant",
+          "perFilleul": "par filleul confirmé",
+          "save": "Enregistrer",
+          "saved": "Enregistré ✓"
+        },
+        "sortBy": "Trier par",
+        "sort": {
+          "converted": "Filleuls convertis",
+          "credits": "Crédits gagnés"
+        },
+        "col": {
+          "referrer": "Parrain",
+          "code": "Code",
+          "invited": "Invités",
+          "converted": "Convertis",
+          "credits": "Crédits",
+          "detail": ""
+        },
+        "empty": "Aucun parrain pour l’instant.",
+        "view": "Voir",
+        "detail": {
+          "title": "Filleuls de {name}",
+          "summary": "{invited} invités · {converted} convertis",
+          "notSignedUp": "Invité — pas encore inscrit"
+        },
+        "filleulStatus": {
+          "confirmed": "Confirmé",
+          "pending": "En attente"
+        }
+      },
+      "credit": {
+        "add": "Ajouter un crédit",
+        "title": "Crédit manuel",
+        "hint": "Utile pour corriger un crédit de parrainage non attribué automatiquement. Audité.",
+        "amount": "Montant ($)",
+        "negativeHint": "Valeur négative = retirer du crédit.",
+        "note": "Note",
+        "notePlaceholder": "Raison (ex. correction parrainage)",
+        "cancel": "Annuler",
+        "confirm": "Ajouter",
+        "acquisition": "Acquisition",
+        "acquisitionDirect": "Direct / inconnu"
+      }
+    },
+    "admins": {
+      "invite": {
+        "title": "Inviter un admin",
+        "help": "Le rôle n'est attribué qu'après acceptation de l'invitation et création du compte.",
+        "email": "email@exemple.com",
+        "submit": "Inviter",
+        "sent": "Invitation envoyée ✓"
+      },
+      "scope": {
+        "super-admin": "tout + gestion des rôles",
+        "admin": "tout sauf rôles",
+        "support": "lecture seule",
+        "editeur-contenu": "contenu des cours"
+      },
+      "col": {
+        "admin": "Admin",
+        "role": "Rôle",
+        "twoFA": "2FA",
+        "lastSeen": "Dernière connexion",
+        "actions": "Actions"
+      },
+      "you": "vous",
+      "suspended": "suspendu",
+      "noTwoFA": "sans 2FA",
+      "reactivate": "Réactiver",
+      "suspend": "Suspendre",
+      "confirm": {
+        "title": "Confirmer",
+        "role": "Tu vas passer {name} de {from} à {to} — confirmer ?",
+        "suspend": "Suspendre {name} de l’accès admin — confirmer ?",
+        "reactivate": "Réactiver l’accès admin de {name} ?",
+        "cancel": "Annuler",
+        "confirm": "Confirmer",
+        "done": "Fait."
+      },
+      "err": {
+        "self": "Tu ne peux pas modifier ton propre accès.",
+        "lastSuper": "Impossible — garde au moins un super-admin actif.",
+        "notFound": "Compte introuvable.",
+        "generic": "Une erreur est survenue."
+      }
+    },
+    "audit": {
+      "subtitle": "Journal de toutes les actions admin.",
+      "readonly": "Lecture seule — le journal ne peut pas être modifié.",
+      "empty": "Aucune entrée.",
+      "allAdmins": "Tous les admins",
+      "allActions": "Toutes les actions",
+      "from": "Du",
+      "to": "Au",
+      "clear": "Effacer",
+      "export": "Export CSV",
+      "col": {
+        "when": "Quand",
+        "admin": "Admin",
+        "action": "Action",
+        "target": "Cible",
+        "detail": "Détail"
+      },
+      "action": {
+        "grant_course": "Accès cours accordé",
+        "revoke_course": "Accès cours retiré",
+        "grant_subscription": "Abonnement offert",
+        "suspend_user": "Utilisateur suspendu",
+        "ban_user": "Utilisateur banni",
+        "reactivate_user": "Utilisateur réactivé",
+        "refund_payment": "Paiement remboursé",
+        "resend_verification": "Vérif renvoyée",
+        "resend_receipt": "Reçu renvoyé",
+        "set_fx_rate": "Taux FX modifié",
+        "dunning_reminder": "Relance dunning",
+        "engagement_reminder": "Rappel engagement",
+        "revoke_certificate": "Certificat révoqué",
+        "reissue_certificate": "Certificat réémis",
+        "issue_certificate": "Certificat émis",
+        "review_request": "Témoignage demandé",
+        "announcement": "Annonce envoyée",
+        "invite_admin": "Admin invité",
+        "change_admin_role": "Rôle admin modifié",
+        "suspend_admin": "Admin suspendu",
+        "reactivate_admin": "Admin réactivé",
+        "toggle_provider": "Provider modifié",
+        "set_sub_price": "Prix abonnement modifié",
+        "toggle_maintenance": "Mode maintenance",
+        "impersonate": "Connexion en tant que",
+        "create_promo": "Code promo créé",
+        "disable_promo": "Code promo désactivé",
+        "enable_promo": "Code promo activé",
+        "delete_promo": "Code promo supprimé",
+        "redeem_promo": "Code promo utilisé",
+        "cart_reminder": "Relance de panier",
+        "set_referral_credit": "Crédit de parrainage modifié",
+        "add_credit": "Crédit ajouté"
+      }
+    },
+    "platform": {
+      "subtitle": "Providers de paiement, prix, taux de change, mode maintenance.",
+      "fxStale": "Le taux n'a pas été mis à jour depuis plus de 7 jours.",
+      "fxLastBy": "Dernière modif : {name}",
+      "fxNeverEdited": "Jamais modifié depuis l’admin",
+      "providers": {
+        "title": "Providers de paiement",
+        "note": "Désactiver un provider le retire du checkout public immédiatement.",
+        "name": {
+          "moncash": "MonCash",
+          "natcash": "NatCash",
+          "card": "Visa / Mastercard",
+          "paypal": "PayPal",
+          "crypto": "Crypto"
+        },
+        "on": "Actif",
+        "off": "Inactif",
+        "lastWarn": "Impossible de désactiver le dernier provider actif.",
+        "error": "Erreur."
+      },
+      "subprice": {
+        "title": "Prix de l'abonnement",
+        "warn": "Modifier le prix ne change pas les abonnements existants — seulement les nouvelles souscriptions.",
+        "price": "Prix mensuel",
+        "month": "mois",
+        "save": "Enregistrer",
+        "saved": "Enregistré ✓"
+      },
+      "maintenance": {
+        "title": "Mode maintenance",
+        "note": "Quand activé, le site public est bloqué (sauf /admin). Les pages dynamiques sont affectées immédiatement.",
+        "messageHt": "Message (Kreyòl)",
+        "messageFr": "Message (Français)",
+        "enable": "Activer la maintenance",
+        "disable": "Désactiver",
+        "saveMessage": "Enregistrer le message",
+        "activeNow": "⚠ Maintenance active",
+        "saved": "Enregistré ✓",
+        "adminBanner": "MODE MAINTENANCE ACTIF — le site public est bloqué",
+        "publicTitle": "Site en maintenance",
+        "publicDefault": "Le site est en maintenance — reviens dans quelques minutes."
+      }
     }
+  },
+  "verify": {
+    "valid": {
+      "title": "Certificat valide",
+      "body": "Ce certificat a été délivré par PNICE Academy et est authentique."
+    },
+    "revoked": {
+      "title": "Certificat révoqué",
+      "body": "Ce certificat a été révoqué et n'est plus valide."
+    },
+    "notfound": {
+      "title": "Certificat introuvable",
+      "body": "Aucun certificat ne correspond à ce code de vérification."
+    },
+    "name": "Nom",
+    "course": "Formation",
+    "issued": "Délivré le",
+    "code": "Code de vérification"
+  },
+  "review": {
+    "title": "Merci {name} ! Partage ton expérience",
+    "subtitle": "Ton témoignage aidera d'autres personnes à se lancer.",
+    "placeholder": "Écris ton témoignage ici…",
+    "photo": "URL d'une photo (optionnel)",
+    "consent": "J'accepte que ce témoignage soit publié sur le site PNICE Academy.",
+    "submit": "Envoyer mon témoignage",
+    "error": "Une erreur est survenue.",
+    "invalid": "Ce lien n'est plus valide.",
+    "thanksTitle": "Merci !",
+    "thanksBody": "Ton témoignage a bien été reçu. Il sera vérifié avant publication.",
+    "invalidTitle": "Lien invalide ou expiré",
+    "invalidBody": "Ce lien de témoignage n'est plus valable. Demande-en un nouveau au support."
   }
 }

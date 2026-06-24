@@ -179,7 +179,22 @@
     "pay": "Peye",
     "secure": "Peman ou an sekirize",
     "secureSub": "PayPal · Visa/Mastercard · MonCash · NatCash · Kripto",
-    "demoNote": "Sa se yon demo UI — pa gen okenn vrè peman ki fèt nan etap sa a."
+    "demoNote": "Sa se yon demo UI — pa gen okenn vrè peman ki fèt nan etap sa a.",
+    "promo": {
+      "label": "Kòd pwomo",
+      "placeholder": "Antre yon kòd",
+      "apply": "Aplike",
+      "remove": "Retire",
+      "newTotal": "Nouvo total :",
+      "error": {
+        "not_found": "Kòd la pa jwenn.",
+        "inactive": "Kòd sa a dezaktive.",
+        "expired": "Kòd sa a ekspire.",
+        "depleted": "Kòd sa a rive nan limit li.",
+        "scheduled": "Kòd sa a poko aktif.",
+        "wrong_product": "Kòd sa a pa aplike sou atik sa a."
+      }
+    }
   },
   "dashboard": {
     "title": "Tablo debò",
@@ -503,14 +518,19 @@
       "overview": "Apèsi jeneral",
       "users": "Itilizatè",
       "courses": "Fòmasyon",
-      "subscriptions": "Abonman",
+      "subscriptions": "Abònman",
       "payments": "Peman",
       "progress": "Pwogresyon",
       "testimonials": "Temwayaj",
       "marketing": "Maketing",
       "support": "Sipò",
       "roles": "Wòl",
-      "settings": "Paramèt"
+      "settings": "Paramèt",
+      "analytics": "Analiz",
+      "engagement": "Angajman",
+      "certificates": "Sètifika",
+      "audit": "Odit",
+      "platform": "Platefòm"
     },
     "roles": {
       "super-admin": "Sipè-admin",
@@ -558,6 +578,1139 @@
         "mock": "Tout chif sa yo se done egzanp (mock) pou tès — y ap ranplase ak vrè done pita.",
         "visitors": "Estimasyon: ~{visitors} vizitè/mwa. Mezi reyèl mande yon zouti analytics trafik (pa baz done a sèlman)."
       }
+    },
+    "users": {
+      "subtitle": "Jere tout itilizatè yo, segman ak aksyon.",
+      "empty": "Pa gen itilizatè ki koresponn ak filt yo.",
+      "resultCount": "{count} itilizatè",
+      "resultRange": "{from}–{to} sou {total}",
+      "pagination": "Paj",
+      "coursesShort": "fòmasyon",
+      "col": {
+        "user": "Itilizatè",
+        "contact": "Kontak",
+        "location": "Kote",
+        "joined": "Enskripsyon",
+        "status": "Estati",
+        "spent": "Total depanse",
+        "lastActive": "Dènye aktivite",
+        "lastPayment": "Dènye peman"
+      },
+      "country": {
+        "HT": "Ayiti",
+        "diaspora": "Dyaspora"
+      },
+      "types": {
+        "all": "Tout",
+        "active_subscriber": "Abòne aktif",
+        "one_off": "Achte a linite",
+        "free": "Gratis"
+      },
+      "status": {
+        "active": "Aktif",
+        "suspended": "Sispann",
+        "banned": "Bani"
+      },
+      "sub": {
+        "active": "Abònman aktif",
+        "canceled": "Anile",
+        "past_due": "An reta"
+      },
+      "filters": {
+        "search": "Chèche",
+        "searchPlaceholder": "Non, imel oswa telefòn…",
+        "country": "Peyi",
+        "countryAll": "Tout peyi",
+        "countryHt": "Ayiti",
+        "countryDiaspora": "Dyaspora",
+        "language": "Lang",
+        "langAll": "Tout lang",
+        "courses": "Fòmasyon",
+        "coursesAll": "Nenpòt kantite",
+        "courses0": "0 (pa janm peye)",
+        "from": "Depi",
+        "to": "Jiska",
+        "clear": "Efase",
+        "quickViews": "Vi rapid:",
+        "inactive": "Inaktif",
+        "topSpenders": "Pi gwo depansè",
+        "exportCsv": "Ekspòte CSV"
+      },
+      "detail": {
+        "back": "Tounen nan lis la",
+        "profile": "Pwofil",
+        "certName": "Non sou sètifika",
+        "credits": "Kredi",
+        "totalSpent": "Total depanse",
+        "courses": "Fòmasyon & aksè",
+        "noCourses": "Pa gen fòmasyon.",
+        "source": {
+          "purchase": "Achte",
+          "subscription": "Abònman",
+          "granted": "Bay pa admin"
+        },
+        "access": {
+          "active": "Aktif",
+          "expired": "Ekspire"
+        },
+        "payments": "Peman",
+        "noPayments": "Pa gen peman.",
+        "date": "Dat",
+        "product": "Pwodwi",
+        "method": "Metòd",
+        "amount": "Montan",
+        "status": "Estati",
+        "subscription": "Abònman",
+        "pay": {
+          "succeeded": "Reyisi",
+          "failed": "Echwe",
+          "refunded": "Ranbouse",
+          "pending": "Ap tann"
+        },
+        "certificates": "Sètifika",
+        "noCertificates": "Pa gen sètifika.",
+        "verifCode": "Kòd",
+        "pdfSoon": "PDF ap vini (Faz 2)",
+        "activity": "Jounal aktivite",
+        "audit": "Jounal aksyon admin",
+        "noAudit": "Pa gen aksyon admin.",
+        "by": "pa"
+      },
+      "audit": {
+        "grant_course": "Bay aksè fòmasyon",
+        "revoke_course": "Retire aksè fòmasyon",
+        "grant_subscription": "Ofri abònman",
+        "suspend_user": "Sispann kont",
+        "ban_user": "Bani kont",
+        "reactivate_user": "Reaktive kont",
+        "refund_payment": "Ranbouse peman",
+        "resend_verification": "Voye imèl verifikasyon",
+        "impersonate": "Konekte kòm itilizatè",
+        "create_promo": "Kòd pwomo kreye",
+        "disable_promo": "Kòd pwomo dezaktive",
+        "enable_promo": "Kòd pwomo aktive",
+        "delete_promo": "Kòd pwomo efase",
+        "redeem_promo": "Kòd pwomo itilize",
+        "cart_reminder": "Relans panye",
+        "set_referral_credit": "Kredi parennaj modifye",
+        "add_credit": "Kredi ajoute"
+      },
+      "actions": {
+        "title": "Aksyon manyèl",
+        "grantCourse": "Bay yon fòmasyon",
+        "grantSub": "Ofri abònman",
+        "suspend": "Sispann",
+        "ban": "Bani",
+        "reactivate": "Reaktive",
+        "resendVerif": "Voye imèl verifikasyon",
+        "impersonate": "Konekte kòm li",
+        "done": "Aksyon fèt.",
+        "error": "Yon erè rive.",
+        "verifSent": "Imèl verifikasyon nan wout.",
+        "impersonateMock": "Disponib ak Clerk (actor tokens) — pa egzekite sou done mock.",
+        "confirmGrant": "Bay aksè",
+        "reasonHelp": "Rezon an obligatwa epi l ap antre nan jounal odit la.",
+        "reasonPlaceholder": "Rezon…",
+        "cancel": "Anile",
+        "confirm": "Konfime",
+        "refund": "Ranbouse",
+        "revoke": "Retire"
+      }
+    },
+    "access": {
+      "subtitle": "Jere administratè yo ak sa chak wòl ka li epi fè.",
+      "forbidden": "Aksè rezève pou super-admin.",
+      "add": {
+        "title": "Ajoute / pwomouvwa yon admin",
+        "emailLabel": "Imel kont lan",
+        "emailPlaceholder": "moun@egzanp.com",
+        "roleLabel": "Wòl",
+        "submit": "Ajoute",
+        "done": "Wòl bay.",
+        "hint": "Moun nan dwe gen yon kont PNICE Academy deja (li konekte omwen yon fwa).",
+        "errorNotFound": "Pa gen kont ak imel sa a. Mande l kreye yon kont anvan.",
+        "errorInvalid": "Wòl pa valab.",
+        "error": "Yon erè rive."
+      },
+      "list": {
+        "title": "Administratè aktyèl",
+        "empty": "Pa gen admin pou kounye a.",
+        "you": "ou menm",
+        "revoke": "Retire",
+        "revoked": "Wòl retire.",
+        "roleChanged": "Wòl mete ajou.",
+        "cannotSelf": "Ou pa ka retire pwòp wòl ou."
+      },
+      "matrix": {
+        "title": "Pèmisyon pa wòl",
+        "capability": "Kapasite",
+        "legend": "✓ = otorize. Aplike sou sèvè a pou chak aksyon."
+      },
+      "caps": {
+        "overview": {
+          "read": "Wè tablo debò a"
+        },
+        "users": {
+          "read": "Wè itilizatè yo",
+          "act": "Aji sou itilizatè (aksè, sispansyon…)"
+        },
+        "transactions": {
+          "read": "Wè tranzaksyon yo",
+          "refund": "Ranbouse peman"
+        },
+        "courses": {
+          "read": "Wè estatistik fòmasyon",
+          "edit": "Modifye kontni fòmasyon"
+        },
+        "settings": {
+          "manage": "Jere paramèt (to, elatriye)"
+        },
+        "roles": {
+          "manage": "Jere wòl admin"
+        }
+      },
+      "forbiddenSection": "Ou pa gen aksè nan seksyon sa a."
+    },
+    "tx": {
+      "subtitle": "Tout tranzaksyon peman yo.",
+      "empty": "Pa gen tranzaksyon ki koresponn ak filt yo.",
+      "stale": "Ap tann > 24h",
+      "col": {
+        "user": "Itilizatè",
+        "product": "Pwodwi",
+        "method": "Metòd",
+        "ref": "Referans",
+        "amount": "Montan",
+        "status": "Estati",
+        "date": "Dat",
+        "actions": "Aksyon"
+      },
+      "method": {
+        "moncash": "MonCash",
+        "natcash": "NatCash",
+        "card": "Visa/MC",
+        "paypal": "PayPal",
+        "crypto": "Crypto"
+      },
+      "status": {
+        "succeeded": "Konplete",
+        "pending": "Ap tann",
+        "failed": "Echwe",
+        "refunded": "Ranbouse"
+      },
+      "filters": {
+        "search": "Chèche",
+        "searchPlaceholder": "Itilizatè, imel, ref…",
+        "method": "Metòd",
+        "methodAll": "Tout metòd",
+        "status": "Estati",
+        "statusAll": "Tout estati",
+        "product": "Pwodwi",
+        "productAll": "Tout pwodwi",
+        "productCourse": "Fòmasyon",
+        "productSub": "Abònman",
+        "from": "Depi",
+        "to": "Jiska",
+        "failedPending": "Echwe & ap tann",
+        "clear": "Efase"
+      },
+      "fx": {
+        "title": "To USD → HTG",
+        "help": "Sèl sous to ki parèt toupatou nan admin. Kenbe l ajou.",
+        "label": "To chanj",
+        "save": "Anrejistre",
+        "saved": "To mete ajou.",
+        "invalid": "To pa valab.",
+        "error": "Erè.",
+        "updated": "Dènye mizajou",
+        "readonly": "Lekti sèlman (rezève pou admin)."
+      },
+      "fees": {
+        "title": "Frè pa pwovaydè (similasyon)",
+        "help": "Estimasyon manyèl enpak frè yo sou maj la. Se pa yon rekonsilyasyon reyèl.",
+        "method": "Metòd",
+        "volume": "Volim ranmase",
+        "pct": "Frè %",
+        "fixed": "Fiks/tx ($)",
+        "estFees": "Frè estime",
+        "net": "Maj nèt",
+        "total": "Total"
+      },
+      "receipt": {
+        "view": "Resi",
+        "viewSoon": "PDF ap vini (Faz 2)",
+        "resend": "Voye ankò",
+        "sent": "Voye ✓",
+        "error": "Erè"
+      },
+      "fxMovedNote": "Jere nan Paramèt platefòm"
+    },
+    "courses": {
+      "subtitle": "Estatistik vant ak konpletay pa fòmasyon.",
+      "published": "Pibliye",
+      "draft": "Bouyon",
+      "col": {
+        "course": "Fòmasyon",
+        "price": "Pri",
+        "enrollments": "Enskripsyon",
+        "revenue": "Revni",
+        "completions": "Konpletay",
+        "completionRate": "To konpletay",
+        "lessons": "Leson",
+        "status": "Estati"
+      },
+      "detail": {
+        "back": "Tounen nan fòmasyon",
+        "enrolled": "Enskri",
+        "funnel": "Abandon pa leson",
+        "completed": "Konplete",
+        "started": "Kòmanse pa fini",
+        "neverOpened": "Pa janm louvri",
+        "drop": "Chit",
+        "avgWatch": "Tan mwayen",
+        "biggestDrop": "Pi gwo chit"
+      }
+    },
+    "analytics": {
+      "subtitle": "Grafik ak analiz — yo reyaji ak seleksyon peryòd la.",
+      "period": {
+        "today": "Jodi a",
+        "7d": "7 j",
+        "30d": "30 j",
+        "90d": "90 j",
+        "year": "Ane sa a",
+        "from": "Depi",
+        "to": "Jiska",
+        "apply": "Aplike"
+      },
+      "method": {
+        "moncash": "MonCash",
+        "natcash": "NatCash",
+        "card": "Visa/MC",
+        "paypal": "PayPal",
+        "crypto": "Crypto"
+      },
+      "charts": {
+        "revenue": "Revni nan tan",
+        "subscription": "Abònman",
+        "course": "A linite",
+        "signups": "Nouvo enskripsyon",
+        "enrollments": "Enskripsyon nan kou",
+        "enrollmentsLabel": "Fòmasyon",
+        "subscriptionsLabel": "Abònman",
+        "byMethod": "Revni pa metòd",
+        "byCourse": "Revni pa kou",
+        "enrollmentsShort": "ensk.",
+        "subGrowth": "Kwasans abònman",
+        "active": "Aktif kimile",
+        "created": "Nouvo",
+        "canceled": "Anilasyon",
+        "geo": "Repatisyon jeyografik",
+        "language": "Repatisyon pa lang",
+        "langUsers": "Itilizatè",
+        "langRevenue": "Revni",
+        "funnel": "Tinèl konvèsyon",
+        "heatmap": "Lè pik vizyònman"
+      },
+      "geo": {
+        "ht": "Ayiti",
+        "diaspora": "Dyaspora",
+        "country": "Peyi",
+        "users": "Itilizatè",
+        "revenue": "Revni"
+      },
+      "funnel": {
+        "mockVisitors": "Vizitè = estimasyon (bezwen yon zouti analytics trafik)",
+        "steps": {
+          "visitors": "Vizitè",
+          "accounts": "Kont kreye",
+          "firstPurchase": "Premye acha/abo",
+          "firstLesson": "Premye leson",
+          "completed": "Fòmasyon konplete",
+          "certificate": "Sètifika jwenn"
+        }
+      },
+      "heatmap": {
+        "timezone": "Fizo Ayiti (UTC-5)",
+        "days": [
+          "Dim",
+          "Len",
+          "Mad",
+          "Mèk",
+          "Jed",
+          "Van",
+          "Sam"
+        ]
+      }
+    },
+    "subs": {
+      "subtitle": "Abònman, dunning, renouvèlman ak retansyon.",
+      "empty": "Pa gen abònman ki koresponn ak filt yo.",
+      "auto": "Oto",
+      "manual": "Manyèl",
+      "provider": {
+        "moncash": "MonCash",
+        "natcash": "NatCash",
+        "card": "Visa/MC",
+        "paypal": "PayPal",
+        "crypto": "Crypto"
+      },
+      "status": {
+        "active": "Aktif",
+        "pending_renewal": "Renouv. ap tann",
+        "past_due": "An reta",
+        "canceled": "Anile"
+      },
+      "col": {
+        "user": "Itilizatè",
+        "provider": "Provider",
+        "started": "Kòmansman",
+        "renewal": "Renouvèlman",
+        "mrr": "MRR",
+        "status": "Estati"
+      },
+      "filters": {
+        "search": "Chèche",
+        "searchPlaceholder": "Non oswa imel…",
+        "status": "Estati",
+        "statusAll": "Tout estati",
+        "provider": "Provider",
+        "providerAll": "Tout provider",
+        "from": "Depi",
+        "to": "Jiska",
+        "renew7": "Pou renouvle 7j",
+        "dunning": "Dunning",
+        "clear": "Efase"
+      },
+      "kpi": {
+        "mrr": "MRR aktyèl",
+        "prevMonth": "MRR mwa anvan",
+        "projected": "MRR pwojte",
+        "projectedHint": "Si tout renouvèlman 30j konfime.",
+        "churn": "Churn MRR (mwa sa a)",
+        "churnHint": "MRR pèdi sou anilasyon mwa a.",
+        "atRisk": "MRR an risk 30j",
+        "atRiskHint": "Abònman manyèl pou renouvle (aksyon imen).",
+        "active": "abòne aktif"
+      },
+      "events": {
+        "title": "Aktivite resan (30j)",
+        "empty": "Pa gen evènman resan.",
+        "type": {
+          "new": "Nouvo abònman",
+          "renewed": "Renouvle",
+          "canceled": "Anile",
+          "failed": "Peman echwe",
+          "reminder": "Relans voye"
+        }
+      },
+      "dunning": {
+        "title": "Peman echwe (dunning)",
+        "note": "Stripe/PayPal : dunning oto posib bò provider. MonCash/NatCash/Crypto : dunning 100% manyèl (pa gen faktirasyon rekiran natif).",
+        "empty": "Pa gen peman ki echwe.",
+        "user": "Itilizatè",
+        "provider": "Provider",
+        "amount": "Montan",
+        "firstFailed": "Premye echèk",
+        "attempts": "Relans",
+        "action": "Aksyon",
+        "remind": "Relanse",
+        "sent": "Voye ✓"
+      },
+      "reasons": {
+        "title": "Rezon anilasyon",
+        "empty": "Pa gen anilasyon nan peryòd la.",
+        "reason": {
+          "too_expensive": "Twò chè",
+          "not_enough_time": "Pa gen ase tan",
+          "finished_courses": "Fòmasyon fini",
+          "technical_issues": "Pwoblèm teknik",
+          "found_alternative": "Jwenn lòt opsyon",
+          "other": "Lòt"
+        }
+      },
+      "renewals": {
+        "next7": "Renouvèlman — 7 jou",
+        "next30": "Renouvèlman — 30 jou",
+        "manual": "Manyèl (aksyon nesesè)",
+        "auto": "Otomatik",
+        "none": "Okenn.",
+        "chartCount": "Renouvèlman",
+        "chartCumulative": "Revni kimile"
+      },
+      "cohorts": {
+        "title": "Retansyon pa kohòt",
+        "help": "Liy = mwa abònman, kolòn = mwa pase (M0 = 100%). Teal fonse = retansyon wo.",
+        "cohort": "Kohòt",
+        "size": "Gwosè"
+      }
+    },
+    "engagement": {
+      "subtitle": "Konpletay, tan vizyònman, leson ak aprenan.",
+      "completion": {
+        "title": "To konpletay pa kou",
+        "course": "Fòmasyon",
+        "enrolled": "Enskri",
+        "started": "Kòmanse ≥1",
+        "completed": "Tout konplete",
+        "rate": "To"
+      },
+      "times": {
+        "title": "Tan pou fini",
+        "note": "Medyàn nan pi fyab : mwayèn nan fose pa moun ki fini byen ta.",
+        "course": "Fòmasyon",
+        "completers": "Moun ki fini",
+        "median": "Medyàn",
+        "mean": "Mwayèn",
+        "days": "j"
+      },
+      "lessons": {
+        "top": "Leson ki pi gade",
+        "bottom": "Leson ki mwens gade",
+        "views": "vi",
+        "abandon": "abandon"
+      },
+      "dropoff": {
+        "title": "Drop-off agrege (pa pozisyon leson)",
+        "note": "Tout fòmasyon ansanm, nòmalize pa pozisyon. Yon chit ki repete = pwoblèm estriktirèl.",
+        "legend": "% toujou aktif"
+      },
+      "active": {
+        "title": "Aprenan aktif",
+        "empty": "Pa gen aprenan aktif nan peryòd la.",
+        "user": "Itilizatè",
+        "course": "Fòmasyon an kou",
+        "progress": "Pwogresyon",
+        "lastSeen": "Dènye leson",
+        "lastDays": "{days} j",
+        "courseFilter": "Filtre pa kou",
+        "allCourses": "Tout kou yo"
+      },
+      "stuck": {
+        "title": "Itilizatè bloke (peye, pa janm kòmanse)",
+        "note": "Enskri/abòne aktif san okenn leson gade.",
+        "empty": "Pa gen itilizatè bloke.",
+        "remind": "Voye yon rapèl",
+        "sent": "Voye ✓"
+      }
+    },
+    "certs": {
+      "subtitle": "Tout sètifika ki bay — revoke, re-emèt, emèt manyèlman.",
+      "empty": "Pa gen sètifika.",
+      "valid": "Valab",
+      "revoked": "Revoke",
+      "revoke": "Revoke",
+      "reissue": "Re-emèt",
+      "col": {
+        "user": "Itilizatè",
+        "course": "Fòmasyon",
+        "code": "Kòd",
+        "issued": "Emèt le",
+        "state": "Eta",
+        "actions": "Aksyon"
+      },
+      "filters": {
+        "search": "Chèche",
+        "searchPlaceholder": "Non, imel oswa kòd…",
+        "course": "Fòmasyon",
+        "courseAll": "Tout fòmasyon",
+        "state": "Eta",
+        "stateAll": "Tout",
+        "stateValid": "Valab",
+        "stateRevoked": "Revoke",
+        "clear": "Efase"
+      },
+      "issue": {
+        "title": "Emisyon manyèl",
+        "help": "Emèt yon sètifika pou yon aprenan ki fini (lè deklanchman oto a echwe).",
+        "email": "Imel aprenan an",
+        "emailPlaceholder": "moun@gmail.com",
+        "course": "Fòmasyon",
+        "submit": "Emèt",
+        "done": "Emèt ✓",
+        "error": "Erè.",
+        "errorUser": "Pa gen aprenan ak imel sa a.",
+        "errorFields": "Chan manke.",
+        "ficheLabel": "Emèt yon sètifika"
+      }
+    },
+    "cms": {
+      "list": {
+        "new": "Nouvo kou",
+        "edit": "Modifye",
+        "actions": "Aksyon",
+        "pendingChanges": "chanjman"
+      },
+      "create": {
+        "title": "Kreye yon kou",
+        "back": "Tounen nan kou yo",
+        "help": "Kou a kreye an bouyon ; w ap konplete rès la nan editè a.",
+        "code": "Kòd",
+        "titleHt": "Tit (Kreyòl)",
+        "titleFr": "Tit (Français)",
+        "price": "Pri ($)",
+        "draftNote": "Kreye an bouyon — pa parèt sou sit piblik la jiska piblikasyon.",
+        "submit": "Kreye an bouyon",
+        "titleRequired": "Yon tit obligatwa.",
+        "error": "Erè."
+      },
+      "editor": {
+        "back": "Tounen nan kou yo",
+        "untitled": "(san tit)",
+        "general": "Jeneral & pri",
+        "code": "Kòd",
+        "slug": "Slug",
+        "icon": "Ikòn",
+        "title": "Tit",
+        "tagline": "Akwòch",
+        "desc": "Deskripsyon",
+        "audience": "Piblik",
+        "learn": "W ap konn fè",
+        "price": "Pri",
+        "order": "Lòd",
+        "impact": "Enpak pri",
+        "impactRevenue": "Revni pwojte : {count} vant → {revenue}",
+        "impactWarn": "Pri sa a depase {code}, kou ki pi chè a — ou sèten ?",
+        "salesPage": "Paj vant",
+        "promise": "Pwomès",
+        "problem": "Pwoblèm rezoud",
+        "deliverables": "Liv",
+        "requirements": "Prerekwi",
+        "faq": "FAQ",
+        "q": "Kesyon",
+        "a": "Repons",
+        "addFaq": "+ Kesyon",
+        "save": "Anrejistre",
+        "saved": "Anrejistre ✓",
+        "saving": "Anrejistreman…",
+        "unsaved": "Chanjman pa anrejistre",
+        "error": "Erè"
+      },
+      "lessons": {
+        "title": "Leson",
+        "empty": "Pa gen leson.",
+        "add": "Ajoute yon leson",
+        "titleHt": "Tit (ht)",
+        "titleFr": "Tit (fr)",
+        "bunnyId": "ID videyo Bunny",
+        "validate": "Valide",
+        "bunnyOk": "✓ videyo jwenn",
+        "bunnyBad": "✗ pa jwenn",
+        "bunnyMock": "pa verifye (Bunny pa konfigire)",
+        "preview": "Apèsi gratis",
+        "noVideoWarn": "Pa gen videyo lye"
+      },
+      "images": {
+        "title": "Imaj",
+        "note": "Vrè upload nan Bunny Storage + redimansyònman = pou branche. Pou kounye a, kole yon URL imaj.",
+        "main": "Imaj prensipal",
+        "setMain": "Defini",
+        "secondary": "Imaj segondè (dyaporama)",
+        "add": "Ajoute",
+        "alt": "Tèks alt",
+        "urlPlaceholder": "https://… (URL imaj la)"
+      },
+      "publish": {
+        "status": {
+          "draft": "Bouyon",
+          "published": "Pibliye"
+        },
+        "unpublishedChanges": "Chanjman ap tann",
+        "preview": "Previzyalize",
+        "publish": "Pibliye",
+        "publishChanges": "Pibliye chanjman yo",
+        "published": "Pibliye ✓",
+        "unpublish": "Depibliye",
+        "unpublishWarn": "Kou a disparèt nan katalòg piblik la, men elèv ki deja enskri yo kenbe aksè yo.",
+        "confirmUnpublish": "Depibliye",
+        "delete": "Efase",
+        "deleteWarn": "Efase nèt. Tape {code} pou konfime.",
+        "confirmDelete": "Efase nèt",
+        "hasEnrollments": "{count} elèv enskri — efasman bloke. Depibliye pito.",
+        "codeMismatch": "Kòd la pa koresponn.",
+        "cancel": "Anile",
+        "error": "Erè."
+      },
+      "preview": {
+        "back": "Tounen nan editè a",
+        "badge": "Apèsi admin",
+        "learn": "W ap konn fè",
+        "deliverables": "Liv",
+        "lessons": "Pwogram",
+        "requirements": "Prerekwi",
+        "previewLesson": "Gratis"
+      }
+    },
+    "testimonials": {
+      "subtitle": "Prèv sosyal — pa janm pibliye fo temwayaj.",
+      "new": "Nouvo",
+      "editTitle": "Modifye temwayaj la",
+      "filterStatus": "Tout estati",
+      "filterCourse": "Tout fòmasyon",
+      "neverPublish": "Pa janm pibliye",
+      "publish": "Pibliye",
+      "unpublish": "Depibliye",
+      "location": "Kote",
+      "noCourse": "Okenn fòmasyon",
+      "quoteHt": "Sitasyon (Kreyòl)",
+      "quoteFr": "Sitasyon (Français)",
+      "photoUrl": "URL foto (opsyonèl)",
+      "bothLangsNote": "De lang yo dwe ranpli pou pibliye.",
+      "cancel": "Anile",
+      "save": "Anrejistre",
+      "status": {
+        "placeholder": "Egzanp",
+        "real": "Reyèl",
+        "published": "Pibliye"
+      },
+      "col": {
+        "name": "Non",
+        "quote": "Sitasyon",
+        "status": "Estati",
+        "actions": "Aksyon"
+      },
+      "request": {
+        "button": "Mande yon temwayaj",
+        "copyLink": "Kopye lyen an"
+      }
+    },
+    "settings": {
+      "subtitle": "Kontè plas, tèks sit la, paj legal.",
+      "places": {
+        "title": "Kontè plas",
+        "note": "Zouti maketing — kenbe yon valè plozib epi koyeran ak reyalite a.",
+        "total": "Total / koòt",
+        "taken": "Deja pran",
+        "enabled": "Parèt sou akèy la",
+        "preview": "{left} / {total} plas ki rete",
+        "save": "Anrejistre",
+        "saved": "Anrejistre ✓"
+      },
+      "texts": {
+        "title": "Tèks sit la (ht/fr)",
+        "note": "Modifye tèks yo ; yo gen priyorite sou fichye JSON yo (fallback). Kreye/efase yon kle rete yon operasyon kòd.",
+        "overridden": "modifye",
+        "save": "Anrejistre",
+        "reset": "Reyinisyalize"
+      },
+      "legal": {
+        "title": "Paj legal",
+        "page": {
+          "cgu": "Kondisyon (CGU)",
+          "confidentialite": "Konfidansyalite",
+          "remboursement": "Ranbousman"
+        },
+        "view": "Wè paj la",
+        "markdownNote": "Markdown senp aksepte.",
+        "save": "Anrejistre vèsyon an",
+        "saved": "Anrejistre ✓",
+        "history": "Vèsyon anvan yo",
+        "emptyPublic": "Paj sa a poko gen kontni."
+      }
+    },
+    "marketing": {
+      "subtitle": "Anons pa imel bay yon segman itilizatè.",
+      "compose": "Konpoze yon anons",
+      "segment": "Destinatè",
+      "subject": "Sijè",
+      "body": "Kò",
+      "preview": "Apèsi",
+      "send": "Voye",
+      "sentOk": "Voye bay {count} itilizatè ✓",
+      "confirmTitle": "Konfime voye",
+      "confirmBody": "W ap voye imel sa a bay {count} itilizatè — konfime ?",
+      "cancel": "Anile",
+      "confirmSend": "Voye",
+      "seg": {
+        "all": "Tout",
+        "active_subscriber": "Abòne aktif",
+        "one_off": "A linite",
+        "free": "Gratis"
+      },
+      "tabs": {
+        "announcements": "Anons",
+        "promos": "Kòd pwomo",
+        "attribution": "Atribisyon",
+        "carts": "Panye",
+        "referrals": "Parennaj"
+      },
+      "promos": {
+        "subtitle": "Kreye epi swiv kòd rabè yo.",
+        "createCta": "Nouvo kòd",
+        "backToList": "Tounen nan lis la",
+        "empty": "Pa gen kòd pwomo.",
+        "col": {
+          "code": "Kòd",
+          "discount": "Rabè",
+          "applies": "Sa l aplike sou",
+          "usage": "Itilizasyon",
+          "expiry": "Ekspirasyon",
+          "status": "Estati",
+          "actions": ""
+        },
+        "status": {
+          "active": "Aktif",
+          "scheduled": "Pwograme",
+          "expired": "Ekspire",
+          "depleted": "Fini",
+          "disabled": "Dezaktive"
+        },
+        "type": {
+          "percent": "Pousantaj",
+          "fixed": "Montan fiks"
+        },
+        "applies": {
+          "all": "Tout",
+          "subscription": "Abònman",
+          "course": "Fòmasyon"
+        },
+        "filters": {
+          "search": "Rechèch",
+          "searchPlaceholder": "Kòd…",
+          "status": "Estati",
+          "statusAll": "Tout estati",
+          "type": "Tip",
+          "typeAll": "Tout tip",
+          "sort": "Triye",
+          "sortExpiry": "Ekspirasyon",
+          "sortUsage": "To itilizasyon",
+          "dir": "Sans",
+          "clear": "Efase"
+        },
+        "actions": {
+          "disable": "Dezaktive",
+          "enable": "Aktive",
+          "delete": "Efase",
+          "confirm": "Konfime",
+          "cancel": "Anile",
+          "disableTitle": "Dezaktive kòd la",
+          "enableTitle": "Aktive kòd la",
+          "deleteTitle": "Efase kòd la",
+          "disableBody": "« {code} » p ap ka itilize ankò, men istwa a rete.",
+          "enableBody": "« {code} » ap ka itilize ankò.",
+          "deleteBody": "Efase « {code} » nèt ? Posib sèlman paske li pa janm itilize."
+        },
+        "errors": {
+          "has_redemptions": "Pa posib : kòd sa a deja itilize. Dezaktive l pito pou kenbe istwa a."
+        },
+        "create": {
+          "title": "Kreye yon kòd pwomo",
+          "code": "Kòd",
+          "generate": "Jenere",
+          "taken": "Kòd sa a deja egziste.",
+          "discountType": "Tip rabè",
+          "valuePercent": "Pousantaj (1–100)",
+          "valueFixed": "Montan an $",
+          "appliesTo": "Sa l aplike sou",
+          "course": "Fòmasyon",
+          "maxUses": "Itilizasyon maks",
+          "unlimited": "San limit",
+          "expiresAt": "Ekspire le",
+          "activation": "Aktivasyon",
+          "activeNow": "Aktif depi kreyasyon",
+          "scheduled": "Pwograme",
+          "submit": "Kreye kòd la"
+        },
+        "detail": {
+          "usage": "Itilizasyon",
+          "generated": "Revni jenere",
+          "collected": "reyèlman ankese",
+          "undiscounted": "San rabè",
+          "atFullPrice": "nan pri konplè",
+          "discountGiven": "Rabè bay",
+          "indicativeNote": "Konparezon « revni jenere vs san rabè » se yon endikasyon sèlman : li sipoze chak achtè t ap peye pri konplè a, sa ki pa egzak — yon kòd ka konvèti moun ki pa t ap achte.",
+          "expires": "Ekspire",
+          "starts": "Kòmanse",
+          "created": "Kreye",
+          "redemptions": "Itilizasyon",
+          "noRedemptions": "Poko gen itilizasyon.",
+          "user": "Itilizatè",
+          "date": "Dat",
+          "payment": "Peman",
+          "gross": "Pri",
+          "discount": "Rabè",
+          "net": "Peye",
+          "simulated": "Similye"
+        },
+        "sim": {
+          "title": "Similye yon itilizasyon (mock)",
+          "note": "Li ranplase finalizasyon yon vrè peman toutotan founisè yo poko branche. Li anrejistre yon itilizasyon pou verifye tout flow la.",
+          "run": "Similye",
+          "done": "Itilizasyon anrejistre ✓"
+        }
+      },
+      "attribution": {
+        "subtitle": "Enskripsyon ak revni pa sous akizisyon (UTM).",
+        "from": "Depi",
+        "to": "Jiska",
+        "clear": "Efase",
+        "col": {
+          "source": "Sous",
+          "medium": "Sipò",
+          "campaign": "Kanpay",
+          "signups": "Enskri",
+          "converted": "Konvèti",
+          "rate": "To",
+          "revenue": "Revni"
+        },
+        "empty": "Pa gen done atribisyon nan peryòd sa a.",
+        "total": "Total",
+        "captureNote": "UTM yo kaptire yon sèl fwa nan moman enskripsyon (premye kontak) e yo pa janm ranplase si itilizatè a retounen pa yon lòt sous.",
+        "mockNote": "Done similye. Nan pwodiksyon, UTM yo soti nan paramèt URL nan enskripsyon."
+      },
+      "carts": {
+        "subtitle": "Panye ki kòmanse men ki pa fini anvan 2 èdtan.",
+        "kpi": {
+          "abandoned": "Abandone",
+          "reminded": "Relanse",
+          "converted": "Konvèti apre relans",
+          "rate": "To konvèsyon",
+          "rateNote": "konvèti / relanse"
+        },
+        "open": {
+          "title": "Sesyon ann kou",
+          "note": "Similye cron 2 èdtan an : make yon panye kòm abandone san tann.",
+          "empty": "Pa gen sesyon ann kou."
+        },
+        "col": {
+          "user": "Itilizatè",
+          "product": "Pwodwi",
+          "amount": "Montan",
+          "abandonedAt": "Abandone le",
+          "status": "Relans",
+          "action": ""
+        },
+        "reminderStatus": {
+          "never": "Pa janm relanse",
+          "reminded": "Relanse",
+          "converted": "Konvèti"
+        },
+        "guest": "Vizitè",
+        "noEmail": "Pa gen imel",
+        "remind": "Relanse",
+        "reminded": "Relanse",
+        "markAbandoned": "Make abandone",
+        "empty": "Pa gen panye abandone.",
+        "mockNote": "Done similye. Nan pwodiksyon, mak « abandone » ak imel relans la (yon sèl, via Resend) otomatik."
+      },
+      "referrals": {
+        "subtitle": "Paren, fiyèl ak kredi yo genyen.",
+        "config": {
+          "title": "Kredi parennaj",
+          "note": "Kredi yo bay paren an pou chak fiyèl konfime (premye acha). Modifyab san redeplwaman ; li pa afekte kredi ki deja bay.",
+          "amount": "Montan",
+          "perFilleul": "pa fiyèl konfime",
+          "save": "Anrejistre",
+          "saved": "Anrejistre ✓"
+        },
+        "sortBy": "Triye pa",
+        "sort": {
+          "converted": "Fiyèl konvèti",
+          "credits": "Kredi genyen"
+        },
+        "col": {
+          "referrer": "Paren",
+          "code": "Kòd",
+          "invited": "Envite",
+          "converted": "Konvèti",
+          "credits": "Kredi",
+          "detail": ""
+        },
+        "empty": "Pa gen paren pou kounye a.",
+        "view": "Gade",
+        "detail": {
+          "title": "Fiyèl {name}",
+          "summary": "{invited} envite · {converted} konvèti",
+          "notSignedUp": "Envite — poko enskri"
+        },
+        "filleulStatus": {
+          "confirmed": "Konfime",
+          "pending": "An atant"
+        }
+      },
+      "credit": {
+        "add": "Ajoute yon kredi",
+        "title": "Kredi manyèl",
+        "hint": "Itil pou korije yon kredi parennaj ki pa bay otomatikman. Odite.",
+        "amount": "Montan ($)",
+        "negativeHint": "Valè negatif = retire kredi.",
+        "note": "Nòt",
+        "notePlaceholder": "Rezon (egz. korije parennaj)",
+        "cancel": "Anile",
+        "confirm": "Ajoute",
+        "acquisition": "Akizisyon",
+        "acquisitionDirect": "Dirèk / enkoni"
+      }
+    },
+    "admins": {
+      "invite": {
+        "title": "Envite yon admin",
+        "help": "Wòl la bay sèlman apre moun nan aksepte envitasyon an epi kont lan kreye.",
+        "email": "imel@egzanp.com",
+        "submit": "Envite",
+        "sent": "Envitasyon voye ✓"
+      },
+      "scope": {
+        "super-admin": "tout + jesyon wòl",
+        "admin": "tout sof wòl",
+        "support": "lekti sèlman",
+        "editeur-contenu": "kontni kou"
+      },
+      "col": {
+        "admin": "Admin",
+        "role": "Wòl",
+        "twoFA": "2FA",
+        "lastSeen": "Dènye koneksyon",
+        "actions": "Aksyon"
+      },
+      "you": "ou menm",
+      "suspended": "sispann",
+      "noTwoFA": "san 2FA",
+      "reactivate": "Reaktive",
+      "suspend": "Sispann",
+      "confirm": {
+        "title": "Konfime",
+        "role": "W ap pase {name} soti {from} pou {to} — konfime ?",
+        "suspend": "Sispann aksè admin {name} — konfime ?",
+        "reactivate": "Reaktive aksè admin {name} ?",
+        "cancel": "Anile",
+        "confirm": "Konfime",
+        "done": "Fèt."
+      },
+      "err": {
+        "self": "Ou pa ka modifye pwòp aksè ou.",
+        "lastSuper": "Enposib — kenbe omwen yon super-admin aktif.",
+        "notFound": "Kont pa jwenn.",
+        "generic": "Yon erè rive."
+      }
+    },
+    "audit": {
+      "subtitle": "Jounal tout aksyon admin yo.",
+      "readonly": "Lekti sèlman — yo pa ka modifye jounal la.",
+      "empty": "Pa gen antre.",
+      "allAdmins": "Tout admin",
+      "allActions": "Tout aksyon",
+      "from": "Depi",
+      "to": "Jiska",
+      "clear": "Efase",
+      "export": "Ekspòte CSV",
+      "col": {
+        "when": "Kilè",
+        "admin": "Admin",
+        "action": "Aksyon",
+        "target": "Sib",
+        "detail": "Detay"
+      },
+      "action": {
+        "grant_course": "Aksè kou bay",
+        "revoke_course": "Aksè kou retire",
+        "grant_subscription": "Abònman ofri",
+        "suspend_user": "Itilizatè sispann",
+        "ban_user": "Itilizatè bani",
+        "reactivate_user": "Itilizatè reaktive",
+        "refund_payment": "Peman ranbouse",
+        "resend_verification": "Verif voye ankò",
+        "resend_receipt": "Resi voye ankò",
+        "set_fx_rate": "To FX modifye",
+        "dunning_reminder": "Relans dunning",
+        "engagement_reminder": "Rapèl angajman",
+        "revoke_certificate": "Sètifika revoke",
+        "reissue_certificate": "Sètifika re-emèt",
+        "issue_certificate": "Sètifika emèt",
+        "review_request": "Temwayaj mande",
+        "announcement": "Anons voye",
+        "invite_admin": "Admin envite",
+        "change_admin_role": "Wòl admin modifye",
+        "suspend_admin": "Admin sispann",
+        "reactivate_admin": "Admin reaktive",
+        "toggle_provider": "Provider modifye",
+        "set_sub_price": "Pri abònman modifye",
+        "toggle_maintenance": "Mòd antretyen",
+        "impersonate": "Konekte kòm",
+        "create_promo": "Kòd pwomo kreye",
+        "disable_promo": "Kòd pwomo dezaktive",
+        "enable_promo": "Kòd pwomo aktive",
+        "delete_promo": "Kòd pwomo efase",
+        "redeem_promo": "Kòd pwomo itilize",
+        "cart_reminder": "Relans panye",
+        "set_referral_credit": "Kredi parennaj modifye",
+        "add_credit": "Kredi ajoute"
+      }
+    },
+    "platform": {
+      "subtitle": "Provider peman, pri, to chanj, mòd antretyen.",
+      "fxStale": "To a pa mete ajou depi plis pase 7 jou.",
+      "fxLastBy": "Dènye modif : {name}",
+      "fxNeverEdited": "Pa janm modifye depi admin",
+      "providers": {
+        "title": "Provider peman",
+        "note": "Dezaktive yon provider retire l nan checkout piblik la tousuit.",
+        "name": {
+          "moncash": "MonCash",
+          "natcash": "NatCash",
+          "card": "Visa / Mastercard",
+          "paypal": "PayPal",
+          "crypto": "Crypto"
+        },
+        "on": "Aktif",
+        "off": "Inaktif",
+        "lastWarn": "Ou pa ka dezaktive dènye provider aktif la.",
+        "error": "Erè."
+      },
+      "subprice": {
+        "title": "Pri abònman an",
+        "warn": "Modifye pri a pa chanje abònman ki egziste deja — sèlman nouvo abònman yo.",
+        "price": "Pri mansyèl",
+        "month": "mwa",
+        "save": "Anrejistre",
+        "saved": "Anrejistre ✓"
+      },
+      "maintenance": {
+        "title": "Mòd antretyen",
+        "note": "Lè l aktive, sit piblik la bloke (sof /admin). Paj dinamik yo afekte tousuit.",
+        "messageHt": "Mesaj (Kreyòl)",
+        "messageFr": "Mesaj (Français)",
+        "enable": "Aktive antretyen",
+        "disable": "Dezaktive",
+        "saveMessage": "Anrejistre mesaj la",
+        "activeNow": "⚠ Antretyen aktif",
+        "saved": "Anrejistre ✓",
+        "adminBanner": "MÒD ANTRETYEN AKTIF — sit piblik la bloke",
+        "publicTitle": "Sit la ap fè antretyen",
+        "publicDefault": "Sit la ap fè antretyen — tounen nan kèk minit."
+      }
     }
+  },
+  "verify": {
+    "valid": {
+      "title": "Sètifika valab",
+      "body": "PNICE Academy bay sètifika sa a epi li otantik."
+    },
+    "revoked": {
+      "title": "Sètifika revoke",
+      "body": "Yo revoke sètifika sa a, li pa valab ankò."
+    },
+    "notfound": {
+      "title": "Sètifika pa jwenn",
+      "body": "Pa gen sètifika ki koresponn ak kòd verifikasyon sa a."
+    },
+    "name": "Non",
+    "course": "Fòmasyon",
+    "issued": "Bay le",
+    "code": "Kòd verifikasyon"
+  },
+  "review": {
+    "title": "Mèsi {name} ! Pataje eksperyans ou",
+    "subtitle": "Temwayaj ou ap ede lòt moun lanse.",
+    "placeholder": "Ekri temwayaj ou la…",
+    "photo": "URL yon foto (opsyonèl)",
+    "consent": "Mwen dakò pou temwayaj sa pibliye sou sit PNICE Academy.",
+    "submit": "Voye temwayaj mwen",
+    "error": "Yon erè rive.",
+    "invalid": "Lyen sa a pa valab ankò.",
+    "thanksTitle": "Mèsi !",
+    "thanksBody": "Nou resevwa temwayaj ou. N ap verifye l anvan piblikasyon.",
+    "invalidTitle": "Lyen pa valab oswa ekspire",
+    "invalidBody": "Lyen temwayaj sa a pa valab ankò. Mande sipò a yon nouvo."
   }
 }

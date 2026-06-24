@@ -9,6 +9,8 @@ import type { AdminRole } from '@/lib/admin/roles';
 declare global {
   interface UserPublicMetadata {
     role?: AdminRole;
+    /** Admin temporarily suspended from /admin (keeps role + Clerk account). */
+    adminSuspended?: boolean;
   }
 
   interface CustomJwtSessionClaims {

@@ -11,8 +11,13 @@ import { formatUsd } from '@/lib/money';
 import { Price, PriceSecondary } from '@/components/ui/Price';
 import { courseTitle } from '@/lib/courseFields';
 import { PaymentMethods } from '@/components/checkout/PaymentMethods';
+import { PromoCodeField } from '@/components/checkout/PromoCodeField';
+import { activeProviders } from '@/lib/admin/platform/store';
 
 export const metadata: Metadata = { title: 'Peman — PNICE Academy' };
+
+// Dynamic so admin provider toggles take effect on checkout immediately.
+export const dynamic = 'force-dynamic';
 
 export default async function CheckoutPage({
   params: { locale },
@@ -98,11 +103,18 @@ export default async function CheckoutPage({
                 {perLabel}
               </p>
             </div>
+
+            <PromoCodeField
+              productType={isSub ? 'subscription' : 'course'}
+              courseSlug={course?.slug ?? null}
+              grossCents={Math.round(amountUsd * 100)}
+            />
           </div>
 
           {/* Payment methods */}
           <PaymentMethods
             payLabel={`${t('pay')} ${formatUsd(amountUsd)}`}
+            active={activeProviders()}
           />
         </div>
 

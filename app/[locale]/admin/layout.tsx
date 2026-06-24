@@ -3,7 +3,8 @@ import { redirect } from 'next/navigation';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { clerkEnabled } from '@/lib/clerk';
-import { isAdminRole } from '@/lib/admin/roles';
+import { resolveAdminRole, isBootstrapAdmin, admin2faRequired } from '@/lib/admin/access';
+import { isMaintenance } from '@/lib/admin/platform/store';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { Require2FA } from '@/components/admin/Require2FA';
 
@@ -45,14 +46,28 @@ export default async function AdminLayout({
   const client = await clerkClient();
   const user = await client.users.getUser(userId);
 
-  const role = user.publicMetadata?.role;
-  if (!isAdminRole(role)) {
+  const role = resolveAdminRole(user);
+  if (!role) {
     redirect(`/${locale}`);
   }
 
-  if (!user.twoFactorEnabled) {
+  // Make a bootstrap grant sticky: persist the role so the ADMIN_BOOTSTRAP_EMAILS
+  // env can be removed afterwards and the middleware fast-path/claims work.
+  if (isBootstrapAdmin(user)) {
+    try {
+      await client.users.updateUserMetadata(userId, { publicMetadata: { role } });
+    } catch {
+      // Best-effort; access still works this request via the resolver.
+    }
+  }
+
+  if (admin2faRequired() && !user.twoFactorEnabled) {
     return <Require2FA />;
   }
 
-  return <AdminShell role={role}>{children}</AdminShell>;
+  return (
+    <AdminShell role={role} maintenance={isMaintenance()}>
+      {children}
+    </AdminShell>
+  );
 }

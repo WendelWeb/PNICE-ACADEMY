@@ -20,10 +20,12 @@ const METHODS = [
   { id: 'crypto', label: 'Crypto', Icon: IconCoin },
 ];
 
-export function PaymentMethods({ payLabel }: { payLabel: string }) {
+export function PaymentMethods({ payLabel, active }: { payLabel: string; active?: string[] }) {
   const t = useTranslations('checkout');
   const tc = useTranslations('common');
-  const [selected, setSelected] = useState('paypal');
+  // Providers can be toggled off from the admin platform settings.
+  const methods = active ? METHODS.filter((m) => active.includes(m.id)) : METHODS;
+  const [selected, setSelected] = useState(methods[0]?.id ?? '');
 
   return (
     <div>
@@ -32,7 +34,7 @@ export function PaymentMethods({ payLabel }: { payLabel: string }) {
       </h2>
 
       <ul className="mt-5 space-y-2.5">
-        {METHODS.map(({ id, label, Icon }) => {
+        {methods.map(({ id, label, Icon }) => {
           const active = selected === id;
           return (
             <li key={id}>

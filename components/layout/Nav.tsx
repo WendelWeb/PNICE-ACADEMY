@@ -5,6 +5,7 @@ import { LangToggle } from '@/components/LangToggle';
 import { buttonClasses } from '@/components/ui/Button';
 import { AuthCta } from '@/components/auth/AuthCta';
 import { AvatarLink } from '@/components/auth/AvatarLink';
+import { AdminLink } from '@/components/admin/AdminLink';
 import { clerkEnabled } from '@/lib/clerk';
 
 export async function Nav() {
@@ -21,6 +22,7 @@ export async function Nav() {
         </Link>
       </SignedOut>
       <SignedIn>
+        <AdminLink />
         <AvatarLink />
       </SignedIn>
     </>

@@ -24,3 +24,30 @@ export function fmtInt(n: number): string {
 export function fmtPct(n: number): string {
   return n.toFixed(1).replace('.', ',') + ' %';
 }
+
+// No Kreyòl date locale in Intl → fall back to French formatting for ht.
+function intlLocale(locale: 'ht' | 'fr'): string {
+  return locale === 'ht' ? 'fr' : locale;
+}
+
+/** "20 juin 2026" — or "—" for null. */
+export function fmtDate(iso: string | null | undefined, locale: 'ht' | 'fr' = 'fr'): string {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString(intlLocale(locale), {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+/** "20 juin 2026, 14:32" — or "—" for null. */
+export function fmtDateTime(iso: string | null | undefined, locale: 'ht' | 'fr' = 'fr'): string {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString(intlLocale(locale), {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}

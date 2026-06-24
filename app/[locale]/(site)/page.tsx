@@ -13,6 +13,10 @@ import { Pricing } from '@/components/home/Pricing';
 import { Faq } from '@/components/home/Faq';
 import { FinalCta } from '@/components/home/FinalCta';
 
+// Dynamic so admin edits (testimonials, seats counter, site texts) reflect live
+// on the home page (Phase C Lot 2). Other public pages stay static (Option B).
+export const dynamic = 'force-dynamic';
+
 export default async function Home({
   params: { locale },
 }: {

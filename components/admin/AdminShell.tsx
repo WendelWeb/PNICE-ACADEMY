@@ -15,14 +15,20 @@ import {
   IconLifebuoy,
   IconShieldLock,
   IconSettings,
+  IconActivity,
+  IconCertificate,
+  IconHistory,
+  IconAdjustments,
   IconMenu2,
   IconX,
   IconExternalLink,
+  IconTool,
   type Icon as TablerIcon,
 } from '@tabler/icons-react';
 import { Link, usePathname } from '@/i18n/routing';
 import { cn } from '@/lib/cn';
 import type { AdminRole } from '@/lib/admin/roles';
+import { can } from '@/lib/admin/permissions';
 import { ADMIN_NAV } from './nav';
 import { RoleBadge } from './ui';
 
@@ -33,11 +39,15 @@ const ICONS: Record<string, TablerIcon> = {
   subscriptions: IconRefresh,
   payments: IconCreditCard,
   progress: IconChartLine,
+  engagement: IconActivity,
+  certificates: IconCertificate,
   testimonials: IconStar,
   marketing: IconSpeakerphone,
   support: IconLifebuoy,
   roles: IconShieldLock,
+  audit: IconHistory,
   settings: IconSettings,
+  platform: IconAdjustments,
 };
 
 const focusRing =
@@ -45,20 +55,25 @@ const focusRing =
 
 export function AdminShell({
   role,
+  maintenance,
   children,
 }: {
   role: AdminRole;
+  maintenance?: boolean;
   children: React.ReactNode;
 }) {
   const t = useTranslations('admin');
+  const tm = useTranslations('admin.platform.maintenance');
   const pathname = usePathname();
   const { user } = useUser();
   const [open, setOpen] = useState(false);
 
+  // Hide sections the role can't reach.
+  const nav = ADMIN_NAV.filter((i) => !i.cap || can(role, i.cap));
+
   const activeKey =
-    ADMIN_NAV.find(
-      (i) => i.href && (pathname === i.href || pathname.startsWith(i.href + '/')),
-    )?.key ?? 'overview';
+    nav.find((i) => i.href && (pathname === i.href || pathname.startsWith(i.href + '/')))?.key ??
+    'overview';
 
   return (
     <div className="min-h-screen bg-paper text-ink">
@@ -90,7 +105,7 @@ export function AdminShell({
 
         <nav className="flex-1 overflow-y-auto px-3 py-4">
           <ul className="space-y-0.5">
-            {ADMIN_NAV.map((item) => {
+            {nav.map((item) => {
               const Icon = ICONS[item.icon] ?? IconLayoutDashboard;
               const isActive = item.key === activeKey && item.enabled;
               const label = t(`nav.${item.key}`);
@@ -162,6 +177,11 @@ export function AdminShell({
 
       {/* Content column */}
       <div className="lg:pl-64">
+        {maintenance && (
+          <div className="sticky top-0 z-30 flex items-center justify-center gap-2 bg-stampred px-4 py-1.5 text-center font-mono text-[11px] font-medium text-paper-light">
+            <IconTool size={13} className="shrink-0" /> {tm('adminBanner')}
+          </div>
+        )}
         <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-ink/12 bg-paper-light/90 px-4 py-3 backdrop-blur sm:px-6">
           <button
             type="button"
