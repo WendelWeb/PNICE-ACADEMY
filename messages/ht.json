@@ -502,6 +502,25 @@
         "deleting": "N ap efase…",
         "error": "Nou pa t ka efase kont lan. Eseye ankò."
       }
+    },
+    "support": {
+      "title": "Sipò",
+      "subtitle": "Yon kesyon oswa yon pwoblèm ? Ekri nou, n ap reponn ou pa imel.",
+      "type": "Tip demann",
+      "types": {
+        "question": "Kesyon",
+        "bug": "Pwoblèm teknik",
+        "refund": "Ranbousman"
+      },
+      "subjectLabel": "Sijè",
+      "subjectPlaceholder": "Rezime demann ou an kèk mo",
+      "messageLabel": "Mesaj",
+      "messagePlaceholder": "Eksplike pwoblèm ou an detay…",
+      "error": "Pa ka voye. Tcheke sijè a ak mesaj la.",
+      "submit": "Voye demann lan",
+      "sentTitle": "Demann voye !",
+      "sentBody": "Ekip nou an ap reponn ou pa imel pi vit posib.",
+      "sendAnother": "Voye yon lòt demann"
     }
   },
   "admin": {
@@ -530,7 +549,8 @@
       "engagement": "Angajman",
       "certificates": "Sètifika",
       "audit": "Odit",
-      "platform": "Platefòm"
+      "platform": "Platefòm",
+      "health": "Sante sistèm"
     },
     "roles": {
       "super-admin": "Sipè-admin",
@@ -693,7 +713,15 @@
         "redeem_promo": "Kòd pwomo itilize",
         "cart_reminder": "Relans panye",
         "set_referral_credit": "Kredi parennaj modifye",
-        "add_credit": "Kredi ajoute"
+        "add_credit": "Kredi ajoute",
+        "assign_ticket": "Tikè asiyen",
+        "reply_ticket": "Repons sou tikè",
+        "set_ticket_status": "Estati tikè chanje",
+        "create_template": "Modèl kreye",
+        "update_template": "Modèl modifye",
+        "delete_template": "Modèl efase",
+        "replay_webhook": "Webhook rejwe",
+        "set_digest": "Rezime chak jou modifye"
       },
       "actions": {
         "title": "Aksyon manyèl",
@@ -1634,7 +1662,15 @@
         "redeem_promo": "Kòd pwomo itilize",
         "cart_reminder": "Relans panye",
         "set_referral_credit": "Kredi parennaj modifye",
-        "add_credit": "Kredi ajoute"
+        "add_credit": "Kredi ajoute",
+        "assign_ticket": "Tikè asiyen",
+        "reply_ticket": "Repons sou tikè",
+        "set_ticket_status": "Estati tikè chanje",
+        "create_template": "Modèl kreye",
+        "update_template": "Modèl modifye",
+        "delete_template": "Modèl efase",
+        "replay_webhook": "Webhook rejwe",
+        "set_digest": "Rezime chak jou modifye"
       }
     },
     "platform": {
@@ -1678,6 +1714,158 @@
         "adminBanner": "MÒD ANTRETYEN AKTIF — sit piblik la bloke",
         "publicTitle": "Sit la ap fè antretyen",
         "publicDefault": "Sit la ap fè antretyen — tounen nan kèk minit."
+      }
+    },
+    "support": {
+      "subtitle": "Bwat sipò : tikè itilizatè yo.",
+      "empty": "Pa gen tikè.",
+      "counts": {
+        "open": "Ouvè",
+        "in_progress": "Ann kou",
+        "resolved": "Rezoud",
+        "unassignedOpen": "San asiyasyon"
+      },
+      "col": {
+        "user": "Itilizatè",
+        "type": "Tip",
+        "subject": "Sijè",
+        "status": "Estati",
+        "assigned": "Asiyen bay",
+        "updated": "Mete ajou"
+      },
+      "status": {
+        "open": "Ouvè",
+        "in_progress": "Ann kou",
+        "resolved": "Rezoud"
+      },
+      "type": {
+        "question": "Kesyon",
+        "bug": "Bug",
+        "refund": "Ranbousman"
+      },
+      "payStatus": {
+        "succeeded": "Reyisi",
+        "pending": "An atant",
+        "failed": "Echwe",
+        "refunded": "Ranbouse"
+      },
+      "filters": {
+        "search": "Rechèch",
+        "searchPlaceholder": "Non, imel, sijè…",
+        "status": "Estati",
+        "statusAll": "Tout estati",
+        "type": "Tip",
+        "typeAll": "Tout tip",
+        "from": "Depi",
+        "to": "Jiska",
+        "clear": "Efase"
+      },
+      "detail": {
+        "back": "Tounen nan tikè yo",
+        "assign": "Asiyen",
+        "unassigned": "San asiyasyon",
+        "reply": "Reponn",
+        "useTemplate": "Modèl",
+        "pickTemplate": "Chwazi yon modèl…",
+        "replyPlaceholder": "Repons ou pou itilizatè a…",
+        "replyAndNotify": "Reponn epi notifye",
+        "emailNote": "Yon imel voye bay itilizatè a (stub).",
+        "relatedPayment": "Peman ki konsène",
+        "conversation": "Konvèsasyon",
+        "staff": "Ekip"
+      },
+      "refund": {
+        "cta": "Trete ranbousman an",
+        "title": "Konfime ranbousman an",
+        "user": "Itilizatè",
+        "amount": "Montan",
+        "method": "Metòd",
+        "warning": "Peman an ap ranbouse epi yon kredi ap ajoute nan kont lan. Tikè a ap pase nan « rezoud ». Aksyon san retou.",
+        "notRefundable": "Peman sa a pa ka ranbouse ankò.",
+        "cancel": "Anile",
+        "confirm": "Ranbouse"
+      },
+      "templates": {
+        "link": "Modèl",
+        "subtitle": "Repons rapid bileng, òganize pa kategori.",
+        "title": "Modèl repons",
+        "new": "Nouvo modèl",
+        "edit": "Modifye",
+        "delete": "Efase",
+        "category": "Kategori",
+        "titleHt": "Tit (ht)",
+        "titleFr": "Tit (fr)",
+        "bodyHt": "Mesaj (ht)",
+        "bodyFr": "Mesaj (fr)",
+        "save": "Anrejistre",
+        "cancel": "Anile"
+      }
+    },
+    "health": {
+      "subtitle": "Webhook peman, estati Bunny ak erè aplikasyon yo.",
+      "webhooks": {
+        "title": "Webhook peman",
+        "staleAlert": "{count} echèk ki pa rejwe depi +1 è",
+        "stale": "ansyen",
+        "provider": "Founisè",
+        "providerAll": "Tout founisè",
+        "card": "Kat",
+        "status": "Estati",
+        "statusAll": "Tout estati",
+        "processed": "Trete",
+        "failed": "Echwe",
+        "ignored": "Inyore",
+        "from": "Depi",
+        "to": "Jiska",
+        "clear": "Efase",
+        "event": "Evènman",
+        "received": "Resevwa le",
+        "error": "Erè",
+        "action": "Aksyon",
+        "empty": "Pa gen webhook.",
+        "replay": "Rejwe"
+      },
+      "bunny": {
+        "title": "Bunny Stream",
+        "recheck": "Verifye kounye a",
+        "notConfigured": "Pa konfigire",
+        "notConfiguredNote": "Ajoute BUNNY_STREAM_API_KEY ak BUNNY_STREAM_LIBRARY_ID pou aktive tchèk la.",
+        "ok": "Koneksyon OK",
+        "videos": "Videyo",
+        "storage": "Estokaj (paj 1)",
+        "failed": "Echèk koneksyon",
+        "lastCheck": "Dènye tchèk"
+      },
+      "errors": {
+        "title": "Erè aplikasyon",
+        "note": "Erè gwoupe (menm mesaj + wout). Sous reyèl pou branche (log Vercel / handler global).",
+        "empty": "Pa gen erè.",
+        "route": "Wout",
+        "first": "Premye",
+        "last": "Dènye"
+      },
+      "digest": {
+        "title": "Rezime admin chak jou",
+        "note": "Yon sèl imel rezime pa jou (pa yon imel pa vant).",
+        "enabled": "Aktive",
+        "hour": "Lè",
+        "save": "Anrejistre",
+        "saved": "Anrejistre ✓",
+        "onAt": "Aktive a {hour}:00",
+        "off": "Dezaktive"
+      }
+    },
+    "notifications": {
+      "aria": "Notifikasyon",
+      "title": "Notifikasyon",
+      "markAll": "Li tout",
+      "empty": "Pa gen notifikasyon.",
+      "kind": {
+        "sale": "Nouvo vant",
+        "payment_failed": "Peman echwe",
+        "refund_request": "Demann ranbousman",
+        "sub_canceled": "Abònman anile",
+        "webhook_error": "Erè webhook"
       }
     }
   },

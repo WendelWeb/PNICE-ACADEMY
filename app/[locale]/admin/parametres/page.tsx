@@ -3,13 +3,14 @@ import htMessages from '@/messages/ht.json';
 import frMessages from '@/messages/fr.json';
 import { getPlaces, getEditableTexts, getLegal } from '@/lib/admin/site/ops';
 import type { LegalSlug } from '@/lib/admin/site/store';
-import { getReferralCreditCents } from '@/lib/admin/data';
+import { getReferralCreditCents, getSupportSettings } from '@/lib/admin/data';
 import { hasCap } from '@/lib/admin/guard';
 import { Forbidden } from '@/components/admin/Forbidden';
 import { PlacesConfig } from '@/components/admin/site/PlacesConfig';
 import { TextsEditor } from '@/components/admin/site/TextsEditor';
 import { LegalEditor } from '@/components/admin/site/LegalEditor';
 import { ReferralCreditPanel } from '@/components/admin/marketing/ReferralCreditPanel';
+import { DigestPanel } from '@/components/admin/health/DigestPanel';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,8 @@ export default async function SettingsPage({ params: { locale } }: { params: { l
   const t = await getTranslations('admin.settings');
   const canEditReferral = await hasCap('users.act');
   const referralCreditCents = await getReferralCreditCents();
+  const canEditDigest = await hasCap('support.act');
+  const digest = await getSupportSettings();
 
   const places = getPlaces();
   const texts = getEditableTexts(
@@ -37,6 +40,7 @@ export default async function SettingsPage({ params: { locale } }: { params: { l
     <div className="mx-auto max-w-[1180px] space-y-4">
       <p className="text-sm text-graphite/70">{t('subtitle')}</p>
       <ReferralCreditPanel currentUsd={referralCreditCents / 100} canEdit={canEditReferral} />
+      <DigestPanel enabled={digest.dailyDigestEnabled} hour={digest.dailyDigestHour} canEdit={canEditDigest} />
       <PlacesConfig total={places.total} taken={places.taken} enabled={places.enabled} />
       <TextsEditor rows={texts} />
       <LegalEditor pages={legalPages} locale={locale} />

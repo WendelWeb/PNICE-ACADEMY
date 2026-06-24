@@ -19,6 +19,7 @@ import {
   IconCertificate,
   IconHistory,
   IconAdjustments,
+  IconHeartbeat,
   IconMenu2,
   IconX,
   IconExternalLink,
@@ -31,6 +32,8 @@ import type { AdminRole } from '@/lib/admin/roles';
 import { can } from '@/lib/admin/permissions';
 import { ADMIN_NAV } from './nav';
 import { RoleBadge } from './ui';
+import { NotificationBell } from './support/NotificationBell';
+import { SupportNavBadge } from './support/SupportNavBadge';
 
 const ICONS: Record<string, TablerIcon> = {
   overview: IconLayoutDashboard,
@@ -44,6 +47,7 @@ const ICONS: Record<string, TablerIcon> = {
   testimonials: IconStar,
   marketing: IconSpeakerphone,
   support: IconLifebuoy,
+  health: IconHeartbeat,
   roles: IconShieldLock,
   audit: IconHistory,
   settings: IconSettings,
@@ -143,6 +147,7 @@ export function AdminShell({
                   >
                     <Icon size={18} className={cn('shrink-0', isActive && 'text-ochre')} />
                     <span className="truncate">{label}</span>
+                    {item.key === 'support' && <SupportNavBadge />}
                   </Link>
                 </li>
               );
@@ -197,6 +202,7 @@ export function AdminShell({
           </h1>
 
           <div className="ml-auto flex items-center gap-3">
+            {can(role, 'support.read') && <NotificationBell />}
             <RoleBadge role={role} label={t(`roles.${role}`)} />
             <span className="hidden text-right sm:block">
               <span className="block text-sm font-medium leading-tight text-ink">

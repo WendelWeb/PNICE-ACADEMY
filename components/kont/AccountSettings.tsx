@@ -9,6 +9,7 @@ import { ProfileTab } from './ProfileTab';
 import { SecurityTab } from './SecurityTab';
 import { PreferencesTab } from './PreferencesTab';
 import { PrivacyTab } from './PrivacyTab';
+import { SupportTab } from './SupportTab';
 import { ComingSoon } from './ComingSoon';
 
 const TABS = [
@@ -101,6 +102,8 @@ export function AccountSettings() {
             <PreferencesTab />
           ) : active === 'privacy' ? (
             <PrivacyTab />
+          ) : active === 'support' ? (
+            <SupportTab />
           ) : (
             <ComingSoon />
           )}

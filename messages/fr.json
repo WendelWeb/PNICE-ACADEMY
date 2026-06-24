@@ -502,6 +502,25 @@
         "deleting": "Suppression…",
         "error": "Impossible de supprimer le compte. Réessaie."
       }
+    },
+    "support": {
+      "title": "Support",
+      "subtitle": "Une question ou un problème ? Écris-nous, on te répond par email.",
+      "type": "Type de demande",
+      "types": {
+        "question": "Question",
+        "bug": "Problème technique",
+        "refund": "Remboursement"
+      },
+      "subjectLabel": "Sujet",
+      "subjectPlaceholder": "Résume ta demande en quelques mots",
+      "messageLabel": "Message",
+      "messagePlaceholder": "Explique ton problème en détail…",
+      "error": "Impossible d’envoyer. Vérifie le sujet et le message.",
+      "submit": "Envoyer la demande",
+      "sentTitle": "Demande envoyée !",
+      "sentBody": "Notre équipe te répondra par email dans les meilleurs délais.",
+      "sendAnother": "Envoyer une autre demande"
     }
   },
   "admin": {
@@ -530,7 +549,8 @@
       "engagement": "Engagement",
       "certificates": "Certificats",
       "audit": "Audit",
-      "platform": "Plateforme"
+      "platform": "Plateforme",
+      "health": "Santé système"
     },
     "roles": {
       "super-admin": "Super-admin",
@@ -693,7 +713,15 @@
         "redeem_promo": "Code promo utilisé",
         "cart_reminder": "Relance de panier",
         "set_referral_credit": "Crédit de parrainage modifié",
-        "add_credit": "Crédit ajouté"
+        "add_credit": "Crédit ajouté",
+        "assign_ticket": "Ticket assigné",
+        "reply_ticket": "Réponse au ticket",
+        "set_ticket_status": "Statut du ticket modifié",
+        "create_template": "Template créé",
+        "update_template": "Template modifié",
+        "delete_template": "Template supprimé",
+        "replay_webhook": "Webhook rejoué",
+        "set_digest": "Récapitulatif quotidien modifié"
       },
       "actions": {
         "title": "Actions manuelles",
@@ -1634,7 +1662,15 @@
         "redeem_promo": "Code promo utilisé",
         "cart_reminder": "Relance de panier",
         "set_referral_credit": "Crédit de parrainage modifié",
-        "add_credit": "Crédit ajouté"
+        "add_credit": "Crédit ajouté",
+        "assign_ticket": "Ticket assigné",
+        "reply_ticket": "Réponse au ticket",
+        "set_ticket_status": "Statut du ticket modifié",
+        "create_template": "Template créé",
+        "update_template": "Template modifié",
+        "delete_template": "Template supprimé",
+        "replay_webhook": "Webhook rejoué",
+        "set_digest": "Récapitulatif quotidien modifié"
       }
     },
     "platform": {
@@ -1678,6 +1714,158 @@
         "adminBanner": "MODE MAINTENANCE ACTIF — le site public est bloqué",
         "publicTitle": "Site en maintenance",
         "publicDefault": "Le site est en maintenance — reviens dans quelques minutes."
+      }
+    },
+    "support": {
+      "subtitle": "Boîte de support : tickets des utilisateurs.",
+      "empty": "Aucun ticket.",
+      "counts": {
+        "open": "Ouverts",
+        "in_progress": "En cours",
+        "resolved": "Résolus",
+        "unassignedOpen": "Non assignés"
+      },
+      "col": {
+        "user": "Utilisateur",
+        "type": "Type",
+        "subject": "Sujet",
+        "status": "Statut",
+        "assigned": "Assigné à",
+        "updated": "Mis à jour"
+      },
+      "status": {
+        "open": "Ouvert",
+        "in_progress": "En cours",
+        "resolved": "Résolu"
+      },
+      "type": {
+        "question": "Question",
+        "bug": "Bug",
+        "refund": "Remboursement"
+      },
+      "payStatus": {
+        "succeeded": "Réussi",
+        "pending": "En attente",
+        "failed": "Échoué",
+        "refunded": "Remboursé"
+      },
+      "filters": {
+        "search": "Recherche",
+        "searchPlaceholder": "Nom, email, sujet…",
+        "status": "Statut",
+        "statusAll": "Tous les statuts",
+        "type": "Type",
+        "typeAll": "Tous les types",
+        "from": "Du",
+        "to": "Au",
+        "clear": "Effacer"
+      },
+      "detail": {
+        "back": "Retour aux tickets",
+        "assign": "Assigner",
+        "unassigned": "Non assigné",
+        "reply": "Répondre",
+        "useTemplate": "Template",
+        "pickTemplate": "Choisir un template…",
+        "replyPlaceholder": "Votre réponse à l’utilisateur…",
+        "replyAndNotify": "Répondre et notifier",
+        "emailNote": "Un email est envoyé à l’utilisateur (stub).",
+        "relatedPayment": "Paiement concerné",
+        "conversation": "Conversation",
+        "staff": "Équipe"
+      },
+      "refund": {
+        "cta": "Traiter le remboursement",
+        "title": "Confirmer le remboursement",
+        "user": "Utilisateur",
+        "amount": "Montant",
+        "method": "Moyen",
+        "warning": "Le paiement sera remboursé et un crédit ajouté au compte. Le ticket passera en « résolu ». Action irréversible.",
+        "notRefundable": "Ce paiement n’est plus remboursable.",
+        "cancel": "Annuler",
+        "confirm": "Rembourser"
+      },
+      "templates": {
+        "link": "Templates",
+        "subtitle": "Réponses rapides bilingues, organisées par catégorie.",
+        "title": "Templates de réponse",
+        "new": "Nouveau template",
+        "edit": "Modifier",
+        "delete": "Supprimer",
+        "category": "Catégorie",
+        "titleHt": "Titre (ht)",
+        "titleFr": "Titre (fr)",
+        "bodyHt": "Message (ht)",
+        "bodyFr": "Message (fr)",
+        "save": "Enregistrer",
+        "cancel": "Annuler"
+      }
+    },
+    "health": {
+      "subtitle": "Webhooks de paiement, statut Bunny et erreurs applicatives.",
+      "webhooks": {
+        "title": "Webhooks de paiement",
+        "staleAlert": "{count} échec(s) non rejoué(s) depuis +1 h",
+        "stale": "ancien",
+        "provider": "Provider",
+        "providerAll": "Tous les providers",
+        "card": "Carte",
+        "status": "Statut",
+        "statusAll": "Tous les statuts",
+        "processed": "Traité",
+        "failed": "Échoué",
+        "ignored": "Ignoré",
+        "from": "Du",
+        "to": "Au",
+        "clear": "Effacer",
+        "event": "Événement",
+        "received": "Reçu le",
+        "error": "Erreur",
+        "action": "Action",
+        "empty": "Aucun webhook.",
+        "replay": "Rejouer"
+      },
+      "bunny": {
+        "title": "Bunny Stream",
+        "recheck": "Vérifier maintenant",
+        "notConfigured": "Non configuré",
+        "notConfiguredNote": "Ajoutez BUNNY_STREAM_API_KEY et BUNNY_STREAM_LIBRARY_ID pour activer le check.",
+        "ok": "Connexion OK",
+        "videos": "Vidéos",
+        "storage": "Stockage (page 1)",
+        "failed": "Échec de connexion",
+        "lastCheck": "Dernier check"
+      },
+      "errors": {
+        "title": "Erreurs applicatives",
+        "note": "Erreurs groupées (mêmes message + route). Source réelle à brancher (logs Vercel / handler global).",
+        "empty": "Aucune erreur.",
+        "route": "Route",
+        "first": "Première",
+        "last": "Dernière"
+      },
+      "digest": {
+        "title": "Récapitulatif admin quotidien",
+        "note": "Un seul email récapitulatif par jour (pas un email par vente).",
+        "enabled": "Activé",
+        "hour": "Heure",
+        "save": "Enregistrer",
+        "saved": "Enregistré ✓",
+        "onAt": "Activé à {hour}:00",
+        "off": "Désactivé"
+      }
+    },
+    "notifications": {
+      "aria": "Notifications",
+      "title": "Notifications",
+      "markAll": "Tout lire",
+      "empty": "Aucune notification.",
+      "kind": {
+        "sale": "Nouvelle vente",
+        "payment_failed": "Paiement échoué",
+        "refund_request": "Demande de remboursement",
+        "sub_canceled": "Abonnement annulé",
+        "webhook_error": "Erreur de webhook"
       }
     }
   },
