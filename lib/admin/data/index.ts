@@ -1,103 +1,17 @@
 /**
  * Admin data — SINGLE SWITCH POINT.
  *
- * The whole admin UI imports its data from here and nowhere else. Today it
- * resolves to the in-memory mock. To go live, implement `realDataSource`
- * (Drizzle queries against db/schema.ts) satisfying the same AdminDataSource
- * contract and set ADMIN_DATA_SOURCE=real — no UI component changes.
+ * The whole admin UI imports its data from here and nowhere else. With
+ * ADMIN_DATA_SOURCE=real it resolves to the Drizzle-backed source (incremental:
+ * implemented domains hit the DB, the rest fall back to mock — see ./real);
+ * otherwise the in-memory mock. No UI component changes either way.
  */
 import type { AdminDataSource } from './types';
 import { mockDataSource } from './mock';
+import { realDataSource } from './real';
 
 const source: AdminDataSource =
   process.env.ADMIN_DATA_SOURCE === 'real' ? realDataSource() : mockDataSource;
-
-function notImplemented(): never {
-  throw new Error(
-    'ADMIN_DATA_SOURCE=real is not implemented yet. Use ADMIN_DATA_SOURCE=mock until the Drizzle-backed admin queries land.',
-  );
-}
-
-function realDataSource(): AdminDataSource {
-  // TODO (later lot): back every method with Drizzle queries against db/schema.ts.
-  return {
-    getKpiOverview: notImplemented,
-    getUsers: notImplemented,
-    exportUsers: notImplemented,
-    getUserById: notImplemented,
-    getTransactions: notImplemented,
-    exportTransactions: notImplemented,
-    getMethodVolumes: notImplemented,
-    getCourseSales: notImplemented,
-    getCourseDetail: notImplemented,
-    getAnalytics: notImplemented,
-    getSubscriptions: notImplemented,
-    getSubEvents: notImplemented,
-    getDunning: notImplemented,
-    getRenewals: notImplemented,
-    getRenewalSeries: notImplemented,
-    getCohorts: notImplemented,
-    getSubKpis: notImplemented,
-    getCancellationReasons: notImplemented,
-    getCourseCompletion: notImplemented,
-    getCourseTimes: notImplemented,
-    getLessonViews: notImplemented,
-    getAggregateDropoff: notImplemented,
-    getActiveLearners: notImplemented,
-    getStuckUsers: notImplemented,
-    getCertificates: notImplemented,
-    getCertificateByCode: notImplemented,
-    getAuditLog: notImplemented,
-    exportAuditLog: notImplemented,
-    revokeCertificate: notImplemented,
-    reissueCertificate: notImplemented,
-    issueCertificate: notImplemented,
-    grantCourseAccess: notImplemented,
-    revokeCourseAccess: notImplemented,
-    grantSubscription: notImplemented,
-    setUserStatus: notImplemented,
-    refundPayment: notImplemented,
-    recordAudit: notImplemented,
-    getPromoCodes: notImplemented,
-    getPromoDetail: notImplemented,
-    isPromoCodeFree: notImplemented,
-    createPromoCode: notImplemented,
-    setPromoActive: notImplemented,
-    deletePromoCode: notImplemented,
-    validatePromo: notImplemented,
-    redeemPromo: notImplemented,
-    getUtmAttribution: notImplemented,
-    getAbandonedCarts: notImplemented,
-    getOpenCarts: notImplemented,
-    getCartStats: notImplemented,
-    markCartAbandoned: notImplemented,
-    remindCart: notImplemented,
-    getReferrers: notImplemented,
-    getReferrerDetail: notImplemented,
-    getReferralCreditCents: notImplemented,
-    setReferralCredit: notImplemented,
-    addManualCredit: notImplemented,
-    getTickets: notImplemented,
-    getTicketById: notImplemented,
-    getOpenUnassignedCount: notImplemented,
-    createTicket: notImplemented,
-    assignTicket: notImplemented,
-    replyTicket: notImplemented,
-    setTicketStatus: notImplemented,
-    getTemplates: notImplemented,
-    createTemplate: notImplemented,
-    updateTemplate: notImplemented,
-    deleteTemplate: notImplemented,
-    getNotifications: notImplemented,
-    markNotificationRead: notImplemented,
-    markAllNotificationsRead: notImplemented,
-    getWebhookLogs: notImplemented,
-    replayWebhook: notImplemented,
-    getErrorLogs: notImplemented,
-    getSupportSettings: notImplemented,
-    setSupportSettings: notImplemented,
-  };
-}
 
 /* Reads */
 export const getKpiOverview = () => source.getKpiOverview();

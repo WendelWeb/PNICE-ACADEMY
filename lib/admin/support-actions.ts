@@ -33,6 +33,7 @@ import {
   type NotificationFeed,
 } from '@/lib/admin/data';
 import { checkBunnyStream, type BunnyStatus } from '@/lib/admin/health/bunny';
+import { sendEmail } from '@/lib/email/resend';
 
 export type SupResult = { ok: boolean; message?: string; id?: string };
 
@@ -65,7 +66,20 @@ export async function assignTicketAction(ticketId: string, adminId: string | nul
 export async function replyTicketAction(ticketId: string, body: string): Promise<SupResult> {
   try {
     const actor = await requireCap('support.act');
-    return await replyTicket({ ticketId, body, actor });
+    const r = await replyTicket({ ticketId, body, actor });
+    if (r.ok) {
+      // Notify the learner by email (real send when RESEND_API_KEY is set; a safe
+      // no-op otherwise). Failure to email never fails the reply itself.
+      const detail = await getTicketById(ticketId);
+      if (detail?.ticket.userEmail && detail.ticket.userEmail !== '—') {
+        await sendEmail({
+          to: detail.ticket.userEmail,
+          subject: `Re: ${detail.ticket.subject} — PNICE Academy`,
+          html: `<p>${body.replace(/\n/g, '<br>')}</p><hr><p style="color:#888;font-size:12px">PNICE Academy · Support</p>`,
+        });
+      }
+    }
+    return r;
   } catch (e) {
     return fail(e);
   }

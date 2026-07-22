@@ -1853,6 +1853,26 @@
         "saved": "Anrejistre ✓",
         "onAt": "Aktive a {hour}:00",
         "off": "Dezaktive"
+      },
+      "integrations": {
+        "title": "Branchman backend",
+        "dataSource": "Sous done",
+        "mock": "Mock (demo)",
+        "real": "Reyèl (DB)",
+        "required": "obligatwa",
+        "optional": "opsyonèl",
+        "ready": "Pare pou lansman : tout entegrasyon obligatwa yo konfigire, sous reyèl, omwen yon mwayen peman aktif.",
+        "notReady": "Poko pare : gen entegrasyon obligatwa ki manke (gade docs/launch-checklist.md).",
+        "item": {
+          "database": "Baz done (Neon)",
+          "clerk": "Otantifikasyon (Clerk)",
+          "clerkWebhook": "Webhook Clerk (sync itilizatè)",
+          "stripe": "Stripe",
+          "moncash": "MonCash",
+          "natcash": "NatCash",
+          "resend": "Imel (Resend)",
+          "bunny": "Videyo (Bunny)"
+        }
       }
     },
     "notifications": {

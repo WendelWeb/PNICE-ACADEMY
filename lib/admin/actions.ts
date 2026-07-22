@@ -30,9 +30,11 @@ import {
   reissueCertificate,
   issueCertificate,
   getUsers,
+  getUserById,
   type AdminActor,
   type UserStatus,
 } from '@/lib/admin/data';
+import { sendEmail } from '@/lib/email/resend';
 
 export type ActionResult = { ok: boolean; message?: string };
 
@@ -161,7 +163,17 @@ export async function setFxRateAction(rate: number): Promise<ActionResult> {
 export async function resendReceiptAction(userId: string, paymentId: string): Promise<ActionResult> {
   try {
     const { actor } = await requireAdmin('transactions.read');
-    // Real receipt email lands with the PDF pipeline (Phase 2 Part D); audited now.
+    // Email the receipt (real send when on real data; safe no-op on mock). The
+    // PDF attachment lands with the PDF pipeline; this sends the confirmation.
+    const detail = await getUserById(userId);
+    const pay = detail?.payments.find((p) => p.id === paymentId);
+    if (detail?.user.email) {
+      await sendEmail({
+        to: detail.user.email,
+        subject: 'Votre reçu — PNICE Academy',
+        html: `<p>Bonjou ${detail.user.name},</p><p>Men resi pou peman ou${pay ? ` ($${Math.round(pay.amountCents / 100)})` : ''}. Mèsi!</p><hr><p style="color:#888;font-size:12px">PNICE Academy</p>`,
+      });
+    }
     await recordAudit({ action: 'resend_receipt', userId, admin: actor, detail: paymentId });
     return { ok: true, message: 'receipt_sent' };
   } catch (e) {
@@ -172,8 +184,16 @@ export async function resendReceiptAction(userId: string, paymentId: string): Pr
 export async function sendDunningReminderAction(userId: string): Promise<ActionResult> {
   try {
     const { actor } = await requireAdmin('transactions.refund');
-    // Production: trigger the provider/email dunning. For MonCash/NatCash/Crypto
-    // there is no native recurring billing, so dunning is fully manual. Audited.
+    // Email the payment-retry reminder (real send on real data; no-op on mock).
+    // MonCash/NatCash/Crypto have no native recurring billing → dunning is manual.
+    const detail = await getUserById(userId);
+    if (detail?.user.email) {
+      await sendEmail({
+        to: detail.user.email,
+        subject: 'Pwoblèm ak peman abònman ou — PNICE Academy',
+        html: `<p>Bonjou ${detail.user.name},</p><p>Dènye peman abònman ou pa pase. Tanpri mete ajou mwayen peman ou pou kontinye gen aksè.</p><hr><p style="color:#888;font-size:12px">PNICE Academy</p>`,
+      });
+    }
     await recordAudit({ action: 'dunning_reminder', userId, admin: actor });
     return { ok: true, message: 'reminder_sent' };
   } catch (e) {
@@ -185,7 +205,15 @@ export async function sendDunningReminderAction(userId: string): Promise<ActionR
 export async function sendEngagementReminderAction(userId: string): Promise<ActionResult> {
   try {
     const { actor } = await requireAdmin('courses.read');
-    // Production: send the "stuck learner" nudge email (template from /kont notifications).
+    // "Stuck learner" nudge (real send on real data; no-op on mock).
+    const detail = await getUserById(userId);
+    if (detail?.user.email) {
+      await sendEmail({
+        to: detail.user.email,
+        subject: 'Kontinye fòmasyon ou — PNICE Academy',
+        html: `<p>Bonjou ${detail.user.name},</p><p>Nou wè ou kòmanse yon fòmasyon men ou poko fini. Tounen kontinye lè ou pare — n ap tann ou!</p><hr><p style="color:#888;font-size:12px">PNICE Academy</p>`,
+      });
+    }
     await recordAudit({ action: 'engagement_reminder', userId, admin: actor });
     return { ok: true, message: 'reminder_sent' };
   } catch (e) {

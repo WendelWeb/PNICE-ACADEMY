@@ -3,10 +3,15 @@ import {
   IconPlugConnected,
   IconAlertTriangle,
   IconBug,
+  IconServerBolt,
+  IconCircleCheck,
+  IconCircleDashed,
+  IconRocket,
 } from '@tabler/icons-react';
 import { getWebhookLogs, getErrorLogs } from '@/lib/admin/data';
 import { parseWebhookQuery } from '@/lib/admin/support-query';
 import { checkBunnyStream } from '@/lib/admin/health/bunny';
+import { getIntegrationStatus, isLaunchReady } from '@/lib/admin/integrations';
 import { hasCap } from '@/lib/admin/guard';
 import { Forbidden } from '@/components/admin/Forbidden';
 import { WebhookFilters } from '@/components/admin/health/WebhookFilters';
@@ -42,9 +47,46 @@ export default async function SantePage({
   const now = Date.now();
   const staleFailures = webhooks.filter((w) => w.status === 'failed' && now - Date.parse(w.receivedAt) > HOUR).length;
 
+  const status = getIntegrationStatus();
+  const ready = isLaunchReady(status);
+
   return (
     <div className="mx-auto max-w-[1180px] space-y-5">
       <p className="text-sm text-graphite/70">{t('subtitle')}</p>
+
+      {/* Branchement backend — go-live status (Phase D Lot 3) */}
+      <section className="rounded-xl border border-ink/12 bg-paper-light p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wide text-ink/55">
+            <IconServerBolt size={13} /> {t('integrations.title')}
+          </h2>
+          <span className="flex items-center gap-2">
+            <span className="font-mono text-[10px] uppercase tracking-wide text-ink/45">{t('integrations.dataSource')}</span>
+            <span className={cn('rounded px-2 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wide', status.dataSource === 'real' ? 'bg-teal/15 text-teal' : 'bg-ochre/15 text-ochre')}>
+              {t(`integrations.${status.dataSource}`)}
+            </span>
+          </span>
+        </div>
+
+        <ul className="mt-3 grid gap-1.5 sm:grid-cols-2">
+          {status.items.map((it) => (
+            <li key={it.key} className="flex items-center justify-between gap-2 rounded-lg border border-ink/10 bg-paper px-3 py-2">
+              <span className="flex items-center gap-2 text-[13px] text-ink/85">
+                {it.configured ? <IconCircleCheck size={15} className="text-teal" /> : <IconCircleDashed size={15} className="text-ink/35" />}
+                {t(`integrations.item.${it.key}`)}
+              </span>
+              <span className={cn('font-mono text-[9px] uppercase tracking-wide', it.required ? 'text-stampred/70' : 'text-ink/40')}>
+                {it.required ? t('integrations.required') : t('integrations.optional')}
+              </span>
+            </li>
+          ))}
+        </ul>
+
+        <div className={cn('mt-3 flex items-center gap-2 rounded-lg p-3 font-mono text-[12px]', ready ? 'bg-teal/[0.06] text-teal' : 'bg-ochre/[0.06] text-ochre')}>
+          <IconRocket size={16} className="shrink-0" />
+          {ready ? t('integrations.ready') : t('integrations.notReady')}
+        </div>
+      </section>
 
       <BunnyStatusCard initial={bunny} />
 

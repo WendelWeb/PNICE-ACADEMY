@@ -1853,6 +1853,26 @@
         "saved": "Enregistré ✓",
         "onAt": "Activé à {hour}:00",
         "off": "Désactivé"
+      },
+      "integrations": {
+        "title": "Branchement backend",
+        "dataSource": "Source de données",
+        "mock": "Mock (démo)",
+        "real": "Réel (DB)",
+        "required": "requis",
+        "optional": "optionnel",
+        "ready": "Prêt pour le lancement : toutes les intégrations requises sont configurées, source réelle, au moins un moyen de paiement actif.",
+        "notReady": "Pas encore prêt : il manque des intégrations requises (voir docs/launch-checklist.md).",
+        "item": {
+          "database": "Base de données (Neon)",
+          "clerk": "Authentification (Clerk)",
+          "clerkWebhook": "Webhook Clerk (sync users)",
+          "stripe": "Stripe",
+          "moncash": "MonCash",
+          "natcash": "NatCash",
+          "resend": "Email (Resend)",
+          "bunny": "Vidéo (Bunny)"
+        }
       }
     },
     "notifications": {
