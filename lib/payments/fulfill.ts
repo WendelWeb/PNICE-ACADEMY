@@ -42,88 +42,140 @@ async function paymentExists(providerRef: string): Promise<boolean> {
   return rows.length > 0;
 }
 
+async function findPaymentByRef(providerRef: string): Promise<{ id: string } | undefined> {
+  return (
+    await db
+      .select({ id: payments.id })
+      .from(payments)
+      .where(and(eq(payments.provider, 'stripe'), eq(payments.providerRef, providerRef)))
+      .limit(1)
+  )[0];
+}
+
+// Idempotent enrollment upsert, shared by the first-delivery path (step 3)
+// and every self-heal path (duplicate webhook, concurrent-insert race):
+// skip if already enrolled and active, otherwise insert linked to the payment.
+async function ensureCourseEnrollment(
+  userDbId: string,
+  productType: 'course' | 'subscription',
+  courseSlug: string | null,
+  paymentId: string,
+): Promise<void> {
+  if (!(productType === 'course' && courseSlug)) return;
+  const already = await db
+    .select({ id: enrollments.id })
+    .from(enrollments)
+    .where(
+      and(
+        eq(enrollments.userId, userDbId),
+        eq(enrollments.courseSlug, courseSlug),
+        eq(enrollments.status, 'active'),
+      ),
+    )
+    .limit(1);
+  if (already.length === 0) {
+    await db.insert(enrollments).values({
+      userId: userDbId,
+      courseSlug,
+      status: 'active',
+      relatedPaymentId: paymentId,
+    });
+  }
+}
+
 type CheckoutCompleted = Extract<StripeAction, { kind: 'checkout_completed' }>;
 
 async function fulfillCheckoutCompleted(a: CheckoutCompleted): Promise<'processed' | 'ignored'> {
   if (!a.userDbId) throw new Error('checkout.session.completed without client_reference_id');
+  const userDbId = a.userDbId;
   const providerRef = a.paymentIntentId ?? a.sessionId;
-  if (await paymentExists(providerRef)) return 'processed'; // retry duplicate
+
+  const existingPayment = await findPaymentByRef(providerRef);
+  if (existingPayment) {
+    // Retry duplicate. A prior delivery may have recorded the payment but
+    // failed before the enrollment insert landed — re-run the idempotent
+    // enrollment upsert so access self-heals. Do not resend the receipt
+    // email or re-insert the sale notification on this path.
+    await ensureCourseEnrollment(userDbId, a.productType, a.courseSlug, existingPayment.id);
+    return 'processed';
+  }
 
   const user = (
-    await db.select().from(users).where(eq(users.id, a.userDbId)).limit(1)
+    await db.select().from(users).where(eq(users.id, userDbId)).limit(1)
   )[0];
-  if (!user) throw new Error(`user ${a.userDbId} not found for checkout ${a.sessionId}`);
+  if (!user) throw new Error(`user ${userDbId} not found for checkout ${a.sessionId}`);
 
   // 1. Subscription row first (payment row links to it).
   let subscriptionRowId: string | null = null;
   if (a.mode === 'subscription' && a.subscriptionId) {
+    const subscriptionId = a.subscriptionId;
     const existing = (
       await db
         .select({ id: subscriptions.id })
         .from(subscriptions)
-        .where(eq(subscriptions.providerRef, a.subscriptionId))
+        .where(eq(subscriptions.providerRef, subscriptionId))
         .limit(1)
     )[0];
     if (existing) {
       subscriptionRowId = existing.id;
     } else {
-      const remote = await getStripeSubscription(a.subscriptionId);
-      const inserted = (
-        await db
-          .insert(subscriptions)
-          .values({
-            userId: a.userDbId,
-            status: 'active',
-            provider: 'stripe',
-            providerRef: a.subscriptionId,
-            currentPeriodEnd: remote?.currentPeriodEnd ?? null,
-          })
-          .returning({ id: subscriptions.id })
-      )[0];
-      subscriptionRowId = inserted.id;
+      const remote = await getStripeSubscription(subscriptionId);
+      const insertedSubscriptions = await db
+        .insert(subscriptions)
+        .values({
+          userId: userDbId,
+          status: 'active',
+          provider: 'stripe',
+          providerRef: subscriptionId,
+          currentPeriodEnd: remote?.currentPeriodEnd ?? null,
+        })
+        .onConflictDoNothing({ target: subscriptions.providerRef })
+        .returning({ id: subscriptions.id });
+      if (insertedSubscriptions.length > 0) {
+        subscriptionRowId = insertedSubscriptions[0].id;
+      } else {
+        // Concurrent delivery won the race — pick up the row it created.
+        const raced = (
+          await db
+            .select({ id: subscriptions.id })
+            .from(subscriptions)
+            .where(eq(subscriptions.providerRef, subscriptionId))
+            .limit(1)
+        )[0];
+        subscriptionRowId = raced?.id ?? null;
+      }
     }
   }
 
   // 2. Payment row.
-  const payment = (
-    await db
-      .insert(payments)
-      .values({
-        userId: a.userDbId,
-        provider: 'stripe',
-        providerRef,
-        amountCents: a.amountCents,
-        currency: a.currency,
-        status: 'completed',
-        productType: a.productType,
-        courseSlug: a.courseSlug,
-        relatedSubscriptionId: subscriptionRowId,
-      })
-      .returning({ id: payments.id })
-  )[0];
+  const insertedPayments = await db
+    .insert(payments)
+    .values({
+      userId: userDbId,
+      provider: 'stripe',
+      providerRef,
+      amountCents: a.amountCents,
+      currency: a.currency,
+      status: 'completed',
+      productType: a.productType,
+      courseSlug: a.courseSlug,
+      relatedSubscriptionId: subscriptionRowId,
+    })
+    .onConflictDoNothing({ target: [payments.provider, payments.providerRef] })
+    .returning({ id: payments.id });
+
+  if (insertedPayments.length === 0) {
+    // Concurrent delivery won the race and already recorded this payment —
+    // heal down the same path as an ordinary retry duplicate, no email/notif.
+    const raced = await findPaymentByRef(providerRef);
+    if (!raced) throw new Error(`payment ${providerRef} lost after onConflictDoNothing race`);
+    await ensureCourseEnrollment(userDbId, a.productType, a.courseSlug, raced.id);
+    return 'processed';
+  }
+  const payment = insertedPayments[0];
 
   // 3. Course purchase → enrollment (skip if already enrolled and active).
-  if (a.productType === 'course' && a.courseSlug) {
-    const already = await db
-      .select({ id: enrollments.id })
-      .from(enrollments)
-      .where(
-        and(
-          eq(enrollments.userId, a.userDbId),
-          eq(enrollments.courseSlug, a.courseSlug),
-          eq(enrollments.status, 'active'),
-        ),
-      )
-      .limit(1);
-    if (already.length === 0) {
-      await db.insert(enrollments).values({
-        userId: a.userDbId,
-        courseSlug: a.courseSlug,
-        status: 'active',
-        relatedPaymentId: payment.id,
-      });
-    }
-  }
+  await ensureCourseEnrollment(userDbId, a.productType, a.courseSlug, payment.id);
 
   // 4. Close the abandoned-cart tracking row.
   if (a.checkoutRowId) {
@@ -137,7 +189,7 @@ async function fulfillCheckoutCompleted(a: CheckoutCompleted): Promise<'processe
   await db.insert(adminNotifications).values({
     kind: 'sale',
     severity: 'info',
-    userId: a.userDbId,
+    userId: userDbId,
     userName: user.name ?? user.email,
     amountCents: a.amountCents,
     detail: a.courseSlug ?? 'subscription',
@@ -191,19 +243,27 @@ async function fulfillInvoicePaid(a: InvoicePaid): Promise<'processed' | 'ignore
     return 'processed';
   }
 
-  // Renewal: record the recurring charge once.
-  if (a.paymentIntentId && (await paymentExists(a.paymentIntentId))) return 'processed';
-  await db.insert(payments).values({
-    userId: sub.userId,
-    provider: 'stripe',
-    providerRef: a.paymentIntentId ?? `invoice_${a.eventId}`,
-    amountCents: a.amountCents,
-    currency: a.currency,
-    status: 'completed',
-    productType: 'subscription',
-    courseSlug: null,
-    relatedSubscriptionId: sub.id,
-  });
+  // Renewal: record the recurring charge once. Fall back to an event-derived
+  // ref when Stripe sends no payment_intent, so redeliveries still dedup
+  // instead of double-recording revenue.
+  const ref = a.paymentIntentId ?? `invoice_${a.eventId}`;
+  if (await paymentExists(ref)) return 'processed';
+  const insertedRenewals = await db
+    .insert(payments)
+    .values({
+      userId: sub.userId,
+      provider: 'stripe',
+      providerRef: ref,
+      amountCents: a.amountCents,
+      currency: a.currency,
+      status: 'completed',
+      productType: 'subscription',
+      courseSlug: null,
+      relatedSubscriptionId: sub.id,
+    })
+    .onConflictDoNothing({ target: [payments.provider, payments.providerRef] })
+    .returning({ id: payments.id });
+  if (insertedRenewals.length === 0) return 'processed'; // concurrent delivery won the race
   await db
     .update(subscriptions)
     .set({ status: 'active', currentPeriodEnd: periodEnd, updatedAt: new Date() })

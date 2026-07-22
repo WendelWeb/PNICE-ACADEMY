@@ -43,49 +43,65 @@ export const users = pgTable('users', {
     .notNull(),
 });
 
-export const subscriptions = pgTable('subscriptions', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  status: text('status')
-    .$type<'active' | 'past_due' | 'canceled' | 'incomplete'>()
-    .notNull(),
-  // recurring only on card/PayPal/Stripe; crypto = manual monthly renewal (B1)
-  provider: text('provider').$type<'stripe' | 'paypal' | 'crypto'>().notNull(),
-  providerRef: text('provider_ref'),
-  currentPeriodEnd: timestamp('current_period_end', { withTimezone: true }),
-  cancelAtPeriodEnd: boolean('cancel_at_period_end').default(false).notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-});
+export const subscriptions = pgTable(
+  'subscriptions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    status: text('status')
+      .$type<'active' | 'past_due' | 'canceled' | 'incomplete'>()
+      .notNull(),
+    // recurring only on card/PayPal/Stripe; crypto = manual monthly renewal (B1)
+    provider: text('provider').$type<'stripe' | 'paypal' | 'crypto'>().notNull(),
+    providerRef: text('provider_ref'),
+    currentPeriodEnd: timestamp('current_period_end', { withTimezone: true }),
+    cancelAtPeriodEnd: boolean('cancel_at_period_end').default(false).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => ({
+    // Postgres allows multiple NULLs in a unique column, so legacy/manual
+    // rows without a providerRef are unaffected.
+    uniqProviderRef: unique().on(t.providerRef),
+  }),
+);
 
-export const payments = pgTable('payments', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  provider: text('provider')
-    .$type<'stripe' | 'paypal' | 'moncash' | 'natcash' | 'crypto'>()
-    .notNull(),
-  providerRef: text('provider_ref'),
-  amountCents: integer('amount_cents').notNull(),
-  currency: text('currency').notNull(),
-  status: text('status')
-    .$type<'pending' | 'completed' | 'failed' | 'refunded'>()
-    .notNull()
-    .default('pending'),
-  productType: text('product_type').$type<'course' | 'subscription'>().notNull(),
-  courseSlug: text('course_slug'),
-  relatedSubscriptionId: uuid('related_subscription_id'),
-  createdAt: timestamp('created_at', { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-});
+export const payments = pgTable(
+  'payments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    provider: text('provider')
+      .$type<'stripe' | 'paypal' | 'moncash' | 'natcash' | 'crypto'>()
+      .notNull(),
+    providerRef: text('provider_ref'),
+    amountCents: integer('amount_cents').notNull(),
+    currency: text('currency').notNull(),
+    status: text('status')
+      .$type<'pending' | 'completed' | 'failed' | 'refunded'>()
+      .notNull()
+      .default('pending'),
+    productType: text('product_type').$type<'course' | 'subscription'>().notNull(),
+    courseSlug: text('course_slug'),
+    relatedSubscriptionId: uuid('related_subscription_id'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => ({
+    // Postgres allows multiple NULLs in a unique column, so legacy/manual
+    // rows without a providerRef are unaffected.
+    uniqProviderRef: unique().on(t.provider, t.providerRef),
+  }),
+);
 
 export const enrollments = pgTable('enrollments', {
   id: uuid('id').primaryKey().defaultRandom(),
