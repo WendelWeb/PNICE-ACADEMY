@@ -72,11 +72,16 @@ function buildBaseWhere(q: TxQuery) {
   if (q.method) conds.push(eq(payments.provider, methodToProvider(q.method)));
   if (q.productType) conds.push(eq(payments.productType, q.productType));
   if (q.from) conds.push(gte(payments.createdAt, new Date(q.from)));
-  if (q.to) conds.push(lte(payments.createdAt, new Date(q.to)));
+  if (q.to) conds.push(lte(payments.createdAt, new Date(`${q.to}T23:59:59.999Z`)));
   if (q.search) {
-    const term = `%${q.search}%`;
+    const term = `%${q.search.trim()}%`;
     conds.push(
-      or(ilike(users.email, term), ilike(users.name, term), ilike(payments.providerRef, term)),
+      or(
+        ilike(sql`${payments.id}::text`, term),
+        ilike(users.email, term),
+        ilike(users.name, term),
+        ilike(payments.providerRef, term),
+      ),
     );
   }
   return conds.length ? and(...conds) : undefined;
@@ -107,7 +112,7 @@ export async function getTransactions(q: TxQuery): Promise<TxPage> {
     .from(payments)
     .innerJoin(users, eq(payments.userId, users.id))
     .where(where)
-    .orderBy(orderBy)
+    .orderBy(orderBy, asc(payments.id))
     .limit(pageSize)
     .offset((page - 1) * pageSize);
 
@@ -152,7 +157,7 @@ export async function exportTransactions(q: TxQuery): Promise<TxRow[]> {
     .from(payments)
     .innerJoin(users, eq(payments.userId, users.id))
     .where(where)
-    .orderBy(orderBy);
+    .orderBy(orderBy, asc(payments.id));
 
   return rows.map((r) => toRow(r.p, { name: r.name, email: r.email }));
 }
