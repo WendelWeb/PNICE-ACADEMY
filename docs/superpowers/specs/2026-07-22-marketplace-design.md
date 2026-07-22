@@ -74,9 +74,10 @@ devient simplement **l'enseignant #1** — aucun cas spécial dans le code.
 
 ### C3 — Couche marketplace
 
-1. **Onboarding enseignant** : « Devenir enseignant » depuis `/kont` → profil
-   (nom, bio ht/fr, photo), méthode de retrait, acceptation des conditions →
-   statut `pending` → approbation admin.
+1. **Onboarding enseignant** : « Devenir enseignant » depuis `/kont` → parcours
+   guidé multi-étapes soigné (profil : nom, bio ht/fr, photo ; méthode de retrait ;
+   acceptation des conditions) → statut `pending` → approbation admin. Le compte
+   de l'utilisateur **devient sa page de professeur** publique une fois approuvé.
 2. **Studio enseignant** (`/enseigner`, protégé, réutilise les composants CMS admin
    scoped au owner) : mes cours (CRUD + soumission à validation), bundles, mon
    abonnement (prix + cours inclus), mes ventes, mon solde, mes retraits, quota vidéo.
@@ -88,11 +89,26 @@ devient simplement **l'enseignant #1** — aucun cas spécial dans le code.
 4. **Registre + retraits** : `earnings_ledger` alimenté par les webhooks (70/30) ;
    demande de retrait (≥ seuil) → file admin → marquer payé (MonCash/NatCash/
    PayPal/virement, référence manuelle) → débit du registre. Audit sur tout.
-5. **Public** : page vitrine `/prof/[slug]` (bio, cours, bundles, abonnement),
-   catalogue filtrable par enseignant, fiche cours avec bloc enseignant.
-6. **Admin étendu** : liste enseignants (approbation, suspension), file retraits,
-   commission dans `/admin/plateforme`, analytics par enseignant, abonnements
-   multi-plans.
+5. **Public — page professeur `/prof/[slug]`** (la vitrine du prof, demandée
+   explicitement par le propriétaire) : photo + nom + bio bilingue, **note moyenne**
+   (étoiles, moyenne pondérée des avis de ses cours), nombre de cours publiés,
+   nombre d'élèves, ses cours (cartes), ses bundles, son abonnement, ses avis
+   récents. Catalogue filtrable par enseignant ; fiche cours avec bloc enseignant
+   (photo, nom, note, lien vitrine).
+6. **Avis & notes (v1, demandé)** : un élève **inscrit** à un cours peut le noter
+   (1–5 étoiles + commentaire optionnel), un avis par élève par cours, modifiable.
+   Publication immédiate ; signalement → retrait admin. Note du cours = moyenne ;
+   note du prof = moyenne pondérée par nombre d'avis. Table `course_reviews`.
+7. **UI/UX — exigence explicite du propriétaire : « beau, propre, fluide,
+   impeccable, surprenant ».** Chaque écran C3 (onboarding, studio, page prof,
+   avis) passe par une phase de design dédiée (skill frontend-design) qui étend le
+   langage « manifeste de cargaison » : la page prof est pensée comme un
+   **document d'expéditeur** (sceau personnel, cachet de note, manifeste de ses
+   cours), l'onboarding comme un parcours d'embarquement par étapes, avec
+   micro-interactions et transitions soignées. Pas d'UI générique.
+8. **Admin étendu** : liste enseignants (approbation, suspension), file retraits,
+   avis signalés (retrait), commission dans `/admin/plateforme`, analytics par
+   enseignant, abonnements multi-plans.
 
 **En parallèle de C1→C3 : le propriétaire enregistre ses cours.** Dès la fin de C3,
 d'autres enseignants remplissent le catalogue pendant ces enregistrements.
@@ -127,6 +143,9 @@ d'autres enseignants remplissent le catalogue pendant ces enregistrements.
 - **`withdrawal_requests`** — `teacher_user_id`, `amount_cents`, `method`,
   `destination_snapshot`, `status` (`pending`/`paid`/`rejected`),
   `processed_by`, `processed_at`, `reference`, `note`, timestamps.
+- **`course_reviews`** — `course_id`, `user_id` (unique par couple), `stars`
+  (1–5), `comment` (nullable), `status` (`published`/`removed`), timestamps.
+  Contrainte : l'utilisateur doit avoir un `enrollment` actif sur le cours.
 
 ### Tables existantes modifiées
 
@@ -177,10 +196,10 @@ d'autres enseignants remplissent le catalogue pendant ces enregistrements.
 
 ## 7. Hors-scope v1 (différé, volontairement)
 
-PayPal, crypto (NOWPayments), NatCash, WhatsApp Business, avis/notes sur les cours,
-messagerie élève↔prof, quiz/devoirs, affiliation par prof, app mobile, retraits
-automatisés, plans annuels, coupons par enseignant (les promos restent plateforme
-en v1).
+PayPal, crypto (NOWPayments), NatCash, WhatsApp Business, messagerie élève↔prof,
+quiz/devoirs, affiliation par prof, app mobile, retraits automatisés, plans
+annuels, coupons par enseignant (les promos restent plateforme en v1), réponse
+du prof aux avis.
 
 ## 8. Paramètres à fixer par le propriétaire avant lancement
 
