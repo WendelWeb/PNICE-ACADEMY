@@ -78,7 +78,8 @@ export function PaymentMethods({
             <li key={id}>
               <button
                 type="button"
-                onClick={() => setSelected(id)}
+                onClick={() => { setSelected(id); setError(false); }}
+                disabled={busy}
                 aria-pressed={isActive}
                 className={cn(
                   'flex w-full items-center gap-3 rounded-lg border bg-paper-light p-4 text-left transition-colors',
