@@ -23,4 +23,12 @@ describe('buildReceiptHtml', () => {
     const { html } = buildReceiptHtml({ ...base, locale: 'fr', name: null });
     expect(html).toContain('Bonjour,');
   });
+
+  it('escapes HTML in name and itemName', () => {
+    const { html } = buildReceiptHtml({ locale: 'fr', name: '<img src=x onerror=alert(1)>', itemName: 'A & B <script>', amountCents: 900, dateIso: '2026-07-22T12:00:00Z', ref: 'pi_x' });
+    expect(html).not.toContain('<img src=x');
+    expect(html).not.toContain('<script>');
+    expect(html).toContain('&lt;img src=x');
+    expect(html).toContain('A &amp; B');
+  });
 });

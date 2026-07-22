@@ -6,6 +6,9 @@ import { toHtg } from '@/lib/money';
 
 const usd = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 
+const escapeHtml = (s: string) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
 export function buildReceiptHtml(input: {
   locale: 'fr' | 'ht';
   name: string | null;
@@ -18,7 +21,7 @@ export function buildReceiptHtml(input: {
   const htg = Math.round(toHtg(input.amountCents / 100)).toLocaleString('fr-FR');
   const date = new Date(input.dateIso).toLocaleDateString(fr ? 'fr-FR' : 'fr-HT');
   const hello = input.name
-    ? (fr ? `Bonjour ${input.name},` : `Bonjou ${input.name},`)
+    ? (fr ? `Bonjour ${escapeHtml(input.name)},` : `Bonjou ${escapeHtml(input.name)},`)
     : (fr ? 'Bonjour,' : 'Bonjou,');
   const subject = fr
     ? `Reçu — ${input.itemName} — PNICE Academy`
@@ -33,7 +36,7 @@ export function buildReceiptHtml(input: {
       <p style="color:#2B2B28">${hello}</p>
       <p style="color:#2B2B28">${lines.thanks}</p>
       <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;color:#2B2B28">
-        <tr><td style="padding:6px 0;color:#8a8577">${lines.item}</td><td style="text-align:right">${input.itemName}</td></tr>
+        <tr><td style="padding:6px 0;color:#8a8577">${lines.item}</td><td style="text-align:right">${escapeHtml(input.itemName)}</td></tr>
         <tr><td style="padding:6px 0;color:#8a8577">${lines.amount}</td><td style="text-align:right"><strong>${usd(input.amountCents)}</strong> (~${htg} HTG)</td></tr>
         <tr><td style="padding:6px 0;color:#8a8577">${lines.date}</td><td style="text-align:right">${date}</td></tr>
         <tr><td style="padding:6px 0;color:#8a8577">${lines.ref}</td><td style="text-align:right;font-family:monospace;font-size:12px">${input.ref}</td></tr>
