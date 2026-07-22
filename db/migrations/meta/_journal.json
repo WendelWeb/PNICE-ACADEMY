@@ -15,6 +15,13 @@
       "when": 1782314795555,
       "tag": "0001_phase_d_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784745418296,
+      "tag": "0002_lumpy_edwin_jarvis",
+      "breakpoints": true
     }
   ]
 }

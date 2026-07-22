@@ -115,6 +115,8 @@ export default async function CheckoutPage({
           <PaymentMethods
             payLabel={`${t('pay')} ${formatUsd(amountUsd)}`}
             active={activeProviders()}
+            productType={isSub ? 'subscription' : 'course'}
+            courseSlug={course ? course.slug : null}
           />
         </div>
 

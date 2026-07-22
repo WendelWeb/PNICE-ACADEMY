@@ -180,6 +180,9 @@
     "secure": "Ton paiement est sécurisé",
     "secureSub": "PayPal · Visa/Mastercard · MonCash · NatCash · Crypto",
     "demoNote": "Ceci est une démo UI — aucun paiement réel n'est effectué à cette étape.",
+    "secureNote": "Paiement sécurisé par Stripe. Ton accès s'active automatiquement après confirmation.",
+    "payErr": "Le paiement n'a pas pu démarrer. Réessaie dans un instant.",
+    "redirect": "Redirection vers le paiement sécurisé…",
     "promo": {
       "label": "Code promo",
       "placeholder": "Entrez un code",
@@ -195,6 +198,11 @@
         "wrong_product": "Ce code ne s'applique pas à cet article."
       }
     }
+  },
+  "merci": {
+    "title": "Merci ! Paiement reçu",
+    "body": "Ton accès s'active dès que la confirmation arrive (quelques secondes). Retrouve ta formation dans ton tableau de bord.",
+    "cta": "Aller au tableau de bord"
   },
   "dashboard": {
     "title": "Tableau de bord",

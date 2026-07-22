@@ -12,7 +12,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:sync-clerk": "tsx scripts/sync-clerk-users.ts"
+    "db:sync-clerk": "tsx scripts/sync-clerk-users.ts",
+    "db:check-payments": "tsx scripts/check-payments.ts"
   },
   "dependencies": {
     "@clerk/localizations": "^3.37.7",

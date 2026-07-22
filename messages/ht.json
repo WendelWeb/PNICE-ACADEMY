@@ -180,6 +180,9 @@
     "secure": "Peman ou an sekirize",
     "secureSub": "PayPal · Visa/Mastercard · MonCash · NatCash · Kripto",
     "demoNote": "Sa se yon demo UI — pa gen okenn vrè peman ki fèt nan etap sa a.",
+    "secureNote": "Peman sekirize pa Stripe. Aksè w ap aktive otomatikman apre konfimasyon.",
+    "payErr": "Peman an pa t ka kòmanse. Eseye ankò talè.",
+    "redirect": "N ap voye w sou paj peman sekirize a…",
     "promo": {
       "label": "Kòd pwomo",
       "placeholder": "Antre yon kòd",
@@ -195,6 +198,11 @@
         "wrong_product": "Kòd sa a pa aplike sou atik sa a."
       }
     }
+  },
+  "merci": {
+    "title": "Mèsi! Peman an resevwa",
+    "body": "Aksè w ap aktive kou konfimasyon an rive (kèk segonn). Ale nan tablodbò w pou w jwenn fòmasyon an.",
+    "cta": "Ale nan tablodbò a"
   },
   "dashboard": {
     "title": "Tablo debò",
