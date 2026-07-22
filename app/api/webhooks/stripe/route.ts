@@ -31,36 +31,42 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'bad_json' }, { status: 400 });
   }
   const action = mapStripeEvent(evt);
-  const eventType = (evt as { type?: string }).type ?? 'unknown';
+  const eventType = (evt as { type?: string } | null)?.type ?? 'unknown';
 
   const dup = await db
     .select({ id: webhookLogs.id })
     .from(webhookLogs)
-    .where(and(eq(webhookLogs.providerRef, action.eventId), eq(webhookLogs.status, 'processed')))
+    .where(and(eq(webhookLogs.providerRef, action.eventId), eq(webhookLogs.status, 'processed'), eq(webhookLogs.provider, 'stripe')))
     .limit(1);
   if (dup.length > 0) return NextResponse.json({ received: true, duplicate: true });
 
+  let outcome: 'processed' | 'ignored' | 'failed' = 'failed';
+  let errorMessage: string | null = null;
   try {
-    const outcome = action.kind === 'ignored' ? 'ignored' : await fulfillAction(action);
-    await db.insert(webhookLogs).values({
-      provider: 'stripe',
-      eventType,
-      payload: evt,
-      status: outcome === 'processed' ? 'processed' : 'ignored',
-      providerRef: action.eventId,
-      processedAt: new Date(),
-    });
-    return NextResponse.json({ received: true });
+    outcome = action.kind === 'ignored' ? 'ignored' : await fulfillAction(action);
   } catch (e) {
+    outcome = 'failed';
+    errorMessage = e instanceof Error ? e.message : 'error';
+  }
+
+  // Log the TRUE outcome; a log-write failure must never change the response.
+  try {
     await db.insert(webhookLogs).values({
       provider: 'stripe',
       eventType,
       payload: evt,
-      status: 'failed',
-      errorMessage: e instanceof Error ? e.message : 'error',
+      status: outcome,
+      errorMessage,
       providerRef: action.eventId,
       processedAt: new Date(),
     });
+  } catch (e) {
+    console.error('[webhook:stripe] log write failed:', e instanceof Error ? e.message : e);
+  }
+
+  if (outcome === 'failed') {
+    // 500 → Stripe retries later.
     return NextResponse.json({ error: 'processing_failed' }, { status: 500 });
   }
+  return NextResponse.json({ received: true });
 }
