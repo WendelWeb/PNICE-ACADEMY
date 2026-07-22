@@ -7,12 +7,14 @@
  * delete its mock fallback by adding the real method to the spread below.
  *
  * Migrated so far: USER cluster (list, detail, KPI overview, user mutations,
- * audit). Pending: transactions, subscriptions, analytics, engagement,
- * certificates, marketing, support — all still served by the mock.
+ * audit), TRANSACTIONS (list, export, method volumes). Pending: subscriptions,
+ * analytics, engagement, certificates, marketing, support — all still served
+ * by the mock.
  */
 import type { AdminDataSource } from '../types';
 import { mockDataSource } from '../mock';
 import * as users from './users';
+import * as tx from './transactions';
 
 export function realDataSource(): AdminDataSource {
   return {
@@ -30,5 +32,10 @@ export function realDataSource(): AdminDataSource {
     revokeCourseAccess: users.revokeCourseAccess,
     grantSubscription: users.grantSubscription,
     refundPayment: users.refundPayment,
+
+    // ── TRANSACTIONS domain (real) ───────────────────────────────────────
+    getTransactions: tx.getTransactions,
+    exportTransactions: tx.exportTransactions,
+    getMethodVolumes: tx.getMethodVolumes,
   };
 }
