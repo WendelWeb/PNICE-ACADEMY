@@ -50,7 +50,7 @@ export function mapStripeEvent(evt: unknown): StripeAction {
     return {
       kind: 'invoice_paid',
       eventId,
-      subscriptionId: str(o.subscription),
+      subscriptionId: str(o.subscription) ?? str(o.parent?.subscription_details?.subscription),
       paymentIntentId: str(o.payment_intent),
       amountCents: num(o.amount_paid),
       currency: (str(o.currency) ?? 'usd').toUpperCase(),
@@ -62,7 +62,7 @@ export function mapStripeEvent(evt: unknown): StripeAction {
     return {
       kind: 'invoice_failed',
       eventId,
-      subscriptionId: str(o.subscription),
+      subscriptionId: str(o.subscription) ?? str(o.parent?.subscription_details?.subscription),
       amountCents: num(o.amount_due),
       attemptCount: num(o.attempt_count),
     };

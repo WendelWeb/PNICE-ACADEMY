@@ -180,6 +180,7 @@
     "secure": "Peman ou an sekirize",
     "secureSub": "PayPal · Visa/Mastercard · MonCash · NatCash · Kripto",
     "demoNote": "Sa se yon demo UI — pa gen okenn vrè peman ki fèt nan etap sa a.",
+    "secureNote": "Peman sekirize pa Stripe. Aksè w ap aktive otomatikman apre konfimasyon.",
     "payErr": "Peman an pa t ka kòmanse. Eseye ankò talè.",
     "redirect": "N ap voye w sou paj peman sekirize a…",
     "promo": {

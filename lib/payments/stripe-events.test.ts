@@ -56,6 +56,22 @@ describe('mapStripeEvent', () => {
     });
   });
 
+  it('maps invoice.paid with the Basil (2025-03-31+) payload shape', () => {
+    const a = mapStripeEvent({
+      id: 'evt_b1', type: 'invoice.paid',
+      data: { object: {
+        parent: { subscription_details: { subscription: 'sub_9' } },
+        amount_paid: 7900, currency: 'usd', billing_reason: 'subscription_cycle',
+        lines: { data: [{ period: { end: 1760000000 } }] },
+      } },
+    });
+    expect(a.kind).toBe('invoice_paid');
+    if (a.kind === 'invoice_paid') {
+      expect(a.subscriptionId).toBe('sub_9');
+      expect(a.paymentIntentId).toBeNull();
+    }
+  });
+
   it('maps invoice.payment_failed', () => {
     const a = mapStripeEvent({
       id: 'evt_4', type: 'invoice.payment_failed',

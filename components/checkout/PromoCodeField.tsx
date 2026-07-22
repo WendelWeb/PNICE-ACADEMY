@@ -23,6 +23,7 @@ export function PromoCodeField({
   grossCents: number;
 }) {
   const t = useTranslations('checkout.promo');
+  const tc = useTranslations('common');
   const [pending, start] = useTransition();
   const [code, setCode] = useState('');
   const [result, setResult] = useState<PromoValidation | null>(null);
@@ -42,6 +43,9 @@ export function PromoCodeField({
     <div className="mt-4 border-t border-ink/10 pt-4">
       <span className="mb-1.5 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wide text-ink/50">
         <IconTag size={12} /> {t('label')}
+        <span className="rounded bg-ink/10 px-1.5 py-0.5 font-mono text-[10px] uppercase text-ink/60">
+          {tc('demo')}
+        </span>
       </span>
 
       {result?.valid ? (
@@ -82,7 +86,10 @@ export function PromoCodeField({
       {result?.valid && (
         <p className="mt-2 text-right font-mono text-sm text-ink tabular-nums">
           {t('newTotal')}{' '}
-          <span className="font-semibold">{formatUsd((result.netCents ?? grossCents) / 100)}</span>
+          <span className="font-semibold">{formatUsd((result.netCents ?? grossCents) / 100)}</span>{' '}
+          <span className="rounded bg-ink/10 px-1.5 py-0.5 font-mono text-[10px] uppercase text-ink/60">
+            {tc('demo')}
+          </span>
         </p>
       )}
     </div>

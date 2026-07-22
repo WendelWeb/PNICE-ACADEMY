@@ -126,7 +126,7 @@ export function PaymentMethods({
       )}
 
       <p className="mt-3 text-center font-mono text-[11px] leading-relaxed text-graphite/55">
-        {t('demoNote')}
+        {isLive ? t('secureNote') : t('demoNote')}
       </p>
     </div>
   );

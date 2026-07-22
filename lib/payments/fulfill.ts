@@ -16,6 +16,7 @@ import { and, eq } from 'drizzle-orm';
 import { getStripeSubscription } from './stripe';
 import { sendEmail } from '@/lib/email/resend';
 import { buildReceiptHtml } from '@/lib/email/templates';
+import { getCourse } from '@/data/courses';
 import type { StripeAction } from './stripe-events';
 
 export async function fulfillAction(action: StripeAction): Promise<'processed' | 'ignored'> {
@@ -197,7 +198,10 @@ async function fulfillCheckoutCompleted(a: CheckoutCompleted): Promise<'processe
 
   // 6. Receipt email (safety-gated inside sendEmail — no-op in mock mode).
   const locale = user.localePref === 'fr' ? 'fr' : 'ht';
-  const itemName = a.courseSlug ?? (locale === 'fr' ? 'Abonnement mensuel' : 'Abònman chak mwa');
+  const course = a.courseSlug ? getCourse(a.courseSlug) : undefined;
+  const itemName = course
+    ? (locale === 'fr' ? course.title_fr : course.title_ht)
+    : a.courseSlug ?? (locale === 'fr' ? 'Abonnement mensuel' : 'Abònman chak mwa');
   const receipt = buildReceiptHtml({
     locale,
     name: user.name,
