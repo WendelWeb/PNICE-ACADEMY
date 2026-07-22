@@ -34,7 +34,8 @@ export async function POST(req: NextRequest) {
   let row = (await db.select().from(users).where(eq(users.clerkId, clerkId)).limit(1))[0];
   if (!row) {
     const cu = await currentUser();
-    const email = cu?.emailAddresses?.[0]?.emailAddress;
+    const primary = cu?.emailAddresses?.find((e) => e.id === cu?.primaryEmailAddressId);
+    const email = primary?.emailAddress ?? cu?.emailAddresses?.[0]?.emailAddress;
     if (!email) return NextResponse.json({ error: 'no_email' }, { status: 400 });
     row = (
       await db
@@ -78,5 +79,6 @@ export async function POST(req: NextRequest) {
     console.error('[checkout] stripe error:', result.error);
     return NextResponse.json({ error: 'stripe_error' }, { status: 502 });
   }
+  await db.update(checkoutSessions).set({ sessionId: result.id }).where(eq(checkoutSessions.id, cs.id));
   return NextResponse.json({ url: result.url });
 }
