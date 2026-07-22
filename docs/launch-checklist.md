@@ -43,11 +43,17 @@ reports whether each integration is *configured*, never any secret value).
 
 ## Phase 2 — Money + side effects (need provider credentials)
 
-4. **Payment rail #1 — Stripe (test mode first).**
-   - Checkout session creation + `…/api/webhooks/stripe` → write `payments`,
-     `enrollments`, and a `webhook_logs` row per event (the `/admin/sante`
-     webhook table then becomes real). Keys: `STRIPE_SECRET_KEY`,
-     `STRIPE_WEBHOOK_SECRET`.
+4. **Payment rail #1 — Stripe (test mode first). ✔ IMPLEMENTED (C1-P1).**
+   Checkout: `POST /api/checkout` → Stripe Checkout (one-off + $79 subscription).
+   Webhook: `/api/webhooks/stripe` (idempotent, signature-verified) → `payments`,
+   `enrollments`, `subscriptions`, `webhook_logs`, admin notification, receipt
+   email. Verify any deployment with `npm run db:check-payments` + the runbook in
+   `docs/superpowers/plans/2026-07-22-c1p1-stripe-payments.md` (Task 11).
+   Go-live still needs the PROD webhook endpoint secret (`STRIPE_WEBHOOK_SECRET`).
+
+   ⚠ Before the FIRST webhook test: run `npm run db:push` so the migration-0002
+   unique constraints (payments/subscriptions provider_ref) exist in the live DB —
+   the fulfillment code's ON CONFLICT clauses require them.
 
 5. **Payment rail #2 — MonCash (sandbox).** Redirect flow + confirmation
    callback → same `payments`/`enrollments`/`webhook_logs` writes.
