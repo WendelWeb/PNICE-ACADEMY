@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { courses, getCourse, COURSE_CATEGORIES } from './courses';
+import { courses, getCourse, isPreviewLesson, COURSE_CATEGORIES } from './courses';
 
 describe('courses data', () => {
   it('has exactly 9 formations', () => {
@@ -41,5 +41,11 @@ describe('courses data', () => {
     for (const cat of COURSE_CATEGORIES) {
       expect(used.has(cat)).toBe(true);
     }
+  });
+
+  it('only the first lesson of a course is a free preview', () => {
+    expect(isPreviewLesson(1)).toBe(true);
+    expect(isPreviewLesson(2)).toBe(false);
+    expect(isPreviewLesson(5)).toBe(false);
   });
 });

@@ -1,5 +1,6 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { auth } from '@clerk/nextjs/server';
 import {
   IconArrowLeft,
   IconArrowRight,
@@ -11,27 +12,41 @@ import {
 import { Link } from '@/i18n/routing';
 import { Container } from '@/components/ui/Section';
 import { buttonClasses } from '@/components/ui/Button';
-import { getCourse, type Course } from '@/data/courses';
+import { getCourse, isPreviewLesson, type Course } from '@/data/courses';
 import { courseTitle, lessonTitle } from '@/lib/courseFields';
 import { cn } from '@/lib/cn';
+import { clerkEnabled } from '@/lib/clerk';
+import { hasCourseAccess, getCourseProgress } from '@/lib/learner/access';
+import { MarkLessonDoneButton } from '@/components/dashboard/MarkLessonDoneButton';
+
+// Reads per-request Clerk identity + live DB access/progress — never cache
+// across users, and never prerendered (course/lesson access is per-learner).
+export const dynamic = 'force-dynamic';
 
 function LessonRailList({
   course,
   slug,
   n,
   locale,
+  access,
+  completed,
 }: {
   course: Course;
   slug: string;
   n: number;
   locale: string;
+  access: boolean;
+  completed: Set<number>;
 }) {
   return (
     <ol className="divide-y divide-ink/10">
       {course.lessons.map((l, i) => {
         const idx = i + 1;
         const isCurrent = idx === n;
-        const done = idx < n; // DEMO — lessons before current shown done
+        const done = completed.has(idx);
+        // Locked = neither a purchased/subscribed access nor a free preview —
+        // clicking it would just redirect to the sales page (real gate, not demo).
+        const locked = !access && !isPreviewLesson(idx);
         return (
           <li key={i}>
             <Link
@@ -59,7 +74,7 @@ function LessonRailList({
               >
                 {lessonTitle(l, locale)}
               </span>
-              {!done && !isCurrent && (
+              {locked && !isCurrent && (
                 <IconLock size={14} className="shrink-0 text-ink/25" />
               )}
             </Link>
@@ -82,6 +97,18 @@ export default async function LessonPlayer({
   const total = course.lessons.length;
   const n = Number.parseInt(id, 10);
   if (!Number.isFinite(n) || n < 1 || n > total) notFound();
+
+  const clerkId = clerkEnabled ? (await auth()).userId : null;
+  const access = clerkId ? await hasCourseAccess(clerkId, slug) : false;
+  const preview = isPreviewLesson(n);
+
+  // Binding access model (Task L1): reachable only with real course access,
+  // or if this specific lesson is a free preview. Otherwise → buy page.
+  if (!access && !preview) {
+    redirect(`/${locale}/formations/${slug}`);
+  }
+
+  const completed = access && clerkId ? await getCourseProgress(clerkId, slug) : new Set<number>();
 
   const t = await getTranslations('lesson');
   const current = course.lessons[n - 1];
@@ -108,7 +135,14 @@ export default async function LessonPlayer({
           />
         </summary>
         <div className="border-t border-ink/10">
-          <LessonRailList course={course} slug={slug} n={n} locale={locale} />
+          <LessonRailList
+            course={course}
+            slug={slug}
+            n={n}
+            locale={locale}
+            access={access}
+            completed={completed}
+          />
         </div>
       </details>
 
@@ -133,6 +167,12 @@ export default async function LessonPlayer({
             {lessonTitle(current, locale)}
           </h1>
 
+          {!access && preview ? (
+            <p className="mt-3 max-w-lg text-sm leading-relaxed text-graphite/70">
+              {t('previewNotice')}
+            </p>
+          ) : null}
+
           <div className="mt-6 flex flex-wrap items-center gap-3">
             {n > 1 ? (
               <Link
@@ -143,10 +183,26 @@ export default async function LessonPlayer({
                 {t('prev')}
               </Link>
             ) : null}
-            <button type="button" className={buttonClasses('dark', 'md')}>
-              <IconCheck size={16} />
-              {t('markDone')}
-            </button>
+
+            {access ? (
+              <MarkLessonDoneButton
+                courseSlug={slug}
+                lessonIndex={n}
+                initialDone={completed.has(n)}
+                markLabel={t('markDone')}
+                doneLabel={t('doneLabel')}
+                certIssuedToast={t('certIssuedToast')}
+                viewCertificateLabel={t('viewCertificate')}
+              />
+            ) : (
+              <Link
+                href={`/formations/${slug}`}
+                className={buttonClasses('primary', 'md')}
+              >
+                {t('buyForAccess')}
+              </Link>
+            )}
+
             {n < total ? (
               <Link
                 href={`/tableau-de-bord/${slug}/lecon/${n + 1}`}
@@ -165,7 +221,14 @@ export default async function LessonPlayer({
             {t('lessonsList')}
           </h2>
           <div className="mt-4 overflow-hidden rounded-xl border border-ink/12">
-            <LessonRailList course={course} slug={slug} n={n} locale={locale} />
+            <LessonRailList
+              course={course}
+              slug={slug}
+              n={n}
+              locale={locale}
+              access={access}
+              completed={completed}
+            />
           </div>
         </aside>
       </div>

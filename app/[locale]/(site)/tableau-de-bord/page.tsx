@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { IconArrowRight, IconCompass } from '@tabler/icons-react';
 import { setRequestLocale, getTranslations } from 'next-intl/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { Section, Container, Eyebrow } from '@/components/ui/Section';
 import { Reveal } from '@/components/ui/Reveal';
 import { Sceau } from '@/components/ui/Sceau';
@@ -14,22 +14,12 @@ import { courseImageSrc } from '@/lib/courseImage';
 import { getCourse, type Course } from '@/data/courses';
 import { courseTitle } from '@/lib/courseFields';
 import { clerkEnabled } from '@/lib/clerk';
+import { getMyLearning } from '@/lib/learner/access';
 
-// Reads per-request Clerk identity for the greeting — never cache across users.
+// Reads per-request Clerk identity + live DB progress — never cache across users.
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = { title: 'Tablo debò — PNICE Academy' };
-
-// DEMO — mock enrollments to show the dashboard structure. No timestamp
-// field exists yet (real enrollment data isn't wired up), so "continue
-// where you left off" is approximated from this existing shape: the first
-// in-progress course (0 < done < total) in array order, falling back to the
-// first not-yet-started one. See u7-report.md for the full rationale.
-const ENROLLED = [
-  { slug: 'zouti-finansye-dijital', done: 3 },
-  { slug: 'biznis-shipping', done: 1 },
-  { slug: 'ia-whatsapp-telegram', done: 0 },
-];
 
 type Enrollment = { slug: string; done: number; course: Course; total: number };
 
@@ -110,15 +100,22 @@ export default async function DashboardPage({
 
   const user = clerkEnabled ? await currentUser() : null;
   const name = user?.firstName || user?.username || null;
+  const clerkId = clerkEnabled ? (await auth()).userId : null;
 
-  const enrollments: Enrollment[] = ENROLLED.map(({ slug, done }) => {
-    const course = getCourse(slug);
-    if (!course) return null;
-    return { slug, done, course, total: course.lessons.length };
-  }).filter((e): e is Enrollment => e !== null);
+  const { courses: myCourses, hasSubscription } = clerkId
+    ? await getMyLearning(clerkId)
+    : { courses: [], hasSubscription: false };
+
+  const enrollments: Enrollment[] = myCourses
+    .map(({ slug, lessonsDone, lessonsTotal }) => {
+      const course = getCourse(slug);
+      if (!course) return null;
+      return { slug, done: lessonsDone, course, total: lessonsTotal };
+    })
+    .filter((e): e is Enrollment => e !== null);
 
   // "Continue where you left off" — the first course still in progress;
-  // failing that, the first one not yet started. See ENROLLED note above.
+  // failing that, the first one not yet started.
   const continueEnrollment =
     enrollments.find((e) => e.done > 0 && e.done < e.total) ??
     enrollments.find((e) => e.done === 0) ??
@@ -153,6 +150,11 @@ export default async function DashboardPage({
               <p className="mx-auto mt-3 max-w-md text-graphite/70">
                 {t('emptyBody')}
               </p>
+              {hasSubscription ? (
+                <p className="mx-auto mt-3 max-w-md font-mono text-xs uppercase tracking-wide text-teal">
+                  {t('subscriptionActiveNote')}
+                </p>
+              ) : null}
               <Link
                 href="/formations"
                 className={buttonClasses('primary', 'lg', 'mt-7')}
@@ -253,12 +255,6 @@ export default async function DashboardPage({
                 </div>
               </>
             ) : null}
-
-            <Reveal delay={220}>
-              <p className="mt-8 font-mono text-[11px] text-graphite/50">
-                {t('demoNote')}
-              </p>
-            </Reveal>
           </>
         )}
       </Container>

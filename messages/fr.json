@@ -444,15 +444,20 @@
     "emptyTitle": "Le catalogue t'attend",
     "emptyBody": "Tu n'es inscrit à aucune formation pour l'instant. Choisis un savoir-faire qui rapporte, et commence aujourd'hui.",
     "emptyCta": "Voir le catalogue",
-    "demoNote": "Données exemple — pour montrer à quoi ressemble le tableau de bord."
+    "subscriptionActiveNote": "Tu as un abonnement actif — tu as accès à toutes les formations. Choisis-en une pour commencer."
   },
   "lesson": {
     "lessonsList": "Leçons",
     "markDone": "Terminer",
+    "doneLabel": "Leçon terminée",
     "next": "Suivant",
     "prev": "Précédent",
     "playerNote": "La vidéo n'est pas encore disponible. Elle arrivera dans une prochaine étape.",
-    "lessonOf": "Leçon {n} sur {total}"
+    "lessonOf": "Leçon {n} sur {total}",
+    "certIssuedToast": "Bravo ! Tu as terminé tout le cours — ton certificat est prêt.",
+    "viewCertificate": "Voir le certificat",
+    "buyForAccess": "Achète pour avoir accès",
+    "previewNotice": "Tu regardes un aperçu gratuit. Achète la formation pour accéder à toutes les leçons."
   },
   "auth": {
     "signInTitle": "Connexion",
