@@ -53,7 +53,7 @@
     "hero": {
       "eyebrow": "La plateforme haïtienne des savoir-faire pratiques",
       "title": "Des savoir-faire concrets qui rapportent.",
-      "subtitle": "Apprends avec des gens qui maîtrisent ce qu'ils enseignent. Paie en gourdes via MonCash, pratique avec de vrais outils, et termine avec un certificat en main.",
+      "subtitle": "Apprends avec des enseignants qui maîtrisent ce qu'ils enseignent. Paie en gourdes via MonCash, pratique avec de vrais outils, et termine avec un certificat en main.",
       "ctaPrimary": "Commencer à apprendre",
       "ctaSecondary": "Voir le catalogue",
       "manifest": {
@@ -71,6 +71,15 @@
         "certificate": "Certificat inclus",
         "moncash": "MonCash ✓"
       }
+    },
+    "marketplace": {
+      "eyebrow": "Le catalogue",
+      "title": "Qu'est-ce que tu veux apprendre aujourd'hui ?",
+      "searchLabel": "Rechercher une formation",
+      "searchPlaceholder": "Quel savoir-faire veux-tu maîtriser ?",
+      "searchCta": "Chercher",
+      "categoriesLabel": "Ou parcours par catégorie",
+      "categoryCount": "{count, plural, one {1 formation} other {# formations}}"
     },
     "blockers": {
       "eyebrow": "Pourquoi tu restes à la traîne",
@@ -105,8 +114,50 @@
     "manifest": {
       "eyebrow": "Le manifeste",
       "title": "9 formations, chacune une compétence que tu peux vendre",
-      "subtitle": "Chaque ligne est une compétence embarquée à ton nom. Prends-les une par une, ou débloque tout avec l'abonnement.",
-      "included": "Dans l'abonnement"
+      "subtitle": "Chaque ligne est une compétence embarquée à ton nom. Prends-les une par une, ou débloque-les toutes avec l'abonnement de l'enseignant.",
+      "included": "Dans l'abonnement",
+      "teacherLine": "Enseignant : {name}"
+    },
+    "spotlight": {
+      "eyebrow": "Enseignant vedette",
+      "title": "Fais connaissance avec le premier enseignant de la plateforme",
+      "kicker": "Enseignant nº1",
+      "statLine": "Enseignant nº1 · {count, plural, one {1 formation} other {# formations}} · Note —",
+      "profileLink": "Voir son profil",
+      "sub": {
+        "eyebrow": "Abonnement",
+        "title": "Abonnement PNICE Academy",
+        "body": "Débloque les {count, plural, one {1 formation} other {# formations}} de PNICE Academy avec un seul abonnement.",
+        "cta": "Prendre l'abonnement"
+      }
+    },
+    "how": {
+      "eyebrow": "Comment apprendre",
+      "title": "Deux façons d'apprendre",
+      "philosophy": "Chaque enseignant fixe son propre prix — un seul prix pour tout le monde, en dollars comme en gourdes. Pas de frais cachés.",
+      "ways": {
+        "sub": {
+          "badge": "Abonnement",
+          "title": "Prendre l'abonnement d'un enseignant",
+          "text": "Un seul prix par mois : accès à toutes les formations publiées par l'enseignant, plus les nouvelles, automatiquement.",
+          "cta": "Voir les abonnements disponibles"
+        },
+        "unit": {
+          "badge": "À l'unité",
+          "title": "Acheter une formation seule",
+          "text": "Paye une seule fois pour une formation, et garde-la à vie — sans abonnement.",
+          "cta": "Voir toutes les formations"
+        }
+      },
+      "steps": {
+        "eyebrow": "En 3 étapes",
+        "title": "Comment tout ça fonctionne",
+        "items": [
+          { "title": "Choisis", "text": "Choisis une formation ou un enseignant qui t'intéresse." },
+          { "title": "Paie", "text": "Paie avec MonCash, NatCash ou par carte — en dollars comme en gourdes." },
+          { "title": "Apprends", "text": "Suis les leçons à ton rythme, et reçois ton certificat une fois terminé." }
+        ]
+      }
     },
     "founder": {
       "eyebrow": "Notre histoire",
@@ -158,7 +209,7 @@
         },
         {
           "q": "Puis-je commencer avec une seule formation ?",
-          "a": "Oui. Tu peux acheter une formation seule à vie, ou prendre l'abonnement pour tout débloquer."
+          "a": "Oui. Tu peux acheter une formation seule pour la garder à vie, ou prendre l'abonnement d'un enseignant pour accéder à toutes ses formations."
         },
         {
           "q": "Le contenu est-il en créole ?",
@@ -180,7 +231,7 @@
     },
     "finalCta": {
       "title": "Chaque jour sans compétence est un jour sans revenu en plus",
-      "subtitle": "Tu n'as pas besoin d'attendre pour commencer. Choisis une formation ou prends l'abonnement, et commence à apprendre maintenant — en créole, depuis ton téléphone, payé via MonCash.",
+      "subtitle": "Tu n'as pas besoin d'attendre pour commencer. Choisis une formation ou prends l'abonnement d'un enseignant, et commence à apprendre maintenant — en créole, depuis ton téléphone, payé via MonCash.",
       "cta": "Commencer maintenant"
     }
   },
