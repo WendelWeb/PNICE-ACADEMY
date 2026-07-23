@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import { setRequestLocale, getTranslations } from 'next-intl/server';
-import { IconHelpCircle } from '@tabler/icons-react';
+import { IconHelpCircle, IconDownload } from '@tabler/icons-react';
 import { Section, Container } from '@/components/ui/Section';
 import { Sceau } from '@/components/ui/Sceau';
 import { Stamp } from '@/components/ui/Stamp';
+import { buttonClasses } from '@/components/ui/Button';
 import { Link } from '@/i18n/routing';
 import { getCertificateByCode } from '@/lib/admin/data';
 import { cn } from '@/lib/cn';
@@ -103,6 +104,18 @@ export default async function VerifyCertificatePage({
                 />
                 <Row label={t('code')} value={v.code} mono />
               </dl>
+            )}
+
+            {state === 'valid' && (
+              <div className="mt-7 flex justify-center">
+                <a
+                  href={`/api/certificate/${encodeURIComponent(v.code)}?locale=${locale}`}
+                  className={cn(buttonClasses('dark', 'sm'))}
+                >
+                  <IconDownload size={16} />
+                  {t('download')}
+                </a>
+              </div>
             )}
           </div>
         </div>

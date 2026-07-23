@@ -14,8 +14,10 @@ import {
 } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { getStripeSubscription } from './stripe';
-import { sendEmail } from '@/lib/email/resend';
+import { sendEmail, emailConfigured } from '@/lib/email/resend';
 import { buildReceiptHtml } from '@/lib/email/templates';
+import { buildReceiptPdf } from '@/lib/pdf/receipt';
+import { htgLabel } from '@/lib/money';
 import { getCourse } from '@/data/courses';
 import type { StripeAction } from './stripe-events';
 
@@ -197,24 +199,62 @@ async function fulfillCheckoutCompleted(a: CheckoutCompleted): Promise<'processe
   });
 
   // 6. Receipt email (safety-gated inside sendEmail — no-op in mock mode).
-  const locale = user.localePref === 'fr' ? 'fr' : 'ht';
-  const course = a.courseSlug ? getCourse(a.courseSlug) : undefined;
-  const itemName = course
-    ? (locale === 'fr' ? course.title_fr : course.title_ht)
-    : a.courseSlug ?? (locale === 'fr' ? 'Abonnement mensuel' : 'Abònman chak mwa');
-  const receipt = buildReceiptHtml({
-    locale,
-    name: user.name,
-    itemName,
-    amountCents: a.amountCents,
-    dateIso: new Date().toISOString(),
-    ref: providerRef,
-  });
-  await sendEmail({
-    to: a.customerEmail ?? user.email,
-    subject: receipt.subject,
-    html: receipt.html,
-  });
+  // The whole block is wrapped defensively: a receipt-email or PDF-generation
+  // failure must NEVER fail the webhook — the payment/enrollment above are
+  // already durably recorded by this point, so this is best-effort only.
+  try {
+    const locale = user.localePref === 'fr' ? 'fr' : 'ht';
+    const course = a.courseSlug ? getCourse(a.courseSlug) : undefined;
+    const itemName = course
+      ? (locale === 'fr' ? course.title_fr : course.title_ht)
+      : a.courseSlug ?? (locale === 'fr' ? 'Abonnement mensuel' : 'Abònman chak mwa');
+    const dateIso = new Date().toISOString();
+    const receipt = buildReceiptHtml({
+      locale,
+      name: user.name,
+      itemName,
+      amountCents: a.amountCents,
+      dateIso,
+      ref: providerRef,
+    });
+
+    // Only bother generating the PDF when email is actually going to be sent
+    // (RESEND_API_KEY present AND live data source / EMAIL_LIVE) — otherwise
+    // this is pure no-op overhead. A PDF build failure degrades to a
+    // plain-HTML receipt rather than skipping the email entirely.
+    let attachments: { filename: string; content: string }[] | undefined;
+    if (emailConfigured()) {
+      try {
+        const pdfBytes = await buildReceiptPdf({
+          name: user.name,
+          itemName,
+          amountCents: a.amountCents,
+          currency: a.currency,
+          htgText: htgLabel(a.amountCents / 100),
+          dateIso,
+          ref: providerRef,
+          locale,
+        });
+        attachments = [
+          {
+            filename: `pnice-receipt-${providerRef.replace(/[^A-Za-z0-9_-]/g, '_')}.pdf`,
+            content: Buffer.from(pdfBytes).toString('base64'),
+          },
+        ];
+      } catch (err) {
+        console.error('[fulfill] receipt PDF generation failed (sending email without attachment):', err);
+      }
+    }
+
+    await sendEmail({
+      to: a.customerEmail ?? user.email,
+      subject: receipt.subject,
+      html: receipt.html,
+      ...(attachments ? { attachments } : {}),
+    });
+  } catch (err) {
+    console.error('[fulfill] receipt email step failed (payment/enrollment already recorded):', err);
+  }
 
   return 'processed';
 }

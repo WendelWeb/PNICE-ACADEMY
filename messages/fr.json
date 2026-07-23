@@ -2159,6 +2159,7 @@
     "course": "Formation",
     "issued": "Délivré le",
     "code": "Code de vérification",
+    "download": "Télécharger le certificat (PDF)",
     "another": "Vérifier un autre certificat",
     "form": {
       "title": "Vérifier un certificat",
