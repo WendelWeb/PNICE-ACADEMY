@@ -150,6 +150,39 @@ html[data-reduce-motion='true'] .manifest-row {
   }
 }
 
+/* Dashboard course-progress route (U7) — a horizontal companion to
+   .route-thread, used by components/dashboard/CourseProgressRoute.tsx. The
+   dotted track is the full journey; `.route-fill` is the solid teal
+   "traveled" portion — its width is set inline (always correct, even
+   without JS) and it gets a one-shot fill-in flourish via `transform`,
+   gated opt-in exactly like `.route-thread-animated` above. */
+.route-thread-h {
+  --route-color: rgba(16, 32, 74, 0.16);
+  background-image: linear-gradient(
+    to right,
+    var(--route-color) 0 6px,
+    transparent 6px 14px
+  );
+  background-size: 14px 2px;
+  background-repeat: repeat-x;
+}
+.route-fill {
+  transform-origin: left center;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .route-fill {
+    animation: route-fill-in 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+}
+@keyframes route-fill-in {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
 /* Card hover grammar — a quiet lift, paired with `hover:border-ink/35` (or
    similar) composed by the consumer via Tailwind classes. A seal child
    marked `.card-hover-seal` (pass `print` to <Sceau> so it doesn't set its

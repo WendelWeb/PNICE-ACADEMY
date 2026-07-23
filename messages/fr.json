@@ -395,18 +395,24 @@
   "dashboard": {
     "title": "Tableau de bord",
     "greeting": "Bienvenue",
+    "greetingNamed": "Bienvenue, {name}",
     "myCourses": "Mes formations",
+    "continueTitle": "Continue là où tu t'es arrêté",
     "continue": "Continuer",
+    "start": "Commencer",
     "progressDone": "{done}/{total} leçons",
     "completed": "Terminé",
+    "emptyTitle": "Le catalogue t'attend",
+    "emptyBody": "Tu n'es inscrit à aucune formation pour l'instant. Choisis un savoir-faire qui rapporte, et commence aujourd'hui.",
+    "emptyCta": "Voir le catalogue",
     "demoNote": "Données exemple — pour montrer à quoi ressemble le tableau de bord."
   },
   "lesson": {
     "lessonsList": "Leçons",
-    "markDone": "Marquer comme terminé",
+    "markDone": "Terminer",
     "next": "Suivant",
     "prev": "Précédent",
-    "playerNote": "Démo — les vidéos seront chargées avec Bunny Stream à une prochaine étape.",
+    "playerNote": "La vidéo n'est pas encore disponible. Elle arrivera dans une prochaine étape.",
     "lessonOf": "Leçon {n} sur {total}"
   },
   "auth": {

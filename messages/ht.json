@@ -395,18 +395,24 @@
   "dashboard": {
     "title": "Tablo debò",
     "greeting": "Byenveni",
+    "greetingNamed": "Byenveni, {name}",
     "myCourses": "Fòmasyon mwen yo",
+    "continueTitle": "Kontinye kote w te rete a",
     "continue": "Kontinye",
+    "start": "Kòmanse",
     "progressDone": "{done}/{total} leson",
     "completed": "Fini",
+    "emptyTitle": "Katalòg la ap tann ou",
+    "emptyBody": "Ou poko enskri nan okenn fòmasyon. Chwazi yon konpetans ki fè lajan, epi kòmanse jodi a.",
+    "emptyCta": "Gade katalòg la",
     "demoNote": "Done egzanp — pou montre kijan tablo a ap ye."
   },
   "lesson": {
     "lessonsList": "Leson yo",
-    "markDone": "Make kòm fini",
+    "markDone": "Make fini",
     "next": "Pwochen",
     "prev": "Anvan",
-    "playerNote": "Demo — videyo yo ap chaje ak Bunny Stream nan yon pwochen etap.",
+    "playerNote": "Videyo a poko disponib. L ap vini nan yon pwochen etap.",
     "lessonOf": "Leson {n} sou {total}"
   },
   "auth": {
