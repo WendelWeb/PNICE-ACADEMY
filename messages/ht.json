@@ -184,9 +184,34 @@
     }
   },
   "catalog": {
-    "eyebrow": "Katalòg",
+    "eyebrow": "Katalòg · {count, plural, one {1 fòmasyon} other {# fòmasyon}}",
     "title": "Tout fòmasyon yo",
-    "subtitle": "9 konpetans konkrè. Pran yo youn pa youn, oswa louvri tout ak abonman an."
+    "subtitle": "9 konpetans konkrè. Pran yo youn pa youn, oswa louvri tout ak abonman an.",
+    "categories": {
+      "all": "Tout",
+      "biznis": "Biznis",
+      "dijital": "Dijital",
+      "lajan": "Lajan",
+      "lavi-pratik": "Lavi pratik"
+    },
+    "toolbar": {
+      "searchLabel": "Chèche nan katalòg la",
+      "searchPlaceholder": "Chèche yon fòmasyon...",
+      "categoryLabel": "Filtre pa kategori",
+      "sortLabel": "Triye pa",
+      "sort": {
+        "priceAsc": "Pri ↑",
+        "priceDesc": "Pri ↓",
+        "az": "A–Z"
+      },
+      "resultsCount": "{count, plural, =0 {Okenn fòmasyon jwenn} one {1 fòmasyon jwenn} other {# fòmasyon jwenn}}"
+    },
+    "reset": "Retire tout filt",
+    "empty": {
+      "titleQuery": "Nou pa jwenn anyen pou « {query} »",
+      "titleFilters": "Nou pa jwenn okenn fòmasyon ak filt sa yo",
+      "subtitle": "Eseye yon lòt mo, oswa retire filt yo."
+    }
   },
   "course": {
     "back": "Tounen nan fòmasyon yo",

@@ -184,9 +184,34 @@
     }
   },
   "catalog": {
-    "eyebrow": "Catalogue",
+    "eyebrow": "Catalogue · {count, plural, one {1 formation} other {# formations}}",
     "title": "Toutes les formations",
-    "subtitle": "9 compétences concrètes. Prends-les une par une, ou débloque tout avec l'abonnement."
+    "subtitle": "9 compétences concrètes. Prends-les une par une, ou débloque tout avec l'abonnement.",
+    "categories": {
+      "all": "Tous",
+      "biznis": "Business",
+      "dijital": "Digital",
+      "lajan": "Argent",
+      "lavi-pratik": "Vie pratique"
+    },
+    "toolbar": {
+      "searchLabel": "Rechercher dans le catalogue",
+      "searchPlaceholder": "Cherche une formation...",
+      "categoryLabel": "Filtrer par catégorie",
+      "sortLabel": "Trier par",
+      "sort": {
+        "priceAsc": "Prix ↑",
+        "priceDesc": "Prix ↓",
+        "az": "A–Z"
+      },
+      "resultsCount": "{count, plural, =0 {Aucune formation trouvée} one {1 formation trouvée} other {# formations trouvées}}"
+    },
+    "reset": "Retirer tous les filtres",
+    "empty": {
+      "titleQuery": "Aucun résultat pour « {query} »",
+      "titleFilters": "Aucune formation ne correspond à ces filtres",
+      "subtitle": "Essaie un autre mot, ou retire les filtres."
+    }
   },
   "course": {
     "back": "Retour aux formations",
