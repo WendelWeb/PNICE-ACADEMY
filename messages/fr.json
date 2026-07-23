@@ -50,15 +50,25 @@
   },
   "home": {
     "hero": {
-      "title": "Bâtis ta vie numérique, sans limites",
-      "subtitle": "Carte virtuelle, e-commerce, business de shipping, IA pour créer sites et apps — tout ce qu'il faut pour gagner en dollars, depuis Haïti ou la diaspora.",
-      "ctaPrimary": "Commencer maintenant",
-      "ctaSecondary": "Voir les 9 formations",
-      "sealLabel": "formations",
-      "stats": {
-        "courses": "9 formations",
-        "languages": "2 langues · créole & français",
-        "online": "100% en ligne"
+      "eyebrow": "La plateforme haïtienne des savoir-faire pratiques",
+      "title": "Des savoir-faire concrets qui rapportent.",
+      "subtitle": "Apprends avec des gens qui maîtrisent ce qu'ils enseignent. Paie en gourdes via MonCash, pratique avec de vrais outils, et termine avec un certificat en main.",
+      "ctaPrimary": "Commencer à apprendre",
+      "ctaSecondary": "Voir le catalogue",
+      "manifest": {
+        "docTitle": "Manifeste · PNICE Academy",
+        "docNo": "Nº PA-2026",
+        "colCode": "Code",
+        "colItem": "Désignation",
+        "colPrice": "Prix",
+        "more": "+{count} autres formations",
+        "sealBottom": "Officiel"
+      },
+      "trust": {
+        "courses": "{count} formations",
+        "languages": "2 langues",
+        "certificate": "Certificat inclus",
+        "moncash": "MonCash ✓"
       }
     },
     "blockers": {

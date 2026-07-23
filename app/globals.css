@@ -93,6 +93,65 @@ html[data-reduce-motion='true'] .stamp {
   transform: scale(1) rotate(var(--stamp-rot, -8deg)) !important;
 }
 
+/* Manifeste vivant (hero) — staggered row entrance, driven by
+   components/home/ManifestCard.tsx. `.manifest-play` runs the sequence
+   (per-row delay via --row-delay); `.manifest-done` jumps straight to the
+   settled document (repeat visits in the same session). */
+.manifest-row {
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition-delay: var(--row-delay, 0ms);
+  will-change: opacity, transform;
+}
+.manifest-play .manifest-row,
+.manifest-done .manifest-row {
+  opacity: 1;
+  transform: none;
+}
+.manifest-done .manifest-row,
+.manifest-done .stamp {
+  transition: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .manifest-row {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+html[data-reduce-motion='true'] .manifest-row {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* Teal route thread — the journey starts under the hero manifest. The slow
+   dash drift is the single ambient loop the motion system allows (A4);
+   both reduced-motion paths cap it via the global animation rules below. */
+.route-thread-teal {
+  background-image: linear-gradient(
+    to bottom,
+    rgba(31, 110, 102, 0.5) 0 6px,
+    transparent 6px 14px
+  );
+  background-size: 2px 14px;
+  background-repeat: repeat-y;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .route-thread-teal {
+    animation: route-drift 2.8s linear infinite;
+  }
+}
+@keyframes route-drift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 14px;
+  }
+}
+
 /* Card hover grammar — a quiet lift, paired with `hover:border-ink/35` (or
    similar) composed by the consumer via Tailwind classes. A seal child
    marked `.card-hover-seal` (pass `print` to <Sceau> so it doesn't set its

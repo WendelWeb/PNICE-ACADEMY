@@ -50,15 +50,25 @@
   },
   "home": {
     "hero": {
-      "title": "Bati lavi dijital ou, san limit",
-      "subtitle": "Kat vityèl, kòmès sou entènèt, biznis shipping, IA pou kreye sit ak app — tout sa ou bezwen pou fè lajan an dola, kit ou Ayiti, kit ou nan dyaspora a.",
-      "ctaPrimary": "Kòmanse kounye a",
-      "ctaSecondary": "Wè 9 fòmasyon yo",
-      "sealLabel": "fòmasyon",
-      "stats": {
-        "courses": "9 fòmasyon",
-        "languages": "2 lang · kreyòl & franse",
-        "online": "100% an liy"
+      "eyebrow": "Platfòm ayisyen pou konesans pratik",
+      "title": "Konesans pratik ki fè lajan.",
+      "subtitle": "Aprann ak moun ki metrize sa y ap anseye a. Peye an goud ak MonCash, pratike ak vrè zouti, epi fini ak yon sètifika nan men w.",
+      "ctaPrimary": "Kòmanse aprann",
+      "ctaSecondary": "Gade katalòg la",
+      "manifest": {
+        "docTitle": "Manifès · PNICE Academy",
+        "docNo": "Nº PA-2026",
+        "colCode": "Kòd",
+        "colItem": "Deziyasyon",
+        "colPrice": "Pri",
+        "more": "+{count} lòt fòmasyon",
+        "sealBottom": "Ofisyèl"
+      },
+      "trust": {
+        "courses": "{count} fòmasyon",
+        "languages": "2 lang",
+        "certificate": "Sètifika enkli",
+        "moncash": "MonCash ✓"
       }
     },
     "blockers": {
