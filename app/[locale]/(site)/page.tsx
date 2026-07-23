@@ -5,12 +5,19 @@ import { buttonClasses } from '@/components/ui/Button';
 import { CourseCardGrid } from '@/components/courses/CourseCardGrid';
 import { courses } from '@/data/courses';
 import { Hero } from '@/components/home/Hero';
+import { MarketplaceBar } from '@/components/home/MarketplaceBar';
 import { Blockers } from '@/components/home/Blockers';
+import { TeacherSpotlight } from '@/components/home/TeacherSpotlight';
+import { HowMarketplace } from '@/components/home/HowMarketplace';
 import { TeachTeaser } from '@/components/home/TeachTeaser';
 import { Founder } from '@/components/home/Founder';
 import { Testimonials } from '@/components/home/Testimonials';
 import { SeatsBanner } from '@/components/home/SeatsBanner';
-import { Pricing } from '@/components/home/Pricing';
+// `Pricing` (the old global "$79 unlocks the whole catalog" table) was
+// replaced by TeacherSpotlight ($79 as PNICE Academy's own pass) +
+// HowMarketplace (teacher-agnostic mechanics) per the marketplace pivot
+// (docs/superpowers/plans/2026-07-23-marketplace-homepage.md, M1). The
+// component was removed in M2 (dead since M1, confirmed unimported).
 import { Faq } from '@/components/home/Faq';
 import { FinalCta } from '@/components/home/FinalCta';
 
@@ -30,6 +37,7 @@ export default async function Home({
   return (
     <>
       <Hero />
+      <MarketplaceBar />
       <Blockers />
 
       <Section id="fomasyon">
@@ -50,11 +58,12 @@ export default async function Home({
         </Container>
       </Section>
 
+      <TeacherSpotlight />
+      <HowMarketplace />
       <TeachTeaser />
       <Founder />
       <Testimonials />
       <SeatsBanner />
-      <Pricing />
       <Faq />
       <FinalCta />
     </>

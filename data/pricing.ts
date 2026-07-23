@@ -1,9 +1,13 @@
 import { toHtg } from '@/lib/money';
 
 /**
- * Money model: a $79/month subscription unlocks the whole catalog, OR each
- * formation can be bought individually at its own price (lifetime). One single
- * price for everyone — no local/diaspora split.
+ * Money model (marketplace pivot — see
+ * docs/superpowers/plans/2026-07-23-marketplace-homepage.md): each teacher
+ * sets their own subscription + course prices. $79/month is PNICE Academy's
+ * own pass — teacher #1's subscription, unlocking PNICE Academy's own
+ * formations — not "the platform subscription". Each formation can also be
+ * bought individually at its own price (lifetime). One single price for
+ * everyone — no local/diaspora split.
  */
 export const SUBSCRIPTION_USD = 79;
 
@@ -13,7 +17,7 @@ export const subscription = {
 };
 
 export const subscriptionPerks_ht = [
-  'Aksè a tout 9 fòmasyon yo',
+  'Aksè a tout fòmasyon PNICE Academy yo',
   'Nouvo fòmasyon yo enkli otomatikman',
   'Sètifika lè w fini yon fòmasyon',
   'Sipò pèsonalize',
@@ -21,7 +25,7 @@ export const subscriptionPerks_ht = [
 ];
 
 export const subscriptionPerks_fr = [
-  'Accès aux 9 formations',
+  'Accès à toutes les formations PNICE Academy',
   'Nouvelles formations incluses automatiquement',
   'Certificat à la fin de chaque formation',
   'Support personnalisé',

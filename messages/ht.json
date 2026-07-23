@@ -53,7 +53,7 @@
     "hero": {
       "eyebrow": "Platfòm ayisyen pou konesans pratik",
       "title": "Konesans pratik ki fè lajan.",
-      "subtitle": "Aprann ak moun ki metrize sa y ap anseye a. Peye an goud ak MonCash, pratike ak vrè zouti, epi fini ak yon sètifika nan men w.",
+      "subtitle": "Aprann ak anseyan ki metrize sa y ap anseye a. Peye an goud ak MonCash, pratike ak vrè zouti, epi fini ak yon sètifika nan men w.",
       "ctaPrimary": "Kòmanse aprann",
       "ctaSecondary": "Gade katalòg la",
       "manifest": {
@@ -71,6 +71,15 @@
         "certificate": "Sètifika enkli",
         "moncash": "MonCash ✓"
       }
+    },
+    "marketplace": {
+      "eyebrow": "Katalòg la",
+      "title": "Kisa w vle aprann jodi a?",
+      "searchLabel": "Chèche yon fòmasyon",
+      "searchPlaceholder": "Ki konesans w vle metrize?",
+      "searchCta": "Chèche",
+      "categoriesLabel": "Oswa navige pa kategori",
+      "categoryCount": "{count, plural, one {1 fòmasyon} other {# fòmasyon}}"
     },
     "blockers": {
       "eyebrow": "Poukisa ou rete dèyè",
@@ -105,8 +114,49 @@
     "manifest": {
       "eyebrow": "Manifès la",
       "title": "9 fòmasyon, chak se yon konpetans ou ka vann",
-      "subtitle": "Chak liy se yon konpetans ki anbake sou non ou. Pran yo youn pa youn, oswa louvri tout ak abonman an.",
-      "included": "Nan abonman"
+      "subtitle": "Chak liy se yon konpetans ki anbake sou non ou. Pran yo youn pa youn, oswa jwenn tout ak abònman anseyan an.",
+      "teacherLine": "Anseyan: {name}"
+    },
+    "spotlight": {
+      "eyebrow": "Anseyan vedèt",
+      "title": "Fè konesans ak premye anseyan platfòm nan",
+      "kicker": "Anseyan #1",
+      "statLine": "Anseyan #1 · {count, plural, one {1 fòmasyon} other {# fòmasyon}} · Nòt —",
+      "profileLink": "Wè pwofil li",
+      "sub": {
+        "eyebrow": "Abònman",
+        "title": "Abònman PNICE Academy",
+        "body": "Louvri tout {count, plural, one {1 fòmasyon} other {# fòmasyon}} PNICE Academy yo ak yon sèl abònman.",
+        "cta": "Pran abònman an"
+      }
+    },
+    "how": {
+      "eyebrow": "Kijan pou aprann",
+      "title": "De fason pou aprann",
+      "philosophy": "Chak anseyan fikse pwòp pri li — yon sèl pri pou tout moun, an dola tankou an goud. Pa gen frè kache.",
+      "ways": {
+        "sub": {
+          "badge": "Abònman",
+          "title": "Pran abònman ak yon anseyan",
+          "text": "Yon sèl pri chak mwa: aksè a tout fòmasyon anseyan an pibliye yo, ansanm ak nouvo yo, otomatikman.",
+          "cta": "Wè abònman ki disponib"
+        },
+        "unit": {
+          "badge": "A linite",
+          "title": "Achte yon fòmasyon apa",
+          "text": "Peye yon sèl fwa pou yon fòmasyon, epi gade l a vi — san abònman.",
+          "cta": "Gade tout fòmasyon yo"
+        }
+      },
+      "steps": {
+        "eyebrow": "An 3 etap",
+        "title": "Kijan tout sa mache",
+        "items": [
+          { "title": "Chwazi", "text": "Chwazi yon fòmasyon oswa yon anseyan ki enterese w." },
+          { "title": "Peye", "text": "Peye an MonCash, NatCash oswa ak kat — an dola tankou an goud." },
+          { "title": "Aprann", "text": "Swiv leson yo nan pwòp rit ou, epi resevwa sètifika w lè w fini." }
+        ]
+      }
     },
     "founder": {
       "eyebrow": "Istwa nou",
@@ -130,20 +180,6 @@
       "left": "plas ki rete",
       "note": "Egzanp — n ap mete yon vrè kontè anvan lansman an."
     },
-    "pricing": {
-      "eyebrow": "Pri",
-      "title": "Yon sèl pri pou tout moun",
-      "subtitle": "Louvri tout katalòg la ak yon sèl abonman, oswa achte yon fòmasyon apa pou w genyen l a vi. Ou deside.",
-      "popular": "Pi popilè",
-      "subName": "Abonman",
-      "subCta": "Pran abonman an",
-      "unitName": "A linite",
-      "unitText": "Chak fòmasyon gen pwòp pri li. Peye yon sèl fwa, gade l a vi.",
-      "unitCta": "Wè tout fòmasyon yo",
-      "unitNote": "Pri yo se egzanp — y ap ranplase ak pri final yo.",
-      "priceFrom": "Soti nan",
-      "noHiddenFees": "Pa gen frè kache — pri ou wè a se pri ou peye a, an dola tankou an goud"
-    },
     "faq": {
       "eyebrow": "Kesyon",
       "title": "Kesyon moun konn poze",
@@ -158,7 +194,7 @@
         },
         {
           "q": "Èske m ka kòmanse ak yon sèl fòmasyon?",
-          "a": "Wi. Ou ka achte yon fòmasyon poukont li a vi, oswa pran abonman an pou louvri tout."
+          "a": "Wi. Ou ka achte yon fòmasyon apa pou w genyen l a vi, oswa pran abònman yon anseyan pou jwenn aksè a tout fòmasyon li yo."
         },
         {
           "q": "Èske kontni an an kreyòl?",
@@ -180,14 +216,15 @@
     },
     "finalCta": {
       "title": "Chak jou san konpetans se yon jou san lajan anplis",
-      "subtitle": "Ou pa bezwen tann pou w kòmanse. Chwazi yon fòmasyon oswa pran abonman an, epi kòmanse aprann kounye a — an kreyòl, sou telefòn ou, peye an MonCash.",
+      "subtitle": "Ou pa bezwen tann pou w kòmanse. Chwazi yon fòmasyon oswa pran abònman yon anseyan, epi kòmanse aprann kounye a — an kreyòl, sou telefòn ou, peye an MonCash.",
       "cta": "Kòmanse kounye a"
     }
   },
   "catalog": {
     "eyebrow": "Katalòg · {count, plural, one {1 fòmasyon} other {# fòmasyon}}",
     "title": "Tout fòmasyon yo",
-    "subtitle": "9 konpetans konkrè. Pran yo youn pa youn, oswa louvri tout ak abonman an.",
+    "subtitle": "9 konpetans konkrè, chak nan men yon anseyan. Pran yo youn pa youn, oswa jwenn tout fòmasyon yon anseyan ak abònman li.",
+    "teacherLine": "Anseyan: {name}",
     "categories": {
       "all": "Tout",
       "biznis": "Biznis",
@@ -232,7 +269,7 @@
     "minShort": "min",
     "hourShort": "h",
     "ctaTitle": "Pare pou kòmanse?",
-    "ctaText": "Achte fòmasyon sa a poukont li, oswa pran abonman an pou louvri tout katalòg la.",
+    "ctaText": "Achte fòmasyon sa a poukont li, oswa pran abònman PNICE Academy pou louvri tout fòmasyon li yo.",
     "facts": {
       "languages": "2 lang",
       "certificate": "Sètifika"
@@ -284,7 +321,7 @@
     },
     "cta": {
       "title": "Pare pou w kòmanse?",
-      "body": "Chwazi yon fòmasyon nan manifès la, oswa louvri tout ak abonman an.",
+      "body": "Chwazi yon fòmasyon nan manifès la, oswa louvri tout fòmasyon li yo ak abonman an.",
       "primary": "Kòmanse aprann",
       "secondary": "Gade tout katalòg la",
       "teachLink": "Ou metrize yon konesans tou? Vin anseyan"
@@ -352,7 +389,7 @@
   "checkout": {
     "title": "Peman",
     "summary": "Rezime kòmand",
-    "subItem": "Abonman — tout katalòg la",
+    "subItem": "Abònman PNICE Academy",
     "subPer": "Faktire chak mwa",
     "unitLabel": "Fòmasyon · aksè a vi",
     "methodTitle": "Chwazi mwayen pou peye",
