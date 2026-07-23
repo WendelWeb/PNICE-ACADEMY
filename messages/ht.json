@@ -376,12 +376,21 @@
         "scheduled": "Kòd sa a poko aktif.",
         "wrong_product": "Kòd sa a pa aplike sou atik sa a."
       }
+    },
+    "trust": {
+      "lock": "Peman sekirize",
+      "guarantee": "Pa satisfè? Kontakte sipò a — nou ka ede w jwenn yon ranbousman.",
+      "accepted": "Nou aksepte"
     }
   },
   "merci": {
     "title": "Mèsi! Peman an resevwa",
     "body": "Aksè w ap aktive kou konfimasyon an rive (kèk segonn). Ale nan tablodbò w pou w jwenn fòmasyon an.",
-    "cta": "Ale nan tablodbò a"
+    "cta": "Ale nan tablodbò a",
+    "docHeader": "RESI · PNICE ACADEMY",
+    "sealWord": "PEYE",
+    "nextSteps": "Pwochèn etap",
+    "emailNote": "Ou pral resevwa yon resi nan imèl ou."
   },
   "dashboard": {
     "title": "Tablo debò",

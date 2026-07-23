@@ -376,12 +376,21 @@
         "scheduled": "Ce code n'est pas encore actif.",
         "wrong_product": "Ce code ne s'applique pas à cet article."
       }
+    },
+    "trust": {
+      "lock": "Paiement sécurisé",
+      "guarantee": "Pas satisfait·e ? Contacte le support — on peut t'aider à obtenir un remboursement.",
+      "accepted": "On accepte"
     }
   },
   "merci": {
     "title": "Merci ! Paiement reçu",
     "body": "Ton accès s'active dès que la confirmation arrive (quelques secondes). Retrouve ta formation dans ton tableau de bord.",
-    "cta": "Aller au tableau de bord"
+    "cta": "Aller au tableau de bord",
+    "docHeader": "REÇU · PNICE ACADEMY",
+    "sealWord": "PAYÉ",
+    "nextSteps": "Prochaine étape",
+    "emailNote": "Tu vas recevoir un reçu par email."
   },
   "dashboard": {
     "title": "Tableau de bord",
