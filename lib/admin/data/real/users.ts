@@ -245,7 +245,7 @@ export async function getUserById(id: string): Promise<UserDetail | null> {
     .sort((a, b) => b.enrolledAt.localeCompare(a.enrolledAt));
 
   const certs = (await db.select().from(T.certificates).where(eq(T.certificates.userId, id)))
-    .map((c) => ({ id: c.id, userId: c.userId, courseSlug: c.courseSlug, issuedAt: iso(c.issuedAt)!, verificationCode: c.verificationCode, revoked: false }))
+    .map((c) => ({ id: c.id, userId: c.userId, courseSlug: c.courseSlug, issuedAt: iso(c.issuedAt)!, verificationCode: c.verificationCode, revoked: c.revoked }))
     .sort((a, b) => b.issuedAt.localeCompare(a.issuedAt));
 
   const credits = (await db.select().from(T.creditLedger).where(eq(T.creditLedger.userId, id)))
