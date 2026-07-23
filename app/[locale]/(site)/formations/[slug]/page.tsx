@@ -156,6 +156,14 @@ export default async function CourseDetail({
                   <p className="mt-3 max-w-xl text-lg leading-relaxed text-graphite">
                     {courseTagline(course, locale)}
                   </p>
+                  {teacher && (
+                    <Link
+                      href={`/prof/${teacher.slug}`}
+                      className="mt-2 inline-flex items-center gap-1 font-mono text-[11px] text-ink/60 transition-colors hover:text-ochre"
+                    >
+                      {tCatalog('teacherLine', { name: teacher.displayName })}
+                    </Link>
+                  )}
                 </div>
               </div>
 

@@ -17,7 +17,7 @@ import { SeatsBanner } from '@/components/home/SeatsBanner';
 // replaced by TeacherSpotlight ($79 as PNICE Academy's own pass) +
 // HowMarketplace (teacher-agnostic mechanics) per the marketplace pivot
 // (docs/superpowers/plans/2026-07-23-marketplace-homepage.md, M1). The
-// component file is left in the repo, unused — cleanup is a later task.
+// component was removed in M2 (dead since M1, confirmed unimported).
 import { Faq } from '@/components/home/Faq';
 import { FinalCta } from '@/components/home/FinalCta';
 

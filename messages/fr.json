@@ -115,7 +115,6 @@
       "eyebrow": "Le manifeste",
       "title": "9 formations, chacune une compétence que tu peux vendre",
       "subtitle": "Chaque ligne est une compétence embarquée à ton nom. Prends-les une par une, ou débloque-les toutes avec l'abonnement de l'enseignant.",
-      "included": "Dans l'abonnement",
       "teacherLine": "Enseignant : {name}"
     },
     "spotlight": {
@@ -181,20 +180,6 @@
       "left": "places restantes",
       "note": "Exemple — un vrai compteur sera mis avant le lancement."
     },
-    "pricing": {
-      "eyebrow": "Tarifs",
-      "title": "Un seul prix pour tout le monde",
-      "subtitle": "Débloque tout le catalogue avec un seul abonnement, ou achète une formation seule pour la garder à vie. À toi de choisir.",
-      "popular": "Le plus populaire",
-      "subName": "Abonnement",
-      "subCta": "Prendre l'abonnement",
-      "unitName": "À l'unité",
-      "unitText": "Chaque formation a son propre prix. Paye une seule fois, garde-la à vie.",
-      "unitCta": "Voir toutes les formations",
-      "unitNote": "Prix exemples — à remplacer par les prix définitifs.",
-      "priceFrom": "À partir de",
-      "noHiddenFees": "Pas de frais cachés — le prix affiché est le prix payé, en dollars comme en gourdes"
-    },
     "faq": {
       "eyebrow": "Questions",
       "title": "Questions fréquentes",
@@ -238,7 +223,8 @@
   "catalog": {
     "eyebrow": "Catalogue · {count, plural, one {1 formation} other {# formations}}",
     "title": "Toutes les formations",
-    "subtitle": "9 compétences concrètes. Prends-les une par une, ou débloque tout avec l'abonnement.",
+    "subtitle": "9 compétences concrètes, chacune entre les mains d'un enseignant. Prends-les une par une, ou débloque toutes les formations d'un enseignant avec son abonnement.",
+    "teacherLine": "Enseignant : {name}",
     "categories": {
       "all": "Tous",
       "biznis": "Business",
@@ -283,7 +269,7 @@
     "minShort": "min",
     "hourShort": "h",
     "ctaTitle": "Prêt à commencer ?",
-    "ctaText": "Achète cette formation seule, ou prends l'abonnement pour débloquer tout le catalogue.",
+    "ctaText": "Achète cette formation seule, ou prends l'abonnement PNICE Academy pour débloquer toutes ses formations.",
     "facts": {
       "languages": "2 langues",
       "certificate": "Certificat"
@@ -335,7 +321,7 @@
     },
     "cta": {
       "title": "Prêt à commencer ?",
-      "body": "Choisis une formation dans le manifeste, ou débloque tout avec l'abonnement.",
+      "body": "Choisis une formation dans le manifeste, ou débloque toutes ses formations avec l'abonnement.",
       "primary": "Commencer à apprendre",
       "secondary": "Voir tout le catalogue",
       "teachLink": "Tu maîtrises un savoir-faire toi aussi ? Deviens enseignant"
@@ -403,7 +389,7 @@
   "checkout": {
     "title": "Paiement",
     "summary": "Récapitulatif",
-    "subItem": "Abonnement — tout le catalogue",
+    "subItem": "Abonnement PNICE Academy",
     "subPer": "Facturé chaque mois",
     "unitLabel": "Formation · accès à vie",
     "methodTitle": "Choisir le moyen de paiement",
