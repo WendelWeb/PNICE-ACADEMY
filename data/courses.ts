@@ -9,6 +9,15 @@
 export type Lesson = {
   title_ht: string;
   title_fr: string;
+  /**
+   * Bunny Stream video id for this lesson (Task L4). Optional/empty until
+   * the owner records + uploads videos — `undefined` for all 9 courses
+   * today. Mirrors the CMS's `ContentLesson.bunnyVideoId` (Phase C,
+   * lib/admin/content/store.ts) which is admin-only; this is the field the
+   * PUBLIC lesson page reads. `components/learn/LessonPlayer.tsx` renders
+   * the real embed only when both this AND `BUNNY_STREAM_LIBRARY_ID` are set.
+   */
+  bunnyVideoId?: string;
 };
 
 /**

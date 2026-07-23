@@ -4,7 +4,6 @@ import { auth } from '@clerk/nextjs/server';
 import {
   IconArrowLeft,
   IconArrowRight,
-  IconPlayerPlayFilled,
   IconCheck,
   IconLock,
   IconChevronDown,
@@ -18,6 +17,7 @@ import { cn } from '@/lib/cn';
 import { clerkEnabled } from '@/lib/clerk';
 import { hasCourseAccess, getCourseProgress } from '@/lib/learner/access';
 import { MarkLessonDoneButton } from '@/components/dashboard/MarkLessonDoneButton';
+import { LessonPlayer as LessonVideoPlayer } from '@/components/learn/LessonPlayer';
 
 // Reads per-request Clerk identity + live DB access/progress — never cache
 // across users, and never prerendered (course/lesson access is per-learner).
@@ -149,16 +149,11 @@ export default async function LessonPlayer({
       <div className="mt-5 grid gap-8 lg:grid-cols-[1.6fr_1fr]">
         {/* Player */}
         <div>
-          <div className="rounded-2xl border border-ochre/25 bg-paper p-2 md:p-3">
-            <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-xl border border-ink/15 bg-ink">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-ochre text-[#1b1207]">
-                <IconPlayerPlayFilled size={28} />
-              </div>
-              <span className="absolute bottom-3 left-4 max-w-[80%] font-mono text-[11px] leading-relaxed text-paper-light/55">
-                {t('playerNote')}
-              </span>
-            </div>
-          </div>
+          <LessonVideoPlayer
+            videoId={current.bunnyVideoId}
+            title={lessonTitle(current, locale)}
+            placeholderNote={t('playerNote')}
+          />
 
           <p className="mt-5 font-mono text-xs uppercase tracking-wide text-teal">
             {t('lessonOf', { n, total })}
