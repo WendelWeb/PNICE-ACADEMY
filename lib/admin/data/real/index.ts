@@ -12,8 +12,12 @@
  * users), CERTIFICATES (list, verify-by-code, revoke/reissue/issue),
  * SUBSCRIPTIONS (list, events, dunning, renewals + series, cohorts, KPIs,
  * cancellation reasons — see lib/admin/data/real/subscriptions.ts for the
- * documented degeneracies where the schema lacks a mock-only column). Pending:
- * analytics, marketing, support — all still served by the mock.
+ * documented degeneracies where the schema lacks a mock-only column),
+ * ANALYTICS (getAnalytics — revenue/signups/enrollments/method/course/geo/
+ * language/funnel/heatmap; see lib/admin/data/real/analytics.ts for the
+ * documented degeneracies, notably the MOCK-flagged visitor→account funnel
+ * step, which has no real traffic-analytics source). Pending: marketing,
+ * support — all still served by the mock.
  */
 import type { AdminDataSource } from '../types';
 import { mockDataSource } from '../mock';
@@ -22,6 +26,7 @@ import * as tx from './transactions';
 import * as engagement from './engagement';
 import * as certs from './certificates';
 import * as subs from './subscriptions';
+import * as analytics from './analytics';
 
 export function realDataSource(): AdminDataSource {
   return {
@@ -69,5 +74,8 @@ export function realDataSource(): AdminDataSource {
     getCohorts: subs.getCohorts,
     getSubKpis: subs.getSubKpis,
     getCancellationReasons: subs.getCancellationReasons,
+
+    // ── ANALYTICS domain (real) ───────────────────────────────────────────
+    getAnalytics: analytics.getAnalytics,
   };
 }
