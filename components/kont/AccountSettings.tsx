@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { useTranslations } from 'next-intl';
 import { Sceau } from '@/components/ui/Sceau';
@@ -25,10 +26,16 @@ const TABS = [
 ] as const;
 type TabId = (typeof TABS)[number];
 
+/** Deep-link support: `/kont?tab=support` opens straight to that tab (used by the footer's "Èd" links). */
+function initialTabFrom(requested: string | null): TabId {
+  return (TABS as readonly string[]).includes(requested ?? '') ? (requested as TabId) : 'profile';
+}
+
 export function AccountSettings() {
   const t = useTranslations('kont');
   const { isLoaded, user } = useUser();
-  const [active, setActive] = useState<TabId>('profile');
+  const searchParams = useSearchParams();
+  const [active, setActive] = useState<TabId>(() => initialTabFrom(searchParams.get('tab')));
 
   if (!isLoaded) {
     return (

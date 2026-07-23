@@ -65,6 +65,133 @@
   }
 }
 
+/* Stamp entrance (driven by components/ui/Stamp.tsx) — a one-time
+   stamp-down: scale 1.6 → 1, rotate into place, fade in. The overshoot lives
+   in the cubic-bezier itself (y2 > 1), giving the "subtle settle" without a
+   second keyframe step. */
+.stamp {
+  display: inline-block;
+  opacity: 0;
+  transform: scale(1.6) rotate(var(--stamp-rot, -8deg));
+  transition:
+    opacity 0.45s cubic-bezier(0.2, 1.4, 0.3, 1),
+    transform 0.45s cubic-bezier(0.2, 1.4, 0.3, 1);
+  will-change: opacity, transform;
+}
+.stamp.is-stamped {
+  opacity: 1;
+  transform: scale(1) rotate(var(--stamp-rot, -8deg));
+}
+@media (prefers-reduced-motion: reduce) {
+  .stamp {
+    opacity: 1 !important;
+    transform: scale(1) rotate(var(--stamp-rot, -8deg)) !important;
+  }
+}
+html[data-reduce-motion='true'] .stamp {
+  opacity: 1 !important;
+  transform: scale(1) rotate(var(--stamp-rot, -8deg)) !important;
+}
+
+/* Card hover grammar — a quiet lift, paired with `hover:border-ink/35` (or
+   similar) composed by the consumer via Tailwind classes. A seal child
+   marked `.card-hover-seal` (pass `print` to <Sceau> so it doesn't set its
+   own inline transform) turns +2° alongside the lift. */
+.card-hover {
+  transition:
+    transform 180ms ease-out,
+    border-color 180ms ease-out,
+    box-shadow 180ms ease-out;
+}
+.card-hover:hover,
+.card-hover:focus-within {
+  transform: translateY(-3px);
+}
+.card-hover .card-hover-seal {
+  transition: transform 180ms ease-out;
+  transform: rotate(var(--sceau-rot, -6deg));
+}
+.card-hover:hover .card-hover-seal,
+.card-hover:focus-within .card-hover-seal {
+  transform: rotate(calc(var(--sceau-rot, -6deg) + 2deg));
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-hover,
+  .card-hover .card-hover-seal {
+    transition: none;
+  }
+  .card-hover:hover,
+  .card-hover:focus-within {
+    transform: none;
+  }
+  .card-hover:hover .card-hover-seal,
+  .card-hover:focus-within .card-hover-seal {
+    transform: rotate(var(--sceau-rot, -6deg));
+  }
+}
+html[data-reduce-motion='true'] .card-hover:hover,
+html[data-reduce-motion='true'] .card-hover:focus-within {
+  transform: none !important;
+}
+html[data-reduce-motion='true'] .card-hover:hover .card-hover-seal,
+html[data-reduce-motion='true'] .card-hover:focus-within .card-hover-seal {
+  transform: rotate(var(--sceau-rot, -6deg)) !important;
+}
+
+/* Nav elevation — the sticky nav gains a translucent surface + hairline
+   bottom border once the page scrolls past ~8px (state toggled by
+   components/layout/NavClient.tsx via an IntersectionObserver sentinel). */
+.nav-shell {
+  transition:
+    background-color 220ms ease-out,
+    border-color 220ms ease-out,
+    box-shadow 220ms ease-out;
+}
+.nav-elevated {
+  background-color: rgba(242, 238, 228, 0.85);
+  border-bottom-color: rgba(16, 32, 74, 0.1);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 1px 0 rgba(16, 32, 74, 0.04);
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-shell {
+    transition: none;
+  }
+}
+html[data-reduce-motion='true'] .nav-shell {
+  transition: none;
+}
+
+/* Nav link underline — animated width on hover/focus/active */
+.nav-link {
+  position: relative;
+  padding-bottom: 2px;
+}
+.nav-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  height: 2px;
+  width: 0;
+  background-color: var(--ochre);
+  transition: width 200ms ease-out;
+}
+.nav-link:hover::after,
+.nav-link:focus-visible::after,
+.nav-link.nav-link-active::after {
+  width: 100%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-link::after {
+    transition: none;
+  }
+}
+html[data-reduce-motion='true'] .nav-link::after {
+  transition: none;
+}
+
 /* User-level "reduce animations" preference (independent of the OS setting) */
 html[data-reduce-motion='true'] *,
 html[data-reduce-motion='true'] *::before,

@@ -3,7 +3,9 @@
     "formations": "Formations",
     "pricing": "Tarifs",
     "login": "Connexion",
-    "cta": "Commencer"
+    "cta": "Commencer",
+    "openMenu": "Ouvrir le menu",
+    "closeMenu": "Fermer le menu"
   },
   "common": {
     "perMonth": "/mois",
@@ -17,18 +19,34 @@
     "demo": "Démo — non actif"
   },
   "footer": {
-    "tagline": "Bâtis ta vie numérique, sans limites",
+    "tagline": "Des savoir-faire concrets qui rapportent",
     "madeFor": "Conçu pour Haïti et la diaspora",
+    "columns": {
+      "learn": {
+        "title": "Apprendre",
+        "formations": "Catalogue de formations",
+        "pricing": "Tarifs et abonnement"
+      },
+      "teach": {
+        "title": "Enseigner",
+        "badge": "Bientôt",
+        "teaser": "Tu maîtrises un savoir-faire ? Bientôt tu pourras l'enseigner ici."
+      },
+      "help": {
+        "title": "Aide",
+        "account": "Mon compte",
+        "support": "Support",
+        "verify": "Vérifier un certificat"
+      },
+      "legal": {
+        "title": "Légal"
+      }
+    },
     "payments": "Moyens de paiement",
-    "explore": "Explorer",
-    "account": "Compte",
-    "rights": "Tous droits réservés",
-    "links": {
-      "formations": "Formations",
-      "pricing": "Tarifs",
-      "login": "Connexion",
-      "myAccount": "Mon compte"
-    }
+    "localeNote": "Le site est disponible en créole et en français — change la langue dans le menu en haut.",
+    "contact": "Contact",
+    "contactEmail": "kontak@pnice.academy",
+    "rights": "Tous droits réservés"
   },
   "home": {
     "hero": {
@@ -1913,7 +1931,13 @@
     "name": "Nom",
     "course": "Formation",
     "issued": "Délivré le",
-    "code": "Code de vérification"
+    "code": "Code de vérification",
+    "form": {
+      "title": "Vérifier un certificat",
+      "help": "Entre le code de vérification indiqué sur le certificat.",
+      "placeholder": "Exemple : PNA-2004-A17",
+      "submit": "Vérifier"
+    }
   },
   "review": {
     "title": "Merci {name} ! Partage ton expérience",

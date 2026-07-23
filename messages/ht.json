@@ -3,7 +3,9 @@
     "formations": "Fòmasyon",
     "pricing": "Pri",
     "login": "Konekte",
-    "cta": "Kòmanse kounye a"
+    "cta": "Kòmanse",
+    "openMenu": "Louvri meni",
+    "closeMenu": "Fèmen meni"
   },
   "common": {
     "perMonth": "/mwa",
@@ -17,18 +19,34 @@
     "demo": "Demo — pa aktif"
   },
   "footer": {
-    "tagline": "Bati lavi dijital ou, san limit",
+    "tagline": "Konesans pratik ki fè lajan",
     "madeFor": "Fèt pou moun Ayiti ak dyaspora a",
+    "columns": {
+      "learn": {
+        "title": "Aprann",
+        "formations": "Katalòg fòmasyon",
+        "pricing": "Pri ak abònman"
+      },
+      "teach": {
+        "title": "Anseye",
+        "badge": "Byento",
+        "teaser": "Ou metrize yon konesans? Byento w ap ka anseye l isit la."
+      },
+      "help": {
+        "title": "Èd",
+        "account": "Kont mwen",
+        "support": "Sipò",
+        "verify": "Verifye yon sètifika"
+      },
+      "legal": {
+        "title": "Legal"
+      }
+    },
     "payments": "Mwayen pou peye",
-    "explore": "Eksplore",
-    "account": "Kont",
-    "rights": "Tout dwa rezève",
-    "links": {
-      "formations": "Fòmasyon",
-      "pricing": "Pri",
-      "login": "Konekte",
-      "myAccount": "Kont mwen"
-    }
+    "localeNote": "Sit la disponib an kreyòl ak an franse — chanje lang nan meni anlè a.",
+    "contact": "Kontak",
+    "contactEmail": "kontak@pnice.academy",
+    "rights": "Tout dwa rezève"
   },
   "home": {
     "hero": {
@@ -1913,7 +1931,13 @@
     "name": "Non",
     "course": "Fòmasyon",
     "issued": "Bay le",
-    "code": "Kòd verifikasyon"
+    "code": "Kòd verifikasyon",
+    "form": {
+      "title": "Verifye yon sètifika",
+      "help": "Antre kòd verifikasyon ki make sou sètifika a.",
+      "placeholder": "Egzanp: PNA-2004-A17",
+      "submit": "Verifye"
+    }
   },
   "review": {
     "title": "Mèsi {name} ! Pataje eksperyans ou",
