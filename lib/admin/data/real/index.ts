@@ -7,14 +7,17 @@
  * delete its mock fallback by adding the real method to the spread below.
  *
  * Migrated so far: USER cluster (list, detail, KPI overview, user mutations,
- * audit), TRANSACTIONS (list, export, method volumes). Pending: subscriptions,
- * analytics, engagement, certificates, marketing, support — all still served
- * by the mock.
+ * audit), TRANSACTIONS (list, export, method volumes), ENGAGEMENT (course
+ * completion/times/lesson views/aggregate drop-off/active learners/stuck
+ * users), CERTIFICATES (list, verify-by-code, revoke/reissue/issue). Pending:
+ * subscriptions, analytics, marketing, support — all still served by the mock.
  */
 import type { AdminDataSource } from '../types';
 import { mockDataSource } from '../mock';
 import * as users from './users';
 import * as tx from './transactions';
+import * as engagement from './engagement';
+import * as certs from './certificates';
 
 export function realDataSource(): AdminDataSource {
   return {
@@ -37,5 +40,20 @@ export function realDataSource(): AdminDataSource {
     getTransactions: tx.getTransactions,
     exportTransactions: tx.exportTransactions,
     getMethodVolumes: tx.getMethodVolumes,
+
+    // ── ENGAGEMENT domain (real) ──────────────────────────────────────────
+    getCourseCompletion: engagement.getCourseCompletion,
+    getCourseTimes: engagement.getCourseTimes,
+    getLessonViews: engagement.getLessonViews,
+    getAggregateDropoff: engagement.getAggregateDropoff,
+    getActiveLearners: engagement.getActiveLearners,
+    getStuckUsers: engagement.getStuckUsers,
+
+    // ── CERTIFICATES domain (real) ────────────────────────────────────────
+    getCertificates: certs.getCertificates,
+    getCertificateByCode: certs.getCertificateByCode,
+    revokeCertificate: certs.revokeCertificate,
+    reissueCertificate: certs.reissueCertificate,
+    issueCertificate: certs.issueCertificate,
   };
 }
