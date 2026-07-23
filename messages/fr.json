@@ -379,7 +379,7 @@
     },
     "trust": {
       "lock": "Paiement sécurisé",
-      "guarantee": "Pas satisfait·e ? Contacte le support — on peut t'aider à obtenir un remboursement.",
+      "guarantee": "Pas satisfait(e) ? Contacte le support — on peut t'aider à obtenir un remboursement.",
       "accepted": "On accepte"
     }
   },

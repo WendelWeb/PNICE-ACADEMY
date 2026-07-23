@@ -17,8 +17,14 @@ import { activeProviders } from '@/lib/admin/platform/store';
 
 export const metadata: Metadata = { title: 'Peman — PNICE Academy' };
 
-// Mirrors the footer's payment-methods strip (components/layout/Footer.tsx).
-const PAYMENT_BADGES = ['MonCash', 'NatCash', 'Visa', 'PayPal'];
+// Map provider keys to display labels for trust badges.
+const PROVIDER_LABELS: Record<string, string> = {
+  card: 'Visa',
+  paypal: 'PayPal',
+  moncash: 'MonCash',
+  natcash: 'NatCash',
+  crypto: 'Crypto',
+};
 
 // Dynamic so admin provider toggles take effect on checkout immediately.
 export const dynamic = 'force-dynamic';
@@ -44,6 +50,11 @@ export default async function CheckoutPage({
   const itemSub = isSub ? t('subPer') : t('unitLabel');
   const sealCode = isSub ? 'PA' : course!.code;
   const perLabel = isSub ? tc('perMonth') : '';
+
+  // Derive accepted payment badges from active providers.
+  const acceptedBadges = activeProviders()
+    .map((k) => PROVIDER_LABELS[k])
+    .filter(Boolean);
 
   return (
     <Section>
@@ -141,7 +152,7 @@ export default async function CheckoutPage({
                 {t('trust.accepted')}
               </p>
               <ul className="mt-2 flex flex-wrap gap-2">
-                {PAYMENT_BADGES.map((p) => (
+                {acceptedBadges.map((p) => (
                   <li
                     key={p}
                     className="rounded border border-ink/15 px-2.5 py-1 font-mono text-[11px] text-ink/60"
