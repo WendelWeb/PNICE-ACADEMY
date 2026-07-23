@@ -1,6 +1,7 @@
 {
   "nav": {
     "formations": "Fòmasyon",
+    "teach": "Anseye",
     "pricing": "Pri",
     "login": "Konekte",
     "cta": "Kòmanse",
@@ -242,6 +243,101 @@
     "lessonsWord": "leson",
     "ctaTitle": "Pare pou kòmanse?",
     "ctaText": "Achte fòmasyon sa a poukont li, oswa pran abonman an pou louvri tout katalòg la."
+  },
+  "prof": {
+    "docLabel": "Fich anseyan",
+    "docBrand": "PNICE Academy",
+    "docNo": "Nº {docNo}",
+    "since": "Anseyan depi {year}",
+    "noteLabel": "Nòt",
+    "noteEmpty": "poko gen avi",
+    "sealTop": "Anseyan",
+    "photoAlt": "{name} — anseyan sou PNICE Academy",
+    "stats": {
+      "courses": "{count, plural, one {1 fòmasyon} other {# fòmasyon}}",
+      "lessons": "{count, plural, one {1 leson} other {# leson}}",
+      "languages": "2 lang",
+      "students": "{count} elèv"
+    },
+    "bio": {
+      "eyebrow": "Istwa",
+      "title": "Sou anseyan an"
+    },
+    "courses": {
+      "eyebrow": "Manifès · {count, plural, one {1 fòmasyon} other {# fòmasyon}}",
+      "title": "Fòmasyon li yo"
+    },
+    "sub": {
+      "eyebrow": "Abònman",
+      "title": "Tout fòmasyon li yo, ak yon sèl abonman",
+      "body": "Yon sèl pri chak mwa — ou jwenn tout {count} fòmasyon yo, ansanm ak sa k ap vini yo.",
+      "cta": "Pran abonman an"
+    },
+    "cta": {
+      "title": "Pare pou w kòmanse?",
+      "body": "Chwazi yon fòmasyon nan manifès la, oswa louvri tout ak abonman an.",
+      "primary": "Kòmanse aprann",
+      "secondary": "Gade tout katalòg la",
+      "teachLink": "Ou metrize yon konesans tou? Vin anseyan"
+    }
+  },
+  "teach": {
+    "metaTitle": "Anseye sou PNICE Academy",
+    "eyebrow": "Vin anseyan",
+    "soonBadge": "Byento",
+    "title": "Ou metrize yon konesans? Anseye l.",
+    "subtitle": "Kreye fòmasyon pa w sou PNICE Academy. Ou fikse pri w, ou touche 70% sou chak vant, elèv yo peye an MonCash. Kandidati yo ap louvri byento — kite enterè w depi jodi a.",
+    "exampleCta": "Gade yon egzanp paj anseyan",
+    "facts": ["70% pou ou", "Fikse pri w", "Retrè MonCash"],
+    "stepsEyebrow": "Wout anseyan an",
+    "stepsTitle": "4 etap, depi konesans ou rive nan lajan w",
+    "steps": [
+      {
+        "title": "Kandidati",
+        "body": "Ou fè demand ou ak menm kont ou genyen an: non w, sa w vle anseye, yon ti prezantasyon. 10 minit sifi."
+      },
+      {
+        "title": "Apwobasyon",
+        "body": "Ekip nou an li chak kandidati pou kenbe nivo platfòm nan. Nou reponn ou vit, an kreyòl oswa an franse."
+      },
+      {
+        "title": "Kreye kou w",
+        "body": "Ou filme leson ou yo ak telefòn oswa òdinatè w, ou fikse pri w, epi nou verifye kou a anvan li pibliye."
+      },
+      {
+        "title": "Touche 70%",
+        "body": "Sou chak vant, 70% pou ou. Ou swiv vant ou yo epi ou fè retrè an MonCash — dirèk, san entèmedyè."
+      }
+    ],
+    "faqEyebrow": "Kesyon",
+    "faqTitle": "Sa moun mande nou souvan",
+    "faq": [
+      {
+        "q": "Kijan kont mwen vin kont anseyan?",
+        "a": "Menm kont lan. Ou pa bezwen kreye yon dezyèm kont: ou fè kandidati w ak kont ou genyen an, epi lè nou apwouve w, kont ou an vin gen yon espas anseyan — anplis espas elèv la."
+      },
+      {
+        "q": "Kilè kandidati yo ap louvri?",
+        "a": "Byento. N ap fini bati zouti anseyan yo kounye a. Kite enterè w jodi a — n ap kontakte w pèsonèlman depi kandidati yo louvri."
+      },
+      {
+        "q": "Konbyen m ap touche?",
+        "a": "70% sou chak vant, epi se ou ki fikse pri fòmasyon w lan. 30% ki rete a kouvri platfòm nan: peman, videyo, sètifika, sipò."
+      },
+      {
+        "q": "Kijan m ap resevwa lajan mwen?",
+        "a": "Retrè an MonCash pou kòmanse. Lòt metòd yo (NatCash, PayPal, viman) ap vini apre."
+      },
+      {
+        "q": "Kisa m bezwen pou m kòmanse?",
+        "a": "Yon konesans ou metrize toutbon, yon telefòn oswa yon òdinatè pou w filme, ak yon kote ki pa fè twòp bri. Nou ba w konsèy sou kalite a anvan ou pibliye."
+      }
+    ],
+    "final": {
+      "badge": "Byento",
+      "title": "Kandidati yo ap louvri byento",
+      "body": "Kite enterè w depi kounye a — n ap kontakte w anvan tout moun lè pòt yo louvri. Sa pa angaje w nan anyen."
+    }
   },
   "checkout": {
     "title": "Peman",

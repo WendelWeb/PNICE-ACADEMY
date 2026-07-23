@@ -1,6 +1,7 @@
 {
   "nav": {
     "formations": "Formations",
+    "teach": "Enseigner",
     "pricing": "Tarifs",
     "login": "Connexion",
     "cta": "Commencer",
@@ -242,6 +243,101 @@
     "lessonsWord": "leçons",
     "ctaTitle": "Prêt à commencer ?",
     "ctaText": "Achète cette formation seule, ou prends l'abonnement pour débloquer tout le catalogue."
+  },
+  "prof": {
+    "docLabel": "Fiche enseignant",
+    "docBrand": "PNICE Academy",
+    "docNo": "Nº {docNo}",
+    "since": "Enseignant depuis {year}",
+    "noteLabel": "Note",
+    "noteEmpty": "pas encore d'avis",
+    "sealTop": "Enseignant",
+    "photoAlt": "{name} — enseignant sur PNICE Academy",
+    "stats": {
+      "courses": "{count, plural, one {1 formation} other {# formations}}",
+      "lessons": "{count, plural, one {1 leçon} other {# leçons}}",
+      "languages": "2 langues",
+      "students": "{count} élèves"
+    },
+    "bio": {
+      "eyebrow": "Histoire",
+      "title": "À propos de l'enseignant"
+    },
+    "courses": {
+      "eyebrow": "Manifeste · {count, plural, one {1 formation} other {# formations}}",
+      "title": "Ses formations"
+    },
+    "sub": {
+      "eyebrow": "Abonnement",
+      "title": "Toutes ses formations, avec un seul abonnement",
+      "body": "Un seul prix par mois — tu débloques les {count} formations, plus celles à venir.",
+      "cta": "Prendre l'abonnement"
+    },
+    "cta": {
+      "title": "Prêt à commencer ?",
+      "body": "Choisis une formation dans le manifeste, ou débloque tout avec l'abonnement.",
+      "primary": "Commencer à apprendre",
+      "secondary": "Voir tout le catalogue",
+      "teachLink": "Tu maîtrises un savoir-faire toi aussi ? Deviens enseignant"
+    }
+  },
+  "teach": {
+    "metaTitle": "Enseigner sur PNICE Academy",
+    "eyebrow": "Devenir enseignant",
+    "soonBadge": "Bientôt",
+    "title": "Tu maîtrises un savoir-faire ? Enseigne-le.",
+    "subtitle": "Crée tes propres formations sur PNICE Academy. Tu fixes ton prix, tu touches 70 % sur chaque vente, les élèves paient en MonCash. Les candidatures ouvrent bientôt — laisse ton intérêt dès aujourd'hui.",
+    "exampleCta": "Voir un exemple de page enseignant",
+    "facts": ["70 % pour toi", "Fixe ton prix", "Retrait MonCash"],
+    "stepsEyebrow": "Le parcours enseignant",
+    "stepsTitle": "4 étapes, de ton savoir-faire à ton argent",
+    "steps": [
+      {
+        "title": "Candidature",
+        "body": "Tu postules avec le compte que tu as déjà : ton nom, ce que tu veux enseigner, une courte présentation. 10 minutes suffisent."
+      },
+      {
+        "title": "Approbation",
+        "body": "Notre équipe lit chaque candidature pour maintenir le niveau de la plateforme. On te répond vite, en créole ou en français."
+      },
+      {
+        "title": "Crée ton cours",
+        "body": "Tu filmes tes leçons avec ton téléphone ou ton ordinateur, tu fixes ton prix, et nous vérifions le cours avant sa publication."
+      },
+      {
+        "title": "Touche 70 %",
+        "body": "Sur chaque vente, 70 % pour toi. Tu suis tes ventes et tu retires en MonCash — direct, sans intermédiaire."
+      }
+    ],
+    "faqEyebrow": "Questions",
+    "faqTitle": "Ce qu'on nous demande souvent",
+    "faq": [
+      {
+        "q": "Comment mon compte devient-il un compte enseignant ?",
+        "a": "C'est le même compte. Pas besoin d'en créer un deuxième : tu postules avec ton compte actuel, et une fois approuvé, il gagne un espace enseignant — en plus de ton espace élève."
+      },
+      {
+        "q": "Quand les candidatures ouvrent-elles ?",
+        "a": "Bientôt. Nous finissons de construire les outils enseignants. Laisse ton intérêt dès aujourd'hui — on te contactera personnellement dès l'ouverture."
+      },
+      {
+        "q": "Combien vais-je toucher ?",
+        "a": "70 % sur chaque vente, et c'est toi qui fixes le prix de ta formation. Les 30 % restants couvrent la plateforme : paiements, vidéo, certificats, support."
+      },
+      {
+        "q": "Comment vais-je recevoir mon argent ?",
+        "a": "Retrait en MonCash pour commencer. Les autres méthodes (NatCash, PayPal, virement) arriveront ensuite."
+      },
+      {
+        "q": "De quoi ai-je besoin pour commencer ?",
+        "a": "Un savoir-faire que tu maîtrises vraiment, un téléphone ou un ordinateur pour filmer, et un endroit calme. On te conseille sur la qualité avant la publication."
+      }
+    ],
+    "final": {
+      "badge": "Bientôt",
+      "title": "Les candidatures ouvrent bientôt",
+      "body": "Laisse ton intérêt dès maintenant — on te contactera avant tout le monde à l'ouverture. Sans aucun engagement."
+    }
   },
   "checkout": {
     "title": "Paiement",

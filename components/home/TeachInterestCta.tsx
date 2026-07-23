@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { ClerkLoading, ClerkLoaded, SignedIn, SignedOut } from '@clerk/nextjs';
 import { IconCircleCheck, IconLoader2 } from '@tabler/icons-react';
 import { clerkEnabled } from '@/lib/clerk';
-import { buttonClasses } from '@/components/ui/Button';
+import { buttonClasses, type ButtonVariant } from '@/components/ui/Button';
 import { AuthCta } from '@/components/auth/AuthCta';
 import { registerTeachInterestAction } from '@/lib/site-actions-public';
 import { cn } from '@/lib/cn';
@@ -18,12 +18,19 @@ import { cn } from '@/lib/cn';
  * /enseigner). Never double-submits: the button is replaced by the success
  * state once the ticket is filed.
  */
-export function TeachInterestCta({ className }: { className?: string }) {
+export function TeachInterestCta({
+  className,
+  variant = 'ghost',
+}: {
+  className?: string;
+  /** `ghost` on the home teaser (default); `primary` where it is THE action (/enseigner). */
+  variant?: ButtonVariant;
+}) {
   const t = useTranslations('home.teachTeaser');
   const [pending, start] = useTransition();
   const [state, setState] = useState<'idle' | 'done' | 'error'>('idle');
 
-  const btnClass = cn(buttonClasses('ghost', 'lg'), className);
+  const btnClass = cn(buttonClasses(variant, 'lg'), className);
 
   const gated = (
     <AuthCta href="/enseigner" className={btnClass}>

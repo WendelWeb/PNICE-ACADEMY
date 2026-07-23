@@ -7,7 +7,10 @@ import { LangToggle } from '@/components/LangToggle';
 import { buttonClasses } from '@/components/ui/Button';
 import { cn } from '@/lib/cn';
 
-type NavLinkItem = { href: '/formations' | '/#pri'; label: string };
+type NavLinkItem = {
+  href: '/formations' | '/enseigner' | '/#pri';
+  label: string;
+};
 
 /**
  * The interactive shell of the public nav: sticky elevation on scroll
@@ -77,8 +80,10 @@ export function NavClient({
               <nav className="hidden items-center gap-4 sm:flex md:gap-6">
                 {links.map((link) => {
                   const active =
-                    link.href === '/formations' &&
-                    (pathname === '/formations' || pathname.startsWith('/formations/'));
+                    (link.href === '/formations' &&
+                      (pathname === '/formations' ||
+                        pathname.startsWith('/formations/'))) ||
+                    (link.href === '/enseigner' && pathname === '/enseigner');
                   return (
                     <Link
                       key={link.href}

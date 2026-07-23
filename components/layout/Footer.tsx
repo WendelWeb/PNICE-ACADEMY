@@ -63,7 +63,7 @@ export async function Footer() {
               </span>
             </h3>
             <Link
-              href="/#anseye"
+              href="/enseigner"
               className="mt-4 inline-block text-sm leading-relaxed text-paper-light/70 transition-colors hover:text-ochre"
             >
               {t('columns.teach.teaser')}

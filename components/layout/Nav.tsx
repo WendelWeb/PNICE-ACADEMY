@@ -11,6 +11,7 @@ export async function Nav() {
 
   const links = [
     { href: '/formations' as const, label: t('formations') },
+    { href: '/enseigner' as const, label: t('teach') },
     { href: '/#pri' as const, label: t('pricing') },
   ];
 
