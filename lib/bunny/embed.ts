@@ -43,5 +43,7 @@ export function bunnyEmbedUrl(videoId: string | null | undefined): string | null
     responsive: 'true',
   });
 
-  return `https://iframe.mediadelivery.net/embed/${libraryId}/${id}?${params.toString()}`;
+  // Encode both path segments: harmless for today's developer-authored ids, but
+  // `bunnyVideoId` becomes CMS/DB-writable at C2 — never let it break the path.
+  return `https://iframe.mediadelivery.net/embed/${encodeURIComponent(libraryId)}/${encodeURIComponent(id)}?${params.toString()}`;
 }
