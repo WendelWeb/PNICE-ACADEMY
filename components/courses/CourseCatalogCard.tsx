@@ -6,15 +6,9 @@ import { Link } from '@/i18n/routing';
 import { Sceau } from '@/components/ui/Sceau';
 import { Price, PriceSecondary } from '@/components/ui/Price';
 import { courseTitle, courseTagline, courseLearn } from '@/lib/courseFields';
+import { categoryTone } from '@/lib/courseCategory';
 import { cn } from '@/lib/cn';
-import type { Course, CourseCategory } from '@/data/courses';
-
-const categoryTone: Record<CourseCategory, string> = {
-  biznis: 'bg-ink/8 text-ink/70',
-  dijital: 'bg-teal/10 text-teal',
-  lajan: 'bg-ochre/15 text-ochre',
-  'lavi-pratik': 'bg-graphite/10 text-graphite/80',
-};
+import type { Course } from '@/data/courses';
 
 /**
  * The catalogue's discovery card — used both by the interactive toolbar-driven

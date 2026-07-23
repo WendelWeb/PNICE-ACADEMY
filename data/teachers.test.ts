@@ -2,10 +2,12 @@ import { describe, it, expect } from 'vitest';
 import {
   teachers,
   getTeacher,
+  getCourseTeacher,
   teacherCourses,
   teacherDocNo,
+  teacherShortBio,
 } from './teachers';
-import { getCourse } from './courses';
+import { getCourse, courses } from './courses';
 
 describe('teachers data', () => {
   it('has teacher #1: the platform account owning all 9 launch courses', () => {
@@ -37,6 +39,22 @@ describe('teachers data', () => {
       expect(t.initials.length).toBeGreaterThan(0);
       expect(t.initials.length).toBeLessThanOrEqual(3);
     }
+  });
+
+  it('has a bilingual short bio (course-page teacher block) for every teacher', () => {
+    for (const t of teachers) {
+      expect(t.shortBio_ht.length).toBeGreaterThan(0);
+      expect(t.shortBio_fr.length).toBeGreaterThan(0);
+      expect(teacherShortBio(t, 'ht')).toBe(t.shortBio_ht);
+      expect(teacherShortBio(t, 'fr')).toBe(t.shortBio_fr);
+    }
+  });
+
+  it('resolves the owning teacher for every catalog course', () => {
+    for (const c of courses) {
+      expect(getCourseTeacher(c.slug), `no teacher for course: ${c.slug}`).toBeDefined();
+    }
+    expect(getCourseTeacher('nope')).toBeUndefined();
   });
 
   it('keeps marketplace-only fields null until real data exists', () => {

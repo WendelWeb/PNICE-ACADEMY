@@ -16,6 +16,10 @@ export type Teacher = {
   initials: string;
   bio_ht: string;
   bio_fr: string;
+  /** Compact 1-2 sentence bio for tight placements (course sales page teacher
+   * block) where the full `bio_*` story would be too long. */
+  shortBio_ht: string;
+  shortBio_fr: string;
   /** Base name resolved via lib/courseImage `siteImageSrc` (photo in /public/images). */
   imageName: string;
   /** Slugs into data/courses.ts — the teacher's published manifest. */
@@ -36,6 +40,10 @@ export const teachers: Teacher[] = [
       'PNICE Academy se premye anseyan sou pwòp platfòm li. Nou te kòmanse ak yon biznis senp: pote pakè ant Miami ak Ayiti. Sou wout la, nou te wè menm baryè a chak jou — moun ki gen talan, men san kat pou peye sou entènèt, san zouti pou vann, san konfyans nan dijital la. Se konsa 9 fòmasyon sa yo fèt: chak ladan yo soti nan yon pwoblèm nou te rezoud toutbon, ak pwòp lajan nou, nan reyalite Ayiti a. Pa gen teyori pou plezi — se etap konkrè, an kreyòl, ou ka aplike menm jou a.',
     bio_fr:
       "PNICE Academy est le premier enseignant de sa propre plateforme. Nous avons commencé avec un business simple : transporter des colis entre Miami et Haïti. En chemin, nous voyions la même barrière chaque jour — des gens talentueux, mais sans carte pour payer en ligne, sans outils pour vendre, sans confiance dans le numérique. C'est ainsi que ces 9 formations sont nées : chacune vient d'un problème que nous avons réellement résolu, avec notre propre argent, dans la réalité haïtienne. Pas de théorie pour le plaisir — des étapes concrètes, à appliquer le jour même.",
+    shortBio_ht:
+      'Premye anseyan sou pwòp platfòm li — 9 fòmasyon ki soti nan pwoblèm nou te rezoud toutbon, ak pwòp lajan nou, nan reyalite Ayiti a.',
+    shortBio_fr:
+      'Premier enseignant de sa propre plateforme — 9 formations nées de problèmes que nous avons réellement résolus, avec notre propre argent, dans la réalité haïtienne.',
     imageName: 'founder',
     courseSlugs: courses.map((c) => c.slug),
     joinedYear: 2026,
@@ -48,6 +56,16 @@ export function getTeacher(slug: string): Teacher | undefined {
   return teachers.find((t) => t.slug === slug);
 }
 
+/**
+ * The teacher who owns a given course, if any (marketplace: every course
+ * belongs to exactly one teacher). Used by the course sales page's teacher
+ * block so the link target is always derived from the registry, never
+ * hardcoded to `pnice-academy`.
+ */
+export function getCourseTeacher(courseSlug: string): Teacher | undefined {
+  return teachers.find((t) => t.courseSlugs.includes(courseSlug));
+}
+
 /** The teacher's courses, resolved against the catalog (unknown slugs dropped). */
 export function teacherCourses(teacher: Teacher): Course[] {
   return teacher.courseSlugs
@@ -57,6 +75,11 @@ export function teacherCourses(teacher: Teacher): Course[] {
 
 export function teacherBio(teacher: Teacher, locale: string): string {
   return locale === 'ht' ? teacher.bio_ht : teacher.bio_fr;
+}
+
+/** The compact 1-2 sentence bio (see `shortBio_*` above). */
+export function teacherShortBio(teacher: Teacher, locale: string): string {
+  return locale === 'ht' ? teacher.shortBio_ht : teacher.shortBio_fr;
 }
 
 /**

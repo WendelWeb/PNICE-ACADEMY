@@ -221,28 +221,36 @@
     "lessonsTitle": "Plan des leçons",
     "lessonsCount": "{count} leçons",
     "lifetime": "Accès à vie",
-    "includedNote": "Ou débloque-la avec l'abonnement ({price}{per})",
     "notFound": "Cette formation n'existe pas.",
     "promiseLabel": "La promesse",
     "problemLabel": "Le problème",
     "deliverablesTitle": "Ce que tu obtiens",
     "requirementsTitle": "Ce qu'il te faut",
-    "programTitle": "Le programme",
     "faqTitle": "Questions sur cette formation",
     "levelLabel": "Niveau",
     "durationLabel": "Durée",
-    "guaranteeTitle": "Tout est inclus",
-    "guarantee": {
-      "lifetime": "Accès à vie + mises à jour",
-      "languages": "En créole et en français",
-      "certificate": "Certificat avec l'abonnement",
-      "devices": "Sur téléphone et ordinateur"
-    },
     "minShort": "min",
     "hourShort": "h",
-    "lessonsWord": "leçons",
     "ctaTitle": "Prêt à commencer ?",
-    "ctaText": "Achète cette formation seule, ou prends l'abonnement pour débloquer tout le catalogue."
+    "ctaText": "Achète cette formation seule, ou prends l'abonnement pour débloquer tout le catalogue.",
+    "facts": {
+      "languages": "2 langues",
+      "certificate": "Certificat"
+    },
+    "buyCard": {
+      "guarantee": "Paiement sécurisé · Accès activé dès la confirmation",
+      "subscribeCta": "Abonnement {price}/mois"
+    },
+    "manifest": {
+      "previewLabel": "Aperçu"
+    },
+    "teacher": {
+      "eyebrow": "L'enseignant",
+      "cta": "Voir la page de l'enseignant"
+    },
+    "social": {
+      "eyebrow": "Ce qu'en dit un élève"
+    }
   },
   "prof": {
     "docLabel": "Fiche enseignant",
