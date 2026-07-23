@@ -6,7 +6,7 @@
  * safe entry points — not admin mutations.
  */
 import { auth, clerkClient } from '@clerk/nextjs/server';
-import { createTicket } from '@/lib/admin/data';
+import { createTicket, getTickets } from '@/lib/admin/data';
 
 export type SiteActionResult = { ok: boolean; message?: string; id?: string };
 
@@ -33,6 +33,20 @@ export async function registerTeachInterestAction(): Promise<SiteActionResult> {
       user.emailAddresses.find((e) => e.id === user.primaryEmailAddressId)?.emailAddress ??
       user.emailAddresses[0]?.emailAddress ??
       '—';
+
+    // Check for existing open "Enterese anseye" ticket to prevent duplicates
+    const existingTicketsPage = await getTickets({
+      type: 'other',
+      pageSize: 100,
+    });
+    const existingTicket = existingTicketsPage.rows.find(
+      (row) => row.userId === userId && row.status !== 'resolved'
+    );
+    if (existingTicket) {
+      // Idempotent success: ticket already exists for this user
+      return { ok: true, id: existingTicket.id };
+    }
+
     const r = await createTicket({
       userId,
       userName: name,
