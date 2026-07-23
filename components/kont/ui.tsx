@@ -18,28 +18,39 @@ export type PniceUnsafeMetadata = {
 export type FormStatusValue = { type: 'success' | 'error'; message: string } | null;
 
 export const inputClass =
-  'w-full rounded-lg border border-ink/15 bg-paper-light px-3.5 py-2.5 text-[15px] text-ink outline-none transition-colors placeholder:text-ink/30 focus-visible:border-ochre';
+  'w-full rounded-lg border border-ink/15 bg-paper-light px-3.5 py-2.5 text-[15px] text-ink outline-none transition-colors placeholder:text-ink/30 focus-visible:border-ochre focus-visible:ring-2 focus-visible:ring-ochre/25';
 
+/**
+ * A settings section rendered as a document "band": a hairline mono header
+ * strip (the document-header vernacular used across the site) sitting above
+ * the card body. Purely presentational — no change to the section's data or
+ * form logic.
+ */
 export function SettingsCard({
   title,
   children,
   className,
 }: {
-  title?: string;
+  title?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
 }) {
   return (
     <section
       className={cn(
-        'rounded-xl border border-ink/12 bg-paper-light p-5 sm:p-6',
+        'overflow-hidden rounded-xl border border-ink/12 bg-paper-light',
         className,
       )}
     >
       {title && (
-        <h2 className="font-display text-lg font-bold text-ink">{title}</h2>
+        <header className="flex items-center gap-2 border-b border-ink/10 bg-ink/[0.03] px-5 py-3 sm:px-6">
+          <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-ochre" />
+          <h2 className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/70 sm:text-xs">
+            {title}
+          </h2>
+        </header>
       )}
-      <div className={cn(title && 'mt-4')}>{children}</div>
+      <div className="p-5 sm:p-6">{children}</div>
     </section>
   );
 }

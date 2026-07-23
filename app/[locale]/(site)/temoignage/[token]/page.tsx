@@ -23,10 +23,12 @@ export default async function SubmitReviewPage({
         {isTokenValid(tok) ? (
           <ReviewForm token={token} name={tok!.userName} />
         ) : (
-          <div className="rounded-2xl border border-ink/15 bg-paper-light p-8 text-center">
-            <IconClockX size={34} className="mx-auto text-ink/45" />
-            <h1 className="mt-4 font-display text-xl font-bold text-ink">{t('invalidTitle')}</h1>
-            <p className="mt-2 text-sm text-graphite/75">{t('invalidBody')}</p>
+          <div className="rounded-2xl border border-ink/15 bg-paper-light p-8 text-center sm:p-9">
+            <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-ink/5">
+              <IconClockX size={28} className="text-ink/45" />
+            </span>
+            <h1 className="mt-5 font-display text-xl font-bold text-ink">{t('invalidTitle')}</h1>
+            <p className="mt-2 text-sm leading-relaxed text-graphite/75">{t('invalidBody')}</p>
           </div>
         )}
       </Container>

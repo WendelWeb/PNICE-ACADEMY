@@ -1535,7 +1535,8 @@
         "save": "Anrejistre vèsyon an",
         "saved": "Anrejistre ✓",
         "history": "Vèsyon anvan yo",
-        "emptyPublic": "Paj sa a poko gen kontni."
+        "emptyPublic": "Paj sa a poko gen kontni.",
+        "lastUpdated": "Dènye modifikasyon"
       }
     },
     "marketing": {
@@ -2093,6 +2094,7 @@
     }
   },
   "verify": {
+    "docHeader": "Sètifika dijital",
     "valid": {
       "title": "Sètifika valab",
       "body": "PNICE Academy bay sètifika sa a epi li otantik."
@@ -2105,10 +2107,15 @@
       "title": "Sètifika pa jwenn",
       "body": "Pa gen sètifika ki koresponn ak kòd verifikasyon sa a."
     },
+    "seal": {
+      "valid": "Valab",
+      "revoked": "Revoke"
+    },
     "name": "Non",
     "course": "Fòmasyon",
     "issued": "Bay le",
     "code": "Kòd verifikasyon",
+    "another": "Verifye yon lòt sètifika",
     "form": {
       "title": "Verifye yon sètifika",
       "help": "Antre kòd verifikasyon ki make sou sètifika a.",
@@ -2117,8 +2124,11 @@
     }
   },
   "review": {
+    "eyebrow": "Temwayaj",
     "title": "Mèsi {name} ! Pataje eksperyans ou",
     "subtitle": "Temwayaj ou ap ede lòt moun lanse.",
+    "langLabel": "Lang temwayaj la",
+    "quoteLabel": "Temwayaj ou",
     "placeholder": "Ekri temwayaj ou la…",
     "photo": "URL yon foto (opsyonèl)",
     "consent": "Mwen dakò pou temwayaj sa pibliye sou sit PNICE Academy.",

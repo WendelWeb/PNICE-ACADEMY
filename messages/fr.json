@@ -1535,7 +1535,8 @@
         "save": "Enregistrer la version",
         "saved": "Enregistré ✓",
         "history": "Versions précédentes",
-        "emptyPublic": "Cette page n'a pas encore de contenu."
+        "emptyPublic": "Cette page n'a pas encore de contenu.",
+        "lastUpdated": "Dernière mise à jour"
       }
     },
     "marketing": {
@@ -2093,6 +2094,7 @@
     }
   },
   "verify": {
+    "docHeader": "Certificat numérique",
     "valid": {
       "title": "Certificat valide",
       "body": "Ce certificat a été délivré par PNICE Academy et est authentique."
@@ -2105,10 +2107,15 @@
       "title": "Certificat introuvable",
       "body": "Aucun certificat ne correspond à ce code de vérification."
     },
+    "seal": {
+      "valid": "Validé",
+      "revoked": "Révoqué"
+    },
     "name": "Nom",
     "course": "Formation",
     "issued": "Délivré le",
     "code": "Code de vérification",
+    "another": "Vérifier un autre certificat",
     "form": {
       "title": "Vérifier un certificat",
       "help": "Entre le code de vérification indiqué sur le certificat.",
@@ -2117,8 +2124,11 @@
     }
   },
   "review": {
+    "eyebrow": "Témoignage",
     "title": "Merci {name} ! Partage ton expérience",
     "subtitle": "Ton témoignage aidera d'autres personnes à se lancer.",
+    "langLabel": "Langue du témoignage",
+    "quoteLabel": "Ton témoignage",
     "placeholder": "Écris ton témoignage ici…",
     "photo": "URL d'une photo (optionnel)",
     "consent": "J'accepte que ce témoignage soit publié sur le site PNICE Academy.",
