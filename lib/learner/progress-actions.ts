@@ -101,11 +101,11 @@ export async function markLessonDoneAction(
         verificationCode = existingCert.verificationCode;
       } else {
         const [user] = await db
-          .select({ certificateName: T.users.certificateName, name: T.users.name, email: T.users.email })
+          .select({ certificateName: T.users.certificateName, name: T.users.name })
           .from(T.users)
           .where(eq(T.users.id, userId))
           .limit(1);
-        const certificateName = user?.certificateName ?? user?.name ?? user?.email ?? '—';
+        const certificateName = user?.certificateName ?? user?.name ?? '—';
 
         // Retry a handful of times in the astronomically unlikely event of a
         // verification_code collision (unique constraint on that column).

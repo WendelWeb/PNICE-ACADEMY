@@ -139,19 +139,25 @@ export const progress = pgTable(
   }),
 );
 
-export const certificates = pgTable('certificates', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  courseSlug: text('course_slug').notNull(),
-  certificateName: text('certificate_name').notNull(),
-  verificationCode: text('verification_code').notNull().unique(),
-  issuedAt: timestamp('issued_at', { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-  pdfUrl: text('pdf_url'),
-});
+export const certificates = pgTable(
+  'certificates',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    courseSlug: text('course_slug').notNull(),
+    certificateName: text('certificate_name').notNull(),
+    verificationCode: text('verification_code').notNull().unique(),
+    issuedAt: timestamp('issued_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    pdfUrl: text('pdf_url'),
+  },
+  (t) => ({
+    uniqUserCourse: unique().on(t.userId, t.courseSlug),
+  }),
+);
 
 export const promoCodes = pgTable('promo_codes', {
   id: uuid('id').primaryKey().defaultRandom(),

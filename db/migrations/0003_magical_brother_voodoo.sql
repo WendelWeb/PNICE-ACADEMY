@@ -1,0 +1,1 @@
+ALTER TABLE "certificates" ADD CONSTRAINT "certificates_user_id_course_slug_unique" UNIQUE("user_id","course_slug");
