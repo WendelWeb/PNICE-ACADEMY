@@ -86,7 +86,7 @@ export function PreferencesTab() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <Row title={t('language.title')} help={t('language.help')}>
         <SelectInput
           value={localePref ?? locale}

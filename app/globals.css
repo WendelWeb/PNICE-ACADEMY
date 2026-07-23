@@ -34,11 +34,14 @@
   }
 }
 
-/* Decorative dotted route line shared across the page */
+/* Decorative dotted route line shared across the page. `--route-color`
+   carries the dash color so tone modifiers (below) only need to swap the
+   custom property, not re-declare the gradient. */
 .route-thread {
+  --route-color: rgba(16, 32, 74, 0.35);
   background-image: linear-gradient(
     to bottom,
-    rgba(16, 32, 74, 0.35) 0 6px,
+    var(--route-color) 0 6px,
     transparent 6px 14px
   );
   background-size: 2px 14px;
@@ -62,6 +65,264 @@
   .reveal {
     opacity: 1 !important;
     transform: none !important;
+  }
+}
+
+/* Stamp entrance (driven by components/ui/Stamp.tsx) — a one-time
+   stamp-down: scale 1.6 → 1, rotate into place, fade in. The overshoot lives
+   in the cubic-bezier itself (y2 > 1), giving the "subtle settle" without a
+   second keyframe step. */
+.stamp {
+  display: inline-block;
+  opacity: 0;
+  transform: scale(1.6) rotate(var(--stamp-rot, -8deg));
+  transition:
+    opacity 0.45s cubic-bezier(0.2, 1.4, 0.3, 1),
+    transform 0.45s cubic-bezier(0.2, 1.4, 0.3, 1);
+  will-change: opacity, transform;
+}
+.stamp.is-stamped {
+  opacity: 1;
+  transform: scale(1) rotate(var(--stamp-rot, -8deg));
+}
+@media (prefers-reduced-motion: reduce) {
+  .stamp {
+    opacity: 1 !important;
+    transform: scale(1) rotate(var(--stamp-rot, -8deg)) !important;
+  }
+}
+html[data-reduce-motion='true'] .stamp {
+  opacity: 1 !important;
+  transform: scale(1) rotate(var(--stamp-rot, -8deg)) !important;
+}
+
+/* Manifeste vivant (hero) — staggered row entrance, driven by
+   components/home/ManifestCard.tsx. `.manifest-play` runs the sequence
+   (per-row delay via --row-delay); `.manifest-done` jumps straight to the
+   settled document (repeat visits in the same session). */
+.manifest-row {
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition-delay: var(--row-delay, 0ms);
+  will-change: opacity, transform;
+}
+.manifest-play .manifest-row,
+.manifest-done .manifest-row {
+  opacity: 1;
+  transform: none;
+}
+.manifest-done .manifest-row,
+.manifest-done .stamp {
+  transition: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .manifest-row {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+html[data-reduce-motion='true'] .manifest-row {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* Teal route thread tone — the journey starts under the hero manifest.
+   Only the color changes; the gradient itself lives on `.route-thread`. */
+.route-thread-teal {
+  --route-color: rgba(31, 110, 102, 0.5);
+}
+/* Ambient dash drift — the single loop the motion system allows (A4),
+   opt-in via `.route-thread-animated` and gated behind reduced-motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .route-thread-animated {
+    animation: route-drift 2.8s linear infinite;
+  }
+}
+@keyframes route-drift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 14px;
+  }
+}
+
+/* Dashboard course-progress route (U7) — a horizontal companion to
+   .route-thread, used by components/dashboard/CourseProgressRoute.tsx. The
+   dotted track is the full journey; `.route-fill` is the solid teal
+   "traveled" portion — its width is set inline (always correct, even
+   without JS) and it gets a one-shot fill-in flourish via `transform`,
+   gated opt-in exactly like `.route-thread-animated` above. */
+.route-thread-h {
+  --route-color: rgba(16, 32, 74, 0.16);
+  background-image: linear-gradient(
+    to right,
+    var(--route-color) 0 6px,
+    transparent 6px 14px
+  );
+  background-size: 14px 2px;
+  background-repeat: repeat-x;
+}
+.route-fill {
+  transform-origin: left center;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .route-fill {
+    animation: route-fill-in 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+}
+@keyframes route-fill-in {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Card hover grammar — a quiet lift, paired with `hover:border-ink/35` (or
+   similar) composed by the consumer via Tailwind classes. A seal child
+   marked `.card-hover-seal` (pass `print` to <Sceau> so it doesn't set its
+   own inline transform) turns +2° alongside the lift. */
+.card-hover {
+  transition:
+    transform 180ms ease-out,
+    border-color 180ms ease-out,
+    box-shadow 180ms ease-out;
+}
+.card-hover:hover,
+.card-hover:focus-within {
+  transform: translateY(-3px);
+}
+.card-hover .card-hover-seal {
+  transition: transform 180ms ease-out;
+  transform: rotate(var(--sceau-rot, -6deg));
+}
+.card-hover:hover .card-hover-seal,
+.card-hover:focus-within .card-hover-seal {
+  transform: rotate(calc(var(--sceau-rot, -6deg) + 2deg));
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-hover,
+  .card-hover .card-hover-seal {
+    transition: none;
+  }
+  .card-hover:hover,
+  .card-hover:focus-within {
+    transform: none;
+  }
+  .card-hover:hover .card-hover-seal,
+  .card-hover:focus-within .card-hover-seal {
+    transform: rotate(var(--sceau-rot, -6deg));
+  }
+}
+html[data-reduce-motion='true'] .card-hover:hover,
+html[data-reduce-motion='true'] .card-hover:focus-within {
+  transform: none !important;
+}
+html[data-reduce-motion='true'] .card-hover:hover .card-hover-seal,
+html[data-reduce-motion='true'] .card-hover:focus-within .card-hover-seal {
+  transform: rotate(var(--sceau-rot, -6deg)) !important;
+}
+
+/* Nav elevation — the sticky nav gains a translucent surface + hairline
+   bottom border once the page scrolls past ~8px (state toggled by
+   components/layout/NavClient.tsx via an IntersectionObserver sentinel). */
+.nav-shell {
+  transition:
+    background-color 220ms ease-out,
+    border-color 220ms ease-out,
+    box-shadow 220ms ease-out;
+}
+.nav-elevated {
+  background-color: rgba(242, 238, 228, 0.85);
+  border-bottom-color: rgba(16, 32, 74, 0.1);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 1px 0 rgba(16, 32, 74, 0.04);
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-shell {
+    transition: none;
+  }
+}
+html[data-reduce-motion='true'] .nav-shell {
+  transition: none;
+}
+
+/* Nav link underline — full-width pseudo-element scaled via transform on
+   hover/focus/active (transform-only animation, no layout work). */
+.nav-link {
+  position: relative;
+  padding-bottom: 2px;
+}
+.nav-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  height: 2px;
+  width: 100%;
+  background-color: var(--ochre);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 200ms ease-out;
+}
+.nav-link:hover::after,
+.nav-link:focus-visible::after,
+.nav-link.nav-link-active::after {
+  transform: scaleX(1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-link::after {
+    transition: none;
+  }
+}
+html[data-reduce-motion='true'] .nav-link::after {
+  transition: none;
+}
+
+/* Filtered-deep-link flash guard for /formations (driven by the inline
+   script in app/[locale]/(site)/formations/page.tsx + the mount-effect in
+   CatalogBrowser). #formations-catalog only ever gets
+   [data-pending-filters="1"] when the page loaded with a q/cat/sort query
+   string — i.e. a shared, filtered deep link whose static HTML is the
+   *unfiltered* fallback grid. While the flag is set we hide that
+   (possibly wrong) grid and show a neutral skeleton instead; unfiltered
+   visits never set the flag, so the real grid paints immediately and this
+   rule never applies. */
+.formations-catalog-skeleton {
+  display: none;
+}
+#formations-catalog[data-pending-filters='1'] .formations-catalog-skeleton {
+  display: grid;
+}
+#formations-catalog[data-pending-filters='1'] .formations-catalog-content {
+  display: none;
+}
+.formations-skeleton-card {
+  animation: formations-skeleton-pulse 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .formations-skeleton-card {
+    animation: none;
+    opacity: 0.7;
+  }
+}
+html[data-reduce-motion='true'] .formations-skeleton-card {
+  animation: none;
+  opacity: 0.7;
+}
+@keyframes formations-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
   }
 }
 

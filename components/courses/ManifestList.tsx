@@ -1,83 +1,65 @@
-import { getLocale, getTranslations } from 'next-intl/server';
-import { IconChevronRight } from '@tabler/icons-react';
-import { Link } from '@/i18n/routing';
+import { IconClock } from '@tabler/icons-react';
 import { Reveal } from '@/components/ui/Reveal';
-import { CourseIcon } from '@/components/courses/CourseIcon';
-import { SmartImage } from '@/components/ui/SmartImage';
-import { courseImageSrc } from '@/lib/courseImage';
-import { courseTitle, courseTagline } from '@/lib/courseFields';
-import { Price, PriceSecondary } from '@/components/ui/Price';
-import type { Course } from '@/data/courses';
+
+export type ManifestRow = {
+  title: string;
+  desc?: string;
+  /** Pre-formatted, e.g. "12 min". */
+  duration?: string;
+  /** Marks the row as a free preview — only rendered when `previewLabel` is also given. */
+  preview?: boolean;
+};
 
 /**
- * The cargo-manifest view: each formation is one numbered line.
- * Shared by the homepage and the catalogue.
+ * The cargo-manifest view of a course's lesson list: each lesson is one
+ * numbered row (ochre display number, like the catalogue/home manifests),
+ * with its duration and description as document data. Presentational only —
+ * labels are passed in already localized so it stays reusable wherever a
+ * lesson sequence needs the manifest treatment.
  */
-export async function ManifestList({ courses }: { courses: Course[] }) {
-  const locale = await getLocale();
-  const t = await getTranslations('home.manifest');
-
+export function ManifestList({
+  rows,
+  previewLabel,
+}: {
+  rows: ManifestRow[];
+  previewLabel?: string;
+}) {
   return (
-    <ul className="border-y border-ink/10">
-      {courses.map((c, i) => (
-        <li key={c.code} className="border-b border-ink/10 last:border-b-0">
-          <Reveal delay={i * 55}>
-            <Link
-              href={`/formations/${c.slug}`}
-              className="group grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-md px-1 py-5 transition-colors hover:bg-ochre/[0.06] sm:grid-cols-[auto_auto_1fr_auto] md:gap-5 md:px-3"
-            >
-              <span className="font-display text-3xl font-black leading-none text-ochre tabular-nums md:text-4xl">
+    <ol className="border-y border-ink/10">
+      {rows.map((row, i) => (
+        <li key={i} className="border-b border-ink/10 last:border-b-0">
+          <Reveal delay={Math.min(i, 8) * 45}>
+            <div className="flex gap-4 py-5">
+              <span className="font-display text-2xl font-black leading-none text-ochre tabular-nums">
                 {String(i + 1).padStart(2, '0')}
               </span>
-
-              <div className="relative hidden h-12 w-[72px] shrink-0 overflow-hidden rounded-md border border-ink/10 bg-paper sm:block">
-                <SmartImage
-                  src={courseImageSrc(c.code)}
-                  alt=""
-                  fill
-                  sizes="72px"
-                  className="object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-              </div>
-
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <CourseIcon name={c.icon} size={17} className="shrink-0 text-teal" />
-                  <span className="font-mono text-[11px] uppercase tracking-wide text-ink/45">
-                    {c.code}
-                  </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                  <h3 className="flex items-center gap-2 font-display text-lg font-bold text-ink">
+                    {row.title}
+                    {row.preview && previewLabel && (
+                      <span className="rounded bg-teal/15 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-teal">
+                        {previewLabel}
+                      </span>
+                    )}
+                  </h3>
+                  {row.duration && (
+                    <span className="inline-flex shrink-0 items-center gap-1 font-mono text-xs text-graphite/55">
+                      <IconClock size={13} />
+                      {row.duration}
+                    </span>
+                  )}
                 </div>
-                <h3 className="mt-1 truncate font-display text-xl font-bold text-ink md:text-2xl">
-                  {courseTitle(c, locale)}
-                </h3>
-                <p className="truncate text-sm text-graphite/75">
-                  {courseTagline(c, locale)}
-                </p>
+                {row.desc && (
+                  <p className="mt-1 text-sm leading-relaxed text-graphite/80">
+                    {row.desc}
+                  </p>
+                )}
               </div>
-
-              <div className="flex items-center gap-3 md:gap-5">
-                <div className="text-right">
-                  <Price
-                    usd={c.priceUsd}
-                    className="block font-mono text-lg font-semibold text-ink transition-transform duration-150 group-hover:-rotate-2"
-                  />
-                  <PriceSecondary
-                    usd={c.priceUsd}
-                    className="block font-mono text-[11px] text-graphite/55"
-                  />
-                  <div className="mt-1 inline-block rounded bg-ochre/15 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-ochre">
-                    {t('included')}
-                  </div>
-                </div>
-                <IconChevronRight
-                  size={20}
-                  className="shrink-0 text-ink/25 transition-all duration-150 group-hover:translate-x-0.5 group-hover:text-ochre"
-                />
-              </div>
-            </Link>
+            </div>
           </Reveal>
         </li>
       ))}
-    </ul>
+    </ol>
   );
 }

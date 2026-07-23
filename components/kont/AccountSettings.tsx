@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { useTranslations } from 'next-intl';
 import { Sceau } from '@/components/ui/Sceau';
@@ -25,10 +26,16 @@ const TABS = [
 ] as const;
 type TabId = (typeof TABS)[number];
 
+/** Deep-link support: `/kont?tab=support` opens straight to that tab (used by the footer's "Èd" links). */
+function initialTabFrom(requested: string | null): TabId {
+  return (TABS as readonly string[]).includes(requested ?? '') ? (requested as TabId) : 'profile';
+}
+
 export function AccountSettings() {
   const t = useTranslations('kont');
   const { isLoaded, user } = useUser();
-  const [active, setActive] = useState<TabId>('profile');
+  const searchParams = useSearchParams();
+  const [active, setActive] = useState<TabId>(() => initialTabFrom(searchParams.get('tab')));
 
   if (!isLoaded) {
     return (
@@ -51,8 +58,8 @@ export function AccountSettings() {
         </Sceau>
       </div>
 
-      {/* user header */}
-      <div className="mt-6 flex items-center gap-4 rounded-xl border border-ink/10 bg-paper-light p-4">
+      {/* user header — styled like a document identity strip */}
+      <div className="mt-6 flex items-center gap-4 rounded-xl border border-ink/10 bg-paper-light p-4 sm:p-5">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={user.imageUrl}
@@ -60,34 +67,45 @@ export function AccountSettings() {
           className="h-14 w-14 shrink-0 rounded-full border border-ink/10 object-cover"
         />
         <div className="min-w-0">
-          <p className="truncate font-display text-lg font-bold text-ink">
+          <p className="truncate font-display text-lg font-bold leading-tight text-ink">
             {user.fullName || user.username}
           </p>
-          <p className="truncate font-mono text-xs text-graphite/60">
+          <p className="mt-0.5 truncate font-mono text-xs text-graphite/55">
             {user.primaryEmailAddress?.emailAddress}
           </p>
         </div>
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[210px_1fr] lg:gap-8">
-        {/* tab nav: horizontal scroll on mobile, sidebar on desktop */}
+      <div className="mt-8 grid gap-6 border-t border-ink/10 pt-8 lg:grid-cols-[220px_1fr] lg:gap-10">
+        {/* tab nav, styled as document tabs: a horizontal tab strip on
+            mobile, a numbered manifest index on desktop — same metaphor,
+            two layouts. Numbers are purely decorative (array position). */}
         <nav
           aria-label={t('title')}
-          className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0"
+          className="-mx-1 flex gap-1 overflow-x-auto border-b border-ink/10 px-1 pb-0 lg:mx-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:border-b-0 lg:border-l lg:border-ink/10 lg:px-0 lg:pb-0"
         >
-          {TABS.map((tab) => (
+          {TABS.map((tab, i) => (
             <button
               key={tab}
               type="button"
               onClick={() => setActive(tab)}
               aria-current={active === tab ? 'page' : undefined}
               className={cn(
-                'shrink-0 whitespace-nowrap rounded-lg px-3.5 py-2 text-left text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ochre',
+                'group flex shrink-0 items-center gap-2 whitespace-nowrap rounded-t-md border-b-2 px-3.5 py-2.5 text-left text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ochre lg:-ml-px lg:rounded-l-none lg:rounded-r-md lg:border-b-0 lg:border-l-2 lg:py-2',
                 active === tab
-                  ? 'bg-ink font-semibold text-paper-light'
-                  : 'text-ink/70 hover:bg-ink/[0.05]',
+                  ? 'border-ochre bg-ink font-semibold text-paper-light lg:border-l-ochre'
+                  : 'border-transparent text-ink/65 hover:bg-ink/[0.05] hover:text-ink',
               )}
             >
+              <span
+                aria-hidden="true"
+                className={cn(
+                  'font-mono text-[10px] tabular-nums',
+                  active === tab ? 'text-paper-light/50' : 'text-ink/30',
+                )}
+              >
+                {String(i + 1).padStart(2, '0')}
+              </span>
               {t(`tabs.${tab}`)}
             </button>
           ))}

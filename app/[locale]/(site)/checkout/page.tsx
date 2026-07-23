@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { getLocale, getTranslations, setRequestLocale } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { IconLock, IconShieldCheck } from '@tabler/icons-react';
 import { Section, Container } from '@/components/ui/Section';
 import { Sceau } from '@/components/ui/Sceau';
 import { SmartImage } from '@/components/ui/SmartImage';
@@ -15,6 +16,15 @@ import { PromoCodeField } from '@/components/checkout/PromoCodeField';
 import { activeProviders } from '@/lib/admin/platform/store';
 
 export const metadata: Metadata = { title: 'Peman — PNICE Academy' };
+
+// Map provider keys to display labels for trust badges.
+const PROVIDER_LABELS: Record<string, string> = {
+  card: 'Visa',
+  paypal: 'PayPal',
+  moncash: 'MonCash',
+  natcash: 'NatCash',
+  crypto: 'Crypto',
+};
 
 // Dynamic so admin provider toggles take effect on checkout immediately.
 export const dynamic = 'force-dynamic';
@@ -40,6 +50,11 @@ export default async function CheckoutPage({
   const itemSub = isSub ? t('subPer') : t('unitLabel');
   const sealCode = isSub ? 'PA' : course!.code;
   const perLabel = isSub ? tc('perMonth') : '';
+
+  // Derive accepted payment badges from active providers.
+  const acceptedBadges = activeProviders()
+    .map((k) => PROVIDER_LABELS[k])
+    .filter(Boolean);
 
   return (
     <Section>
@@ -112,12 +127,42 @@ export default async function CheckoutPage({
           </div>
 
           {/* Payment methods */}
-          <PaymentMethods
-            payLabel={`${t('pay')} ${formatUsd(amountUsd)}`}
-            active={activeProviders()}
-            productType={isSub ? 'subscription' : 'course'}
-            courseSlug={course ? course.slug : null}
-          />
+          <div>
+            <div className="rounded-2xl border border-ink/15 bg-paper p-7">
+              <PaymentMethods
+                payLabel={`${t('pay')} ${formatUsd(amountUsd)}`}
+                active={activeProviders()}
+                productType={isSub ? 'subscription' : 'course'}
+                courseSlug={course ? course.slug : null}
+              />
+            </div>
+
+            {/* trust signals — kept separate from PaymentMethods so its
+                fetch/redirect logic (C1-P1) stays untouched. */}
+            <div className="mt-5 rounded-xl border border-ink/10 bg-paper-light/70 p-5">
+              <p className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink/60">
+                <IconLock size={13} className="shrink-0" />
+                {t('trust.lock')}
+              </p>
+              <p className="mt-2.5 flex items-start gap-1.5 text-xs leading-relaxed text-graphite/70">
+                <IconShieldCheck size={15} className="mt-0.5 shrink-0 text-teal" />
+                {t('trust.guarantee')}
+              </p>
+              <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.14em] text-ink/45">
+                {t('trust.accepted')}
+              </p>
+              <ul className="mt-2 flex flex-wrap gap-2">
+                {acceptedBadges.map((p) => (
+                  <li
+                    key={p}
+                    className="rounded border border-ink/15 px-2.5 py-1 font-mono text-[11px] text-ink/60"
+                  >
+                    {p}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         </div>
 
         {/* trust band */}

@@ -194,6 +194,26 @@ d'autres enseignants remplissent le catalogue pendant ces enregistrements.
   (comparaison DB vs `data/courses.ts` avant bascule) ; C3 activable enseignant
   par enseignant (approbation manuelle = feature-flag naturel).
 
+## 6bis. Découverte & recherche (ajout owner 2026-07-22)
+
+Une marketplace se navigue. Requis v1 :
+- **Catégories** : taxonomie simple (ex. Biznis / Dijital / Lajan / Lavi pratik),
+  champ `category` sur `courses` (C2) — en attendant, champ statique dans
+  `data/courses.ts` pour l'UI (refonte U4).
+- **Recherche** : plein-texte titre/description (client-side sur statique ;
+  SQL `ilike` après C2), champ visible dans le nav du catalogue.
+- **Tri** : prix ↑/↓, plus récents, mieux notés (après avis), populaires
+  (après ventes réelles).
+- **Filtres** : catégorie, enseignant (après C3), niveau de prix.
+- **Parcours compte → enseignant** (précision) : un compte apprenant ordinaire
+  clique « Devenir enseignant » (depuis /kont ou /enseigner) → wizard de
+  candidature (§C3.1) → statut `pending` → approbation admin → le MÊME compte
+  gagne le studio + sa page publique /prof/[slug]. Un seul compte, deux
+  casquettes ; jamais de double compte. La page /enseigner (refonte U4bis)
+  explique ce parcours dès maintenant et capte l'intérêt avant C3.
+- **/kont enrichi (apprenant)** : onglets « Resi yo » (historique paiements +
+  reçus) et « Sètifika m yo » (liste + liens de vérification) — après C1/C2.
+
 ## 7. Hors-scope v1 (différé, volontairement)
 
 PayPal, crypto (NOWPayments), NatCash, WhatsApp Business, messagerie élève↔prof,

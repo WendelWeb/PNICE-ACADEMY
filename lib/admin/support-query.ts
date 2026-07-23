@@ -13,7 +13,7 @@ import type {
 import type { RawSearchParams } from '@/lib/admin/users-query';
 
 const T_STATUS: TicketStatus[] = ['open', 'in_progress', 'resolved'];
-const T_TYPE: TicketType[] = ['question', 'bug', 'refund'];
+const T_TYPE: TicketType[] = ['question', 'bug', 'refund', 'other'];
 const W_STATUS: WebhookStatus[] = ['processed', 'failed', 'ignored'];
 const W_PROVIDERS: PaymentMethod[] = ['moncash', 'natcash', 'card', 'paypal', 'crypto'];
 

@@ -18,6 +18,7 @@ const typeTone: Record<TicketType, string> = {
   question: 'bg-ink/10 text-ink/65',
   bug: 'bg-ochre/15 text-ochre',
   refund: 'bg-stampred/12 text-stampred',
+  other: 'bg-teal/12 text-teal',
 };
 export function TicketTypeBadge({ type, label }: { type: TicketType; label: string }) {
   return (

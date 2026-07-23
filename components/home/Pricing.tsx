@@ -1,6 +1,7 @@
 import { getLocale, getTranslations } from 'next-intl/server';
 import { IconCheck } from '@tabler/icons-react';
 import { Section, Container, Eyebrow } from '@/components/ui/Section';
+import { Reveal } from '@/components/ui/Reveal';
 import { Link } from '@/i18n/routing';
 import { buttonClasses } from '@/components/ui/Button';
 import { AuthCta } from '@/components/auth/AuthCta';
@@ -25,17 +26,17 @@ export async function Pricing() {
   return (
     <Section id="pri" className="bg-paper">
       <Container>
-        <div className="text-center">
+        <Reveal className="text-center">
           <Eyebrow>{t('eyebrow')}</Eyebrow>
           <h2 className="mt-3 font-display text-3xl font-extrabold text-ink md:text-4xl">
             {t('title')}
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-graphite">{t('subtitle')}</p>
-        </div>
+        </Reveal>
 
         <div className="mx-auto mt-12 grid max-w-4xl items-start gap-6 md:grid-cols-2">
           {/* Subscription */}
-          <div className="relative rounded-2xl border-2 border-ochre bg-paper-light p-8 shadow-lg shadow-ochre/10">
+          <Reveal className="relative rounded-2xl border-2 border-ochre bg-paper-light p-8 shadow-lg shadow-ochre/10">
             <span className="absolute -top-3 left-8 rounded-full bg-ochre px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-wide text-[#1b1207]">
               {t('popular')}
             </span>
@@ -69,10 +70,10 @@ export async function Pricing() {
                 </li>
               ))}
             </ul>
-          </div>
+          </Reveal>
 
           {/* À l'unité */}
-          <div className="rounded-2xl border border-ink/15 bg-paper-light p-8">
+          <Reveal delay={90} className="rounded-2xl border border-ink/15 bg-paper-light p-8">
             <h3 className="font-display text-2xl font-bold text-ink">
               {t('unitName')}
             </h3>
@@ -103,8 +104,12 @@ export async function Pricing() {
             <p className="mt-4 font-mono text-[11px] text-graphite/50">
               {t('unitNote')}
             </p>
-          </div>
+          </Reveal>
         </div>
+
+        <p className="mx-auto mt-8 max-w-md text-center font-mono text-xs uppercase tracking-[0.06em] text-teal">
+          {t('noHiddenFees')}
+        </p>
       </Container>
     </Section>
   );

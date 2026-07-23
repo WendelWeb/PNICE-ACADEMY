@@ -11,11 +11,26 @@ export type Lesson = {
   title_fr: string;
 };
 
+/**
+ * Broad discovery category for the /formations toolbar. Bilingual labels
+ * live in messages/{ht,fr}.json under `catalog.categories.*` — never here.
+ */
+export type CourseCategory = 'biznis' | 'dijital' | 'lajan' | 'lavi-pratik';
+
+export const COURSE_CATEGORIES: CourseCategory[] = [
+  'biznis',
+  'dijital',
+  'lajan',
+  'lavi-pratik',
+];
+
 export type Course = {
   code: string;
   slug: string;
   /** Tabler icon key, mapped in components/courses/CourseIcon.tsx */
   icon: string;
+  /** Discovery category — see CourseCategory above. */
+  category: CourseCategory;
   /** PLACEHOLDER price in USD — replace before launch. */
   priceUsd: number;
   title_ht: string;
@@ -34,6 +49,7 @@ export const courses: Course[] = [
     code: 'PA-01',
     slug: 'zouti-finansye-dijital',
     icon: 'credit-card',
+    category: 'lajan',
     priceUsd: 9,
     title_ht: 'Zouti finansye dijital',
     title_fr: 'Outils financiers numériques',
@@ -67,6 +83,7 @@ export const courses: Course[] = [
     code: 'PA-02',
     slug: 'achte-amazon-shein-alibaba',
     icon: 'shopping-cart',
+    category: 'lavi-pratik',
     priceUsd: 12,
     title_ht: 'Achte sou Amazon, Shein, Alibaba',
     title_fr: 'Acheter sur Amazon, Shein, Alibaba',
@@ -97,6 +114,7 @@ export const courses: Course[] = [
     code: 'PA-03',
     slug: 'biznis-shipping',
     icon: 'ship',
+    category: 'biznis',
     priceUsd: 39,
     title_ht: 'Biznis shipping Etazini-Ayiti',
     title_fr: 'Business shipping USA-Haïti',
@@ -128,6 +146,7 @@ export const courses: Course[] = [
     code: 'PA-04',
     slug: 'maketing-dijital',
     icon: 'speakerphone',
+    category: 'dijital',
     priceUsd: 19,
     title_ht: 'Maketing dijital',
     title_fr: 'Marketing digital',
@@ -158,6 +177,7 @@ export const courses: Course[] = [
     code: 'PA-05',
     slug: 'ia-flyer-pwofesyonel',
     icon: 'palette',
+    category: 'dijital',
     priceUsd: 14,
     title_ht: 'IA pou flyer pwofesyonèl',
     title_fr: 'IA pour flyers professionnels',
@@ -188,6 +208,7 @@ export const courses: Course[] = [
     code: 'PA-06',
     slug: 'ia-whatsapp-telegram',
     icon: 'brand-whatsapp',
+    category: 'dijital',
     priceUsd: 24,
     title_ht: 'IA pou WhatsApp ak Telegram',
     title_fr: 'IA pour WhatsApp et Telegram',
@@ -218,6 +239,7 @@ export const courses: Course[] = [
     code: 'PA-07',
     slug: 'ia-sit-ak-app',
     icon: 'device-mobile-code',
+    category: 'dijital',
     priceUsd: 49,
     title_ht: 'IA pou kreye sit ak app',
     title_fr: 'IA pour créer site et app',
@@ -251,6 +273,7 @@ export const courses: Course[] = [
     code: 'PA-08',
     slug: 'sekirite-anti-eskrokri',
     icon: 'shield-lock',
+    category: 'lavi-pratik',
     priceUsd: 7,
     title_ht: 'Sekirite ak evite eskrokri',
     title_fr: 'Sécurité et anti-arnaque',
@@ -280,6 +303,7 @@ export const courses: Course[] = [
     code: 'PA-09',
     slug: 'monetize-kontni',
     icon: 'player-play',
+    category: 'biznis',
     priceUsd: 17,
     title_ht: 'Monetize ak kontni',
     title_fr: 'Monétiser avec du contenu',

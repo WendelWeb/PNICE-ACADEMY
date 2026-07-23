@@ -6,6 +6,7 @@ import { CourseCardGrid } from '@/components/courses/CourseCardGrid';
 import { courses } from '@/data/courses';
 import { Hero } from '@/components/home/Hero';
 import { Blockers } from '@/components/home/Blockers';
+import { TeachTeaser } from '@/components/home/TeachTeaser';
 import { Founder } from '@/components/home/Founder';
 import { Testimonials } from '@/components/home/Testimonials';
 import { SeatsBanner } from '@/components/home/SeatsBanner';
@@ -49,6 +50,7 @@ export default async function Home({
         </Container>
       </Section>
 
+      <TeachTeaser />
       <Founder />
       <Testimonials />
       <SeatsBanner />

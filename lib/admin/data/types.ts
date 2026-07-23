@@ -680,7 +680,7 @@ export type CertVerification = {
 /* Support & système (Phase D Lot 2)                                           */
 /* -------------------------------------------------------------------------- */
 
-export type TicketType = 'question' | 'bug' | 'refund';
+export type TicketType = 'question' | 'bug' | 'refund' | 'other';
 export type TicketStatus = 'open' | 'in_progress' | 'resolved';
 
 export type SupportTicket = {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { courses, getCourse } from './courses';
+import { courses, getCourse, COURSE_CATEGORIES } from './courses';
 
 describe('courses data', () => {
   it('has exactly 9 formations', () => {
@@ -28,5 +28,18 @@ describe('courses data', () => {
   it('resolves a course by slug and returns undefined for unknown slugs', () => {
     expect(getCourse('biznis-shipping')?.code).toBe('PA-03');
     expect(getCourse('nope')).toBeUndefined();
+  });
+
+  it('has a valid, declared category for every course', () => {
+    for (const c of courses) {
+      expect(COURSE_CATEGORIES).toContain(c.category);
+    }
+  });
+
+  it('uses every declared category at least once', () => {
+    const used = new Set(courses.map((c) => c.category));
+    for (const cat of COURSE_CATEGORIES) {
+      expect(used.has(cat)).toBe(true);
+    }
   });
 });

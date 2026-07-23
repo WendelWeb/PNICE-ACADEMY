@@ -88,6 +88,15 @@ export function getHomeTestimonials(): SiteTestimonial[] {
   return published.length ? published : getSite().testimonials.filter((t) => t.status === 'placeholder');
 }
 
+/**
+ * A single published testimonial for a course's sales page, if one exists.
+ * Placeholders never qualify (never presented as real proof) — the section
+ * is omitted entirely when no real, published match exists.
+ */
+export function getCourseTestimonial(courseSlug: string): SiteTestimonial | null {
+  return listTestimonials({ status: 'published', course: courseSlug })[0] ?? null;
+}
+
 /* -------------------------------- places --------------------------------- */
 export function getPlaces(): PlacesConfig {
   return getSite().places;
