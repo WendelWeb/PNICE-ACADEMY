@@ -125,7 +125,15 @@ function toSubRow(s: DbSub, now: number, userById: Map<string, DbUser>): SubRow 
   // UI always gets a string, for any legacy/manual row that never got one.
   const currentPeriodEnd = iso(s.currentPeriodEnd) ?? iso(s.createdAt)!;
   let status: SubDisplayStatus = rawStatus;
-  if (rawStatus === 'active' && !auto && Date.parse(currentPeriodEnd) - now <= 3 * DAY) {
+  // Derive "imminent renewal" from the RAW nullable column, never the createdAt
+  // display-fallback (which is always in the past and would flag every manual
+  // sub with a null period end as pending_renewal forever).
+  if (
+    rawStatus === 'active' &&
+    !auto &&
+    s.currentPeriodEnd &&
+    s.currentPeriodEnd.getTime() - now <= 3 * DAY
+  ) {
     status = 'pending_renewal';
   }
   return {
