@@ -4,6 +4,7 @@ import { Container, Eyebrow } from '@/components/ui/Section';
 import { buttonClasses } from '@/components/ui/Button';
 import { AuthCta } from '@/components/auth/AuthCta';
 import { ManifestCard } from '@/components/home/ManifestCard';
+import { RouteLine } from '@/components/layout/RouteLine';
 import { courses } from '@/data/courses';
 import { courseTitle } from '@/lib/courseFields';
 
@@ -74,10 +75,7 @@ export async function Hero() {
               }}
             />
             {/* the route starts under the manifest */}
-            <div
-              aria-hidden="true"
-              className="route-thread-teal mx-auto h-14 w-[2px] md:h-20"
-            />
+            <RouteLine tone="teal" align="center" />
           </div>
         </div>
       </Container>

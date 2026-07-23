@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from '@/i18n/routing';
 import { cn } from '@/lib/cn';
 import { Sceau } from '@/components/ui/Sceau';
@@ -46,8 +46,15 @@ const STAMP_DELAY_MS = 440;
  */
 export function ManifestCard({ rows, labels }: ManifestCardProps) {
   const [phase, setPhase] = useState<'idle' | 'play' | 'done'>('idle');
+  /* Guards against React StrictMode's double-invoked mount effect: without
+     it, the first invocation would flag the session as "played" and the
+     second invocation would read that flag back, so the sequence never
+     plays in dev. */
+  const ran = useRef(false);
 
   useEffect(() => {
+    if (ran.current) return;
+    ran.current = true;
     let played = false;
     try {
       played = sessionStorage.getItem(PLAYED_KEY) === '1';
@@ -114,12 +121,15 @@ export function ManifestCard({ rows, labels }: ManifestCardProps) {
               }
             >
               <span className="pt-0.5 font-mono text-[11px] text-ink/55">
+                <span className="sr-only">{labels.colCode}: </span>
                 {row.code}
               </span>
               <span className="text-sm font-medium leading-snug text-ink">
+                <span className="sr-only">{labels.colItem}: </span>
                 {row.title}
               </span>
               <span className="text-right">
+                <span className="sr-only">{labels.colPrice}: </span>
                 <Price
                   usd={row.priceUsd}
                   className="block font-mono text-sm font-semibold text-ink"

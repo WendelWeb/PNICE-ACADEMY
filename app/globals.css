@@ -34,11 +34,14 @@
   }
 }
 
-/* Decorative dotted route line shared across the page */
+/* Decorative dotted route line shared across the page. `--route-color`
+   carries the dash color so tone modifiers (below) only need to swap the
+   custom property, not re-declare the gradient. */
 .route-thread {
+  --route-color: rgba(16, 32, 74, 0.35);
   background-image: linear-gradient(
     to bottom,
-    rgba(16, 32, 74, 0.35) 0 6px,
+    var(--route-color) 0 6px,
     transparent 6px 14px
   );
   background-size: 2px 14px;
@@ -126,20 +129,15 @@ html[data-reduce-motion='true'] .manifest-row {
   transform: none !important;
 }
 
-/* Teal route thread — the journey starts under the hero manifest. The slow
-   dash drift is the single ambient loop the motion system allows (A4);
-   both reduced-motion paths cap it via the global animation rules below. */
+/* Teal route thread tone — the journey starts under the hero manifest.
+   Only the color changes; the gradient itself lives on `.route-thread`. */
 .route-thread-teal {
-  background-image: linear-gradient(
-    to bottom,
-    rgba(31, 110, 102, 0.5) 0 6px,
-    transparent 6px 14px
-  );
-  background-size: 2px 14px;
-  background-repeat: repeat-y;
+  --route-color: rgba(31, 110, 102, 0.5);
 }
+/* Ambient dash drift — the single loop the motion system allows (A4),
+   opt-in via `.route-thread-animated` and gated behind reduced-motion. */
 @media (prefers-reduced-motion: no-preference) {
-  .route-thread-teal {
+  .route-thread-animated {
     animation: route-drift 2.8s linear infinite;
   }
 }
