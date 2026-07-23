@@ -87,6 +87,15 @@ export function CatalogBrowser({ courses }: { courses: Course[] }) {
     ? (rawSort as SortKey)
     : DEFAULT_SORT;
 
+  // Clears the flash-guard flag (see PENDING_FILTERS_SCRIPT in the page)
+  // once mounted: by the time this effect runs, `category`/`sort`/`query`
+  // above have already been derived from the real searchParams for this
+  // render, so the grid below is already correct — safe to reveal it.
+  // Mount-only: later filter interactions never re-set the flag.
+  useEffect(() => {
+    document.getElementById('formations-catalog')?.removeAttribute('data-pending-filters');
+  }, []);
+
   const [query, setQuery] = useState(() => get('q'));
   const first = useRef(true);
   useEffect(() => {
@@ -95,7 +104,18 @@ export function CatalogBrowser({ courses }: { courses: Course[] }) {
       return;
     }
     const id = setTimeout(() => {
-      if (query !== get('q')) push({ q: query || null });
+      // Build the next URL from the LIVE window.location.search, not the
+      // `sp`/`get` captured when this effect was scheduled: an immediate
+      // chip/sort push during the 250ms window updates the URL (and
+      // re-renders with fresh `sp`), but this timeout's closure still
+      // holds the stale one. Merging onto stale params here would revert
+      // that interim change. Reading location.search fresh avoids it.
+      const live = new URLSearchParams(window.location.search);
+      if (query !== (live.get('q') ?? '')) {
+        router.replace(pathname + mergeParams(live, { q: query || null }), {
+          scroll: false,
+        });
+      }
     }, 250);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -205,7 +225,10 @@ export function CatalogBrowser({ courses }: { courses: Course[] }) {
 
       {/* results count + reset */}
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <p className="font-mono text-xs uppercase tracking-wide text-ink/50">
+        <p
+          aria-live="polite"
+          className="font-mono text-xs uppercase tracking-wide text-ink/50"
+        >
           {t('toolbar.resultsCount', { count: filtered.length })}
         </p>
         {hasFilters && (

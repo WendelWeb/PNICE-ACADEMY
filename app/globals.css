@@ -252,6 +252,47 @@ html[data-reduce-motion='true'] .nav-link::after {
   transition: none;
 }
 
+/* Filtered-deep-link flash guard for /formations (driven by the inline
+   script in app/[locale]/(site)/formations/page.tsx + the mount-effect in
+   CatalogBrowser). #formations-catalog only ever gets
+   [data-pending-filters="1"] when the page loaded with a q/cat/sort query
+   string — i.e. a shared, filtered deep link whose static HTML is the
+   *unfiltered* fallback grid. While the flag is set we hide that
+   (possibly wrong) grid and show a neutral skeleton instead; unfiltered
+   visits never set the flag, so the real grid paints immediately and this
+   rule never applies. */
+.formations-catalog-skeleton {
+  display: none;
+}
+#formations-catalog[data-pending-filters='1'] .formations-catalog-skeleton {
+  display: grid;
+}
+#formations-catalog[data-pending-filters='1'] .formations-catalog-content {
+  display: none;
+}
+.formations-skeleton-card {
+  animation: formations-skeleton-pulse 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .formations-skeleton-card {
+    animation: none;
+    opacity: 0.7;
+  }
+}
+html[data-reduce-motion='true'] .formations-skeleton-card {
+  animation: none;
+  opacity: 0.7;
+}
+@keyframes formations-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
 /* User-level "reduce animations" preference (independent of the OS setting) */
 html[data-reduce-motion='true'] *,
 html[data-reduce-motion='true'] *::before,

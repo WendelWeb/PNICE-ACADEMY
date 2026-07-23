@@ -11,6 +11,31 @@ export const metadata: Metadata = {
   title: 'Fòmasyon — PNICE Academy',
 };
 
+/**
+ * Guards against a wrong-content flash on shared, filtered deep links
+ * (e.g. /ht/formations?cat=lajan). The route stays static (see the
+ * Suspense fallback below) so the common unfiltered visit paints
+ * instantly; but the static HTML is always the *unfiltered* catalogue,
+ * which is momentarily wrong for a filtered URL until CatalogBrowser
+ * mounts and swaps in the real, filtered grid.
+ *
+ * This script is the first child of #formations-catalog, so
+ * `document.currentScript.parentElement` resolves synchronously (no
+ * need to wait for the rest of the div to parse) and runs before the
+ * fallback/CatalogBrowser content beneath it is painted. If the URL
+ * carries q/cat/sort, it flips a data attribute the CSS in globals.css
+ * reacts to, hiding the (possibly wrong) grid and showing a neutral
+ * skeleton instead; CatalogBrowser clears the attribute once it has
+ * mounted with the correct, already-filtered content. Unfiltered
+ * visits never match the regex, so nothing is set and the static HTML
+ * is unchanged.
+ */
+const PENDING_FILTERS_SCRIPT = `(function(){
+  if (/[?&](q|cat|sort)=/.test(location.search)) {
+    document.currentScript.parentElement.dataset.pendingFilters = '1';
+  }
+})();`;
+
 export default async function FormationsPage({
   params: { locale },
 }: {
@@ -41,19 +66,38 @@ export default async function FormationsPage({
         {/* The toolbar reads/writes ?q=&cat=&sort= via useSearchParams, which
             requires a Suspense boundary. The fallback is the full, unfiltered,
             server-rendered grid — real course cards, crawlable and CLS-free
-            even before the interactive toolbar hydrates. */}
-        <div className="mt-12">
-          <Suspense
-            fallback={
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {courses.map((c) => (
-                  <CourseCatalogCard key={c.code} course={c} />
-                ))}
-              </div>
-            }
+            for the common unfiltered visit. For a filtered deep link, the
+            inline script + skeleton below (see PENDING_FILTERS_SCRIPT doc
+            comment) hide that fallback's wrong content until CatalogBrowser
+            mounts with the real, filtered grid. */}
+        <div className="mt-12" id="formations-catalog">
+          <script
+            dangerouslySetInnerHTML={{ __html: PENDING_FILTERS_SCRIPT }}
+          />
+          <div
+            aria-hidden="true"
+            className="formations-catalog-skeleton grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
           >
-            <CatalogBrowser courses={courses} />
-          </Suspense>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="formations-skeleton-card h-64 rounded-xl border border-ink/12 bg-paper-light/60"
+              />
+            ))}
+          </div>
+          <div className="formations-catalog-content">
+            <Suspense
+              fallback={
+                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {courses.map((c) => (
+                    <CourseCatalogCard key={c.code} course={c} />
+                  ))}
+                </div>
+              }
+            >
+              <CatalogBrowser courses={courses} />
+            </Suspense>
+          </div>
         </div>
       </Container>
     </Section>
