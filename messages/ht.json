@@ -72,22 +72,34 @@
       }
     },
     "blockers": {
-      "eyebrow": "Poukisa ou bloke",
-      "title": "Twa baryè ki kenbe anpil moun dèyè",
+      "eyebrow": "Poukisa ou rete dèyè",
+      "title": "Twa bagay k ap bare wout ou — nou wete yo youn pa youn",
       "items": [
         {
-          "title": "Ou pa ka peye entènasyonal",
-          "text": "Pa gen kat ki mache sou Amazon, Shein oswa pou abònman. Lajan an la, men ou pa ka itilize l."
+          "title": "Ou pa ka peye sou entènèt",
+          "text": "Amazon, Netflix, ChatGPT Plus, yon senp abònman — tout mande yon kat ou pa genyen. Lajan an la, se kanal la ki manke."
         },
         {
-          "title": "Ou pa konn achte ni vann sou entènèt",
-          "text": "Ou wè lòt moun ap fè l, men ou pa konn ki kote pou kòmanse — ki sit, ki founisè, ki pri."
+          "title": "Ou pa konn kòmanse vann sou entènèt",
+          "text": "Ou wè lòt moun ap vann sou Facebook ak TikTok. Ou pa konn ki sit pou itilize, ki founisè fè konfyans, ki pri pou mande."
         },
         {
-          "title": "Ou pa gen konpetans teknik",
-          "text": "Kreye yon flyer, yon sit, yon app oswa yon bot sanble twò difisil. Men ak IA, se pa ka a ankò."
+          "title": "Zouti IA yo sanble twò teknik",
+          "text": "Kreye yon sit, yon bot oswa yon otomatizasyon sanble rezève pou pwogramè. Ak bon fòmasyon, se pa ka a ankò."
         }
       ]
+    },
+    "teachTeaser": {
+      "eyebrow": "Byento sou PNICE Academy",
+      "title": "Ou metrize yon konesans? Byento w ap ka anseye l isit la.",
+      "body": "Nenpòt moun ki gen yon konpetans ap ka kreye pwòp fòmasyon pa yo sou platfòm nan. Ou fikse pri w, ou touche 70% chak vant, epi lajan an rive dirèk nan MonCash ou.",
+      "facts": ["Fikse pri w", "70% pou ou", "Peye an MonCash"],
+      "ctaLearnMore": "Aprann plis",
+      "interestCta": "Mwen enterese",
+      "interestSuccess": "Nou resevwa enterè w — n ap kontakte w",
+      "interestError": "Nou pa t ka anrejistre demand ou an. Eseye ankò.",
+      "sealTop": "Anseyan",
+      "sealBottom": "Byento"
     },
     "manifest": {
       "eyebrow": "Manifès la",
@@ -96,14 +108,15 @@
       "included": "Nan abonman"
     },
     "founder": {
-      "eyebrow": "Ki moun ki dèyè l",
-      "title": "Soti nan shipping, rive nan konpetans dijital",
-      "body": "PNICE Academy se yon ekstansyon PNICE Shipping, biznis logistik Miami–Ayiti a. Menm jan nou konekte machandiz ant de peyi, n ap konekte ou ak konpetans ki fè lajan an dola.",
+      "eyebrow": "Istwa nou",
+      "title": "Poukisa PNICE Academy egziste",
+      "body": "PNICE te kòmanse kòm yon biznis senp: pote pakè ant Miami ak Ayiti. Chak jou, nou te wè menm baryè a repete — moun ki gen talan, men san aksè: pa gen kat pou peye sou entènèt, pa gen fason pou vann konpetans yo, pa gen konfyans nan zouti dijital. Academy a se repons nou: menm jan nou konekte machandiz ant de peyi, kounye a n ap konekte moun ak konesans ki fè lajan an dola — an kreyòl, adapte pou reyalite Ayiti a.",
       "points": [
         "Konesans ki soti nan vrè biznis, pa nan teyori",
-        "Egzanp konkrè pou mache Ayisyen an",
-        "Tout bagay an kreyòl ak an franse"
-      ]
+        "Egzanp konkrè ki fèt pou mache Ayisyen an",
+        "Tout bagay disponib an kreyòl ak an franse"
+      ],
+      "imgCaption": "PNICE Shipping · Miami ⇄ Ayiti"
     },
     "testimonials": {
       "eyebrow": "Sa moun ap di",
@@ -119,7 +132,7 @@
     "pricing": {
       "eyebrow": "Pri",
       "title": "Yon sèl pri pou tout moun",
-      "subtitle": "Pran abonman an pou louvri tout katalòg la, oswa achte yon fòmasyon poukont li, a vi.",
+      "subtitle": "Louvri tout katalòg la ak yon sèl abonman, oswa achte yon fòmasyon apa pou w genyen l a vi. Ou deside.",
       "popular": "Pi popilè",
       "subName": "Abonman",
       "subCta": "Pran abonman an",
@@ -127,7 +140,8 @@
       "unitText": "Chak fòmasyon gen pwòp pri li. Peye yon sèl fwa, gade l a vi.",
       "unitCta": "Wè tout fòmasyon yo",
       "unitNote": "Pri yo se egzanp — y ap ranplase ak pri final yo.",
-      "priceFrom": "Soti nan"
+      "priceFrom": "Soti nan",
+      "noHiddenFees": "Pa gen frè kache — pri ou wè a se pri ou peye a, an dola tankou an goud"
     },
     "faq": {
       "eyebrow": "Kesyon",
@@ -152,12 +166,20 @@
         {
           "q": "Èske m bezwen konn pwograme?",
           "a": "Non. Fòmasyon IA yo montre w kijan pou itilize zouti ki egziste deja, san ekri kòd."
+        },
+        {
+          "q": "Èske m ka anseye sou PNICE Academy?",
+          "a": "Byento. N ap louvri yon fason pou moun ki metrize yon konpetans kreye pwòp fòmasyon pa yo — gade paj Anseye a pou montre enterè w kounye a."
+        },
+        {
+          "q": "Kijan pou m peye?",
+          "a": "Ou peye ak MonCash, NatCash, PayPal, kat Visa/Mastercard oswa an kripto. Chak pri parèt an dola ansanm ak ekivalan li an goud."
         }
       ]
     },
     "finalCta": {
-      "title": "Kòmanse bati lavi dijital ou jodi a",
-      "subtitle": "Chwazi yon fòmasyon oswa pran abonman an. Tout bagay an liy, depi telefòn ou.",
+      "title": "Chak jou san konpetans se yon jou san lajan anplis",
+      "subtitle": "Ou pa bezwen tann pou w kòmanse. Chwazi yon fòmasyon oswa pran abonman an, epi kòmanse aprann kounye a — an kreyòl, sou telefòn ou, peye an MonCash.",
       "cta": "Kòmanse kounye a"
     }
   },
@@ -1777,7 +1799,8 @@
       "type": {
         "question": "Kesyon",
         "bug": "Bug",
-        "refund": "Ranbousman"
+        "refund": "Ranbousman",
+        "other": "Enterè anseye"
       },
       "payStatus": {
         "succeeded": "Reyisi",

@@ -59,6 +59,7 @@ export function TicketFilters() {
         <option value="question">{t('type.question')}</option>
         <option value="bug">{t('type.bug')}</option>
         <option value="refund">{t('type.refund')}</option>
+        <option value="other">{t('type.other')}</option>
       </select>
       <label className="flex items-center gap-1 font-mono text-[11px] text-ink/55">
         {t('filters.from')}

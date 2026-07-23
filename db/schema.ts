@@ -231,7 +231,9 @@ export const supportTickets = pgTable('support_tickets', {
   userId: uuid('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
-  type: text('type').$type<'question' | 'bug' | 'refund'>().notNull(),
+  // 'other' covers system-generated tickets (e.g. the /enseigner « Mwen enterese »
+  // interest capture) — no schema change, just a wider allowed string.
+  type: text('type').$type<'question' | 'bug' | 'refund' | 'other'>().notNull(),
   subject: text('subject').notNull(),
   message: text('message').notNull(),
   status: text('status')

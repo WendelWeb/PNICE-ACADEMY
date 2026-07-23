@@ -72,22 +72,34 @@
       }
     },
     "blockers": {
-      "eyebrow": "Pourquoi tu restes bloqué",
-      "title": "Trois barrières qui retiennent beaucoup de monde",
+      "eyebrow": "Pourquoi tu restes à la traîne",
+      "title": "Trois choses qui bloquent ta route — on les enlève une par une",
       "items": [
         {
-          "title": "Tu ne peux pas payer à l'international",
-          "text": "Pas de carte qui marche sur Amazon, Shein ou pour les abonnements. L'argent est là, mais tu ne peux pas l'utiliser."
+          "title": "Tu ne peux pas payer en ligne",
+          "text": "Amazon, Netflix, ChatGPT Plus, un simple abonnement — tout demande une carte que tu n'as pas. L'argent est là, c'est le canal qui manque."
         },
         {
-          "title": "Tu ne sais pas acheter ni vendre en ligne",
-          "text": "Tu vois les autres le faire, mais tu ne sais pas par où commencer — quel site, quel fournisseur, quel prix."
+          "title": "Tu ne sais pas comment commencer à vendre en ligne",
+          "text": "Tu vois les autres vendre sur Facebook et TikTok. Tu ne sais pas quel site utiliser, quel fournisseur est fiable, quel prix demander."
         },
         {
-          "title": "Tu n'as pas de compétences techniques",
-          "text": "Créer un flyer, un site, une app ou un bot semble trop difficile. Mais avec l'IA, ce n'est plus le cas."
+          "title": "Les outils IA semblent trop techniques",
+          "text": "Créer un site, un bot ou une automatisation semble réservé aux programmeurs. Avec la bonne formation, ce n'est plus le cas."
         }
       ]
+    },
+    "teachTeaser": {
+      "eyebrow": "Bientôt sur PNICE Academy",
+      "title": "Tu maîtrises un savoir-faire ? Bientôt tu pourras l'enseigner ici.",
+      "body": "Toute personne qui maîtrise une compétence pourra créer sa propre formation sur la plateforme. Tu fixes ton prix, tu gardes 70 % de chaque vente, et l'argent arrive directement sur ton MonCash.",
+      "facts": ["Fixe ton prix", "70 % pour toi", "Payé via MonCash"],
+      "ctaLearnMore": "En savoir plus",
+      "interestCta": "Je suis intéressé(e)",
+      "interestSuccess": "Nous avons bien reçu ton intérêt — on te contacte bientôt.",
+      "interestError": "Impossible d'enregistrer ta demande. Réessaie.",
+      "sealTop": "Formateur",
+      "sealBottom": "Bientôt"
     },
     "manifest": {
       "eyebrow": "Le manifeste",
@@ -96,14 +108,15 @@
       "included": "Dans l'abonnement"
     },
     "founder": {
-      "eyebrow": "Qui est derrière",
-      "title": "Du shipping aux compétences numériques",
-      "body": "PNICE Academy est une extension de PNICE Shipping, le business logistique Miami–Haïti. Comme nous connectons des marchandises entre deux pays, nous te connectons aux compétences qui rapportent en dollars.",
+      "eyebrow": "Notre histoire",
+      "title": "Pourquoi PNICE Academy existe",
+      "body": "PNICE a commencé comme un business simple : transporter des colis entre Miami et Haïti. Chaque jour, nous voyions la même barrière se répéter — des gens pleins de talent, mais sans accès : pas de carte pour payer en ligne, pas de moyen de vendre leurs compétences, pas de confiance dans les outils numériques. L'Academy est notre réponse : comme nous connectons des marchandises entre deux pays, nous connectons maintenant des gens à des savoir-faire qui rapportent en dollars — en créole, adaptés à la réalité haïtienne.",
       "points": [
         "Un savoir issu d'un vrai business, pas de la théorie",
-        "Des exemples concrets pour le marché haïtien",
-        "Tout en créole et en français"
-      ]
+        "Des exemples concrets pensés pour le marché haïtien",
+        "Tout est disponible en créole et en français"
+      ],
+      "imgCaption": "PNICE Shipping · Miami ⇄ Ayiti"
     },
     "testimonials": {
       "eyebrow": "Ce qu'ils en disent",
@@ -119,7 +132,7 @@
     "pricing": {
       "eyebrow": "Tarifs",
       "title": "Un seul prix pour tout le monde",
-      "subtitle": "Prends l'abonnement pour débloquer tout le catalogue, ou achète une formation seule, à vie.",
+      "subtitle": "Débloque tout le catalogue avec un seul abonnement, ou achète une formation seule pour la garder à vie. À toi de choisir.",
       "popular": "Le plus populaire",
       "subName": "Abonnement",
       "subCta": "Prendre l'abonnement",
@@ -127,7 +140,8 @@
       "unitText": "Chaque formation a son propre prix. Paye une seule fois, garde-la à vie.",
       "unitCta": "Voir toutes les formations",
       "unitNote": "Prix exemples — à remplacer par les prix définitifs.",
-      "priceFrom": "À partir de"
+      "priceFrom": "À partir de",
+      "noHiddenFees": "Pas de frais cachés — le prix affiché est le prix payé, en dollars comme en gourdes"
     },
     "faq": {
       "eyebrow": "Questions",
@@ -152,12 +166,20 @@
         {
           "q": "Faut-il savoir programmer ?",
           "a": "Non. Les formations IA te montrent comment utiliser des outils existants, sans écrire de code."
+        },
+        {
+          "q": "Puis-je enseigner sur PNICE Academy ?",
+          "a": "Bientôt. Nous ouvrons un moyen pour que toute personne qui maîtrise une compétence crée sa propre formation — va sur la page Enseigner pour signaler ton intérêt dès maintenant."
+        },
+        {
+          "q": "Comment est-ce que je paie ?",
+          "a": "Tu payes avec MonCash, NatCash, PayPal, carte Visa/Mastercard ou en crypto. Chaque prix s'affiche en dollars avec son équivalent en gourdes."
         }
       ]
     },
     "finalCta": {
-      "title": "Commence à bâtir ta vie numérique aujourd'hui",
-      "subtitle": "Choisis une formation ou prends l'abonnement. Tout en ligne, depuis ton téléphone.",
+      "title": "Chaque jour sans compétence est un jour sans revenu en plus",
+      "subtitle": "Tu n'as pas besoin d'attendre pour commencer. Choisis une formation ou prends l'abonnement, et commence à apprendre maintenant — en créole, depuis ton téléphone, payé via MonCash.",
       "cta": "Commencer maintenant"
     }
   },
@@ -1777,7 +1799,8 @@
       "type": {
         "question": "Question",
         "bug": "Bug",
-        "refund": "Remboursement"
+        "refund": "Remboursement",
+        "other": "Intérêt enseigner"
       },
       "payStatus": {
         "succeeded": "Réussi",
