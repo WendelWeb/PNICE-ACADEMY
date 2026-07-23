@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/routing';
+import { LangToggle } from '@/components/LangToggle';
 import { Sceau } from '@/components/ui/Sceau';
 
 const PAYMENTS = ['MonCash', 'NatCash', 'Visa', 'PayPal'];
@@ -126,9 +127,12 @@ export async function Footer() {
               ))}
             </ul>
           </div>
-          <p className="max-w-xs font-mono text-[11px] leading-relaxed text-paper-light/45 sm:text-right">
-            {t('localeNote')}
-          </p>
+          <div className="flex flex-col items-start gap-2 sm:items-end">
+            <p className="max-w-xs font-mono text-[11px] leading-relaxed text-paper-light/45 sm:text-right">
+              {t('localeNote')}
+            </p>
+            <LangToggle tone="dark" variant="full" />
+          </div>
         </div>
 
         <div className="mt-8 flex flex-col gap-2 border-t border-paper-light/10 pt-6 font-mono text-[11px] text-paper-light/45 sm:flex-row sm:items-center sm:justify-between">

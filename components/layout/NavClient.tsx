@@ -133,6 +133,7 @@ export function NavClient({
                   key={link.href}
                   href={link.href}
                   tabIndex={open ? undefined : -1}
+                  onClick={() => setOpen(false)}
                   className="rounded px-2 py-2.5 text-[15px] text-ink/80 transition-colors hover:bg-ink/5 hover:text-ink"
                 >
                   {link.label}
@@ -141,6 +142,7 @@ export function NavClient({
               <Link
                 href="/formations"
                 tabIndex={open ? undefined : -1}
+                onClick={() => setOpen(false)}
                 className={buttonClasses('primary', 'md', 'mx-2 mt-1 justify-center')}
               >
                 {cta}

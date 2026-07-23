@@ -35,7 +35,7 @@ export function VerifyForm({
         onChange={(e) => setCode(e.target.value)}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="flex-1 rounded-lg border border-ink/15 bg-paper-light px-4 py-3 font-mono text-sm text-ink outline-none transition-colors placeholder:text-ink/35 focus:border-ochre"
+        className="flex-1 rounded-lg border border-ink/15 bg-paper-light px-4 py-3 font-mono text-sm text-ink transition-colors placeholder:text-ink/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ochre"
       />
       <button type="submit" className={buttonClasses('primary', 'md', 'justify-center')}>
         {submitLabel}

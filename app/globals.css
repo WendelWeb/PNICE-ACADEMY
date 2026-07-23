@@ -163,7 +163,8 @@ html[data-reduce-motion='true'] .nav-shell {
   transition: none;
 }
 
-/* Nav link underline — animated width on hover/focus/active */
+/* Nav link underline — full-width pseudo-element scaled via transform on
+   hover/focus/active (transform-only animation, no layout work). */
 .nav-link {
   position: relative;
   padding-bottom: 2px;
@@ -174,14 +175,16 @@ html[data-reduce-motion='true'] .nav-shell {
   left: 0;
   bottom: -1px;
   height: 2px;
-  width: 0;
+  width: 100%;
   background-color: var(--ochre);
-  transition: width 200ms ease-out;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 200ms ease-out;
 }
 .nav-link:hover::after,
 .nav-link:focus-visible::after,
 .nav-link.nav-link-active::after {
-  width: 100%;
+  transform: scaleX(1);
 }
 @media (prefers-reduced-motion: reduce) {
   .nav-link::after {
