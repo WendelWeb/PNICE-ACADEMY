@@ -71,14 +71,19 @@ export default async function ProfPage({
   const perks = locale === 'ht' ? subscriptionPerks_ht : subscriptionPerks_fr;
   const photo = siteImageSrc(teacher.imageName);
   const rating = teacher.rating === null ? '—' : teacher.rating.toFixed(1);
-  const students =
-    teacher.studentCount === null ? '—' : String(teacher.studentCount);
+  // `studentCount` is null until real marketplace sales exist — the ICU
+  // plural in `stats.students` expects a number, so a null count is never
+  // fed into it; it renders the plain mono `studentsUnknown` string instead.
+  const studentsStat =
+    teacher.studentCount === null
+      ? t('stats.studentsUnknown')
+      : t('stats.students', { count: teacher.studentCount });
 
   const stats = [
     t('stats.courses', { count: courses.length }),
     t('stats.lessons', { count: lessonCount }),
     t('stats.languages'),
-    t('stats.students', { count: students }),
+    studentsStat,
   ];
 
   return (

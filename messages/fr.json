@@ -265,7 +265,8 @@
       "courses": "{count, plural, one {1 formation} other {# formations}}",
       "lessons": "{count, plural, one {1 leçon} other {# leçons}}",
       "languages": "2 langues",
-      "students": "{count} élèves"
+      "students": "{count, plural, one {1 élève} other {# élèves}}",
+      "studentsUnknown": "— élèves"
     },
     "bio": {
       "eyebrow": "Histoire",
@@ -291,6 +292,7 @@
   },
   "teach": {
     "metaTitle": "Enseigner sur PNICE Academy",
+    "metaDescription": "Tu maîtrises un savoir-faire ? Crée ta formation sur PNICE Academy, fixe ton prix et touche 70 % sur chaque vente, payé en MonCash. Laisse ton intérêt — les candidatures ouvrent bientôt.",
     "eyebrow": "Devenir enseignant",
     "soonBadge": "Bientôt",
     "title": "Tu maîtrises un savoir-faire ? Enseigne-le.",

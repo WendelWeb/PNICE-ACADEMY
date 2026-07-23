@@ -265,7 +265,8 @@
       "courses": "{count, plural, one {1 fòmasyon} other {# fòmasyon}}",
       "lessons": "{count, plural, one {1 leson} other {# leson}}",
       "languages": "2 lang",
-      "students": "{count} elèv"
+      "students": "{count, plural, one {1 elèv} other {# elèv}}",
+      "studentsUnknown": "— elèv"
     },
     "bio": {
       "eyebrow": "Istwa",
@@ -291,6 +292,7 @@
   },
   "teach": {
     "metaTitle": "Anseye sou PNICE Academy",
+    "metaDescription": "Ou metrize yon konesans? Kreye fòmasyon pa w sou PNICE Academy, fikse pri w epi touche 70% sou chak vant, peye an MonCash. Kite enterè w — kandidati yo ap louvri byento.",
     "eyebrow": "Vin anseyan",
     "soonBadge": "Byento",
     "title": "Ou metrize yon konesans? Anseye l.",

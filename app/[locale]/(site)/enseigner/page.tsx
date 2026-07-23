@@ -6,6 +6,7 @@ import { Reveal } from '@/components/ui/Reveal';
 import { buttonClasses } from '@/components/ui/Button';
 import { CourseFaqList } from '@/components/courses/CourseFaqList';
 import { TeachInterestCta } from '@/components/home/TeachInterestCta';
+import { teachers } from '@/data/teachers';
 import { cn } from '@/lib/cn';
 
 export async function generateMetadata({
@@ -14,7 +15,7 @@ export async function generateMetadata({
   params: { locale: string };
 }): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: 'teach' });
-  return { title: t('metaTitle') };
+  return { title: t('metaTitle'), description: t('metaDescription') };
 }
 
 type Step = { title: string; body: string };
@@ -65,7 +66,7 @@ export default async function EnseignerPage({
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <TeachInterestCta variant="primary" />
               <Link
-                href="/prof/pnice-academy"
+                href={`/prof/${teachers[0].slug}`}
                 className={buttonClasses('ghost', 'lg')}
               >
                 {t('exampleCta')}

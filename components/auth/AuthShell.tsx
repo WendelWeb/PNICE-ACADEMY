@@ -33,7 +33,7 @@ function Field({
         id={id}
         type={type}
         placeholder={placeholder}
-        className="mt-1.5 w-full rounded-lg border border-ink/15 bg-paper-light px-3.5 py-2.5 text-ink outline-none transition-colors placeholder:text-ink/30 focus:border-ochre"
+        className="mt-1.5 w-full rounded-lg border border-ink/15 bg-paper-light px-3.5 py-2.5 text-ink outline-none transition-colors placeholder:text-ink/30 focus-visible:border-ochre focus-visible:ring-2 focus-visible:ring-ochre/25"
       />
     </div>
   );
