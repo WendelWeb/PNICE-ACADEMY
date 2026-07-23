@@ -9,8 +9,11 @@
  * Migrated so far: USER cluster (list, detail, KPI overview, user mutations,
  * audit), TRANSACTIONS (list, export, method volumes), ENGAGEMENT (course
  * completion/times/lesson views/aggregate drop-off/active learners/stuck
- * users), CERTIFICATES (list, verify-by-code, revoke/reissue/issue). Pending:
- * subscriptions, analytics, marketing, support — all still served by the mock.
+ * users), CERTIFICATES (list, verify-by-code, revoke/reissue/issue),
+ * SUBSCRIPTIONS (list, events, dunning, renewals + series, cohorts, KPIs,
+ * cancellation reasons — see lib/admin/data/real/subscriptions.ts for the
+ * documented degeneracies where the schema lacks a mock-only column). Pending:
+ * analytics, marketing, support — all still served by the mock.
  */
 import type { AdminDataSource } from '../types';
 import { mockDataSource } from '../mock';
@@ -18,6 +21,7 @@ import * as users from './users';
 import * as tx from './transactions';
 import * as engagement from './engagement';
 import * as certs from './certificates';
+import * as subs from './subscriptions';
 
 export function realDataSource(): AdminDataSource {
   return {
@@ -55,5 +59,15 @@ export function realDataSource(): AdminDataSource {
     revokeCertificate: certs.revokeCertificate,
     reissueCertificate: certs.reissueCertificate,
     issueCertificate: certs.issueCertificate,
+
+    // ── SUBSCRIPTIONS domain (real) ───────────────────────────────────────
+    getSubscriptions: subs.getSubscriptions,
+    getSubEvents: subs.getSubEvents,
+    getDunning: subs.getDunning,
+    getRenewals: subs.getRenewals,
+    getRenewalSeries: subs.getRenewalSeries,
+    getCohorts: subs.getCohorts,
+    getSubKpis: subs.getSubKpis,
+    getCancellationReasons: subs.getCancellationReasons,
   };
 }
