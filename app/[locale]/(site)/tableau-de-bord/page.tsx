@@ -15,6 +15,9 @@ import { getCourse, type Course } from '@/data/courses';
 import { courseTitle } from '@/lib/courseFields';
 import { clerkEnabled } from '@/lib/clerk';
 
+// Reads per-request Clerk identity for the greeting — never cache across users.
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = { title: 'Tablo debò — PNICE Academy' };
 
 // DEMO — mock enrollments to show the dashboard structure. No timestamp
