@@ -6,23 +6,18 @@
  * reproduces that behaviour from real rows, same "load + filter in JS" style
  * as ../users.ts.
  *
- * SCHEMA LIMITATION — documented, not worked around by touching the schema
- * (constraint: no db:push, no schema mutation): `certificates` (db/schema.ts)
- * has NO `revoked` column — the plan's own read list flags this with
- * "revoked?". Rather than add a migration, this reuses the existing, otherwise
- * -unused `pdf_url` column as a sentinel: `pdf_url === REVOKED_SENTINEL` means
- * revoked. `pdf_url` is written nowhere else in the codebase today (the L3
- * certificate download route builds the PDF on the fly and never persists a
- * URL — see app/api/certificate/[code]/route.ts), so this is a safe, isolated
- * reuse. If `pdf_url` is later wired to store a real generated-PDF URL, this
- * scheme needs a real `revoked boolean` column instead.
+ * `certificates.revoked` (db/schema.ts, migration 0004) is the real revocation
+ * flag. `pdf_url` is unrelated and unused — nominally present for a future
+ * generated-PDF-URL feature (the L3 certificate download route builds the
+ * PDF on the fly and never persists a URL — see
+ * app/api/certificate/[code]/route.ts).
  *
- * A second, schema-forced deviation: the mock's `issueCertificate` is a
- * simple "insert if no non-revoked cert exists yet" — it tolerates a
- * revoked + a fresh cert coexisting for the same (userId, courseSlug) because
- * the mock has no such uniqueness constraint. The real `certificates` table
- * has `unique(userId, courseSlug)` (migration 0003), so a second row for the
- * same pair is impossible once one exists (revoked or not). `issueCertificate`
+ * A schema-forced deviation from the mock: the mock's `issueCertificate` is a
+ * simple "insert if no non-revoked cert exists yet" — it tolerates a revoked
+ * + a fresh cert coexisting for the same (userId, courseSlug) because the
+ * mock has no such uniqueness constraint. The real `certificates` table has
+ * `unique(userId, courseSlug)` (migration 0003), so a second row for the same
+ * pair is impossible once one exists (revoked or not). `issueCertificate`
  * therefore UPDATEs the existing revoked row in place instead of inserting a
  * second one — same end state (user has one valid, verifiable certificate for
  * the course) via the only path the schema allows.
@@ -35,10 +30,6 @@ import { recordAudit } from './users';
 
 const T = schema;
 const courseBySlug = new Map(courses.map((c) => [c.slug, c]));
-
-/** Sentinel written to the otherwise-unused `pdf_url` column to mark a
- *  certificate revoked — see the file-level note above. */
-const REVOKED_SENTINEL = '__revoked__';
 
 // Unambiguous base32 (no 0/O/1/I/L) — same alphabet/format as the L1
 // auto-issuance path (lib/learner/progress-actions.ts) so codes generated
@@ -61,10 +52,6 @@ function iso(d: Date | string | null): string | null {
   return typeof d === 'string' ? d : d.toISOString();
 }
 
-function isRevoked(c: DbCert): boolean {
-  return c.pdfUrl === REVOKED_SENTINEL;
-}
-
 function toCertRow(c: DbCert, userById: Map<string, DbUser>): CertRow {
   const u = userById.get(c.userId);
   const co = courseBySlug.get(c.courseSlug);
@@ -78,7 +65,7 @@ function toCertRow(c: DbCert, userById: Map<string, DbUser>): CertRow {
     courseTitle_ht: co?.title_ht ?? c.courseSlug,
     issuedAt: iso(c.issuedAt)!,
     verificationCode: c.verificationCode,
-    revoked: isRevoked(c),
+    revoked: c.revoked,
   };
 }
 
@@ -135,7 +122,7 @@ export async function getCertificateByCode(code: string): Promise<CertVerificati
   const co = courseBySlug.get(row.courseSlug);
   return {
     found: true,
-    revoked: isRevoked(row),
+    revoked: row.revoked,
     userName: row.certificateName || user?.name || user?.email,
     courseTitle_fr: co?.title_fr,
     courseTitle_ht: co?.title_ht,
@@ -151,7 +138,7 @@ export async function revokeCertificate(p: { certId: string; admin: AdminActor }
   if (cert) {
     await db
       .update(T.certificates)
-      .set({ pdfUrl: REVOKED_SENTINEL })
+      .set({ revoked: true })
       .where(eq(T.certificates.id, p.certId));
   }
   await recordAudit({
@@ -174,7 +161,7 @@ export async function reissueCertificate(p: { certId: string; admin: AdminActor 
       try {
         await db
           .update(T.certificates)
-          .set({ pdfUrl: null, issuedAt: new Date(), verificationCode: code })
+          .set({ revoked: false, issuedAt: new Date(), verificationCode: code })
           .where(eq(T.certificates.id, cert.id));
         newCode = code;
       } catch (err) {
@@ -212,13 +199,14 @@ export async function issueCertificate(p: {
           courseSlug: p.courseSlug,
           certificateName,
           verificationCode: code,
+          revoked: false,
         });
         done = true;
       } catch (err) {
         if (attempt === 4) throw err;
       }
     }
-  } else if (isRevoked(existing)) {
+  } else if (existing.revoked) {
     // unique(userId, courseSlug) forbids a second row for this pair — reinstate
     // the existing (revoked) row instead of inserting a fresh one. Same end
     // state as the mock's "no valid cert yet → issue one".
@@ -227,7 +215,7 @@ export async function issueCertificate(p: {
       try {
         await db
           .update(T.certificates)
-          .set({ pdfUrl: null, issuedAt: new Date(), verificationCode: code })
+          .set({ revoked: false, issuedAt: new Date(), verificationCode: code })
           .where(eq(T.certificates.id, existing.id));
         done = true;
       } catch (err) {

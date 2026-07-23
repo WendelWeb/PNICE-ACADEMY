@@ -153,6 +153,7 @@ export const certificates = pgTable(
       .defaultNow()
       .notNull(),
     pdfUrl: text('pdf_url'),
+    revoked: boolean('revoked').default(false).notNull(),
   },
   (t) => ({
     uniqUserCourse: unique().on(t.userId, t.courseSlug),
