@@ -1,91 +1,162 @@
-# PNICE Academy — Launch checklist (Phase D Lot 3)
+# PNICE Academy — Runbook de lancement (étapes MANUELLES du propriétaire)
 
-The whole admin + public site runs on a deterministic **mock** dataset
-(`lib/admin/{data,content,site,platform}`). Going live is a **configuration +
-wiring** exercise, not a rewrite: every screen reads through a single seam
-(`lib/admin/data/index.ts`), so swapping mock → real changes no UI.
+**Tout ce qui est codable est fait.** Ce document ne liste QUE ce qui dépend de
+toi : acheter un domaine, créer des comptes externes, poser des clés, appliquer
+les migrations, déployer. Chaque intégration est **inerte tant que sa clé n'est
+pas posée** — l'app tourne aujourd'hui en mock sans planter. Statut live visible
+sur **`/admin/sante → Branchement backend`**.
 
-Live status is visible at **`/admin/sante` → Branchement backend** (it only
-reports whether each integration is *configured*, never any secret value).
-
----
-
-## Phase 0 — Foundation (code is ready; these need your credentials)
-
-1. **Provision the database (Neon).**
-   - Create a Neon Postgres project → copy the **pooled** connection string.
-   - Set `DATABASE_URL` in `.env.local` (see `.env.example`).
-   - Push the schema: `npm run db:push` (or `db:generate` then `db:migrate`).
-     The schema (`db/schema.ts`) already covers every mock entity — users,
-     payments, subscriptions, enrollments, progress, certificates, promo codes +
-     redemptions, credit ledger, referrals, checkout sessions, UTM acquisition,
-     support tickets + replies + templates, admin notifications, webhook logs,
-     error logs, platform settings.
-
-2. **Wire Clerk user-sync.**
-   - Clerk Dashboard → Webhooks → add endpoint `…/api/webhooks/clerk`,
-     subscribe to `user.created`, `user.updated`, `user.deleted`.
-   - Copy the signing secret → `CLERK_WEBHOOK_SECRET`.
-   - The route (`app/api/webhooks/clerk/route.ts`) verifies the Svix signature
-     and upserts/deletes `users`. It returns 503 until the secret + DB are set.
-   - Backfill existing Clerk users once (script: list users → upsert).
-
-## Phase 1 — Make the admin real
-
-3. **Implement `realDataSource()`** in `lib/admin/data/index.ts` (Drizzle
-   queries against `db/schema.ts`), then set `ADMIN_DATA_SOURCE=real`.
-   - Do this **test-driven against the live DB** (it can't be validated on mock).
-   - Straightforward 1:1 reads/writes first (users, tickets, notifications,
-     webhooks, promos, payments); derived analytics (cohorts, funnel, heatmap)
-     as SQL/materialised views last.
-   - The mock implementation (`lib/admin/data/mock/index.ts`) is the reference
-     for every method's exact shape.
-
-## Phase 2 — Money + side effects (need provider credentials)
-
-4. **Payment rail #1 — Stripe (test mode first). ✔ IMPLEMENTED (C1-P1).**
-   Checkout: `POST /api/checkout` → Stripe Checkout (one-off + $79 subscription).
-   Webhook: `/api/webhooks/stripe` (idempotent, signature-verified) → `payments`,
-   `enrollments`, `subscriptions`, `webhook_logs`, admin notification, receipt
-   email. Verify any deployment with `npm run db:check-payments` + the runbook in
-   `docs/superpowers/plans/2026-07-22-c1p1-stripe-payments.md` (Task 11).
-   Go-live still needs the PROD webhook endpoint secret (`STRIPE_WEBHOOK_SECRET`).
-
-   ⚠ Before the FIRST webhook test: run `npm run db:push` so the migration-0002
-   unique constraints (payments/subscriptions provider_ref) exist in the live DB —
-   the fulfillment code's ON CONFLICT clauses require them.
-
-5. **Payment rail #2 — MonCash (sandbox).** Redirect flow + confirmation
-   callback → same `payments`/`enrollments`/`webhook_logs` writes.
-   Keys: `MONCASH_CLIENT_ID`, `MONCASH_CLIENT_SECRET`.
-
-6. **Email — Resend.** Set `RESEND_API_KEY` (+ `RESEND_FROM`). `lib/email/resend.ts`
-   already sends via the Resend REST API and is a safe no-op without the key;
-   ticket replies are wired. Wire the rest: receipts, dunning, cart relance,
-   announcements, and the daily admin digest (Vercel cron at the configured hour).
-
-7. **Video — Bunny.** Set `BUNNY_STREAM_API_KEY` + `BUNNY_STREAM_LIBRARY_ID`.
-   The `/admin/sante` Bunny health check is already real; wire real upload +
-   playback in the courses CMS.
-
-8. **PDF.** Generate receipts + certificates (the public verify page already
-   exists at `/certificats/verifier/[code]`).
-
-## Phase 3 — Go-live
-
-9. **Reconcile section by section.** For each admin area, flip to real data,
-   compare against expectations, fix queries. Keep `ADMIN_DATA_SOURCE=mock` as
-   the instant rollback.
-
-10. **Launch gate.** `/admin/sante → Branchement backend` shows **« Prêt »**
-    only when: all *required* integrations configured (DB, Clerk, Clerk webhook)
-    **+** `ADMIN_DATA_SOURCE=real` **+** at least one payment rail live. Then:
-    seed minimal prod content, enable a real payment rail, remove
-    `ADMIN_BOOTSTRAP_EMAILS`, and announce.
+L'ordre ci-dessous est important (surtout la migration DB avant de basculer en réel).
 
 ---
 
-### Required env vars
-See [`.env.example`](../.env.example). Required to sell: `DATABASE_URL`,
-Clerk keys + `CLERK_WEBHOOK_SECRET`, and ≥1 payment provider. Everything else is
-optional and degrades gracefully (the app reports it as "non configuré").
+## Étape 0 — Point de départ (déjà en place)
+
+- `DATABASE_URL` (Neon), clés Clerk, `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_USD_TO_HTG` : **posées**.
+- Schéma DB de base : appliqué (via `db:push` d'une session précédente).
+- **⚠ Migrations non encore appliquées** à la base live : `0002` (contraintes
+  uniques anti-doublon paiement), `0003` (certificat unique par user+cours),
+  `0004` (colonne `certificates.revoked`). → voir Étape 1.
+
+---
+
+## Étape 1 — Appliquer les migrations DB **(à faire en premier)**
+
+```bash
+npm run db:push
+```
+
+Ça applique 0002 + 0003 + 0004 à ta base Neon (additif, sans risque).
+**Obligatoire AVANT** : (a) tout test webhook Stripe, (b) basculer
+`ADMIN_DATA_SOURCE=real`. Sans `0004`, les lectures réelles de certificats/cours
+plantent (colonne `revoked` manquante).
+
+---
+
+## Étape 2 — Tester le paiement Stripe en réel (mode test)
+
+1. Installe la **Stripe CLI** (https://stripe.com/docs/stripe-cli), puis `stripe login`.
+2. Lance l'app : `npm run dev`.
+3. Dans un autre terminal :
+   `stripe listen --forward-to localhost:3000/api/webhooks/stripe`
+   → copie le `whsec_…` affiché dans `.env.local` → `STRIPE_WEBHOOK_SECRET` (laisse la commande tourner).
+4. Connecte-toi, va sur `/ht/checkout?course=zouti-finansye-dijital`, choisis
+   **Visa / Mastercard**, paie avec la carte test `4242 4242 4242 4242` (date future, CVC au hasard).
+5. Attendu : redirection vers `/ht/checkout/merci`, et le terminal `stripe listen`
+   montre `checkout.session.completed → 200`.
+6. Vérifie les écritures réelles :
+   ```bash
+   npm run db:check-payments
+   ```
+   → 1 paiement `completed` + 1 inscription `active` + logs webhook `processed`.
+7. Refais depuis `/ht/checkout` (sans `?course=`) pour l'**abonnement** → une ligne
+   `subscriptions` avec `period_end` ~1 mois plus tard.
+8. Rembourse le paiement du cours depuis le dashboard Stripe test → paiement
+   `refunded`, inscription `refunded` dans le harness.
+
+> **Pour la prod** : recrée l'endpoint webhook côté Stripe (Developers → Webhooks
+> → `https://TON-DOMAINE/api/webhooks/stripe`) et mets SON `whsec_…` dans les
+> variables d'env Vercel.
+
+---
+
+## Étape 3 — Acheter un domaine
+
+Débloque : l'email (Resend exige SPF/DKIM sur un domaine vérifié), le webhook
+Clerk (URL publique), et le déploiement prod.
+
+---
+
+## Étape 4 — Email (Resend)
+
+1. https://resend.com → **API Keys → Create** → `RESEND_API_KEY`.
+2. **Domains → Add Domain** → configure les enregistrements DNS (SPF/DKIM) sur ton domaine.
+3. `RESEND_FROM` = ex. `PNICE Academy <no-reply@ton-domaine.com>`.
+4. Les envois sont **doublement protégés** : rien ne part sans la clé ET sans
+   `ADMIN_DATA_SOURCE=real` (ou `EMAIL_LIVE=true` pour tester vers une adresse à toi).
+   Reçus (avec PDF), réponses de tickets, dunning, relances panier, digest : tout s'active alors.
+
+---
+
+## Étape 5 — Vidéo (Bunny)
+
+1. https://dash.bunny.net → menu **Stream → Add Video Library**.
+2. Onglet **API** de la librairie → `BUNNY_STREAM_API_KEY` + le **Library ID** → `BUNNY_STREAM_LIBRARY_ID`.
+3. **Uploade tes vidéos**, puis renseigne l'ID vidéo de chaque leçon dans le champ
+   `bunnyVideoId` (par leçon dans `data/courses.ts` aujourd'hui ; via le CMS une fois
+   les cours en DB à C2). Sans ID, le lecteur montre le placeholder.
+4. **⚠ Sécurité paywall** : l'embed est public par défaut — quiconque a l'URL peut
+   regarder. **Active Token Authentication OU une restriction par referrer dans le
+   dashboard Bunny** avant de publier des vidéos payantes.
+5. Test : `/admin/sante` → le check Bunny liste tes vidéos.
+
+---
+
+## Étape 6 — Déployer (Vercel)
+
+1. Pousse le code : le remote existe (`WendelWeb/PNICE-ACADEMY`) mais tout est
+   local (`git push origin main`).
+2. Vercel → **New Project** → importe le repo.
+3. **Environment Variables** : recopie toutes tes clés `.env.local`.
+4. **Cron Jobs** : `vercel.json` déclare déjà les 2 crons (relance panier toutes
+   les 2h, digest quotidien) — Vercel pose `CRON_SECRET` automatiquement quand tu
+   actives les Cron Jobs.
+
+---
+
+## Étape 7 — Webhook Clerk (après déploiement, besoin d'une URL publique)
+
+1. Clerk Dashboard → **Webhooks → Add Endpoint** : `https://TON-DOMAINE/api/webhooks/clerk`.
+2. Événements : `user.created`, `user.updated`, `user.deleted`.
+3. Copie le **Signing Secret** (`whsec_…`) → `CLERK_WEBHOOK_SECRET`.
+4. Backfill des comptes existants une fois : `npm run db:sync-clerk`.
+   (Le webhook synchronise ensuite les NOUVEAUX comptes automatiquement.)
+
+---
+
+## Étape 8 — Basculer l'app en réel
+
+1. **Après l'Étape 1** (migrations appliquées) : mets `ADMIN_DATA_SOURCE=real`.
+   Tout l'admin (75/75 domaines) lit alors Postgres ; le journal d'audit, les
+   certificats réels, les ventes réelles apparaissent.
+2. `ADMIN_BOOTSTRAP_EMAILS=ton-email` → te donne super-admin au premier passage sur `/admin`.
+3. `ADMIN_REQUIRE_2FA=true` → réactive la 2FA admin (désactivée pendant le dev).
+
+---
+
+## Étape 9 — Contenu & décisions
+
+- **Prix réels** : remplace les placeholders ($7–49) dans `data/courses.ts` (`priceUsd`).
+- **Enregistre tes cours** (Étape 5) — le goulot d'étranglement réel.
+- **MonCash / NatCash** : différés (aucun code, pas de rail actif). Lancement
+  **carte uniquement** via Stripe ; on ajoutera les rails haïtiens ensuite.
+
+---
+
+## Étape 10 — Vérifs manuelles avant d'ouvrir au public
+
+Ces points n'ont pas pu être testés automatiquement (base quasi vide) :
+
+- **Accès payant** : insère à la main une inscription (ou fais un vrai achat test),
+  confirme que le cours apparaît sur `/tableau-de-bord` et que ses leçons sont
+  accessibles ; qu'un cours NON acheté redirige vers la page de vente.
+- **Certificat** : termine toutes les leçons d'un cours de test → un certificat
+  doit s'émettre ; ouvre `/api/certificate/<code>` pour vérifier le PDF, et
+  `/certificats/verifier/<code>` pour la page publique.
+- **Greeting multi-user** : connecte 2 comptes différents, confirme que le nom du
+  tableau de bord diffère (pas de cache partagé).
+- **Crons** : déclenche-les manuellement une fois en prod
+  (`curl -H "Authorization: Bearer $CRON_SECRET" https://TON-DOMAINE/api/cron/daily-digest`).
+
+---
+
+## Résumé — la porte de lancement
+
+`/admin/sante → Branchement backend` affiche **« Prêt »** quand : DB + Clerk +
+webhook Clerk configurés **+** `ADMIN_DATA_SOURCE=real` **+** au moins un rail de
+paiement live. Chemin le plus court vers de l'argent réel : Étapes 1→2 (paiement),
+4 (email), 5 (vidéo), 6 (déploiement), 9 (prix). Le reste peut suivre juste après.
+
+**Prochaines phases produit (déjà planifiées, pas au lancement)** : C2 (cours en
+base de données, marketplace-ready) puis C3 (onboarding enseignant, studio,
+validation, registre 70/30, retraits, avis). Specs dans `docs/superpowers/`.
