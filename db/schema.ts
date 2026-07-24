@@ -429,3 +429,113 @@ export const cookieConsents = pgTable('cookie_consents', {
     .defaultNow()
     .notNull(),
 });
+
+/* -------------------------------------------------------------------------- */
+/* Phase C2 — Courses & lessons in the DB (marketplace-ready).                */
+/*                                                                            */
+/* KEY DECISION (deviation from the original marketplace spec, deliberate —   */
+/* see docs/superpowers/plans/2026-07-24-c2-courses-to-db.md): enrollments /  */
+/* payments / progress / certificates keep `course_slug` (text) as their key,      */
+/* UNCHANGED. We do NOT re-key that already-tested money path to a           */
+/* `course_id` FK. Instead `courses.slug` is the natural key (unique,        */
+/* notNull) and `lessons.course_slug` FKs to it. This gives courses a real   */
+/* DB home — an owner, editable content, a status lifecycle — the           */
+/* marketplace needs, without touching the money path at all.               */
+/*                                                                            */
+/* Content/shape note: `data/courses.ts` (the `Course`/`Lesson` types) and    */
+/* `data/courseDetails.ts` (`CourseDetail`, keyed by `code`) remain in the    */
+/* repo as the seed source (scripts/seed-courses.ts, C2-T2) and as the       */
+/* fallback `lib/courses/source.ts` uses when there's no DATABASE_URL or the  */
+/* DB read fails/returns nothing (see that module's header). `prereq_ht/fr`   */
+/* below is jsonb (string[]), not plain text, to preserve the shape of        */
+/* `CourseDetail.requirements_ht/fr` — the plan's shorthand only annotated    */
+/* `deliverables`/`faq` with "(jsonb)" but `prereq` is the same kind of list. */
+/* -------------------------------------------------------------------------- */
+
+export const courses = pgTable('courses', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  // Nullable + set-null (not cascade): losing the owner's user row must never
+  // delete the course itself — enrollments/payments/progress/certificates
+  // still key off `course_slug` and must keep resolving.
+  ownerUserId: uuid('owner_user_id').references(() => users.id, { onDelete: 'set null' }),
+  slug: text('slug').notNull().unique(),
+  code: text('code'),
+  // Tabler icon key, mapped in components/courses/CourseIcon.tsx.
+  icon: text('icon'),
+  category: text('category').$type<'biznis' | 'dijital' | 'lajan' | 'lavi-pratik'>(),
+  titleHt: text('title_ht'),
+  titleFr: text('title_fr'),
+  taglineHt: text('tagline_ht'),
+  taglineFr: text('tagline_fr'),
+  audienceHt: text('audience_ht'),
+  audienceFr: text('audience_fr'),
+  // Bullet points — mirrors data/courses.ts Course.learn_ht/fr (string[]).
+  learnHt: jsonb('learn_ht').$type<string[]>(),
+  learnFr: jsonb('learn_fr').$type<string[]>(),
+  // Sales-page content (data/courseDetails.ts CourseDetail, keyed by `code` today).
+  promiseHt: text('promise_ht'),
+  promiseFr: text('promise_fr'),
+  problemHt: text('problem_ht'),
+  problemFr: text('problem_fr'),
+  deliverablesHt: jsonb('deliverables_ht').$type<string[]>(),
+  deliverablesFr: jsonb('deliverables_fr').$type<string[]>(),
+  // See header note: jsonb string[], mirrors CourseDetail.requirements_ht/fr.
+  prereqHt: jsonb('prereq_ht').$type<string[]>(),
+  prereqFr: jsonb('prereq_fr').$type<string[]>(),
+  faqHt: jsonb('faq_ht').$type<{ q: string; a: string }[]>(),
+  faqFr: jsonb('faq_fr').$type<{ q: string; a: string }[]>(),
+  priceCents: integer('price_cents'),
+  currency: text('currency').default('USD').notNull(),
+  images: jsonb('images').$type<{ main?: string; secondary?: string[] }>(),
+  status: text('status')
+    .$type<'draft' | 'pending_review' | 'published' | 'rejected' | 'archived'>()
+    .default('draft')
+    .notNull(),
+  reviewNote: text('review_note'),
+  submittedAt: timestamp('submitted_at', { withTimezone: true }),
+  // Clerk id of the reviewing admin (admins are Clerk accounts, not `users` rows).
+  reviewedBy: text('reviewed_by'),
+  publishedAt: timestamp('published_at', { withTimezone: true }),
+  hasUnpublishedChanges: boolean('has_unpublished_changes').default(false).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const lessons = pgTable(
+  'lessons',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    courseSlug: text('course_slug')
+      .notNull()
+      .references(() => courses.slug, { onDelete: 'cascade' }),
+    index: integer('index').notNull(),
+    titleHt: text('title_ht').notNull(),
+    titleFr: text('title_fr').notNull(),
+    // Bunny Stream video id (Task L4) — empty/undefined until the owner
+    // records + uploads. Mirrors data/courses.ts Lesson.bunnyVideoId.
+    bunnyVideoId: text('bunny_video_id'),
+    durationSeconds: integer('duration_seconds'),
+    isPreview: boolean('is_preview').default(false).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    uniqCourseIndex: unique().on(t.courseSlug, t.index),
+  }),
+);
+
+export const teacherPlans = pgTable('teacher_plans', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  ownerUserId: uuid('owner_user_id').references(() => users.id, { onDelete: 'set null' }),
+  titleHt: text('title_ht'),
+  titleFr: text('title_fr'),
+  priceCentsMonthly: integer('price_cents_monthly'),
+  includesAll: boolean('includes_all').default(true).notNull(),
+  // Used only when includesAll is false — the subset of courses.slug the plan grants.
+  courseSlugs: jsonb('course_slugs').$type<string[]>(),
+  stripeProductId: text('stripe_product_id'),
+  stripePriceId: text('stripe_price_id'),
+  status: text('status').$type<'active' | 'inactive'>().default('active').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
