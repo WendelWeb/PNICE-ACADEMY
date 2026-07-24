@@ -5,7 +5,7 @@ import { buttonClasses } from '@/components/ui/Button';
 import { AuthCta } from '@/components/auth/AuthCta';
 import { ManifestCard } from '@/components/home/ManifestCard';
 import { RouteLine } from '@/components/layout/RouteLine';
-import { courses } from '@/data/courses';
+import { getPublishedCourses } from '@/lib/courses/source';
 import { courseTitle } from '@/lib/courseFields';
 
 /** Catalog entries shown on the manifest; the rest go in the « +N » footer row. */
@@ -18,9 +18,10 @@ const MANIFEST_ROWS = 5;
  * strip — four mono stats. The old hero slideshow moved to the story section.
  */
 export async function Hero() {
-  const [t, locale] = await Promise.all([
+  const [t, locale, courses] = await Promise.all([
     getTranslations('home.hero'),
     getLocale(),
+    getPublishedCourses(),
   ]);
 
   const rows = courses.slice(0, MANIFEST_ROWS).map((c) => ({

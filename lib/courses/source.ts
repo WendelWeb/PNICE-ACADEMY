@@ -15,11 +15,8 @@
  * DB-read pattern in lib/learner/access.ts and lib/admin/data/real/users.ts.
  *
  * `data/courseDetails.ts` (the sales-page CourseDetail content, keyed by
- * `code`) is NOT read here — the `Course` type this module returns has no
- * sales-page fields. `data/courseDetails.ts` remains in the repo as part of
- * the seed source for the new `courses` table's sales-page columns
- * (promise/problem/deliverables/prereq/faq — see db/schema.ts), consumed by
- * scripts/seed-courses.ts (Task C2-T2), not by this module.
+ * `code`) IS read here too, via `getCourseDetail(slug)` (Task C2-T3) — see
+ * that function's own doc comment for the mapping/fallback details.
  */
 import { db, schema } from '@/db';
 import {
@@ -28,6 +25,12 @@ import {
   type Course,
   type Lesson,
 } from '@/data/courses';
+import {
+  getCourseDetail as getStaticCourseDetail,
+  type CourseDetail,
+  type CourseFaq,
+  type LessonDetail,
+} from '@/data/courseDetails';
 
 const T = schema;
 
@@ -122,4 +125,98 @@ export async function getPublishedCourses(): Promise<Course[]> {
 export async function getCourseLessons(slug: string): Promise<Lesson[]> {
   const course = await getCourseBySlug(slug);
   return course?.lessons ?? [];
+}
+
+/**
+ * A single course, but ONLY if `status = 'published'` (undefined otherwise,
+ * including "exists but draft/pending/rejected/archived") — what the public
+ * SALES PAGE (Task C2-T3) must resolve through so an unpublished course
+ * 404s for visitors, mirroring `getPublishedCourses()`'s filter. With no DB
+ * (fallback), every static course counts as published (today's real,
+ * always-public catalog), same reasoning as `getPublishedCourses()`.
+ */
+export async function getPublishedCourseBySlug(slug: string): Promise<Course | undefined> {
+  const rows = await readDbRows();
+  if (!rows) return getStaticCourse(slug);
+  const row = rows.courseRows.find((r) => r.slug === slug && r.status === 'published');
+  return row ? mapDbCourseToCourse(row, rows.lessonRows) : undefined;
+}
+
+/**
+ * Pure DB-row → `CourseDetail` mapper (Task C2-T3), exported for unit
+ * testing without a real DB connection. `db/schema.ts`'s `courses` table
+ * carries every sales-page field EXCEPT two the original spec's shorthand
+ * missed: `level_ht/fr` and the per-lesson `desc_ht/fr` under
+ * `lessonDetails` (see that file's C2 header note) — there is no column for
+ * either. For those two, and for any sales-page field a row simply hasn't
+ * been filled in yet (a brand-new teacher-authored course, future C3), we
+ * fall back to the static `data/courseDetails.ts` entry matched by `code` —
+ * exactly the content `scripts/seed-courses.ts` wrote in the first place, so
+ * a freshly-seeded row round-trips to IDENTICAL content. Lesson minutes come
+ * from the real `lessons.duration_seconds` column when present (falling
+ * back to the static minutes otherwise); lesson descriptions always come
+ * from the static entry (no DB column exists for them at all).
+ */
+export function mapDbCourseToDetail(row: DbCourseRow, lessonRows: DbLessonRow[]): CourseDetail {
+  const staticDetail = row.code ? getStaticCourseDetail(row.code) : undefined;
+
+  const lessons = lessonRows
+    .filter((l) => l.courseSlug === row.slug)
+    .sort((a, b) => a.index - b.index);
+
+  const lessonDetails: LessonDetail[] = lessons.map((l, i) => {
+    const staticLd = staticDetail?.lessonDetails[i];
+    return {
+      minutes:
+        l.durationSeconds != null ? Math.round(l.durationSeconds / 60) : staticLd?.minutes ?? 0,
+      desc_ht: staticLd?.desc_ht ?? '',
+      desc_fr: staticLd?.desc_fr ?? '',
+    };
+  });
+
+  const faqHt = row.faqHt ?? [];
+  const faqFr = row.faqFr ?? [];
+  const faq: CourseFaq[] =
+    faqHt.length > 0
+      ? faqHt.map((f, i) => ({
+          q_ht: f.q,
+          a_ht: f.a,
+          q_fr: faqFr[i]?.q ?? '',
+          a_fr: faqFr[i]?.a ?? '',
+        }))
+      : staticDetail?.faq ?? [];
+
+  return {
+    level_ht: staticDetail?.level_ht ?? '',
+    level_fr: staticDetail?.level_fr ?? '',
+    promise_ht: row.promiseHt ?? staticDetail?.promise_ht ?? '',
+    promise_fr: row.promiseFr ?? staticDetail?.promise_fr ?? '',
+    problem_ht: row.problemHt ?? staticDetail?.problem_ht ?? '',
+    problem_fr: row.problemFr ?? staticDetail?.problem_fr ?? '',
+    deliverables_ht: row.deliverablesHt ?? staticDetail?.deliverables_ht ?? [],
+    deliverables_fr: row.deliverablesFr ?? staticDetail?.deliverables_fr ?? [],
+    requirements_ht: row.prereqHt ?? staticDetail?.requirements_ht ?? [],
+    requirements_fr: row.prereqFr ?? staticDetail?.requirements_fr ?? [],
+    lessonDetails,
+    faq,
+  };
+}
+
+/**
+ * The sales-page long-form content for one course, keyed by `slug` (unlike
+ * the static `data/courseDetails.ts`, keyed by `code` — this module is
+ * slug-keyed throughout, like every other export here). GATED + FALLBACK,
+ * same choke point as the rest of this module: no DATABASE_URL, a failed
+ * query, or an empty `courses` table ⇒ resolve the slug against the static
+ * catalog and read `data/courseDetails.ts` by its `code`, byte-identical to
+ * what the sales page fetched before Task C2-T3.
+ */
+export async function getCourseDetail(slug: string): Promise<CourseDetail | undefined> {
+  const rows = await readDbRows();
+  if (!rows) {
+    const course = getStaticCourse(slug);
+    return course ? getStaticCourseDetail(course.code) : undefined;
+  }
+  const row = rows.courseRows.find((r) => r.slug === slug);
+  return row ? mapDbCourseToDetail(row, rows.lessonRows) : undefined;
 }

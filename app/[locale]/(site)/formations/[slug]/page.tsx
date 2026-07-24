@@ -21,8 +21,11 @@ import { ManifestList, type ManifestRow } from '@/components/courses/ManifestLis
 import { MobileBuyBar } from '@/components/courses/MobileBuyBar';
 import { AuthCta } from '@/components/auth/AuthCta';
 import { categoryTone } from '@/lib/courseCategory';
-import { courses, getCourse } from '@/data/courses';
-import { getCourseDetail } from '@/data/courseDetails';
+import {
+  getPublishedCourses,
+  getPublishedCourseBySlug,
+  getCourseDetail,
+} from '@/lib/courses/source';
 import { getCourseTeacher, teacherShortBio } from '@/data/teachers';
 import { getCourseTestimonial } from '@/lib/admin/site/ops';
 import { courseImages, siteImageSrc } from '@/lib/courseImage';
@@ -39,16 +42,23 @@ import { formatUsd } from '@/lib/money';
 import { Price, PriceSecondary } from '@/components/ui/Price';
 import { cn } from '@/lib/cn';
 
-export function generateStaticParams() {
+// Only PUBLISHED courses get a pre-rendered sales page — an unpublished/draft
+// course must 404 for public visitors (see the page body below).
+export async function generateStaticParams() {
+  const courses = await getPublishedCourses();
   return courses.map((c) => ({ slug: c.slug }));
 }
+
+// Course + sales-page content is DB-backed (Task C2-T3, gated + fallback to
+// static data) — revalidate periodically instead of staying purely static.
+export const revalidate = 300;
 
 export async function generateMetadata({
   params: { slug, locale },
 }: {
   params: { slug: string; locale: string };
 }): Promise<Metadata> {
-  const c = getCourse(slug);
+  const c = await getPublishedCourseBySlug(slug);
   if (!c) return {};
   return {
     title: `${locale === 'ht' ? c.title_ht : c.title_fr} — PNICE Academy`,
@@ -61,9 +71,9 @@ export default async function CourseDetail({
   params: { locale: string; slug: string };
 }) {
   setRequestLocale(locale);
-  const course = getCourse(slug);
+  const course = await getPublishedCourseBySlug(slug);
   if (!course) notFound();
-  const detail = getCourseDetail(course.code);
+  const detail = await getCourseDetail(slug);
   if (!detail) notFound();
 
   const t = await getTranslations('course');

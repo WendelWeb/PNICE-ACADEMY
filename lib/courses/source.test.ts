@@ -7,12 +7,16 @@
  */
 import { describe, it, expect, afterEach } from 'vitest';
 import { courses as staticCourses } from '@/data/courses';
+import { courseDetails as staticCourseDetails } from '@/data/courseDetails';
 import {
   mapDbCourseToCourse,
+  mapDbCourseToDetail,
   getAllCourses,
   getCourseBySlug,
   getPublishedCourses,
+  getPublishedCourseBySlug,
   getCourseLessons,
+  getCourseDetail,
 } from './source';
 
 describe('mapDbCourseToCourse — DB row → Course shape', () => {
@@ -152,6 +156,111 @@ describe('mapDbCourseToCourse — DB row → Course shape', () => {
   });
 });
 
+describe('mapDbCourseToDetail — DB row → CourseDetail shape', () => {
+  const fakeCourseRow = {
+    id: 'c-1',
+    ownerUserId: 'owner-1',
+    slug: 'test-course',
+    code: 'PA-01', // matches a real static entry — round-trip should be identical
+    icon: 'rocket',
+    category: 'dijital' as const,
+    titleHt: 'Tit',
+    titleFr: 'Titre',
+    taglineHt: 'Tagline ht',
+    taglineFr: 'Tagline fr',
+    audienceHt: 'Odyans',
+    audienceFr: 'Audience',
+    learnHt: ['A'],
+    learnFr: ['B'],
+    promiseHt: 'Pwomès DB',
+    promiseFr: 'Promesse DB',
+    problemHt: 'Pwoblèm DB',
+    problemFr: 'Problème DB',
+    deliverablesHt: ['Livrezon 1'],
+    deliverablesFr: ['Livrable 1'],
+    prereqHt: ['Kondisyon 1'],
+    prereqFr: ['Condition 1'],
+    faqHt: [{ q: 'Kesyon ht', a: 'Repons ht' }],
+    faqFr: [{ q: 'Question fr', a: 'Réponse fr' }],
+    priceCents: 900,
+    currency: 'USD',
+    images: null,
+    status: 'published' as const,
+    reviewNote: null,
+    submittedAt: null,
+    reviewedBy: null,
+    publishedAt: null,
+    hasUnpublishedChanges: false,
+    createdAt: new Date('2026-01-01T00:00:00Z'),
+    updatedAt: new Date('2026-01-01T00:00:00Z'),
+  };
+
+  const fakeLessonRows = [
+    {
+      id: 'l-1',
+      courseSlug: 'test-course',
+      index: 1,
+      titleHt: 'Leson 1',
+      titleFr: 'Leçon 1',
+      bunnyVideoId: null,
+      durationSeconds: 600,
+      isPreview: true,
+      createdAt: new Date('2026-01-01T00:00:00Z'),
+      updatedAt: new Date('2026-01-01T00:00:00Z'),
+    },
+    {
+      id: 'l-2',
+      courseSlug: 'test-course',
+      index: 2,
+      titleHt: 'Leson 2',
+      titleFr: 'Leçon 2',
+      bunnyVideoId: null,
+      durationSeconds: null, // no duration on the DB row — falls back to static minutes
+      isPreview: false,
+      createdAt: new Date('2026-01-01T00:00:00Z'),
+      updatedAt: new Date('2026-01-01T00:00:00Z'),
+    },
+  ];
+
+  it('prefers DB columns for promise/problem/deliverables/prereq/faq', () => {
+    const detail = mapDbCourseToDetail(fakeCourseRow, fakeLessonRows);
+    expect(detail.promise_ht).toBe('Pwomès DB');
+    expect(detail.promise_fr).toBe('Promesse DB');
+    expect(detail.problem_ht).toBe('Pwoblèm DB');
+    expect(detail.deliverables_ht).toEqual(['Livrezon 1']);
+    expect(detail.requirements_fr).toEqual(['Condition 1']);
+    expect(detail.faq).toEqual([
+      { q_ht: 'Kesyon ht', a_ht: 'Repons ht', q_fr: 'Question fr', a_fr: 'Réponse fr' },
+    ]);
+  });
+
+  it('falls back to the static entry (by code) for level_ht/fr and lesson descriptions — no DB column exists', () => {
+    const detail = mapDbCourseToDetail(fakeCourseRow, fakeLessonRows);
+    const staticDetail = staticCourseDetails['PA-01'];
+    expect(detail.level_ht).toBe(staticDetail.level_ht);
+    expect(detail.level_fr).toBe(staticDetail.level_fr);
+    expect(detail.lessonDetails[0].desc_ht).toBe(staticDetail.lessonDetails[0].desc_ht);
+    expect(detail.lessonDetails[1].desc_fr).toBe(staticDetail.lessonDetails[1].desc_fr);
+  });
+
+  it('derives lesson minutes from duration_seconds when present, else the static minutes', () => {
+    const detail = mapDbCourseToDetail(fakeCourseRow, fakeLessonRows);
+    expect(detail.lessonDetails[0].minutes).toBe(10); // 600s / 60
+    expect(detail.lessonDetails[1].minutes).toBe(staticCourseDetails['PA-01'].lessonDetails[1].minutes);
+  });
+
+  it('degrades to safe empty defaults when there is no matching static entry (brand-new course, no code)', () => {
+    const detail = mapDbCourseToDetail(
+      { ...fakeCourseRow, code: null, promiseHt: null, faqHt: null, faqFr: null },
+      [],
+    );
+    expect(detail.level_ht).toBe('');
+    expect(detail.promise_ht).toBe('');
+    expect(detail.faq).toEqual([]);
+    expect(detail.lessonDetails).toEqual([]);
+  });
+});
+
 describe('gated fallback — no DATABASE_URL', () => {
   const ORIGINAL_DB = process.env.DATABASE_URL;
 
@@ -191,5 +300,19 @@ describe('gated fallback — no DATABASE_URL', () => {
   it('getCourseLessons returns [] for an unknown slug', async () => {
     delete process.env.DATABASE_URL;
     expect(await getCourseLessons('nope-not-a-course')).toEqual([]);
+  });
+
+  it('getPublishedCourseBySlug returns every static course (all count as published in the fallback)', async () => {
+    delete process.env.DATABASE_URL;
+    const found = await getPublishedCourseBySlug('biznis-shipping');
+    expect(found?.code).toBe('PA-03');
+    expect(await getPublishedCourseBySlug('nope-not-a-course')).toBeUndefined();
+  });
+
+  it('getCourseDetail resolves by slug (not code) and matches data/courseDetails.ts by the course code', async () => {
+    delete process.env.DATABASE_URL;
+    const detail = await getCourseDetail('biznis-shipping'); // PA-03
+    expect(detail).toEqual(staticCourseDetails['PA-03']);
+    expect(await getCourseDetail('nope-not-a-course')).toBeUndefined();
   });
 });

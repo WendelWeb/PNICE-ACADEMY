@@ -11,7 +11,8 @@ import {
 import { Link } from '@/i18n/routing';
 import { Container } from '@/components/ui/Section';
 import { buttonClasses } from '@/components/ui/Button';
-import { getCourse, isPreviewLesson, type Course } from '@/data/courses';
+import { isPreviewLesson, type Course } from '@/data/courses';
+import { getCourseBySlug } from '@/lib/courses/source';
 import { courseTitle, lessonTitle } from '@/lib/courseFields';
 import { cn } from '@/lib/cn';
 import { clerkEnabled } from '@/lib/clerk';
@@ -91,7 +92,7 @@ export default async function LessonPlayer({
   params: { locale: string; course: string; id: string };
 }) {
   setRequestLocale(locale);
-  const course = getCourse(slug);
+  const course = await getCourseBySlug(slug);
   if (!course) notFound();
 
   const total = course.lessons.length;

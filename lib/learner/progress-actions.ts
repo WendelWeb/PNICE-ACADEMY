@@ -9,7 +9,7 @@ import { and, eq, isNotNull } from 'drizzle-orm';
 import { auth } from '@clerk/nextjs/server';
 import { db, schema } from '@/db';
 import { clerkEnabled } from '@/lib/clerk';
-import { getCourse } from '@/data/courses';
+import { getCourseBySlug } from '@/lib/courses/source';
 import { hasCourseAccess, resolveUserId } from './access';
 
 const T = schema;
@@ -43,7 +43,7 @@ export async function markLessonDoneAction(
   const { userId: clerkId } = clerkEnabled ? await auth() : { userId: null };
   if (!clerkId) return { ok: false, error: 'unauthorized' };
 
-  const course = getCourse(courseSlug);
+  const course = await getCourseBySlug(courseSlug);
   if (!course || !Number.isFinite(lessonIndex) || lessonIndex < 1 || lessonIndex > course.lessons.length) {
     return { ok: false, error: 'invalid' };
   }
