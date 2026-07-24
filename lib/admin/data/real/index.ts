@@ -1,26 +1,31 @@
 /**
  * Drizzle-backed data source (Phase D Lot 3) — assembled INCREMENTALLY.
  *
- * Domains already migrated to the real DB override the mock; everything not yet
- * migrated falls back to `mockDataSource`, so flipping ADMIN_DATA_SOURCE=real
- * never fully breaks the admin during the migration. As each domain lands here,
- * delete its mock fallback by adding the real method to the spread below.
+ * Domains already migrated to the real DB override the mock; the mock spread
+ * below is now unreachable for every AdminDataSource method (kept as a
+ * structural safety net, not because anything still falls through to it — see
+ * "Migrated so far").
  *
- * Migrated so far: USER cluster (list, detail, KPI overview, user mutations,
- * audit), TRANSACTIONS (list, export, method volumes), ENGAGEMENT (course
- * completion/times/lesson views/aggregate drop-off/active learners/stuck
- * users), CERTIFICATES (list, verify-by-code, revoke/reissue/issue),
- * SUBSCRIPTIONS (list, events, dunning, renewals + series, cohorts, KPIs,
- * cancellation reasons — see lib/admin/data/real/subscriptions.ts for the
- * documented degeneracies where the schema lacks a mock-only column),
- * ANALYTICS (getAnalytics — revenue/signups/enrollments/method/course/geo/
- * language/funnel/heatmap; see lib/admin/data/real/analytics.ts for the
- * documented degeneracies, notably the MOCK-flagged visitor→account funnel
- * step, which has no real traffic-analytics source), MARKETING (promo codes
- * incl. public validatePromo, UTM attribution, abandoned/open carts, referrals,
- * referral credit — see lib/admin/data/real/marketing.ts for the documented
- * degeneracy on promo_redemptions' missing per-redemption financial columns).
- * Pending: support — still served by the mock.
+ * Migrated so far — ALL DOMAINS REAL, migration COMPLETE: USER cluster (list,
+ * detail, KPI overview, user mutations, audit), TRANSACTIONS (list, export,
+ * method volumes), ENGAGEMENT (course completion/times/lesson views/aggregate
+ * drop-off/active learners/stuck users), CERTIFICATES (list, verify-by-code,
+ * revoke/reissue/issue), SUBSCRIPTIONS (list, events, dunning, renewals +
+ * series, cohorts, KPIs, cancellation reasons — see
+ * lib/admin/data/real/subscriptions.ts for the documented degeneracies where
+ * the schema lacks a mock-only column), ANALYTICS (getAnalytics —
+ * revenue/signups/enrollments/method/course/geo/language/funnel/heatmap; see
+ * lib/admin/data/real/analytics.ts for the documented degeneracies, notably
+ * the MOCK-flagged visitor→account funnel step, which has no real
+ * traffic-analytics source), MARKETING (promo codes incl. public
+ * validatePromo, UTM attribution, abandoned/open carts, referrals, referral
+ * credit — see lib/admin/data/real/marketing.ts for the documented degeneracy
+ * on promo_redemptions' missing per-redemption financial columns), SUPPORT &
+ * SYSTÈME (tickets incl. the public createTicket entry point, templates,
+ * notifications, webhook logs, error logs, digest settings — see
+ * lib/admin/data/real/support.ts for the documented degeneracies, notably the
+ * Clerk-id↔users.id resolution `createTicket` performs to satisfy
+ * support_tickets' uuid FK).
  */
 import type { AdminDataSource } from '../types';
 import { mockDataSource } from '../mock';
@@ -31,6 +36,7 @@ import * as certs from './certificates';
 import * as subs from './subscriptions';
 import * as analytics from './analytics';
 import * as marketing from './marketing';
+import * as support from './support';
 
 export function realDataSource(): AdminDataSource {
   return {
@@ -102,5 +108,26 @@ export function realDataSource(): AdminDataSource {
     getReferralCreditCents: marketing.getReferralCreditCents,
     setReferralCredit: marketing.setReferralCredit,
     // addManualCredit already real via users.ts (spread above) — not re-implemented here.
+
+    // ── SUPPORT & SYSTÈME domain (real) — LAST domain, migration complete ──
+    getTickets: support.getTickets,
+    getTicketById: support.getTicketById,
+    getOpenUnassignedCount: support.getOpenUnassignedCount,
+    createTicket: support.createTicket,
+    assignTicket: support.assignTicket,
+    replyTicket: support.replyTicket,
+    setTicketStatus: support.setTicketStatus,
+    getTemplates: support.getTemplates,
+    createTemplate: support.createTemplate,
+    updateTemplate: support.updateTemplate,
+    deleteTemplate: support.deleteTemplate,
+    getNotifications: support.getNotifications,
+    markNotificationRead: support.markNotificationRead,
+    markAllNotificationsRead: support.markAllNotificationsRead,
+    getWebhookLogs: support.getWebhookLogs,
+    replayWebhook: support.replayWebhook,
+    getErrorLogs: support.getErrorLogs,
+    getSupportSettings: support.getSupportSettings,
+    setSupportSettings: support.setSupportSettings,
   };
 }
