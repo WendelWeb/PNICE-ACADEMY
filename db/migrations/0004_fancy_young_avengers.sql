@@ -1,0 +1,1 @@
+ALTER TABLE "certificates" ADD COLUMN "revoked" boolean DEFAULT false NOT NULL;

@@ -9,6 +9,15 @@
 export type Lesson = {
   title_ht: string;
   title_fr: string;
+  /**
+   * Bunny Stream video id for this lesson (Task L4). Optional/empty until
+   * the owner records + uploads videos — `undefined` for all 9 courses
+   * today. Mirrors the CMS's `ContentLesson.bunnyVideoId` (Phase C,
+   * lib/admin/content/store.ts) which is admin-only; this is the field the
+   * PUBLIC lesson page reads. `components/learn/LessonPlayer.tsx` renders
+   * the real embed only when both this AND `BUNNY_STREAM_LIBRARY_ID` are set.
+   */
+  bunnyVideoId?: string;
 };
 
 /**
@@ -334,4 +343,17 @@ export const courses: Course[] = [
 
 export function getCourse(slug: string): Course | undefined {
   return courses.find((c) => c.slug === slug);
+}
+
+/**
+ * Free-preview policy for lessons (binding access model — Task L1, see
+ * docs/superpowers/plans/2026-07-23-launch-code.md): a lesson is reachable
+ * without purchase/subscription only if it's a free preview. The static
+ * catalog here carries no per-lesson field for this (only the admin CMS
+ * content store does — lib/admin/content/store.ts — seeded as `li === 0` but
+ * explicitly NOT wired to the public site yet). We mirror that same default:
+ * lesson 1 (1-based) of every course is a free preview; nothing else is.
+ */
+export function isPreviewLesson(lessonNumber1Based: number): boolean {
+  return lessonNumber1Based === 1;
 }

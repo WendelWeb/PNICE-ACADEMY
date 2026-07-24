@@ -444,15 +444,20 @@
     "emptyTitle": "Katalòg la ap tann ou",
     "emptyBody": "Ou poko enskri nan okenn fòmasyon. Chwazi yon konpetans ki fè lajan, epi kòmanse jodi a.",
     "emptyCta": "Gade katalòg la",
-    "demoNote": "Done egzanp — pou montre kijan tablo a ap ye."
+    "subscriptionActiveNote": "Ou gen yon abònman aktif — ou gen aksè a tout fòmasyon yo. Chwazi yonn pou kòmanse."
   },
   "lesson": {
     "lessonsList": "Leson yo",
     "markDone": "Make fini",
+    "doneLabel": "Leson fini",
     "next": "Pwochen",
     "prev": "Anvan",
     "playerNote": "Videyo a poko disponib. L ap vini nan yon pwochen etap.",
-    "lessonOf": "Leson {n} sou {total}"
+    "lessonOf": "Leson {n} sou {total}",
+    "certIssuedToast": "Bravo! Ou fini tout kou a — sètifika w disponib.",
+    "viewCertificate": "Gade sètifika a",
+    "buyForAccess": "Achte pou w gen aksè",
+    "previewNotice": "W ap gade yon apèsi gratis. Achte fòmasyon an pou w gen aksè a tout leson yo."
   },
   "auth": {
     "signInTitle": "Konekte",
@@ -2154,6 +2159,7 @@
     "course": "Fòmasyon",
     "issued": "Bay le",
     "code": "Kòd verifikasyon",
+    "download": "Telechaje sètifika (PDF)",
     "another": "Verifye yon lòt sètifika",
     "form": {
       "title": "Verifye yon sètifika",

@@ -9,6 +9,12 @@
 
 export type SendEmailResult = { sent: boolean; skipped: boolean; id?: string; error?: string };
 
+export type EmailAttachment = {
+  filename: string;
+  /** Base64-encoded file content (Resend's attachments contract). */
+  content: string;
+};
+
 type SendEmailInput = {
   to: string | string[];
   subject: string;
@@ -16,6 +22,9 @@ type SendEmailInput = {
   /** Defaults to RESEND_FROM, then a sensible PNICE Academy sender. */
   from?: string;
   replyTo?: string;
+  /** Optional attachments (e.g. a receipt/certificate PDF), passed through
+   *  verbatim to Resend when present — omitted entirely otherwise. */
+  attachments?: EmailAttachment[];
 };
 
 /**
@@ -55,6 +64,9 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
         subject: input.subject,
         html: input.html,
         ...(input.replyTo ? { reply_to: input.replyTo } : {}),
+        ...(input.attachments && input.attachments.length > 0
+          ? { attachments: input.attachments }
+          : {}),
       }),
     });
     if (!res.ok) {
