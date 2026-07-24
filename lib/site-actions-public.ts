@@ -7,6 +7,7 @@
  */
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { createTicket, getTickets } from '@/lib/admin/data';
+import { resolveUserId } from '@/lib/learner/access';
 
 export type SiteActionResult = { ok: boolean; message?: string; id?: string };
 
@@ -34,13 +35,21 @@ export async function registerTeachInterestAction(): Promise<SiteActionResult> {
       user.emailAddresses[0]?.emailAddress ??
       '—';
 
-    // Check for existing open "Enterese anseye" ticket to prevent duplicates
+    // Check for existing open "Enterese anseye" ticket to prevent duplicates.
+    // createTicket (real mode) resolves the Clerk id to the internal users.id
+    // before storing it (see lib/admin/data/real/support.ts note 1), so
+    // TicketRow.userId is that internal id, not the raw Clerk id — resolve it
+    // the same way before comparing. In mock mode resolveUserId has no real
+    // users table to match against and returns null, so this falls back to
+    // comparing the raw Clerk id, exactly like the mock's own createTicket
+    // (which stores the Clerk id as-is).
+    const internal = await resolveUserId(userId);
     const existingTicketsPage = await getTickets({
       type: 'other',
       pageSize: 100,
     });
     const existingTicket = existingTicketsPage.rows.find(
-      (row) => row.userId === userId && row.status !== 'resolved'
+      (row) => row.userId === (internal ?? userId) && row.status !== 'resolved'
     );
     if (existingTicket) {
       // Idempotent success: ticket already exists for this user
