@@ -16,8 +16,11 @@
  * ANALYTICS (getAnalytics — revenue/signups/enrollments/method/course/geo/
  * language/funnel/heatmap; see lib/admin/data/real/analytics.ts for the
  * documented degeneracies, notably the MOCK-flagged visitor→account funnel
- * step, which has no real traffic-analytics source). Pending: marketing,
- * support — all still served by the mock.
+ * step, which has no real traffic-analytics source), MARKETING (promo codes
+ * incl. public validatePromo, UTM attribution, abandoned/open carts, referrals,
+ * referral credit — see lib/admin/data/real/marketing.ts for the documented
+ * degeneracy on promo_redemptions' missing per-redemption financial columns).
+ * Pending: support — still served by the mock.
  */
 import type { AdminDataSource } from '../types';
 import { mockDataSource } from '../mock';
@@ -27,6 +30,7 @@ import * as engagement from './engagement';
 import * as certs from './certificates';
 import * as subs from './subscriptions';
 import * as analytics from './analytics';
+import * as marketing from './marketing';
 
 export function realDataSource(): AdminDataSource {
   return {
@@ -77,5 +81,26 @@ export function realDataSource(): AdminDataSource {
 
     // ── ANALYTICS domain (real) ───────────────────────────────────────────
     getAnalytics: analytics.getAnalytics,
+
+    // ── MARKETING domain (real) ───────────────────────────────────────────
+    getPromoCodes: marketing.getPromoCodes,
+    getPromoDetail: marketing.getPromoDetail,
+    isPromoCodeFree: marketing.isPromoCodeFree,
+    createPromoCode: marketing.createPromoCode,
+    setPromoActive: marketing.setPromoActive,
+    deletePromoCode: marketing.deletePromoCode,
+    validatePromo: marketing.validatePromo,
+    redeemPromo: marketing.redeemPromo,
+    getUtmAttribution: marketing.getUtmAttribution,
+    getAbandonedCarts: marketing.getAbandonedCarts,
+    getOpenCarts: marketing.getOpenCarts,
+    getCartStats: marketing.getCartStats,
+    markCartAbandoned: marketing.markCartAbandoned,
+    remindCart: marketing.remindCart,
+    getReferrers: marketing.getReferrers,
+    getReferrerDetail: marketing.getReferrerDetail,
+    getReferralCreditCents: marketing.getReferralCreditCents,
+    setReferralCredit: marketing.setReferralCredit,
+    // addManualCredit already real via users.ts (spread above) — not re-implemented here.
   };
 }
