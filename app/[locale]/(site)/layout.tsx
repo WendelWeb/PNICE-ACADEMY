@@ -3,7 +3,9 @@ import { IconTool } from '@tabler/icons-react';
 import { Nav } from '@/components/layout/Nav';
 import { Footer } from '@/components/layout/Footer';
 import { RouteLine } from '@/components/layout/RouteLine';
+import { UtmCapture } from '@/components/UtmCapture';
 import { getPlatform } from '@/lib/admin/platform/store';
+import { clerkEnabled } from '@/lib/clerk';
 
 // Dynamic so the maintenance toggle takes effect live on every public route.
 // (Trade-off vs Option-B static: in production, edge config would gate this.)
@@ -42,6 +44,7 @@ export default async function SiteLayout({
 
   return (
     <div className="flex min-h-screen flex-col">
+      {clerkEnabled && <UtmCapture />}
       <Nav />
       <main className="relative flex-1">
         <RouteLine />

@@ -3,9 +3,10 @@
  * for the same user should only create one ticket.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mockDataSource } from '@/lib/admin/data/mock';
 import { getMockDataset } from '@/lib/admin/data/mock/dataset';
+import { captureUtmAction } from '@/lib/site-actions-public';
 
 describe('registerTeachInterestAction - idempotency', () => {
   let initialTicketCount: number;
@@ -73,5 +74,20 @@ describe('registerTeachInterestAction - idempotency', () => {
 
     expect(finalCount).toBe(1);
     expect(finalCount).toBe(countBefore);
+  });
+});
+
+describe('captureUtmAction — env gate (Task L5)', () => {
+  const ORIGINAL_DB = process.env.DATABASE_URL;
+
+  afterEach(() => {
+    if (ORIGINAL_DB === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = ORIGINAL_DB;
+  });
+
+  it('no-ops safely with no DATABASE_URL (never throws, never reaches Clerk/db)', async () => {
+    delete process.env.DATABASE_URL;
+    const result = await captureUtmAction({ source: 'facebook', medium: 'cpc', campaign: 'launch' });
+    expect(result).toEqual({ ok: false, message: 'not_configured' });
   });
 });

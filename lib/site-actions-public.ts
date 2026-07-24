@@ -6,6 +6,8 @@
  * safe entry points — not admin mutations.
  */
 import { auth, clerkClient } from '@clerk/nextjs/server';
+import { db, schema } from '@/db';
+import { clerkEnabled } from '@/lib/clerk';
 import { createTicket, getTickets } from '@/lib/admin/data';
 import { resolveUserId } from '@/lib/learner/access';
 
@@ -65,6 +67,59 @@ export async function registerTeachInterestAction(): Promise<SiteActionResult> {
       message: `${name} klike sou « Mwen enterese » nan seksyon Anseye a sou paj akèy la — li vle vin anseyan sou PNICE Academy.`,
     });
     return { ok: true, id: r.id };
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : 'error' };
+  }
+}
+
+export type CaptureUtmInput = {
+  source?: string | null;
+  medium?: string | null;
+  campaign?: string | null;
+};
+
+/** UTM params come straight from the URL — trim, drop empties, cap length so
+ *  a mischievous or malformed query string can't write an unbounded string. */
+function cleanUtm(v: string | null | undefined): string | null {
+  const s = (v ?? '').trim();
+  return s ? s.slice(0, 200) : null;
+}
+
+/**
+ * Persists FIRST-TOUCH UTM attribution for the signed-in user (Task L5).
+ * Called by the client capture hook (components/UtmCapture.tsx, mounted in
+ * the (site) layout) once, right after the very first sign-in of a browsing
+ * session that landed with `?utm_source/medium/campaign` in the URL.
+ *
+ * "First touch wins" is enforced at the DB level, not just by the client's
+ * one-shot guard: `user_acquisition.user_id` is unique
+ * (db/schema.ts), so `onConflictDoNothing` makes a second capture for the
+ * same user (a different tab, a later campaign click, a retried call) a
+ * true no-op — the very first row ever written for that user survives.
+ *
+ * Env-gated on DATABASE_URL (mirrors lib/learner/access.ts's dbReady()) and
+ * on Clerk being configured; never throws — a failure here must never break
+ * the page that triggered it.
+ */
+export async function captureUtmAction(utm: CaptureUtmInput): Promise<SiteActionResult> {
+  if (!process.env.DATABASE_URL) return { ok: false, message: 'not_configured' };
+  try {
+    const { userId: clerkId } = clerkEnabled ? await auth() : { userId: null };
+    if (!clerkId) return { ok: false, message: 'unauthorized' };
+
+    const source = cleanUtm(utm.source);
+    const medium = cleanUtm(utm.medium);
+    const campaign = cleanUtm(utm.campaign);
+    if (!source && !medium && !campaign) return { ok: true, message: 'no_utm' };
+
+    const userId = await resolveUserId(clerkId);
+    if (!userId) return { ok: false, message: 'no_user' };
+
+    await db
+      .insert(schema.userAcquisition)
+      .values({ userId, utmSource: source, utmMedium: medium, utmCampaign: campaign })
+      .onConflictDoNothing({ target: schema.userAcquisition.userId });
+    return { ok: true };
   } catch (e) {
     return { ok: false, message: e instanceof Error ? e.message : 'error' };
   }
