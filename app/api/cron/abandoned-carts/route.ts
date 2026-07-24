@@ -18,10 +18,11 @@
  *     time this cron runs — remindedAt stays the single source of truth for
  *     "already handled", so this is still safe to run any number of times.
  *
- * Idempotent by construction: every write is guarded by an `IS NULL` check
- * on the very column it sets (abandonedAt / remindedAt), so re-running this
- * — including a second concurrent invocation — can only move a row from
- * null → set, never re-mark or re-email an already-handled cart. Safe with
+ * Idempotent by construction: the abandonedAt write is guarded by an `IS NULL`
+ * check on that column. The remindedAt write uses atomic CAS (compare-and-swap
+ * via WHERE isNull): only the run that successfully UPDATEs remindedAt sends
+ * the email, so re-running — including concurrent invocations — can only move
+ * a row from null → set, never re-email an already-handled cart. Safe with
  * no DATABASE_URL (returns zeros) and no RESEND_API_KEY (sendEmail no-ops).
  */
 import { and, eq, isNull, isNotNull, lt } from 'drizzle-orm';
@@ -78,13 +79,15 @@ export async function GET(req: Request): Promise<Response> {
       if (!session.userId) continue; // narrows for TS; isNotNull(userId) already guarantees this
       const [user] = await db.select().from(T.users).where(eq(T.users.id, session.userId)).limit(1);
 
-      // One attempt per cart, no retry sequence — stamp remindedAt regardless
-      // of send outcome so a config gap or transient error never turns into
-      // a repeated email later.
-      await db
+      // Atomic claim: only the run that successfully UPDATEs remindedAt to now sends the email.
+      // This ensures concurrent invocations never double-send: one wins the claim, the other
+      // gets empty result and skips the send.
+      const [claimed] = await db
         .update(T.checkoutSessions)
         .set({ remindedAt: new Date() })
-        .where(eq(T.checkoutSessions.id, session.id));
+        .where(and(eq(T.checkoutSessions.id, session.id), isNull(T.checkoutSessions.remindedAt)))
+        .returning({ id: T.checkoutSessions.id });
+      if (!claimed) continue; // a concurrent run already claimed this cart
       if (!user?.email) continue;
 
       const locale: 'fr' | 'ht' = user.localePref === 'fr' ? 'fr' : 'ht';
