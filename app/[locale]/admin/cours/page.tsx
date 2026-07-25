@@ -9,7 +9,7 @@ import {
   IconPencil,
 } from '@tabler/icons-react';
 import { getCourseSales } from '@/lib/admin/data';
-import { listCourses } from '@/lib/admin/content/ops';
+import { getAdminCourses } from '@/lib/courses/write';
 import { fmtUsdCents, fmtInt, fmtPct } from '@/lib/admin/format';
 import { paramsOf, mergeParams, type RawSearchParams } from '@/lib/admin/users-query';
 import { hasCap } from '@/lib/admin/guard';
@@ -36,15 +36,15 @@ export default async function CoursesPage({
   const tc = await getTranslations('admin.cms.list');
   const canEdit = await hasCap('courses.edit');
 
-  // Merge editable content (incl. drafts) with mock sales stats.
-  const sales = await getCourseSales();
+  // Merge every DB course (incl. drafts) with sales stats.
+  const [sales, adminCourses] = await Promise.all([getCourseSales(), getAdminCourses()]);
   const salesBySlug = new Map(sales.map((s) => [s.slug, s]));
-  const rows = listCourses().map((c) => {
+  const rows = adminCourses.map((c) => {
     const s = salesBySlug.get(c.slug);
     return {
       code: c.code, slug: c.slug, title_ht: c.title_ht, title_fr: c.title_fr,
       priceCents: c.priceCents, status: c.status, dirty: c.hasUnpublishedChanges,
-      lessonsCount: c.lessons.length,
+      lessonsCount: c.lessonsCount,
       enrollments: s?.enrollments ?? 0,
       revenueCents: s?.revenueCents ?? 0,
       completions: s?.completions ?? 0,

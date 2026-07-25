@@ -5,11 +5,15 @@ import { Section, Container, Eyebrow } from '@/components/ui/Section';
 import { Sceau } from '@/components/ui/Sceau';
 import { CatalogBrowser } from '@/components/courses/CatalogBrowser';
 import { CourseCatalogCard } from '@/components/courses/CourseCatalogCard';
-import { courses } from '@/data/courses';
+import { getPublishedCourses } from '@/lib/courses/source';
 
 export const metadata: Metadata = {
   title: 'Fòmasyon — PNICE Academy',
 };
+
+// Course data is DB-backed (Task C2-T3, gated + fallback to static data) —
+// revalidate periodically instead of staying purely static.
+export const revalidate = 300;
 
 /**
  * Guards against a wrong-content flash on shared, filtered deep links
@@ -43,6 +47,7 @@ export default async function FormationsPage({
 }) {
   setRequestLocale(locale);
   const t = await getTranslations('catalog');
+  const courses = await getPublishedCourses();
 
   return (
     <Section>

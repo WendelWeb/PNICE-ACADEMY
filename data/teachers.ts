@@ -1,4 +1,5 @@
 import { courses, type Course } from '@/data/courses';
+import { getPublishedCourses } from '@/lib/courses/source';
 
 /**
  * Teacher registry — static counterpart of the future `teacher_profiles`
@@ -66,10 +67,20 @@ export function getCourseTeacher(courseSlug: string): Teacher | undefined {
   return teachers.find((t) => t.courseSlugs.includes(courseSlug));
 }
 
-/** The teacher's courses, resolved against the catalog (unknown slugs dropped). */
-export function teacherCourses(teacher: Teacher): Course[] {
+/**
+ * The teacher's courses, resolved against the PUBLISHED catalog (unknown
+ * slugs, or slugs that exist but aren't published, are dropped) — Task
+ * C2-T3. Async: reads through `lib/courses/source.ts` (DB-backed, gated,
+ * falls back to the static catalog — every static course counts as
+ * published there), instead of the static `courses` array directly, so a
+ * teacher's public course grid reflects real publish state once courses
+ * live in the DB. Callers (public server components) must `await` this.
+ */
+export async function teacherCourses(teacher: Teacher): Promise<Course[]> {
+  const published = await getPublishedCourses();
+  const bySlug = new Map(published.map((c) => [c.slug, c]));
   return teacher.courseSlugs
-    .map((slug) => courses.find((c) => c.slug === slug))
+    .map((slug) => bySlug.get(slug))
     .filter((c): c is Course => Boolean(c));
 }
 

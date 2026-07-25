@@ -30,6 +30,10 @@ export function generateStaticParams() {
   return teachers.map((t) => ({ slug: t.slug }));
 }
 
+// The course grid below is DB-backed via teacherCourses() → getPublishedCourses()
+// (Task C2-T3) — revalidate periodically instead of staying purely static.
+export const revalidate = 300;
+
 export async function generateMetadata({
   params: { slug, locale },
 }: {
@@ -65,7 +69,7 @@ export default async function ProfPage({
   const t = await getTranslations('prof');
   const tc = await getTranslations('common');
 
-  const courses = teacherCourses(teacher);
+  const courses = await teacherCourses(teacher);
   const lessonCount = courses.reduce((sum, c) => sum + c.lessons.length, 0);
   const bio = teacherBio(teacher, locale);
   const perks = locale === 'ht' ? subscriptionPerks_ht : subscriptionPerks_fr;

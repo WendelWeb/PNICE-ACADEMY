@@ -1,8 +1,17 @@
 /**
  * Resolve what is being bought into a display name + amount in cents.
- * Single source of truth for checkout amounts: data/courses.ts + data/pricing.ts.
+ * Single source of truth for checkout amounts: `lib/courses/source.ts`
+ * (course price/title — DB-backed, gated, falls back to the static
+ * `data/courses.ts` catalog, Task C2-T5) + `data/pricing.ts` (the flat
+ * subscription price, unrelated to any course row).
+ *
+ * Async because the course lookup is now a DB read (`getCourseBySlug`) so
+ * the price charged at checkout is always the owner's CURRENT price for that
+ * course (CMS-editable since Task C2-T4), not a stale build-time constant —
+ * identical to today's amount while the DB fallback is in effect (same
+ * static numbers, same shape).
  */
-import { courses } from '@/data/courses';
+import { getPublishedCourseBySlug } from '@/lib/courses/source';
 import { SUBSCRIPTION_USD } from '@/data/pricing';
 
 export type ResolvedProduct = {
@@ -13,10 +22,10 @@ export type ResolvedProduct = {
   amountCents: number;
 };
 
-export function resolveProduct(input: {
+export async function resolveProduct(input: {
   productType: 'course' | 'subscription';
   courseSlug?: string | null;
-}): ResolvedProduct | null {
+}): Promise<ResolvedProduct | null> {
   if (input.productType === 'subscription') {
     return {
       productType: 'subscription',
@@ -26,7 +35,8 @@ export function resolveProduct(input: {
       amountCents: SUBSCRIPTION_USD * 100,
     };
   }
-  const course = courses.find((c) => c.slug === input.courseSlug);
+  if (!input.courseSlug) return null;
+  const course = await getPublishedCourseBySlug(input.courseSlug);
   if (!course) return null;
   return {
     productType: 'course',

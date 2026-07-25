@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { IconArrowLeft, IconCheck, IconEye } from '@tabler/icons-react';
 import { hasCap } from '@/lib/admin/guard';
-import { getCourse } from '@/lib/admin/content/ops';
+import { getAdminCourse } from '@/lib/courses/write';
 import { fmtUsdCents, fmtHtgFromCents } from '@/lib/admin/format';
 import { Link } from '@/i18n/routing';
 import { Forbidden } from '@/components/admin/Forbidden';
@@ -18,7 +18,7 @@ export default async function CoursePreviewPage({
   if (!(await hasCap('courses.read'))) return <Forbidden />;
   const t = await getTranslations('admin.cms.preview');
 
-  const c = getCourse(slug);
+  const c = await getAdminCourse(slug);
   if (!c) notFound();
   const L = (ht: string, fr: string) => (locale === 'ht' ? ht : fr);
   const learn = locale === 'ht' ? c.learn_ht : c.learn_fr;

@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
 
   const body = parseCheckoutBody(await req.json().catch(() => null));
   if (!body) return NextResponse.json({ error: 'bad_request' }, { status: 400 });
-  const product = resolveProduct(body);
+  const product = await resolveProduct(body);
   if (!product) return NextResponse.json({ error: 'unknown_product' }, { status: 400 });
 
   // Upsert the users row — defensive: the Clerk webhook may not be live yet.

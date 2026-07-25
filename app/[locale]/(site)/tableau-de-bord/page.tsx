@@ -11,7 +11,8 @@ import { buttonClasses } from '@/components/ui/Button';
 import { CourseIcon } from '@/components/courses/CourseIcon';
 import { SmartImage } from '@/components/ui/SmartImage';
 import { courseImageSrc } from '@/lib/courseImage';
-import { getCourse, type Course } from '@/data/courses';
+import type { Course } from '@/data/courses';
+import { getCourseBySlug } from '@/lib/courses/source';
 import { courseTitle } from '@/lib/courseFields';
 import { clerkEnabled } from '@/lib/clerk';
 import { getMyLearning } from '@/lib/learner/access';
@@ -106,13 +107,16 @@ export default async function DashboardPage({
     ? await getMyLearning(clerkId)
     : { courses: [], hasSubscription: false };
 
-  const enrollments: Enrollment[] = myCourses
-    .map(({ slug, lessonsDone, lessonsTotal }) => {
-      const course = getCourse(slug);
+  const resolvedEnrollments = await Promise.all(
+    myCourses.map(async ({ slug, lessonsDone, lessonsTotal }) => {
+      const course = await getCourseBySlug(slug);
       if (!course) return null;
       return { slug, done: lessonsDone, course, total: lessonsTotal };
-    })
-    .filter((e): e is Enrollment => e !== null);
+    }),
+  );
+  const enrollments: Enrollment[] = resolvedEnrollments.filter(
+    (e): e is Enrollment => e !== null,
+  );
 
   // "Continue where you left off" — the first course still in progress;
   // failing that, the first one not yet started.

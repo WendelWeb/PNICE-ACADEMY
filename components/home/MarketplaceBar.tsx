@@ -7,14 +7,14 @@ import { Link, useRouter } from '@/i18n/routing';
 import { Container } from '@/components/ui/Section';
 import { Reveal } from '@/components/ui/Reveal';
 import { cn } from '@/lib/cn';
-import { COURSE_CATEGORIES, courses, type CourseCategory } from '@/data/courses';
+import { COURSE_CATEGORIES, type Course, type CourseCategory } from '@/data/courses';
 import { categoryIcon } from '@/lib/courseCategory';
 
 const focusRing =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ochre focus-visible:ring-offset-2 focus-visible:ring-offset-paper-light';
 
-/** Live count per category, derived from the catalog — never hardcoded. */
-function categoryCounts(): Record<CourseCategory, number> {
+/** Live count per category, derived from the (server-fetched) catalog — never hardcoded. */
+function categoryCounts(courses: Course[]): Record<CourseCategory, number> {
   const counts = {} as Record<CourseCategory, number>;
   for (const cat of COURSE_CATEGORIES) {
     counts[cat] = courses.filter((c) => c.category === cat).length;
@@ -28,13 +28,17 @@ function categoryCounts(): Record<CourseCategory, number> {
  * submit needs the router; category tiles are plain links so they still
  * work with JS disabled). Search always lands on /formations — with `?q=`
  * when the visitor typed something, or bare (browse everything) otherwise.
+ *
+ * `courses` is fetched server-side (Task C2-T3, `getPublishedCourses()` via
+ * lib/courses/source.ts) and passed down as a prop — this client component
+ * never imports the DB-backed module directly, only the plain `Course` type.
  */
-export function MarketplaceBar() {
+export function MarketplaceBar({ courses }: { courses: Course[] }) {
   const t = useTranslations('home.marketplace');
   const tCat = useTranslations('catalog');
   const router = useRouter();
   const [query, setQuery] = useState('');
-  const counts = categoryCounts();
+  const counts = categoryCounts(courses);
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();

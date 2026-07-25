@@ -11,7 +11,7 @@ import {
   removeSecondaryImageAction,
   moveSecondaryImageAction,
 } from '@/lib/admin/content-actions';
-import type { ContentImage } from '@/lib/admin/content/store';
+import type { AdminImage } from '@/lib/courses/write';
 import { inputCls } from './fields';
 
 export function ImagesManager({
@@ -21,7 +21,7 @@ export function ImagesManager({
 }: {
   slug: string;
   mainImage: string | null;
-  secondary: ContentImage[];
+  secondary: AdminImage[];
 }) {
   const t = useTranslations('admin.cms.images');
   const router = useRouter();

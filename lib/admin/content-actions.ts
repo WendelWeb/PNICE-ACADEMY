@@ -1,45 +1,53 @@
 'use server';
 
 /**
- * CMS content server actions (Phase C). All gated on `courses.edit`. Mutate the
- * in-memory content store (lib/admin/content). The public site is NOT affected
- * (owner decision: static public + admin preview); real reflection lands with DB.
+ * CMS content server actions (Task C2-T4). All gated on `courses.edit`.
+ * A thin auth+wiring layer over `lib/courses/write.ts` — the real DB write
+ * ops — mirroring the established `lib/admin/*-actions.ts` →
+ * `lib/admin/data/real/*.ts` division of labour (auth here, logic + audit
+ * there). Retires the in-memory content store (lib/admin/content/{store,
+ * ops}.ts): a save/publish/lesson/image edit here now writes a REAL
+ * `courses`/`lessons` row, so it reflects on the public site (via
+ * lib/courses/source.ts) as soon as the ISR path is revalidated.
+ *
+ * Without a live DATABASE_URL (today, until the owner runs `db:push` +
+ * `db:seed-courses`), every write below resolves `{ ok: false, message:
+ * 'db_required' }` — surfaced through the SAME generic error UI these
+ * actions already had (no crash, no new UI). The public site is unaffected
+ * either way: it keeps serving the 9 static courses via source.ts's fallback.
  */
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { resolveAdminRole } from '@/lib/admin/access';
 import { can } from '@/lib/admin/permissions';
-import { getMockDataset } from '@/lib/admin/data/mock/dataset';
-import * as ops from '@/lib/admin/content/ops';
-import { getCourse } from '@/lib/admin/content/ops';
-import type { CoursePatch, NewCourseInput } from '@/lib/admin/content/ops';
-import type { ContentLesson } from '@/lib/admin/content/store';
+import * as writeOps from '@/lib/courses/write';
+import { getAdminCourse } from '@/lib/courses/write';
+import type { CoursePatch, LessonPatch, NewCourseInput } from '@/lib/courses/write';
+import type { AdminActor } from '@/lib/admin/data/types';
 
 export type ContentResult = { ok: boolean; message?: string; slug?: string; count?: number };
 
-async function requireEditor(): Promise<void> {
+async function requireEditor(): Promise<AdminActor> {
   const { userId } = await auth();
   if (!userId) throw new Error('unauthorized');
   const client = await clerkClient();
   const user = await client.users.getUser(userId);
   const role = resolveAdminRole(user);
   if (!role || !can(role, 'courses.edit')) throw new Error('forbidden');
+  const name =
+    [user.firstName, user.lastName].filter(Boolean).join(' ') || user.emailAddresses[0]?.emailAddress || userId;
+  return { id: userId, name };
 }
 
 function fail(e: unknown): ContentResult {
   return { ok: false, message: e instanceof Error ? e.message : 'error' };
 }
 
-function enrollmentCount(slug: string): number {
-  return getMockDataset().enrollments.filter((e) => e.courseSlug === slug).length;
-}
-
 /* ------------------------------- course ---------------------------------- */
 export async function createCourseAction(input: NewCourseInput): Promise<ContentResult> {
   try {
-    await requireEditor();
+    const actor = await requireEditor();
     if (!input.title_fr?.trim() && !input.title_ht?.trim()) return { ok: false, message: 'title_required' };
-    const { slug } = ops.createCourse(input);
-    return { ok: true, slug };
+    return await writeOps.createCourse(input, actor);
   } catch (e) {
     return fail(e);
   }
@@ -47,8 +55,8 @@ export async function createCourseAction(input: NewCourseInput): Promise<Content
 
 export async function updateCourseAction(slug: string, patch: CoursePatch): Promise<ContentResult> {
   try {
-    await requireEditor();
-    return { ok: ops.updateCourse(slug, patch) };
+    const actor = await requireEditor();
+    return await writeOps.updateCourse(slug, patch, actor);
   } catch (e) {
     return fail(e);
   }
@@ -56,8 +64,8 @@ export async function updateCourseAction(slug: string, patch: CoursePatch): Prom
 
 export async function publishCourseAction(slug: string): Promise<ContentResult> {
   try {
-    await requireEditor();
-    return { ok: ops.publishCourse(slug) };
+    const actor = await requireEditor();
+    return await writeOps.publishCourse(slug, actor);
   } catch (e) {
     return fail(e);
   }
@@ -65,8 +73,8 @@ export async function publishCourseAction(slug: string): Promise<ContentResult> 
 
 export async function unpublishCourseAction(slug: string): Promise<ContentResult> {
   try {
-    await requireEditor();
-    return { ok: ops.unpublishCourse(slug) };
+    const actor = await requireEditor();
+    return await writeOps.unpublishCourse(slug, actor);
   } catch (e) {
     return fail(e);
   }
@@ -74,15 +82,9 @@ export async function unpublishCourseAction(slug: string): Promise<ContentResult
 
 export async function deleteCourseAction(slug: string, confirmCode: string): Promise<ContentResult> {
   try {
-    await requireEditor();
-    const course = getCourse(slug);
-    if (!course) return { ok: false, message: 'not_found' };
-    const count = enrollmentCount(slug);
-    if (count > 0) return { ok: false, message: 'has_enrollments', count };
-    if (confirmCode.trim().toUpperCase() !== course.code.toUpperCase()) {
-      return { ok: false, message: 'code_mismatch' };
-    }
-    return { ok: ops.deleteCourse(slug) };
+    const actor = await requireEditor();
+    // write.ts's deleteCourse does the real enrollment-count + code-match guard.
+    return await writeOps.deleteCourse(slug, confirmCode, actor);
   } catch (e) {
     return fail(e);
   }
@@ -91,17 +93,17 @@ export async function deleteCourseAction(slug: string, confirmCode: string): Pro
 /* ------------------------------- lessons --------------------------------- */
 export async function addLessonAction(slug: string): Promise<ContentResult> {
   try {
-    await requireEditor();
-    return { ok: ops.addLesson(slug) };
+    const actor = await requireEditor();
+    return await writeOps.addLesson(slug, actor);
   } catch (e) {
     return fail(e);
   }
 }
 
-export async function updateLessonAction(slug: string, lessonId: string, patch: Partial<ContentLesson>): Promise<ContentResult> {
+export async function updateLessonAction(slug: string, lessonId: string, patch: LessonPatch): Promise<ContentResult> {
   try {
-    await requireEditor();
-    return { ok: ops.updateLesson(slug, lessonId, patch) };
+    const actor = await requireEditor();
+    return await writeOps.updateLesson(slug, lessonId, patch, actor);
   } catch (e) {
     return fail(e);
   }
@@ -109,8 +111,8 @@ export async function updateLessonAction(slug: string, lessonId: string, patch: 
 
 export async function deleteLessonAction(slug: string, lessonId: string): Promise<ContentResult> {
   try {
-    await requireEditor();
-    return { ok: ops.deleteLesson(slug, lessonId) };
+    const actor = await requireEditor();
+    return await writeOps.deleteLesson(slug, lessonId, actor);
   } catch (e) {
     return fail(e);
   }
@@ -118,8 +120,8 @@ export async function deleteLessonAction(slug: string, lessonId: string): Promis
 
 export async function moveLessonAction(slug: string, lessonId: string, dir: 'up' | 'down'): Promise<ContentResult> {
   try {
-    await requireEditor();
-    return { ok: ops.moveLesson(slug, lessonId, dir) };
+    const actor = await requireEditor();
+    return await writeOps.reorderLessons(slug, lessonId, dir, actor);
   } catch (e) {
     return fail(e);
   }
@@ -142,10 +144,18 @@ export async function validateBunnyVideoAction(videoId: string): Promise<Content
 }
 
 /* -------------------------------- images --------------------------------- */
+/**
+ * Each of these four reads the course's current images, computes the new
+ * array in JS, then calls `writeOps.setCourseImages` (full replace) — see
+ * that function's doc comment for why no per-image id is persisted.
+ */
 export async function setMainImageAction(slug: string, url: string): Promise<ContentResult> {
   try {
-    await requireEditor();
-    return { ok: ops.setMainImage(slug, url.trim() || null) };
+    const actor = await requireEditor();
+    const course = await getAdminCourse(slug);
+    if (!course) return { ok: false, message: 'not_found' };
+    const secondary = course.secondaryImages.map((i) => ({ url: i.url, alt: i.alt }));
+    return await writeOps.setCourseImages(slug, { main: url.trim() || null, secondary }, actor);
   } catch (e) {
     return fail(e);
   }
@@ -153,11 +163,14 @@ export async function setMainImageAction(slug: string, url: string): Promise<Con
 
 export async function addSecondaryImageAction(slug: string, url: string, alt: string): Promise<ContentResult> {
   try {
-    await requireEditor();
+    const actor = await requireEditor();
     if (!url.trim()) return { ok: false, message: 'empty' };
+    const course = await getAdminCourse(slug);
+    if (!course) return { ok: false, message: 'not_found' };
     // Production: upload the file to Bunny Storage + resize server-side (sharp,
     // max 1200px, WebP), then store the returned CDN url. Here we store the url.
-    return { ok: ops.addSecondaryImage(slug, url.trim(), alt.trim()) };
+    const secondary = [...course.secondaryImages.map((i) => ({ url: i.url, alt: i.alt })), { url: url.trim(), alt: alt.trim() }];
+    return await writeOps.setCourseImages(slug, { main: course.mainImage, secondary }, actor);
   } catch (e) {
     return fail(e);
   }
@@ -165,8 +178,11 @@ export async function addSecondaryImageAction(slug: string, url: string, alt: st
 
 export async function removeSecondaryImageAction(slug: string, imageId: string): Promise<ContentResult> {
   try {
-    await requireEditor();
-    return { ok: ops.removeSecondaryImage(slug, imageId) };
+    const actor = await requireEditor();
+    const course = await getAdminCourse(slug);
+    if (!course) return { ok: false, message: 'not_found' };
+    const secondary = course.secondaryImages.filter((i) => i.id !== imageId).map((i) => ({ url: i.url, alt: i.alt }));
+    return await writeOps.setCourseImages(slug, { main: course.mainImage, secondary }, actor);
   } catch (e) {
     return fail(e);
   }
@@ -174,8 +190,16 @@ export async function removeSecondaryImageAction(slug: string, imageId: string):
 
 export async function moveSecondaryImageAction(slug: string, imageId: string, dir: 'up' | 'down'): Promise<ContentResult> {
   try {
-    await requireEditor();
-    return { ok: ops.moveSecondaryImage(slug, imageId, dir) };
+    const actor = await requireEditor();
+    const course = await getAdminCourse(slug);
+    if (!course) return { ok: false, message: 'not_found' };
+    const i = course.secondaryImages.findIndex((x) => x.id === imageId);
+    const j = dir === 'up' ? i - 1 : i + 1;
+    if (i < 0 || j < 0 || j >= course.secondaryImages.length) return { ok: false, message: 'invalid_move' };
+    const reordered = [...course.secondaryImages];
+    [reordered[i], reordered[j]] = [reordered[j], reordered[i]];
+    const secondary = reordered.map((im) => ({ url: im.url, alt: im.alt }));
+    return await writeOps.setCourseImages(slug, { main: course.mainImage, secondary }, actor);
   } catch (e) {
     return fail(e);
   }

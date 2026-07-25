@@ -3,7 +3,7 @@ import { Section, Container, Eyebrow } from '@/components/ui/Section';
 import { Link } from '@/i18n/routing';
 import { buttonClasses } from '@/components/ui/Button';
 import { CourseCardGrid } from '@/components/courses/CourseCardGrid';
-import { courses } from '@/data/courses';
+import { getPublishedCourses } from '@/lib/courses/source';
 import { Hero } from '@/components/home/Hero';
 import { MarketplaceBar } from '@/components/home/MarketplaceBar';
 import { Blockers } from '@/components/home/Blockers';
@@ -33,11 +33,12 @@ export default async function Home({
   setRequestLocale(locale);
   const tm = await getTranslations('home.manifest');
   const tc = await getTranslations('common');
+  const courses = await getPublishedCourses();
 
   return (
     <>
       <Hero />
-      <MarketplaceBar />
+      <MarketplaceBar courses={courses} />
       <Blockers />
 
       <Section id="fomasyon">

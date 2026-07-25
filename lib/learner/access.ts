@@ -14,14 +14,18 @@
  * out, or no matching `users` row — it degrades to an empty/false result and
  * NEVER throws, mirroring the DB-read pattern in lib/admin/data/real/users.ts
  * and the "no DB ⇒ empty state" constraint from the launch-code plan.
+ *
+ * Course data (lesson counts) comes from `lib/courses/source.ts` (Task
+ * C2-T3, gated + fallback to the static catalog) via `getAllCourses()` —
+ * NOT `getPublishedCourses()`: a learner keeps access to a course they
+ * already bought/subscribed to even if it's later unpublished/archived.
  */
 import { and, eq, isNotNull } from 'drizzle-orm';
 import { db, schema } from '@/db';
-import { courses } from '@/data/courses';
+import { getAllCourses } from '@/lib/courses/source';
 import { clerkEnabled } from '@/lib/clerk';
 
 const T = schema;
-const courseBySlug = new Map(courses.map((c) => [c.slug, c]));
 
 export type MyCourse = {
   slug: string;
@@ -80,6 +84,9 @@ export async function getMyLearning(
       prog.filter((p) => p.completedAt).map((p) => p.courseSlug),
     );
     const slugs = hasSubscription ? new Set([...enrolledSlugs, ...progressSlugs]) : enrolledSlugs;
+
+    const courses = await getAllCourses();
+    const courseBySlug = new Map(courses.map((c) => [c.slug, c]));
 
     const result: MyCourse[] = [];
     for (const slug of slugs) {

@@ -34,7 +34,7 @@ export async function TeacherSpotlight() {
   ]);
 
   const teacher = teachers[0];
-  const courseCount = teacherCourses(teacher).length;
+  const courseCount = (await teacherCourses(teacher)).length;
   const shortBio = teacherShortBio(teacher, locale);
   const photo = siteImageSrc(teacher.imageName);
   const perks = locale === 'ht' ? subscriptionPerks_ht : subscriptionPerks_fr;

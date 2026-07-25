@@ -23,12 +23,12 @@ describe('teachers data', () => {
     expect(slugs.size).toBe(teachers.length);
   });
 
-  it('only references course slugs that exist in the catalog', () => {
+  it('only references course slugs that exist in the catalog', async () => {
     for (const t of teachers) {
       for (const slug of t.courseSlugs) {
         expect(getCourse(slug), `unknown course slug: ${slug}`).toBeDefined();
       }
-      expect(teacherCourses(t)).toHaveLength(t.courseSlugs.length);
+      expect(await teacherCourses(t)).toHaveLength(t.courseSlugs.length);
     }
   });
 

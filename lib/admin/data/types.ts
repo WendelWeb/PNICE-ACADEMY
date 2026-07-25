@@ -173,7 +173,19 @@ export type AuditAction =
   | 'update_template'
   | 'delete_template'
   | 'replay_webhook'
-  | 'set_digest';
+  | 'set_digest'
+  // Course CMS → DB (Phase C2-T4)
+  | 'create_course'
+  | 'update_course'
+  | 'update_course_images'
+  | 'submit_course_review'
+  | 'publish_course'
+  | 'unpublish_course'
+  | 'delete_course'
+  | 'add_lesson'
+  | 'update_lesson'
+  | 'delete_lesson'
+  | 'reorder_lesson';
 
 export type AdminActor = { id: string; name: string };
 

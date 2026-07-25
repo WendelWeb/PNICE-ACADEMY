@@ -7,7 +7,7 @@ import { IconDeviceFloppy, IconLoader2, IconAlertTriangle } from '@tabler/icons-
 import { cn } from '@/lib/cn';
 import { buttonClasses } from '@/components/ui/Button';
 import { updateCourseAction } from '@/lib/admin/content-actions';
-import type { ContentCourse } from '@/lib/admin/content/store';
+import type { AdminCourse } from '@/lib/courses/write';
 import { BilingualText, PairedList, FaqEditor, inputCls, type FaqItem } from './fields';
 
 const ICON_KEYS = [
@@ -22,7 +22,7 @@ export function CourseEditor({
   salesCount,
   priciest,
 }: {
-  course: ContentCourse;
+  course: AdminCourse;
   salesCount: number;
   priciest: { code: string; priceCents: number } | null;
 }) {
@@ -33,7 +33,7 @@ export function CourseEditor({
   const [c, setC] = useState(course);
   const [priceDollars, setPriceDollars] = useState(String(Math.round(course.priceCents / 100)));
 
-  const set = <K extends keyof ContentCourse>(k: K, v: ContentCourse[K]) => {
+  const set = <K extends keyof AdminCourse>(k: K, v: AdminCourse[K]) => {
     setC((prev) => ({ ...prev, [k]: v }));
     setSave('idle');
   };
@@ -49,11 +49,9 @@ export function CourseEditor({
         icon: c.icon,
         title_ht: c.title_ht, title_fr: c.title_fr,
         tagline_ht: c.tagline_ht, tagline_fr: c.tagline_fr,
-        desc_ht: c.desc_ht, desc_fr: c.desc_fr,
         audience_ht: c.audience_ht, audience_fr: c.audience_fr,
         learn_ht: c.learn_ht, learn_fr: c.learn_fr,
         priceCents: newPriceCents,
-        order: c.order,
         promise_ht: c.promise_ht, promise_fr: c.promise_fr,
         problem_ht: c.problem_ht, problem_fr: c.problem_fr,
         deliverables_ht: c.deliverables_ht, deliverables_fr: c.deliverables_fr,
@@ -81,19 +79,13 @@ export function CourseEditor({
           </div>
           <BilingualText label={t('title')} ht={c.title_ht} fr={c.title_fr} onHt={(v) => set('title_ht', v)} onFr={(v) => set('title_fr', v)} />
           <BilingualText label={t('tagline')} ht={c.tagline_ht} fr={c.tagline_fr} onHt={(v) => set('tagline_ht', v)} onFr={(v) => set('tagline_fr', v)} />
-          <BilingualText label={t('desc')} area ht={c.desc_ht} fr={c.desc_fr} onHt={(v) => set('desc_ht', v)} onFr={(v) => set('desc_fr', v)} />
           <BilingualText label={t('audience')} area ht={c.audience_ht} fr={c.audience_fr} onHt={(v) => set('audience_ht', v)} onFr={(v) => set('audience_fr', v)} />
           <PairedList label={t('learn')} ht={c.learn_ht} fr={c.learn_fr} onChange={(ht, fr) => { set('learn_ht', ht); set('learn_fr', fr); }} />
 
           {/* Price + impact (task 3) */}
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label={t('price')}>
-              <span className="flex items-center gap-1 font-mono text-sm text-ink/55">$<input type="number" min="0" value={priceDollars} onChange={(e) => { setPriceDollars(e.target.value); setSave('idle'); }} className={cn(inputCls, 'w-24')} /></span>
-            </Field>
-            <Field label={t('order')}>
-              <input type="number" min="1" value={c.order} onChange={(e) => set('order', Number(e.target.value) || 1)} className={cn(inputCls, 'w-20')} />
-            </Field>
-          </div>
+          <Field label={t('price')}>
+            <span className="flex items-center gap-1 font-mono text-sm text-ink/55">$<input type="number" min="0" value={priceDollars} onChange={(e) => { setPriceDollars(e.target.value); setSave('idle'); }} className={cn(inputCls, 'w-24')} /></span>
+          </Field>
           <div className="rounded-lg bg-paper p-3 text-xs">
             <p className="font-mono text-[10px] uppercase tracking-wide text-ink/45">{t('impact')}</p>
             <p className="mt-1 text-graphite/80">
