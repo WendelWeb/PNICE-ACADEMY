@@ -186,42 +186,60 @@ function mapRowToAdminCourse(row: DbCourseRow, lessonRows: DbLessonRow[]): Admin
 /** Every course regardless of status — the /admin/cours list. `[]` with no live DB. */
 export async function getAdminCourses(): Promise<AdminCourseListRow[]> {
   if (!dbConfigured()) return [];
-  const [courseRows, lessonRows] = await Promise.all([
-    db.select().from(T.courses),
-    db.select({ courseSlug: T.lessons.courseSlug }).from(T.lessons),
-  ]);
-  const lessonCounts = new Map<string, number>();
-  for (const l of lessonRows) lessonCounts.set(l.courseSlug, (lessonCounts.get(l.courseSlug) ?? 0) + 1);
-  return courseRows.map((r) => ({
-    code: r.code ?? r.slug,
-    slug: r.slug,
-    title_ht: r.titleHt ?? '',
-    title_fr: r.titleFr ?? '',
-    priceCents: r.priceCents ?? 0,
-    status: toAdminStatus(r.status),
-    hasUnpublishedChanges: r.hasUnpublishedChanges,
-    lessonsCount: lessonCounts.get(r.slug) ?? 0,
-  }));
+
+  try {
+    const [courseRows, lessonRows] = await Promise.all([
+      db.select().from(T.courses),
+      db.select({ courseSlug: T.lessons.courseSlug }).from(T.lessons),
+    ]);
+    const lessonCounts = new Map<string, number>();
+    for (const l of lessonRows) lessonCounts.set(l.courseSlug, (lessonCounts.get(l.courseSlug) ?? 0) + 1);
+    return courseRows.map((r) => ({
+      code: r.code ?? r.slug,
+      slug: r.slug,
+      title_ht: r.titleHt ?? '',
+      title_fr: r.titleFr ?? '',
+      priceCents: r.priceCents ?? 0,
+      status: toAdminStatus(r.status),
+      hasUnpublishedChanges: r.hasUnpublishedChanges,
+      lessonsCount: lessonCounts.get(r.slug) ?? 0,
+    }));
+  } catch (err) {
+    console.error('[courses/write] getAdminCourses DB read failed, gracefully degrading:', err);
+    return [];
+  }
 }
 
 /** One course (any status) + its lessons, full editable shape. `null` if missing / no live DB. */
 export async function getAdminCourse(slug: string): Promise<AdminCourse | null> {
   if (!dbConfigured()) return null;
-  const [row] = await db.select().from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
-  if (!row) return null;
-  const lessonRows = await db.select().from(T.lessons).where(eq(T.lessons.courseSlug, slug));
-  return mapRowToAdminCourse(row, lessonRows);
+
+  try {
+    const [row] = await db.select().from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
+    if (!row) return null;
+    const lessonRows = await db.select().from(T.lessons).where(eq(T.lessons.courseSlug, slug));
+    return mapRowToAdminCourse(row, lessonRows);
+  } catch (err) {
+    console.error('[courses/write] getAdminCourse DB read failed, gracefully degrading:', err);
+    return null;
+  }
 }
 
 /** Next `PA-XX` code, incrementing the highest existing numeric suffix in the DB. */
 export async function getNextCourseCode(): Promise<string> {
   if (!dbConfigured()) return 'PA-01';
-  const rows = await db.select({ code: T.courses.code }).from(T.courses);
-  const nums = rows
-    .map((r) => Number((r.code ?? '').replace(/[^0-9]/g, '')))
-    .filter((n) => Number.isFinite(n) && n > 0);
-  const max = nums.length ? Math.max(...nums) : 0;
-  return `PA-${String(max + 1).padStart(2, '0')}`;
+
+  try {
+    const rows = await db.select({ code: T.courses.code }).from(T.courses);
+    const nums = rows
+      .map((r) => Number((r.code ?? '').replace(/[^0-9]/g, '')))
+      .filter((n) => Number.isFinite(n) && n > 0);
+    const max = nums.length ? Math.max(...nums) : 0;
+    return `PA-${String(max + 1).padStart(2, '0')}`;
+  } catch (err) {
+    console.error('[courses/write] getNextCourseCode DB read failed, gracefully degrading:', err);
+    return 'PA-01';
+  }
 }
 
 /* ------------------------------- helpers ---------------------------------- */
