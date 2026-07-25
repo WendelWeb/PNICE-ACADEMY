@@ -50,6 +50,13 @@
       "when": 1784924802793,
       "tag": "0006_brainy_slipstream",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1785017266865,
+      "tag": "0007_cuddly_greymalkin",
+      "breakpoints": true
     }
   ]
 }
