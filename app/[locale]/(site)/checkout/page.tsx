@@ -6,7 +6,7 @@ import { Sceau } from '@/components/ui/Sceau';
 import { SmartImage } from '@/components/ui/SmartImage';
 import { CourseSlideshow } from '@/components/courses/CourseSlideshow';
 import { courseImageSrc, siteImages } from '@/lib/courseImage';
-import { getCourseBySlug } from '@/lib/courses/source';
+import { getPublishedCourseBySlug } from '@/lib/courses/source';
 import { subscription } from '@/data/pricing';
 import { formatUsd } from '@/lib/money';
 import { Price, PriceSecondary } from '@/components/ui/Price';
@@ -42,7 +42,7 @@ export default async function CheckoutPage({
 
   const courseSlug =
     typeof searchParams.course === 'string' ? searchParams.course : undefined;
-  const course = courseSlug ? await getCourseBySlug(courseSlug) : undefined;
+  const course = courseSlug ? await getPublishedCourseBySlug(courseSlug) : undefined;
   const isSub = !course;
 
   const amountUsd = isSub ? subscription.usd : course!.priceUsd;

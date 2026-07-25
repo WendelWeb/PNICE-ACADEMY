@@ -11,7 +11,7 @@
  * identical to today's amount while the DB fallback is in effect (same
  * static numbers, same shape).
  */
-import { getCourseBySlug } from '@/lib/courses/source';
+import { getPublishedCourseBySlug } from '@/lib/courses/source';
 import { SUBSCRIPTION_USD } from '@/data/pricing';
 
 export type ResolvedProduct = {
@@ -36,7 +36,7 @@ export async function resolveProduct(input: {
     };
   }
   if (!input.courseSlug) return null;
-  const course = await getCourseBySlug(input.courseSlug);
+  const course = await getPublishedCourseBySlug(input.courseSlug);
   if (!course) return null;
   return {
     productType: 'course',
