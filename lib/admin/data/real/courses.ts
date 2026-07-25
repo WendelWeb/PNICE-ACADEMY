@@ -41,24 +41,24 @@
  *     minutes — an improvement over the mock, not a gap. 0 on a lesson with
  *     no progress rows yet.
  *  5. `published` is always `true`, exactly like the mock's hardcoded
- *     `courseStats[].published = true` — this method still reads the STATIC
- *     data/courses.ts catalog (not the DB `courses` table lib/courses/
- *     write.ts now writes, Task C2-T4), so it has no real status to report;
- *     the real draft/published status is merged in separately by the
- *     /admin/cours PAGE (lib/courses/write.ts's `getAdminCourses`). Converting
- *     this file's own course lookups to lib/courses/source.ts is flagged as a
- *     C2-T5 follow-up, same as lib/payments/{fulfill,products}.ts.
+ *     `courseStats[].published = true` — this method reads course rows via
+ *     `lib/courses/source.ts`'s `getAllCourses()` (DB-backed, gated, falls
+ *     back to the static `data/courses.ts` catalog, Task C2-T5 — was a
+ *     direct static import before), so it still has no per-row status to
+ *     report on its own; the real draft/published status is merged in
+ *     separately by the /admin/cours PAGE (lib/courses/write.ts's
+ *     `getAdminCourses`).
  *  6. Every division is guarded exactly like the mock: 0 enrolled ⇒
  *     completionRatePct 0 (never NaN); 0 opened ⇒ dropPct 0; no progress rows
  *     at a lesson index ⇒ avgWatchMinutes 0. A near-empty DB returns the same
  *     zeroed shape, never throws.
  */
 import { db, schema } from '@/db';
-import { courses } from '@/data/courses';
+import { getAllCourses } from '@/lib/courses/source';
+import type { Course } from '@/data/courses';
 import type { CourseDetail, CourseSalesRow, LessonFunnel } from '../types';
 
 const T = schema;
-const courseBySlug = new Map(courses.map((c) => [c.slug, c]));
 
 type DbEnroll = typeof T.enrollments.$inferSelect;
 type DbProgress = typeof T.progress.$inferSelect;
@@ -103,17 +103,16 @@ function doneCount(m: Map<string, Map<string, number>>, userId: string, slug: st
 }
 
 function statFor(
-  slug: string,
+  c: Course,
   enrolls: DbEnroll[],
   payments: DbPayment[],
   certs: DbCert[],
 ): CourseSalesRow {
-  const c = courseBySlug.get(slug)!;
-  const enrolled = enrolledIdsFor(slug, enrolls).length;
+  const enrolled = enrolledIdsFor(c.slug, enrolls).length;
   const revenueCents = payments
-    .filter((p) => p.courseSlug === slug && p.status === 'completed')
+    .filter((p) => p.courseSlug === c.slug && p.status === 'completed')
     .reduce((s, p) => s + p.amountCents, 0);
-  const completions = certs.filter((ct) => ct.courseSlug === slug).length;
+  const completions = certs.filter((ct) => ct.courseSlug === c.slug).length;
   return {
     slug: c.slug,
     code: c.code,
@@ -130,12 +129,13 @@ function statFor(
 }
 
 export async function getCourseSales(): Promise<CourseSalesRow[]> {
-  const { enrolls, payments, certs } = await loadBase();
-  return courses.map((c) => statFor(c.slug, enrolls, payments, certs));
+  const [courses, { enrolls, payments, certs }] = await Promise.all([getAllCourses(), loadBase()]);
+  return courses.map((c) => statFor(c, enrolls, payments, certs));
 }
 
 export async function getCourseDetail(slug: string): Promise<CourseDetail | null> {
-  const course = courseBySlug.get(slug);
+  const courses = await getAllCourses();
+  const course = courses.find((c) => c.slug === slug);
   if (!course) return null;
 
   const { enrolls, prog, payments, certs } = await loadBase();
@@ -182,7 +182,7 @@ export async function getCourseDetail(slug: string): Promise<CourseDetail | null
   }
 
   return {
-    course: statFor(slug, enrolls, payments, certs),
+    course: statFor(course, enrolls, payments, certs),
     enrolled,
     lessons,
     worstLessonIndex,

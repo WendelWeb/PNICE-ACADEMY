@@ -18,7 +18,7 @@ import { sendEmail, emailConfigured } from '@/lib/email/resend';
 import { buildReceiptHtml } from '@/lib/email/templates';
 import { buildReceiptPdf } from '@/lib/pdf/receipt';
 import { htgLabel } from '@/lib/money';
-import { getCourse } from '@/data/courses';
+import { getCourseBySlug } from '@/lib/courses/source';
 import type { StripeAction } from './stripe-events';
 
 export async function fulfillAction(action: StripeAction): Promise<'processed' | 'ignored'> {
@@ -204,7 +204,7 @@ async function fulfillCheckoutCompleted(a: CheckoutCompleted): Promise<'processe
   // already durably recorded by this point, so this is best-effort only.
   try {
     const locale = user.localePref === 'fr' ? 'fr' : 'ht';
-    const course = a.courseSlug ? getCourse(a.courseSlug) : undefined;
+    const course = a.courseSlug ? await getCourseBySlug(a.courseSlug) : undefined;
     const itemName = course
       ? (locale === 'fr' ? course.title_fr : course.title_ht)
       : a.courseSlug ?? (locale === 'fr' ? 'Abonnement mensuel' : 'Abònman chak mwa');

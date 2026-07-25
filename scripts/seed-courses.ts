@@ -158,7 +158,7 @@ async function main() {
   /* lib/payments/products.ts so the seeded plan matches what a buyer     */
   /* actually sees at checkout.                                          */
   /* ------------------------------------------------------------------ */
-  const subscriptionProduct = resolveProduct({ productType: 'subscription' })!;
+  const subscriptionProduct = (await resolveProduct({ productType: 'subscription' }))!;
   const teacherPlanRow = {
     ownerUserId: owner.id,
     titleHt: subscriptionProduct.nameHt,
