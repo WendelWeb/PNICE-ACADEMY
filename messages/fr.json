@@ -408,7 +408,10 @@
         "photoUrlPlaceholder": "https://…",
         "errorDisplayName": "Indique ton nom.",
         "errorBioHt": "Écris au moins {min} caractères en créole.",
-        "errorBioFr": "Écris au moins {min} caractères en français."
+        "errorBioFr": "Écris au moins {min} caractères en français.",
+        "errorBioHtTooLong": "La biographie en créole ne doit pas dépasser 2000 caractères.",
+        "errorBioFrTooLong": "La biographie en français ne doit pas dépasser 2000 caractères.",
+        "errorPhotoUrlInvalid": "L'URL de la photo doit commencer par http:// ou https://."
       },
       "payout": {
         "title": "Comment tu veux recevoir ton argent",
@@ -426,7 +429,8 @@
           "paypal": "L'e-mail de ton compte PayPal.",
           "bank": "Le nom de la banque et ton numéro de compte."
         },
-        "errorDestination": "Indique où tu veux recevoir ton argent."
+        "errorDestination": "Indique où tu veux recevoir ton argent.",
+        "errorDestinationTooLong": "Les détails de ton compte ne doivent pas dépasser 200 caractères."
       },
       "terms": {
         "title": "Les conditions",

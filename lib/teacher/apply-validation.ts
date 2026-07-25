@@ -29,7 +29,9 @@ export type ApplyAsTeacherInput = {
 /** Minimum bio length (per language) — enough to be an actual introduction,
  *  not a one-word placeholder. */
 export const BIO_MIN_LENGTH = 40;
+export const BIO_MAX_LENGTH = 2000;
 export const DISPLAY_NAME_MAX_LENGTH = 80;
+export const PAYOUT_DESTINATION_MAX_LENGTH = 200;
 
 /**
  * Returns the first failing field's error code, or `null` if the input is
@@ -41,10 +43,36 @@ export function validateApplyInput(input: ApplyAsTeacherInput): string | null {
   const displayName = input.displayName?.trim() ?? '';
   if (!displayName) return 'display_name_required';
   if (displayName.length > DISPLAY_NAME_MAX_LENGTH) return 'display_name_too_long';
-  if ((input.bioHt?.trim().length ?? 0) < BIO_MIN_LENGTH) return 'bio_ht_too_short';
-  if ((input.bioFr?.trim().length ?? 0) < BIO_MIN_LENGTH) return 'bio_fr_too_short';
+
+  const bioHtTrimmed = input.bioHt?.trim() ?? '';
+  if (bioHtTrimmed.length < BIO_MIN_LENGTH) return 'bio_ht_too_short';
+  if (bioHtTrimmed.length > BIO_MAX_LENGTH) return 'bio_ht_too_long';
+
+  const bioFrTrimmed = input.bioFr?.trim() ?? '';
+  if (bioFrTrimmed.length < BIO_MIN_LENGTH) return 'bio_fr_too_short';
+  if (bioFrTrimmed.length > BIO_MAX_LENGTH) return 'bio_fr_too_long';
+
   if (!PAYOUT_METHODS.includes(input.payoutMethod)) return 'payout_method_invalid';
-  if (!input.payoutDestination?.trim()) return 'payout_destination_required';
+
+  const payoutDest = input.payoutDestination?.trim() ?? '';
+  if (!payoutDest) return 'payout_destination_required';
+  if (payoutDest.length > PAYOUT_DESTINATION_MAX_LENGTH) return 'payout_destination_too_long';
+
+  if (input.photoUrl?.trim()) {
+    const photoUrl = input.photoUrl.trim();
+    if (!isValidHttpUrl(photoUrl)) return 'photo_url_invalid';
+  }
+
   if (!input.termsAccepted) return 'terms_required';
   return null;
+}
+
+/** Validate that a URL is http(s) and well-formed. */
+function isValidHttpUrl(urlString: string): boolean {
+  try {
+    const url = new URL(urlString);
+    return ['http:', 'https:'].includes(url.protocol);
+  } catch {
+    return false;
+  }
 }

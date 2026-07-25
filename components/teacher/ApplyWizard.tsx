@@ -18,6 +18,8 @@ import { Stamp } from '@/components/ui/Stamp';
 import { applyAsTeacherAction } from '@/lib/teacher/actions';
 import {
   BIO_MIN_LENGTH,
+  BIO_MAX_LENGTH,
+  PAYOUT_DESTINATION_MAX_LENGTH,
   PAYOUT_METHODS,
   validateApplyInput,
   type ApplyAsTeacherInput,
@@ -41,7 +43,7 @@ export type ApplyWizardInitial = {
 type StepNum = 1 | 2 | 3;
 const STEP_KEYS = ['profile', 'payout', 'terms'] as const;
 type FieldErrors = Partial<
-  Record<'displayName' | 'bioHt' | 'bioFr' | 'payoutDestination' | 'terms', string>
+  Record<'displayName' | 'bioHt' | 'bioFr' | 'photoUrl' | 'payoutDestination' | 'terms', string>
 >;
 
 /**
@@ -86,14 +88,31 @@ export function ApplyWizard({ initial }: { initial?: ApplyWizardInitial }) {
   function validateStep1(): FieldErrors {
     const e: FieldErrors = {};
     if (!displayName.trim()) e.displayName = t('profile.errorDisplayName');
-    if (bioHt.trim().length < BIO_MIN_LENGTH) e.bioHt = t('profile.errorBioHt', { min: BIO_MIN_LENGTH });
-    if (bioFr.trim().length < BIO_MIN_LENGTH) e.bioFr = t('profile.errorBioFr', { min: BIO_MIN_LENGTH });
+    const bioHtTrimmed = bioHt.trim();
+    if (bioHtTrimmed.length < BIO_MIN_LENGTH) e.bioHt = t('profile.errorBioHt', { min: BIO_MIN_LENGTH });
+    if (bioHtTrimmed.length > BIO_MAX_LENGTH) e.bioHt = t('profile.errorBioHtTooLong');
+    const bioFrTrimmed = bioFr.trim();
+    if (bioFrTrimmed.length < BIO_MIN_LENGTH) e.bioFr = t('profile.errorBioFr', { min: BIO_MIN_LENGTH });
+    if (bioFrTrimmed.length > BIO_MAX_LENGTH) e.bioFr = t('profile.errorBioFrTooLong');
+    if (photoUrl.trim()) {
+      const photo = photoUrl.trim();
+      try {
+        const url = new URL(photo);
+        if (!['http:', 'https:'].includes(url.protocol)) {
+          e.photoUrl = t('profile.errorPhotoUrlInvalid');
+        }
+      } catch {
+        e.photoUrl = t('profile.errorPhotoUrlInvalid');
+      }
+    }
     return e;
   }
 
   function validateStep2(): FieldErrors {
     const e: FieldErrors = {};
-    if (!payoutDestination.trim()) e.payoutDestination = t('payout.errorDestination');
+    const payoutDest = payoutDestination.trim();
+    if (!payoutDest) e.payoutDestination = t('payout.errorDestination');
+    if (payoutDest.length > PAYOUT_DESTINATION_MAX_LENGTH) e.payoutDestination = t('payout.errorDestinationTooLong');
     return e;
   }
 
@@ -207,6 +226,7 @@ export function ApplyWizard({ initial }: { initial?: ApplyWizardInitial }) {
               value={bioHt}
               onChange={(e) => setBioHt(e.target.value)}
               placeholder={t('profile.bioHtPlaceholder')}
+              maxLength={2000}
               className={cn(inputCls, 'min-h-[110px] resize-y')}
             />
             <div className="mt-1 flex items-center justify-between">
@@ -229,6 +249,7 @@ export function ApplyWizard({ initial }: { initial?: ApplyWizardInitial }) {
               value={bioFr}
               onChange={(e) => setBioFr(e.target.value)}
               placeholder={t('profile.bioFrPlaceholder')}
+              maxLength={2000}
               className={cn(inputCls, 'min-h-[110px] resize-y')}
             />
             <div className="mt-1 flex items-center justify-between">
@@ -254,6 +275,7 @@ export function ApplyWizard({ initial }: { initial?: ApplyWizardInitial }) {
               inputMode="url"
               className={inputCls}
             />
+            {errors.photoUrl && <FieldError message={errors.photoUrl} />}
           </div>
         </div>
       )}
@@ -289,6 +311,7 @@ export function ApplyWizard({ initial }: { initial?: ApplyWizardInitial }) {
               value={payoutDestination}
               onChange={(e) => setPayoutDestination(e.target.value)}
               placeholder={t(`payout.hints.${payoutMethod}`)}
+              maxLength={200}
               className={inputCls}
             />
             <p className="mt-1.5 text-xs leading-relaxed text-graphite/60">

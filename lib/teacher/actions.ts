@@ -131,6 +131,6 @@ export async function applyAsTeacherAction(
     return { ok: true, status: 'pending' };
   } catch (e) {
     console.error('[teacher/actions] applyAsTeacherAction failed:', e);
-    return { ok: false, message: e instanceof Error ? e.message : 'error' };
+    return { ok: false, message: 'error' };
   }
 }

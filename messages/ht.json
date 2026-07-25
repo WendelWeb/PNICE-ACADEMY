@@ -408,7 +408,10 @@
         "photoUrlPlaceholder": "https://…",
         "errorDisplayName": "Antre non ou.",
         "errorBioHt": "Ekri omwen {min} karaktè an kreyòl.",
-        "errorBioFr": "Ekri omwen {min} karaktè an franse."
+        "errorBioFr": "Ekri omwen {min} karaktè an franse.",
+        "errorBioHtTooLong": "Byografi kreyòl dwe pase 2000 karaktè.",
+        "errorBioFrTooLong": "Biographie frèn dwe pase 2000 karaktè.",
+        "errorPhotoUrlInvalid": "Foto URL dwe kòmanse ak http:// oswa https://."
       },
       "payout": {
         "title": "Kijan ou vle resevwa lajan w",
@@ -426,7 +429,8 @@
           "paypal": "Imèl kont PayPal ou.",
           "bank": "Non bank lan ak nimewo kont ou."
         },
-        "errorDestination": "Antre kote ou vle resevwa lajan w."
+        "errorDestination": "Antre kote ou vle resevwa lajan w.",
+        "errorDestinationTooLong": "Detay kont ou dwe pase 200 karaktè."
       },
       "terms": {
         "title": "Kondisyon yo",
