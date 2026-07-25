@@ -30,8 +30,7 @@
       },
       "teach": {
         "title": "Anseye",
-        "badge": "Byento",
-        "teaser": "Ou metrize yon konesans? Byento w ap ka anseye l isit la."
+        "teaser": "Ou metrize yon konesans? Vin anseye l sou platfòm nan."
       },
       "help": {
         "title": "Èd",
@@ -100,16 +99,14 @@
       ]
     },
     "teachTeaser": {
-      "eyebrow": "Byento sou PNICE Academy",
-      "title": "Ou metrize yon konesans? Byento w ap ka anseye l isit la.",
-      "body": "Nenpòt moun ki gen yon konpetans ap ka kreye pwòp fòmasyon pa yo sou platfòm nan. Ou fikse pri w, ou touche 70% chak vant, epi lajan an rive dirèk nan MonCash ou.",
+      "eyebrow": "Sou PNICE Academy",
+      "title": "Ou metrize yon konesans? Ou ka anseye l isit la.",
+      "body": "Nenpòt moun ki gen yon konpetans ka kreye pwòp fòmasyon pa yo sou platfòm nan. Ou fikse pri w, ou touche 70% chak vant, epi lajan an rive dirèk nan MonCash ou.",
       "facts": ["Fikse pri w", "70% pou ou", "Peye an MonCash"],
       "ctaLearnMore": "Aprann plis",
-      "interestCta": "Mwen enterese",
-      "interestSuccess": "Nou resevwa enterè w — n ap kontakte w",
-      "interestError": "Nou pa t ka anrejistre demand ou an. Eseye ankò.",
+      "interestCta": "Vin Anseyan",
       "sealTop": "Anseyan",
-      "sealBottom": "Byento"
+      "sealBottom": "Louvri"
     },
     "manifest": {
       "eyebrow": "Manifès la",
@@ -329,11 +326,11 @@
   },
   "teach": {
     "metaTitle": "Anseye sou PNICE Academy",
-    "metaDescription": "Ou metrize yon konesans? Kreye fòmasyon pa w sou PNICE Academy, fikse pri w epi touche 70% sou chak vant, peye an MonCash. Kite enterè w — kandidati yo ap louvri byento.",
+    "metaDescription": "Ou metrize yon konesans? Kreye fòmasyon pa w sou PNICE Academy, fikse pri w epi touche 70% sou chak vant, peye an MonCash. Soumèt kandidati w kounye a.",
     "eyebrow": "Vin anseyan",
-    "soonBadge": "Byento",
+    "openBadge": "Kandidati louvri",
     "title": "Ou metrize yon konesans? Anseye l.",
-    "subtitle": "Kreye fòmasyon pa w sou PNICE Academy. Ou fikse pri w, ou touche 70% sou chak vant, elèv yo peye an MonCash. Kandidati yo ap louvri byento — kite enterè w depi jodi a.",
+    "subtitle": "Kreye fòmasyon pa w sou PNICE Academy. Ou fikse pri w, ou touche 70% sou chak vant, elèv yo peye an MonCash. Kandidati yo louvri kounye a — soumèt pa w pi ba a.",
     "exampleCta": "Gade yon egzanp paj anseyan",
     "facts": ["70% pou ou", "Fikse pri w", "Retrè MonCash"],
     "stepsEyebrow": "Wout anseyan an",
@@ -341,7 +338,7 @@
     "steps": [
       {
         "title": "Kandidati",
-        "body": "Ou fè demand ou ak menm kont ou genyen an: non w, sa w vle anseye, yon ti prezantasyon. 10 minit sifi."
+        "body": "Ou fè demand ou ak menm kont ou genyen an: non w, sa w vle anseye, yon ti prezantasyon. 5 minit sifi."
       },
       {
         "title": "Apwobasyon",
@@ -364,8 +361,8 @@
         "a": "Menm kont lan. Ou pa bezwen kreye yon dezyèm kont: ou fè kandidati w ak kont ou genyen an, epi lè nou apwouve w, kont ou an vin gen yon espas anseyan — anplis espas elèv la."
       },
       {
-        "q": "Kilè kandidati yo ap louvri?",
-        "a": "Byento. N ap fini bati zouti anseyan yo kounye a. Kite enterè w jodi a — n ap kontakte w pèsonèlman depi kandidati yo louvri."
+        "q": "Kijan pou m kòmanse kandidati mwen?",
+        "a": "Kandidati yo louvri kounye a. Klike sou 'Kòmanse kandidati mwen' pi ba a, ranpli pwofil ou, chwazi kijan ou vle resevwa lajan w, epi aksepte kondisyon yo. Sa pran anviwon 5 minit."
       },
       {
         "q": "Konbyen m ap touche?",
@@ -381,9 +378,98 @@
       }
     ],
     "final": {
-      "badge": "Byento",
-      "title": "Kandidati yo ap louvri byento",
-      "body": "Kite enterè w depi kounye a — n ap kontakte w anvan tout moun lè pòt yo louvri. Sa pa angaje w nan anyen."
+      "title": "Pare pou kòmanse kandidati w?",
+      "body": "Kreye yon kont gratis pou soumèt pwofil ou. Nou revize chak kandidati anvan nou reponn ou."
+    },
+    "apply": {
+      "startTitle": "Kòmanse kandidati w",
+      "startBody": "Sa pran anviwon 5 minit: pwofil ou, kijan ou vle resevwa lajan w, epi kondisyon yo.",
+      "startCta": "Kòmanse kandidati mwen",
+      "viewStatusCta": "Wè estati kandidati w",
+      "signedOutTitle": "Kreye yon kont pou kòmanse",
+      "signedOutBody": "Ou bezwen yon kont pou soumèt kandidati w. Se menm kont ou pral itilize pou aprann OSWA pou anseye.",
+      "signedOutCta": "Kreye kont mwen",
+      "stepOf": "Etap {step} sou {total}",
+      "steps": {
+        "profile": "Pwofil",
+        "payout": "Peman",
+        "terms": "Kondisyon"
+      },
+      "profile": {
+        "title": "Pwofil anseyan w",
+        "displayName": "Non ou ap parèt piblikman",
+        "displayNamePlaceholder": "Egzanp: Jan Pyè",
+        "bioHt": "Byografi (kreyòl)",
+        "bioHtPlaceholder": "Rakonte kisa ou metrize epi kijan ou ka ede elèv yo…",
+        "bioFr": "Biographie (français)",
+        "bioFrPlaceholder": "Racontez ce que vous maîtrisez et comment vous pouvez aider les élèves…",
+        "bioHelp": "Omwen {min} karaktè.",
+        "photoUrl": "Foto pwofil (lyen, opsyonèl)",
+        "photoUrlPlaceholder": "https://…",
+        "errorDisplayName": "Antre non ou.",
+        "errorBioHt": "Ekri omwen {min} karaktè an kreyòl.",
+        "errorBioFr": "Ekri omwen {min} karaktè an franse."
+      },
+      "payout": {
+        "title": "Kijan ou vle resevwa lajan w",
+        "method": "Mwayen peman",
+        "methods": {
+          "moncash": "MonCash",
+          "natcash": "NatCash",
+          "paypal": "PayPal",
+          "bank": "Kont bank"
+        },
+        "destination": "Detay kont ou",
+        "hints": {
+          "moncash": "Nimewo MonCash ou (egzanp: 3712 3456).",
+          "natcash": "Nimewo NatCash ou.",
+          "paypal": "Imèl kont PayPal ou.",
+          "bank": "Non bank lan ak nimewo kont ou."
+        },
+        "errorDestination": "Antre kote ou vle resevwa lajan w."
+      },
+      "terms": {
+        "title": "Kondisyon yo",
+        "summary": [
+          "Ou touche 70% sou chak vant — 30% ale nan platfòm nan.",
+          "Nou revize chak kou anvan li pibliye pou kenbe kalite platfòm nan.",
+          "Retrè yo fèt sou demand, apati $25, nan mwayen peman ou chwazi a."
+        ],
+        "checkbox": "Mwen li epi mwen aksepte kondisyon yo.",
+        "errorTerms": "Ou dwe aksepte kondisyon yo pou kontinye."
+      },
+      "back": "Retounen",
+      "next": "Kontinye",
+      "submit": "Voye kandidati mwen",
+      "submitting": "N ap voye…",
+      "successTitle": "Kandidati resevwa",
+      "sealLabel": "Resevwa",
+      "successBody": "Nou resevwa kandidati w. Ekip nou an ap revize l epi n ap kontakte w — an kreyòl oswa an franse.",
+      "errorGeneric": "Yon erè rive. Tanpri eseye ankò.",
+      "errorDbRequired": "Sistèm kandidati a poko aktif. Tanpri eseye pita.",
+      "errorAlreadyActive": "Ou gen yon pwofil anseyan aktif deja.",
+      "status": {
+        "pending": {
+          "title": "N ap revize kandidati w",
+          "body": "Ekip nou an ap gade kandidati w pou kenbe bon nivo platfòm nan. Nou reponn ou vit — an kreyòl oswa an franse."
+        },
+        "approved": {
+          "title": "Kandidati w apwouve",
+          "body": "Byenveni kòm anseyan sou PNICE Academy. Studio pou kreye kou w ap vini talè — n ap avize w depi li disponib.",
+          "badge": "Byento",
+          "studioLabel": "Studio anseyan"
+        },
+        "rejected": {
+          "title": "Kandidati w pa t apwouve",
+          "body": "Men nòt ekip nou an. Ou ka korije epi soumèt yon nouvo kandidati.",
+          "noteLabel": "Nòt ekip la",
+          "reapplyCta": "Soumèt yon nouvo kandidati"
+        },
+        "suspended": {
+          "title": "Pwofil anseyan w sispann",
+          "body": "Pwofil anseyan w sispann kounye a. Kontakte sipò si ou panse sa se yon erè."
+        }
+      }
     }
   },
   "checkout": {
@@ -472,6 +558,7 @@
   "kont": {
     "title": "Mon kont",
     "loading": "N ap chaje enfòmasyon ou yo…",
+    "teachEntry": "Vin anseyan",
     "tabs": {
       "profile": "Pwofil",
       "security": "Sekirite",

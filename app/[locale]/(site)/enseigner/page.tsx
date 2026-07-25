@@ -1,12 +1,18 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { auth } from '@clerk/nextjs/server';
 import { Link } from '@/i18n/routing';
 import { Section, Container, Eyebrow } from '@/components/ui/Section';
 import { Reveal } from '@/components/ui/Reveal';
 import { buttonClasses } from '@/components/ui/Button';
 import { CourseFaqList } from '@/components/courses/CourseFaqList';
 import { TeachInterestCta } from '@/components/home/TeachInterestCta';
+import { TeacherApplyEntry } from '@/components/teacher/TeacherApplyEntry';
 import { teachers } from '@/data/teachers';
+import { clerkEnabled } from '@/lib/clerk';
+import { dbConfigured } from '@/lib/courses/source';
+import { resolveUserId } from '@/lib/learner/access';
+import { getTeacherProfile, type TeacherProfile } from '@/lib/teacher/profile';
 import { cn } from '@/lib/cn';
 
 export async function generateMetadata({
@@ -22,12 +28,16 @@ type Step = { title: string; body: string };
 type FaqItem = { q: string; a: string };
 
 /**
- * `/enseigner` — the become-a-teacher journey (U4bis). Honest « Byento »
- * framing: candidacies are not open yet, so the page explains the real
- * 4-step path (spec §6bis: same account, approval flow) as stations on the
- * teal route line — the final station in ochre, because the destination is
- * the payout — and captures interest via the same `TeachInterestCta` as the
- * home teaser (idempotent server action → admin support inbox).
+ * `/enseigner` — the become-a-teacher journey (U4bis) + Task C3-T2's real
+ * onboarding entry point. Signed-out visitors get the persuasive journey and
+ * an auth-gated CTA; signed-in visitors get the SAME journey plus a live
+ * state machine at `#kandidati` (`TeacherApplyEntry`): no profile yet →
+ * start the wizard, pending → their status, approved → a "studio's coming"
+ * note (the studio itself is C3-T4, still byento — the ONE place that
+ * framing survives), rejected → the review note + re-apply, suspended → a
+ * notice. Applications are genuinely open now (unlike the earlier U4bis
+ * "byento" placeholder) — the copy reflects that everywhere except the
+ * studio.
  */
 export default async function EnseignerPage({
   params: { locale },
@@ -41,10 +51,33 @@ export default async function EnseignerPage({
   const steps = t.raw('steps') as Step[];
   const faqItems = t.raw('faq') as FaqItem[];
 
-  const soonBadge = (
-    <span className="rounded-full border border-ochre/50 bg-ochre/10 px-2.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-ochre">
-      {t('soonBadge')}
+  // Resolve the signed-in visitor's teacher-application status, if any.
+  // Every step here degrades quietly: Clerk disabled, signed out, no DB, or
+  // no `users` row yet ⇒ `profile` stays null and the page still renders
+  // (never throws) — same gated-read discipline as lib/teacher/profile.ts.
+  let signedIn = false;
+  let profile: TeacherProfile | null = null;
+  if (clerkEnabled) {
+    const { userId: clerkId } = await auth();
+    signedIn = Boolean(clerkId);
+    if (clerkId && dbConfigured()) {
+      const internalId = await resolveUserId(clerkId);
+      if (internalId) profile = await getTeacherProfile(internalId);
+    }
+  }
+
+  const openBadge = (
+    <span className="rounded-full border border-teal/40 bg-teal/10 px-2.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-teal">
+      {t('openBadge')}
     </span>
+  );
+
+  const heroCta = signedIn ? (
+    <a href="#kandidati" className={buttonClasses('primary', 'lg')}>
+      {profile ? t('apply.viewStatusCta') : t('apply.startCta')}
+    </a>
+  ) : (
+    <TeachInterestCta variant="primary" />
   );
 
   return (
@@ -55,7 +88,7 @@ export default async function EnseignerPage({
           <div className="mx-auto max-w-2xl text-center">
             <p className="inline-flex flex-wrap items-center justify-center gap-2.5">
               <Eyebrow>{t('eyebrow')}</Eyebrow>
-              {soonBadge}
+              {openBadge}
             </p>
             <h1 className="mt-4 font-display text-[2.6rem] font-black leading-[0.95] text-ink md:text-6xl">
               {t('title')}
@@ -64,7 +97,7 @@ export default async function EnseignerPage({
               {t('subtitle')}
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <TeachInterestCta variant="primary" />
+              {heroCta}
               <Link
                 href={`/prof/${teachers[0].slug}`}
                 className={buttonClasses('ghost', 'lg')}
@@ -162,22 +195,26 @@ export default async function EnseignerPage({
         </Container>
       </Section>
 
-      {/* ---------- Interest capture — honest « Byento » ---------- */}
-      <Section>
+      {/* ---------- Application / status — the real entry point ---------- */}
+      <Section id="kandidati">
         <Container>
-          <Reveal>
-            <div className="mx-auto max-w-3xl rounded-2xl border border-ink/15 bg-paper p-8 text-center shadow-[0_20px_48px_-32px_rgba(16,32,74,0.35)] md:p-12">
-              {soonBadge}
-              <h2 className="mt-4 font-display text-3xl font-extrabold leading-tight text-ink md:text-4xl">
-                {t('final.title')}
-              </h2>
-              <p className="mx-auto mt-3 max-w-xl leading-relaxed text-graphite">
-                {t('final.body')}
-              </p>
-              <div className="mt-7 flex justify-center">
-                <TeachInterestCta variant="primary" />
+          <Reveal className="mx-auto max-w-2xl">
+            {signedIn ? (
+              <TeacherApplyEntry profile={profile} />
+            ) : (
+              <div className="rounded-2xl border border-ink/15 bg-paper p-8 text-center shadow-[0_20px_48px_-32px_rgba(16,32,74,0.35)] md:p-12">
+                {openBadge}
+                <h2 className="mt-4 font-display text-3xl font-extrabold leading-tight text-ink md:text-4xl">
+                  {t('final.title')}
+                </h2>
+                <p className="mx-auto mt-3 max-w-xl leading-relaxed text-graphite">
+                  {t('final.body')}
+                </p>
+                <div className="mt-7 flex justify-center">
+                  <TeachInterestCta variant="primary" />
+                </div>
               </div>
-            </div>
+            )}
           </Reveal>
         </Container>
       </Section>

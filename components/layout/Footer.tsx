@@ -54,13 +54,10 @@ export async function Footer() {
             </ul>
           </div>
 
-          {/* Anseye — teaser, not live yet */}
+          {/* Anseye — applications open (Task C3-T2) */}
           <div>
-            <h3 className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.16em] text-paper-light/50">
+            <h3 className="font-mono text-xs uppercase tracking-[0.16em] text-paper-light/50">
               {t('columns.teach.title')}
-              <span className="rounded-full border border-ochre/40 px-1.5 py-0.5 font-mono text-[9px] font-semibold normal-case tracking-normal text-ochre">
-                {t('columns.teach.badge')}
-              </span>
             </h3>
             <Link
               href="/enseigner"

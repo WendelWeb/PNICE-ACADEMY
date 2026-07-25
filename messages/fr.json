@@ -30,8 +30,7 @@
       },
       "teach": {
         "title": "Enseigner",
-        "badge": "Bientôt",
-        "teaser": "Tu maîtrises un savoir-faire ? Bientôt tu pourras l'enseigner ici."
+        "teaser": "Tu maîtrises un savoir-faire ? Viens l'enseigner sur la plateforme."
       },
       "help": {
         "title": "Aide",
@@ -100,16 +99,14 @@
       ]
     },
     "teachTeaser": {
-      "eyebrow": "Bientôt sur PNICE Academy",
-      "title": "Tu maîtrises un savoir-faire ? Bientôt tu pourras l'enseigner ici.",
-      "body": "Toute personne qui maîtrise une compétence pourra créer sa propre formation sur la plateforme. Tu fixes ton prix, tu gardes 70 % de chaque vente, et l'argent arrive directement sur ton MonCash.",
+      "eyebrow": "Sur PNICE Academy",
+      "title": "Tu maîtrises un savoir-faire ? Tu peux l'enseigner ici.",
+      "body": "Toute personne qui maîtrise une compétence peut créer sa propre formation sur la plateforme. Tu fixes ton prix, tu gardes 70 % de chaque vente, et l'argent arrive directement sur ton MonCash.",
       "facts": ["Fixe ton prix", "70 % pour toi", "Payé via MonCash"],
       "ctaLearnMore": "En savoir plus",
-      "interestCta": "Je suis intéressé(e)",
-      "interestSuccess": "Nous avons bien reçu ton intérêt — on te contacte bientôt.",
-      "interestError": "Impossible d'enregistrer ta demande. Réessaie.",
+      "interestCta": "Devenir enseignant",
       "sealTop": "Formateur",
-      "sealBottom": "Bientôt"
+      "sealBottom": "Ouvert"
     },
     "manifest": {
       "eyebrow": "Le manifeste",
@@ -329,11 +326,11 @@
   },
   "teach": {
     "metaTitle": "Enseigner sur PNICE Academy",
-    "metaDescription": "Tu maîtrises un savoir-faire ? Crée ta formation sur PNICE Academy, fixe ton prix et touche 70 % sur chaque vente, payé en MonCash. Laisse ton intérêt — les candidatures ouvrent bientôt.",
+    "metaDescription": "Tu maîtrises un savoir-faire ? Crée ta formation sur PNICE Academy, fixe ton prix et touche 70 % sur chaque vente, payé en MonCash. Soumets ta candidature dès maintenant.",
     "eyebrow": "Devenir enseignant",
-    "soonBadge": "Bientôt",
+    "openBadge": "Candidatures ouvertes",
     "title": "Tu maîtrises un savoir-faire ? Enseigne-le.",
-    "subtitle": "Crée tes propres formations sur PNICE Academy. Tu fixes ton prix, tu touches 70 % sur chaque vente, les élèves paient en MonCash. Les candidatures ouvrent bientôt — laisse ton intérêt dès aujourd'hui.",
+    "subtitle": "Crée tes propres formations sur PNICE Academy. Tu fixes ton prix, tu touches 70 % sur chaque vente, les élèves paient en MonCash. Les candidatures sont ouvertes maintenant — soumets la tienne plus bas.",
     "exampleCta": "Voir un exemple de page enseignant",
     "facts": ["70 % pour toi", "Fixe ton prix", "Retrait MonCash"],
     "stepsEyebrow": "Le parcours enseignant",
@@ -341,7 +338,7 @@
     "steps": [
       {
         "title": "Candidature",
-        "body": "Tu postules avec le compte que tu as déjà : ton nom, ce que tu veux enseigner, une courte présentation. 10 minutes suffisent."
+        "body": "Tu postules avec le compte que tu as déjà : ton nom, ce que tu veux enseigner, une courte présentation. 5 minutes suffisent."
       },
       {
         "title": "Approbation",
@@ -364,8 +361,8 @@
         "a": "C'est le même compte. Pas besoin d'en créer un deuxième : tu postules avec ton compte actuel, et une fois approuvé, il gagne un espace enseignant — en plus de ton espace élève."
       },
       {
-        "q": "Quand les candidatures ouvrent-elles ?",
-        "a": "Bientôt. Nous finissons de construire les outils enseignants. Laisse ton intérêt dès aujourd'hui — on te contactera personnellement dès l'ouverture."
+        "q": "Comment démarrer ma candidature ?",
+        "a": "Les candidatures sont ouvertes maintenant. Clique sur « Commencer ma candidature » plus bas, remplis ton profil, choisis comment tu veux recevoir ton argent, puis accepte les conditions. Ça prend environ 5 minutes."
       },
       {
         "q": "Combien vais-je toucher ?",
@@ -381,9 +378,98 @@
       }
     ],
     "final": {
-      "badge": "Bientôt",
-      "title": "Les candidatures ouvrent bientôt",
-      "body": "Laisse ton intérêt dès maintenant — on te contactera avant tout le monde à l'ouverture. Sans aucun engagement."
+      "title": "Prêt à commencer ta candidature ?",
+      "body": "Crée un compte gratuit pour soumettre ton profil. Nous examinons chaque candidature avant de te répondre."
+    },
+    "apply": {
+      "startTitle": "Commence ta candidature",
+      "startBody": "Ça prend environ 5 minutes : ton profil, comment tu veux recevoir ton argent, et les conditions.",
+      "startCta": "Commencer ma candidature",
+      "viewStatusCta": "Voir le statut de ma candidature",
+      "signedOutTitle": "Crée un compte pour commencer",
+      "signedOutBody": "Il te faut un compte pour soumettre ta candidature. C'est le même compte que tu utiliseras pour apprendre OU pour enseigner.",
+      "signedOutCta": "Créer mon compte",
+      "stepOf": "Étape {step} sur {total}",
+      "steps": {
+        "profile": "Profil",
+        "payout": "Paiement",
+        "terms": "Conditions"
+      },
+      "profile": {
+        "title": "Ton profil enseignant",
+        "displayName": "Ton nom public",
+        "displayNamePlaceholder": "Exemple : Jean Pierre",
+        "bioHt": "Biographie (créole)",
+        "bioHtPlaceholder": "Raconte ce que tu maîtrises et comment tu peux aider les élèves…",
+        "bioFr": "Biographie (français)",
+        "bioFrPlaceholder": "Raconte ce que tu maîtrises et comment tu peux aider les élèves…",
+        "bioHelp": "Au moins {min} caractères.",
+        "photoUrl": "Photo de profil (lien, optionnel)",
+        "photoUrlPlaceholder": "https://…",
+        "errorDisplayName": "Indique ton nom.",
+        "errorBioHt": "Écris au moins {min} caractères en créole.",
+        "errorBioFr": "Écris au moins {min} caractères en français."
+      },
+      "payout": {
+        "title": "Comment tu veux recevoir ton argent",
+        "method": "Moyen de paiement",
+        "methods": {
+          "moncash": "MonCash",
+          "natcash": "NatCash",
+          "paypal": "PayPal",
+          "bank": "Compte bancaire"
+        },
+        "destination": "Détails de ton compte",
+        "hints": {
+          "moncash": "Ton numéro MonCash (exemple : 3712 3456).",
+          "natcash": "Ton numéro NatCash.",
+          "paypal": "L'e-mail de ton compte PayPal.",
+          "bank": "Le nom de la banque et ton numéro de compte."
+        },
+        "errorDestination": "Indique où tu veux recevoir ton argent."
+      },
+      "terms": {
+        "title": "Les conditions",
+        "summary": [
+          "Tu touches 70 % sur chaque vente — 30 % vont à la plateforme.",
+          "Nous vérifions chaque cours avant sa publication pour maintenir le niveau de la plateforme.",
+          "Les retraits se font sur demande, à partir de 25 $, selon le moyen de paiement choisi."
+        ],
+        "checkbox": "J'ai lu et j'accepte les conditions.",
+        "errorTerms": "Tu dois accepter les conditions pour continuer."
+      },
+      "back": "Retour",
+      "next": "Continuer",
+      "submit": "Envoyer ma candidature",
+      "submitting": "Envoi en cours…",
+      "successTitle": "Candidature reçue",
+      "sealLabel": "Reçue",
+      "successBody": "Nous avons bien reçu ta candidature. Notre équipe l'examine et te contactera — en créole ou en français.",
+      "errorGeneric": "Une erreur est survenue. Réessaie.",
+      "errorDbRequired": "Le système de candidature n'est pas encore actif. Réessaie plus tard.",
+      "errorAlreadyActive": "Tu as déjà un profil enseignant actif.",
+      "status": {
+        "pending": {
+          "title": "Ta candidature est en cours d'examen",
+          "body": "Notre équipe examine ta candidature pour maintenir le niveau de la plateforme. On te répond vite — en créole ou en français."
+        },
+        "approved": {
+          "title": "Ta candidature est approuvée",
+          "body": "Bienvenue comme enseignant sur PNICE Academy. Le studio pour créer tes cours arrive bientôt — on te préviendra dès qu'il sera prêt.",
+          "badge": "Bientôt",
+          "studioLabel": "Studio enseignant"
+        },
+        "rejected": {
+          "title": "Ta candidature n'a pas été approuvée",
+          "body": "Voici la note de notre équipe. Tu peux corriger et soumettre une nouvelle candidature.",
+          "noteLabel": "Note de l'équipe",
+          "reapplyCta": "Soumettre une nouvelle candidature"
+        },
+        "suspended": {
+          "title": "Ton profil enseignant est suspendu",
+          "body": "Ton profil enseignant est actuellement suspendu. Contacte le support si tu penses que c'est une erreur."
+        }
+      }
     }
   },
   "checkout": {
@@ -472,6 +558,7 @@
   "kont": {
     "title": "Mon compte",
     "loading": "Chargement de tes informations…",
+    "teachEntry": "Devenir enseignant",
     "tabs": {
       "profile": "Profil",
       "security": "Sécurité",
