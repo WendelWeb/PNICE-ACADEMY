@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
@@ -21,7 +21,7 @@ import {
   moveLessonAction,
   validateBunnyVideoAction,
 } from '@/lib/admin/content-actions';
-import type { ContentLesson } from '@/lib/admin/content/store';
+import type { AdminLesson } from '@/lib/courses/write';
 import { inputCls } from './fields';
 
 function secToMmss(s: number): string {
@@ -33,7 +33,7 @@ function mmssToSec(v: string): number {
   return v.includes(':') ? m * 60 + (s || 0) : (Number(v) || 0);
 }
 
-export function LessonsManager({ slug, lessons, isDraft }: { slug: string; lessons: ContentLesson[]; isDraft: boolean }) {
+export function LessonsManager({ slug, lessons, isDraft }: { slug: string; lessons: AdminLesson[]; isDraft: boolean }) {
   const t = useTranslations('admin.cms.lessons');
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -72,7 +72,7 @@ function LessonRow({
   onAct,
 }: {
   slug: string;
-  lesson: ContentLesson;
+  lesson: AdminLesson;
   index: number;
   total: number;
   isDraft: boolean;
@@ -89,7 +89,7 @@ function LessonRow({
   const noVideo = !lesson.bunnyVideoId;
   const iconBtn = 'grid h-6 w-6 place-items-center rounded border border-ink/15 text-ink/55 hover:bg-ink/[0.04] disabled:opacity-30';
 
-  const commit = (patch: Partial<ContentLesson>) => onAct(() => updateLessonAction(slug, lesson.id, patch));
+  const commit = (patch: Partial<AdminLesson>) => onAct(() => updateLessonAction(slug, lesson.id, patch));
 
   return (
     <li className={cn('rounded-lg border bg-paper p-2.5', noVideo && !isDraft ? 'border-stampred/40' : 'border-ink/10')}>

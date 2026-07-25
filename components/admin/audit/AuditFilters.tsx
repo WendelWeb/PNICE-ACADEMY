@@ -11,6 +11,8 @@ const ACTIONS = [
   'refund_payment', 'resend_verification', 'resend_receipt', 'set_fx_rate', 'dunning_reminder', 'engagement_reminder',
   'revoke_certificate', 'reissue_certificate', 'issue_certificate', 'review_request', 'announcement',
   'invite_admin', 'change_admin_role', 'suspend_admin', 'reactivate_admin', 'toggle_provider', 'set_sub_price', 'toggle_maintenance', 'impersonate',
+  'create_course', 'update_course', 'update_course_images', 'submit_course_review', 'publish_course', 'unpublish_course',
+  'delete_course', 'add_lesson', 'update_lesson', 'delete_lesson', 'reorder_lesson',
 ];
 const fieldCls = 'rounded-lg border border-ink/15 bg-paper-light px-2.5 py-1.5 font-mono text-xs text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ochre';
 

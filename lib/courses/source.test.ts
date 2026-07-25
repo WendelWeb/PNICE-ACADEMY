@@ -35,6 +35,8 @@ describe('mapDbCourseToCourse — DB row → Course shape', () => {
     audienceFr: 'Audience française',
     learnHt: ['Aprann A', 'Aprann B'],
     learnFr: ['Apprendre A', 'Apprendre B'],
+    levelHt: null,
+    levelFr: null,
     promiseHt: null,
     promiseFr: null,
     problemHt: null,
@@ -65,6 +67,8 @@ describe('mapDbCourseToCourse — DB row → Course shape', () => {
       index: 2,
       titleHt: 'Leson 2 kreyòl',
       titleFr: 'Leçon 2 français',
+      descHt: null,
+      descFr: null,
       bunnyVideoId: null,
       durationSeconds: null,
       isPreview: false,
@@ -77,6 +81,8 @@ describe('mapDbCourseToCourse — DB row → Course shape', () => {
       index: 1,
       titleHt: 'Leson 1 kreyòl',
       titleFr: 'Leçon 1 français',
+      descHt: null,
+      descFr: null,
       bunnyVideoId: 'bunny-abc123',
       durationSeconds: 300,
       isPreview: true,
@@ -90,6 +96,8 @@ describe('mapDbCourseToCourse — DB row → Course shape', () => {
       index: 1,
       titleHt: 'Lòt leson',
       titleFr: 'Autre leçon',
+      descHt: null,
+      descFr: null,
       bunnyVideoId: null,
       durationSeconds: null,
       isPreview: true,
@@ -172,6 +180,8 @@ describe('mapDbCourseToDetail — DB row → CourseDetail shape', () => {
     audienceFr: 'Audience',
     learnHt: ['A'],
     learnFr: ['B'],
+    levelHt: 'Nivo DB',
+    levelFr: 'Niveau DB',
     promiseHt: 'Pwomès DB',
     promiseFr: 'Promesse DB',
     problemHt: 'Pwoblèm DB',
@@ -202,6 +212,8 @@ describe('mapDbCourseToDetail — DB row → CourseDetail shape', () => {
       index: 1,
       titleHt: 'Leson 1',
       titleFr: 'Leçon 1',
+      descHt: 'Deskripsyon DB 1',
+      descFr: 'Description DB 1',
       bunnyVideoId: null,
       durationSeconds: 600,
       isPreview: true,
@@ -214,6 +226,8 @@ describe('mapDbCourseToDetail — DB row → CourseDetail shape', () => {
       index: 2,
       titleHt: 'Leson 2',
       titleFr: 'Leçon 2',
+      descHt: null, // no desc on the DB row — falls back to the static entry
+      descFr: null,
       bunnyVideoId: null,
       durationSeconds: null, // no duration on the DB row — falls back to static minutes
       isPreview: false,
@@ -234,8 +248,18 @@ describe('mapDbCourseToDetail — DB row → CourseDetail shape', () => {
     ]);
   });
 
-  it('falls back to the static entry (by code) for level_ht/fr and lesson descriptions — no DB column exists', () => {
+  it('prefers DB columns for level_ht/fr and lesson descriptions when set (Task C2-T4)', () => {
     const detail = mapDbCourseToDetail(fakeCourseRow, fakeLessonRows);
+    expect(detail.level_ht).toBe('Nivo DB');
+    expect(detail.level_fr).toBe('Niveau DB');
+    expect(detail.lessonDetails[0].desc_ht).toBe('Deskripsyon DB 1');
+    expect(detail.lessonDetails[0].desc_fr).toBe('Description DB 1');
+  });
+
+  it('falls back to the static entry (by code) for level_ht/fr and lesson descriptions when the DB column is null', () => {
+    const nullLevelRow = { ...fakeCourseRow, levelHt: null, levelFr: null };
+    const lessonsWithNullDesc = fakeLessonRows.map((l) => ({ ...l, descHt: null, descFr: null }));
+    const detail = mapDbCourseToDetail(nullLevelRow, lessonsWithNullDesc);
     const staticDetail = staticCourseDetails['PA-01'];
     expect(detail.level_ht).toBe(staticDetail.level_ht);
     expect(detail.level_fr).toBe(staticDetail.level_fr);
@@ -251,7 +275,7 @@ describe('mapDbCourseToDetail — DB row → CourseDetail shape', () => {
 
   it('degrades to safe empty defaults when there is no matching static entry (brand-new course, no code)', () => {
     const detail = mapDbCourseToDetail(
-      { ...fakeCourseRow, code: null, promiseHt: null, faqHt: null, faqFr: null },
+      { ...fakeCourseRow, code: null, levelHt: null, levelFr: null, promiseHt: null, faqHt: null, faqFr: null },
       [],
     );
     expect(detail.level_ht).toBe('');

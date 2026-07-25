@@ -41,10 +41,13 @@
  *     minutes — an improvement over the mock, not a gap. 0 on a lesson with
  *     no progress rows yet.
  *  5. `published` is always `true`, exactly like the mock's hardcoded
- *     `courseStats[].published = true` — the 9 courses in data/courses.ts are
- *     always "live"; draft/published is a separate CMS-only concept
- *     (lib/admin/content/store.ts, merged in by the /admin/cours PAGE, not by
- *     this data method) and is intentionally not modeled here.
+ *     `courseStats[].published = true` — this method still reads the STATIC
+ *     data/courses.ts catalog (not the DB `courses` table lib/courses/
+ *     write.ts now writes, Task C2-T4), so it has no real status to report;
+ *     the real draft/published status is merged in separately by the
+ *     /admin/cours PAGE (lib/courses/write.ts's `getAdminCourses`). Converting
+ *     this file's own course lookups to lib/courses/source.ts is flagged as a
+ *     C2-T5 follow-up, same as lib/payments/{fulfill,products}.ts.
  *  6. Every division is guarded exactly like the mock: 0 enrolled ⇒
  *     completionRatePct 0 (never NaN); 0 opened ⇒ dropPct 0; no progress rows
  *     at a lesson index ⇒ avgWatchMinutes 0. A near-empty DB returns the same

@@ -43,6 +43,13 @@
       "when": 1784920446059,
       "tag": "0005_sudden_viper",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784924802793,
+      "tag": "0006_brainy_slipstream",
+      "breakpoints": true
     }
   ]
 }

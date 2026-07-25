@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { IconArrowLeft } from '@tabler/icons-react';
 import { hasCap } from '@/lib/admin/guard';
-import { getCourse, listCourses } from '@/lib/admin/content/ops';
+import { getAdminCourse, getAdminCourses } from '@/lib/courses/write';
 import { getCourseSales } from '@/lib/admin/data';
 import { Link } from '@/i18n/routing';
 import { Forbidden } from '@/components/admin/Forbidden';
@@ -22,12 +22,12 @@ export default async function EditCoursePage({
   if (!(await hasCap('courses.edit'))) return <Forbidden />;
   const t = await getTranslations('admin.cms');
 
-  const course = getCourse(slug);
+  const course = await getAdminCourse(slug);
   if (!course) notFound();
 
-  const sales = await getCourseSales();
+  const [sales, allCourses] = await Promise.all([getCourseSales(), getAdminCourses()]);
   const salesCount = sales.find((s) => s.slug === slug)?.enrollments ?? 0;
-  const others = listCourses().filter((c) => c.slug !== slug);
+  const others = allCourses.filter((c) => c.slug !== slug);
   const priciest = others.length
     ? others.reduce((a, b) => (b.priceCents > a.priceCents ? b : a))
     : null;

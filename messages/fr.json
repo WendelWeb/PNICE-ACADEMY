@@ -1437,11 +1437,9 @@
         "icon": "Icône",
         "title": "Titre",
         "tagline": "Accroche",
-        "desc": "Description",
         "audience": "Public",
         "learn": "Tu sauras faire",
         "price": "Prix",
-        "order": "Ordre",
         "impact": "Impact prix",
         "impactRevenue": "Revenu projeté : {count} ventes → {revenue}",
         "impactWarn": "Ce prix dépasse {code}, la formation la plus chère — sûr ?",
@@ -1917,7 +1915,18 @@
         "update_template": "Template modifié",
         "delete_template": "Template supprimé",
         "replay_webhook": "Webhook rejoué",
-        "set_digest": "Récapitulatif quotidien modifié"
+        "set_digest": "Récapitulatif quotidien modifié",
+        "create_course": "Formation créée",
+        "update_course": "Formation modifiée",
+        "update_course_images": "Images de la formation modifiées",
+        "submit_course_review": "Formation soumise pour révision",
+        "publish_course": "Formation publiée",
+        "unpublish_course": "Formation dépubliée",
+        "delete_course": "Formation supprimée",
+        "add_lesson": "Leçon ajoutée",
+        "update_lesson": "Leçon modifiée",
+        "delete_lesson": "Leçon supprimée",
+        "reorder_lesson": "Leçon réordonnée"
       }
     },
     "platform": {

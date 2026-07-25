@@ -1437,11 +1437,9 @@
         "icon": "Ikòn",
         "title": "Tit",
         "tagline": "Akwòch",
-        "desc": "Deskripsyon",
         "audience": "Piblik",
         "learn": "W ap konn fè",
         "price": "Pri",
-        "order": "Lòd",
         "impact": "Enpak pri",
         "impactRevenue": "Revni pwojte : {count} vant → {revenue}",
         "impactWarn": "Pri sa a depase {code}, kou ki pi chè a — ou sèten ?",
@@ -1917,7 +1915,18 @@
         "update_template": "Modèl modifye",
         "delete_template": "Modèl efase",
         "replay_webhook": "Webhook rejwe",
-        "set_digest": "Rezime chak jou modifye"
+        "set_digest": "Rezime chak jou modifye",
+        "create_course": "Fòmasyon kreye",
+        "update_course": "Fòmasyon modifye",
+        "update_course_images": "Imaj fòmasyon modifye",
+        "submit_course_review": "Fòmasyon soumèt pou revizyon",
+        "publish_course": "Fòmasyon pibliye",
+        "unpublish_course": "Fòmasyon depibliye",
+        "delete_course": "Fòmasyon efase",
+        "add_lesson": "Leson ajoute",
+        "update_lesson": "Leson modifye",
+        "delete_lesson": "Leson efase",
+        "reorder_lesson": "Leson reòdone"
       }
     },
     "platform": {

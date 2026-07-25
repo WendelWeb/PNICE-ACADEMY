@@ -473,6 +473,13 @@ export const courses = pgTable('courses', {
   learnHt: jsonb('learn_ht').$type<string[]>(),
   learnFr: jsonb('learn_fr').$type<string[]>(),
   // Sales-page content (data/courseDetails.ts CourseDetail, keyed by `code` today).
+  // levelHt/Fr close the C2-T3 schema gap (see lib/courses/source.ts's
+  // mapDbCourseToDetail header): CourseDetail.level_ht/fr had no column until
+  // Task C2-T4 — teacher-authored courses (C3) with no static counterpart
+  // couldn't carry a level otherwise. Nullable; falls back to the static
+  // data/courseDetails.ts entry (by `code`) when null.
+  levelHt: text('level_ht'),
+  levelFr: text('level_fr'),
   promiseHt: text('promise_ht'),
   promiseFr: text('promise_fr'),
   problemHt: text('problem_ht'),
@@ -486,7 +493,10 @@ export const courses = pgTable('courses', {
   faqFr: jsonb('faq_fr').$type<{ q: string; a: string }[]>(),
   priceCents: integer('price_cents'),
   currency: text('currency').default('USD').notNull(),
-  images: jsonb('images').$type<{ main?: string; secondary?: string[] }>(),
+  // jsonb is untyped at the DB level — widening `secondary` to carry an `alt`
+  // caption per image (Task C2-T4, needed by ImagesManager's existing alt-text
+  // field) is a TS-only annotation change, no migration required.
+  images: jsonb('images').$type<{ main?: string; secondary?: { url: string; alt: string }[] }>(),
   status: text('status')
     .$type<'draft' | 'pending_review' | 'published' | 'rejected' | 'archived'>()
     .default('draft')
@@ -511,6 +521,12 @@ export const lessons = pgTable(
     index: integer('index').notNull(),
     titleHt: text('title_ht').notNull(),
     titleFr: text('title_fr').notNull(),
+    // Per-lesson description (Task C2-T4, closes the C2-T3 schema gap — see
+    // lib/courses/source.ts's mapDbCourseToDetail header): mirrors
+    // data/courseDetails.ts's LessonDetail.desc_ht/fr, which had no column
+    // until now. Nullable; falls back to the static entry when null.
+    descHt: text('desc_ht'),
+    descFr: text('desc_fr'),
     // Bunny Stream video id (Task L4) — empty/undefined until the owner
     // records + uploads. Mirrors data/courses.ts Lesson.bunnyVideoId.
     bunnyVideoId: text('bunny_video_id'),

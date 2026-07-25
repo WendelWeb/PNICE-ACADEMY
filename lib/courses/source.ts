@@ -37,8 +37,12 @@ const T = schema;
 type DbCourseRow = typeof T.courses.$inferSelect;
 type DbLessonRow = typeof T.lessons.$inferSelect;
 
-/** True only when a DB read is even worth attempting. */
-function dbConfigured(): boolean {
+/**
+ * True only when a DB read is even worth attempting. Exported so
+ * lib/courses/write.ts (Task C2-T4) gates its mutations behind the exact same
+ * check — one source of truth for "is the live DB usable right now".
+ */
+export function dbConfigured(): boolean {
   return Boolean(process.env.DATABASE_URL);
 }
 
@@ -144,18 +148,17 @@ export async function getPublishedCourseBySlug(slug: string): Promise<Course | u
 
 /**
  * Pure DB-row → `CourseDetail` mapper (Task C2-T3), exported for unit
- * testing without a real DB connection. `db/schema.ts`'s `courses` table
- * carries every sales-page field EXCEPT two the original spec's shorthand
- * missed: `level_ht/fr` and the per-lesson `desc_ht/fr` under
- * `lessonDetails` (see that file's C2 header note) — there is no column for
- * either. For those two, and for any sales-page field a row simply hasn't
- * been filled in yet (a brand-new teacher-authored course, future C3), we
- * fall back to the static `data/courseDetails.ts` entry matched by `code` —
- * exactly the content `scripts/seed-courses.ts` wrote in the first place, so
- * a freshly-seeded row round-trips to IDENTICAL content. Lesson minutes come
- * from the real `lessons.duration_seconds` column when present (falling
- * back to the static minutes otherwise); lesson descriptions always come
- * from the static entry (no DB column exists for them at all).
+ * testing without a real DB connection. Every field — INCLUDING
+ * `level_ht/fr` (`courses.level_ht/fr`) and the per-lesson `desc_ht/fr`
+ * (`lessons.desc_ht/fr`), both added in Task C2-T4 to close the schema gap
+ * this comment used to flag — prefers its DB column and falls back to the
+ * static `data/courseDetails.ts` entry matched by `code` only when that
+ * column is null: a brand-new teacher-authored course (future C3) with no
+ * static counterpart gets safe empty defaults instead of a crash, while a
+ * freshly-seeded row (scripts/seed-courses.ts writes every one of these
+ * columns, level/desc included) round-trips to IDENTICAL content. Lesson
+ * `minutes` comes from the real `lessons.duration_seconds` column when
+ * present (falling back to the static minutes otherwise).
  */
 export function mapDbCourseToDetail(row: DbCourseRow, lessonRows: DbLessonRow[]): CourseDetail {
   const staticDetail = row.code ? getStaticCourseDetail(row.code) : undefined;
@@ -169,8 +172,8 @@ export function mapDbCourseToDetail(row: DbCourseRow, lessonRows: DbLessonRow[])
     return {
       minutes:
         l.durationSeconds != null ? Math.round(l.durationSeconds / 60) : staticLd?.minutes ?? 0,
-      desc_ht: staticLd?.desc_ht ?? '',
-      desc_fr: staticLd?.desc_fr ?? '',
+      desc_ht: l.descHt ?? staticLd?.desc_ht ?? '',
+      desc_fr: l.descFr ?? staticLd?.desc_fr ?? '',
     };
   });
 
@@ -187,8 +190,8 @@ export function mapDbCourseToDetail(row: DbCourseRow, lessonRows: DbLessonRow[])
       : staticDetail?.faq ?? [];
 
   return {
-    level_ht: staticDetail?.level_ht ?? '',
-    level_fr: staticDetail?.level_fr ?? '',
+    level_ht: row.levelHt ?? staticDetail?.level_ht ?? '',
+    level_fr: row.levelFr ?? staticDetail?.level_fr ?? '',
     promise_ht: row.promiseHt ?? staticDetail?.promise_ht ?? '',
     promise_fr: row.promiseFr ?? staticDetail?.promise_fr ?? '',
     problem_ht: row.problemHt ?? staticDetail?.problem_ht ?? '',
