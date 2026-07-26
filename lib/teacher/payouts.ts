@@ -26,11 +26,16 @@
  * precondition — a second call on an already paid/rejected row (double-
  * click, a retried server action) resolves to
  * `{ ok: false, message: 'invalid_status' }` rather than double-writing a
- * ledger row or re-processing. This is a business-action guard (unlike
- * fulfill.ts's webhook-redelivery dedup), so a simple status check is
- * sufficient — there is no concurrent-retry-of-the-same-event concern here.
+ * ledger row or re-processing. The pre-check alone is a plain read-then-act
+ * and doesn't stop two concurrent calls from both passing it, so the actual
+ * guard is the UPDATE itself: it's conditioned on `status = 'pending'`
+ * (`WHERE id = ? AND status = 'pending'`) and only proceeds (inserts the
+ * withdrawal ledger row, in markWithdrawalPaid's case) if `.returning()`
+ * came back non-empty — i.e. this call's UPDATE was the one that actually
+ * claimed the row. A second concurrent caller's UPDATE matches zero rows and
+ * gets `{ ok: false, message: 'invalid_status' }` with no side effect.
  */
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db, schema } from '@/db';
 import { dbConfigured } from '@/lib/courses/source';
 import { recordAudit } from '@/lib/admin/data/real/users';
@@ -129,7 +134,11 @@ export async function markWithdrawalPaid(p: { id: string; reference: string; adm
   if (!current) return { ok: false, message: 'not_found' };
   if (current.status !== 'pending') return { ok: false, message: 'invalid_status' };
 
-  await db
+  // Atomic claim: the UPDATE itself is conditioned on status = 'pending', so
+  // two concurrent admin calls can't both pass the pre-check above and then
+  // both proceed to insert a ledger row — only whichever call's UPDATE
+  // actually flips the row (returning a row) gets to record the debit.
+  const claimed = await db
     .update(T.withdrawalRequests)
     .set({
       status: 'paid',
@@ -138,7 +147,9 @@ export async function markWithdrawalPaid(p: { id: string; reference: string; adm
       reference: p.reference,
       updatedAt: new Date(),
     })
-    .where(eq(T.withdrawalRequests.id, p.id));
+    .where(and(eq(T.withdrawalRequests.id, p.id), eq(T.withdrawalRequests.status, 'pending')))
+    .returning({ id: T.withdrawalRequests.id });
+  if (claimed.length === 0) return { ok: false, message: 'invalid_status' };
 
   await db.insert(T.earningsLedger).values({
     teacherUserId: current.teacherUserId,
@@ -171,10 +182,15 @@ export async function rejectWithdrawal(p: { id: string; note: string; admin: Adm
   if (!current) return { ok: false, message: 'not_found' };
   if (current.status !== 'pending') return { ok: false, message: 'invalid_status' };
 
-  await db
+  // Atomic claim, same reasoning as markWithdrawalPaid: only the call whose
+  // conditioned UPDATE actually flips the row proceeds (no side effect here
+  // either way, but this keeps the two mutations from racing each other too).
+  const claimed = await db
     .update(T.withdrawalRequests)
     .set({ status: 'rejected', note: p.note, processedBy: p.admin.id, processedAt: new Date(), updatedAt: new Date() })
-    .where(eq(T.withdrawalRequests.id, p.id));
+    .where(and(eq(T.withdrawalRequests.id, p.id), eq(T.withdrawalRequests.status, 'pending')))
+    .returning({ id: T.withdrawalRequests.id });
+  if (claimed.length === 0) return { ok: false, message: 'invalid_status' };
 
   await recordAudit({ action: 'reject_withdrawal', userId: current.teacherUserId, admin: p.admin, reason: p.note });
   return { ok: true };
