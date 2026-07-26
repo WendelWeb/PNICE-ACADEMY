@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { useTranslations } from 'next-intl';
+import { IconArrowRight } from '@tabler/icons-react';
+import { Link } from '@/i18n/routing';
 import { Sceau } from '@/components/ui/Sceau';
 import { cn } from '@/lib/cn';
 import { ProfileTab } from './ProfileTab';
@@ -109,6 +111,20 @@ export function AccountSettings() {
               {t(`tabs.${tab}`)}
             </button>
           ))}
+
+          {/* Not a tab (no content pane here) — a real navigation link to
+              /enseigner (Task C3-T2), visually distinguished with a divider
+              and an ochre arrow so it reads as "leaves this panel". */}
+          <Link
+            href="/enseigner"
+            className="group ml-1 flex shrink-0 items-center gap-2 whitespace-nowrap rounded-t-md border-b-2 border-transparent px-3.5 py-2.5 text-left text-sm text-ink/65 transition-colors hover:bg-ink/[0.05] hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ochre lg:mt-2 lg:-ml-px lg:rounded-l-none lg:rounded-r-md lg:border-b-0 lg:border-l-2 lg:border-l-ink/10 lg:py-2"
+          >
+            <IconArrowRight
+              size={13}
+              className="shrink-0 text-ochre transition-transform group-hover:translate-x-0.5"
+            />
+            {t('teachEntry')}
+          </Link>
         </nav>
 
         <div className="min-w-0">

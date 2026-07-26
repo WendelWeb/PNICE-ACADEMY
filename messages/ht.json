@@ -30,8 +30,7 @@
       },
       "teach": {
         "title": "Anseye",
-        "badge": "Byento",
-        "teaser": "Ou metrize yon konesans? Byento w ap ka anseye l isit la."
+        "teaser": "Ou metrize yon konesans? Vin anseye l sou platfòm nan."
       },
       "help": {
         "title": "Èd",
@@ -100,16 +99,14 @@
       ]
     },
     "teachTeaser": {
-      "eyebrow": "Byento sou PNICE Academy",
-      "title": "Ou metrize yon konesans? Byento w ap ka anseye l isit la.",
-      "body": "Nenpòt moun ki gen yon konpetans ap ka kreye pwòp fòmasyon pa yo sou platfòm nan. Ou fikse pri w, ou touche 70% chak vant, epi lajan an rive dirèk nan MonCash ou.",
+      "eyebrow": "Sou PNICE Academy",
+      "title": "Ou metrize yon konesans? Ou ka anseye l isit la.",
+      "body": "Nenpòt moun ki gen yon konpetans ka kreye pwòp fòmasyon pa yo sou platfòm nan. Ou fikse pri w, ou touche 70% chak vant, epi lajan an rive dirèk nan MonCash ou.",
       "facts": ["Fikse pri w", "70% pou ou", "Peye an MonCash"],
       "ctaLearnMore": "Aprann plis",
-      "interestCta": "Mwen enterese",
-      "interestSuccess": "Nou resevwa enterè w — n ap kontakte w",
-      "interestError": "Nou pa t ka anrejistre demand ou an. Eseye ankò.",
+      "interestCta": "Vin Anseyan",
       "sealTop": "Anseyan",
-      "sealBottom": "Byento"
+      "sealBottom": "Louvri"
     },
     "manifest": {
       "eyebrow": "Manifès la",
@@ -236,6 +233,8 @@
       "searchLabel": "Chèche nan katalòg la",
       "searchPlaceholder": "Chèche yon fòmasyon...",
       "categoryLabel": "Filtre pa kategori",
+      "teacherLabel": "Filtre pa anseyan",
+      "teacherAll": "Tout anseyan yo",
       "sortLabel": "Triye pa",
       "sort": {
         "priceAsc": "Pri ↑",
@@ -296,6 +295,7 @@
     "since": "Anseyan depi {year}",
     "noteLabel": "Nòt",
     "noteEmpty": "poko gen avi",
+    "noteCount": "{count, plural, one {1 avi} other {# avi}}",
     "sealTop": "Anseyan",
     "photoAlt": "{name} — anseyan sou PNICE Academy",
     "stats": {
@@ -327,13 +327,44 @@
       "teachLink": "Ou metrize yon konesans tou? Vin anseyan"
     }
   },
+  "reviews": {
+    "title": "Avi",
+    "empty": "Poko gen avi pou fòmasyon sa a.",
+    "countLabel": "{count, plural, one {1 avi} other {# avi}}",
+    "reviewerFallback": "Yon elèv",
+    "widget": {
+      "rateTitle": "Bay nòt ou",
+      "editTitle": "Modifye nòt ou",
+      "commentPlaceholder": "Ekri kòmantè ou (opsyonèl)…",
+      "submit": "Voye",
+      "update": "Mete ajou",
+      "notEnrolledNote": "Achte fòmasyon sa a pou w ka bay nòt ou.",
+      "submitted": "Mèsi! Nòt ou anrejistre.",
+      "errors": {
+        "unauthorized": "Konekte pou w bay yon nòt.",
+        "not_enrolled": "Ou dwe achte fòmasyon sa a anvan.",
+        "invalid_stars": "Chwazi yon nòt ant 1 ak 5 zetwal.",
+        "comment_too_long": "Kòmantè a twò long.",
+        "db_required": "Sèvis la pa disponib kounye a.",
+        "review_removed": "Nòt ou te retire.",
+        "error": "Gen yon erè ki fèt. Eseye ankò."
+      },
+      "reviewRemoved": "Nòt ou te retire"
+    },
+    "report": {
+      "action": "Siyale",
+      "confirm": "Konfime siyalman an?",
+      "done": "Mèsi, nou resevwa siyalman ou.",
+      "error": "Gen yon erè ki fèt."
+    }
+  },
   "teach": {
     "metaTitle": "Anseye sou PNICE Academy",
-    "metaDescription": "Ou metrize yon konesans? Kreye fòmasyon pa w sou PNICE Academy, fikse pri w epi touche 70% sou chak vant, peye an MonCash. Kite enterè w — kandidati yo ap louvri byento.",
+    "metaDescription": "Ou metrize yon konesans? Kreye fòmasyon pa w sou PNICE Academy, fikse pri w epi touche 70% sou chak vant, peye an MonCash. Soumèt kandidati w kounye a.",
     "eyebrow": "Vin anseyan",
-    "soonBadge": "Byento",
+    "openBadge": "Kandidati louvri",
     "title": "Ou metrize yon konesans? Anseye l.",
-    "subtitle": "Kreye fòmasyon pa w sou PNICE Academy. Ou fikse pri w, ou touche 70% sou chak vant, elèv yo peye an MonCash. Kandidati yo ap louvri byento — kite enterè w depi jodi a.",
+    "subtitle": "Kreye fòmasyon pa w sou PNICE Academy. Ou fikse pri w, ou touche 70% sou chak vant, elèv yo peye an MonCash. Kandidati yo louvri kounye a — soumèt pa w pi ba a.",
     "exampleCta": "Gade yon egzanp paj anseyan",
     "facts": ["70% pou ou", "Fikse pri w", "Retrè MonCash"],
     "stepsEyebrow": "Wout anseyan an",
@@ -341,7 +372,7 @@
     "steps": [
       {
         "title": "Kandidati",
-        "body": "Ou fè demand ou ak menm kont ou genyen an: non w, sa w vle anseye, yon ti prezantasyon. 10 minit sifi."
+        "body": "Ou fè demand ou ak menm kont ou genyen an: non w, sa w vle anseye, yon ti prezantasyon. 5 minit sifi."
       },
       {
         "title": "Apwobasyon",
@@ -364,8 +395,8 @@
         "a": "Menm kont lan. Ou pa bezwen kreye yon dezyèm kont: ou fè kandidati w ak kont ou genyen an, epi lè nou apwouve w, kont ou an vin gen yon espas anseyan — anplis espas elèv la."
       },
       {
-        "q": "Kilè kandidati yo ap louvri?",
-        "a": "Byento. N ap fini bati zouti anseyan yo kounye a. Kite enterè w jodi a — n ap kontakte w pèsonèlman depi kandidati yo louvri."
+        "q": "Kijan pou m kòmanse kandidati mwen?",
+        "a": "Kandidati yo louvri kounye a. Klike sou 'Kòmanse kandidati mwen' pi ba a, ranpli pwofil ou, chwazi kijan ou vle resevwa lajan w, epi aksepte kondisyon yo. Sa pran anviwon 5 minit."
       },
       {
         "q": "Konbyen m ap touche?",
@@ -381,9 +412,213 @@
       }
     ],
     "final": {
-      "badge": "Byento",
-      "title": "Kandidati yo ap louvri byento",
-      "body": "Kite enterè w depi kounye a — n ap kontakte w anvan tout moun lè pòt yo louvri. Sa pa angaje w nan anyen."
+      "title": "Pare pou kòmanse kandidati w?",
+      "body": "Kreye yon kont gratis pou soumèt pwofil ou. Nou revize chak kandidati anvan nou reponn ou."
+    },
+    "apply": {
+      "startTitle": "Kòmanse kandidati w",
+      "startBody": "Sa pran anviwon 5 minit: pwofil ou, kijan ou vle resevwa lajan w, epi kondisyon yo.",
+      "startCta": "Kòmanse kandidati mwen",
+      "viewStatusCta": "Wè estati kandidati w",
+      "signedOutTitle": "Kreye yon kont pou kòmanse",
+      "signedOutBody": "Ou bezwen yon kont pou soumèt kandidati w. Se menm kont ou pral itilize pou aprann OSWA pou anseye.",
+      "signedOutCta": "Kreye kont mwen",
+      "stepOf": "Etap {step} sou {total}",
+      "steps": {
+        "profile": "Pwofil",
+        "payout": "Peman",
+        "terms": "Kondisyon"
+      },
+      "profile": {
+        "title": "Pwofil anseyan w",
+        "displayName": "Non ou ap parèt piblikman",
+        "displayNamePlaceholder": "Egzanp: Jan Pyè",
+        "bioHt": "Byografi (kreyòl)",
+        "bioHtPlaceholder": "Rakonte kisa ou metrize epi kijan ou ka ede elèv yo…",
+        "bioFr": "Biographie (français)",
+        "bioFrPlaceholder": "Racontez ce que vous maîtrisez et comment vous pouvez aider les élèves…",
+        "bioHelp": "Omwen {min} karaktè.",
+        "photoUrl": "Foto pwofil (lyen, opsyonèl)",
+        "photoUrlPlaceholder": "https://…",
+        "errorDisplayName": "Antre non ou.",
+        "errorBioHt": "Ekri omwen {min} karaktè an kreyòl.",
+        "errorBioFr": "Ekri omwen {min} karaktè an franse.",
+        "errorBioHtTooLong": "Byografi kreyòl dwe pase 2000 karaktè.",
+        "errorBioFrTooLong": "Biographie frèn dwe pase 2000 karaktè.",
+        "errorPhotoUrlInvalid": "Foto URL dwe kòmanse ak http:// oswa https://."
+      },
+      "payout": {
+        "title": "Kijan ou vle resevwa lajan w",
+        "method": "Mwayen peman",
+        "methods": {
+          "moncash": "MonCash",
+          "natcash": "NatCash",
+          "paypal": "PayPal",
+          "bank": "Kont bank"
+        },
+        "destination": "Detay kont ou",
+        "hints": {
+          "moncash": "Nimewo MonCash ou (egzanp: 3712 3456).",
+          "natcash": "Nimewo NatCash ou.",
+          "paypal": "Imèl kont PayPal ou.",
+          "bank": "Non bank lan ak nimewo kont ou."
+        },
+        "errorDestination": "Antre kote ou vle resevwa lajan w.",
+        "errorDestinationTooLong": "Detay kont ou dwe pase 200 karaktè."
+      },
+      "terms": {
+        "title": "Kondisyon yo",
+        "summary": [
+          "Ou touche 70% sou chak vant — 30% ale nan platfòm nan.",
+          "Nou revize chak kou anvan li pibliye pou kenbe kalite platfòm nan.",
+          "Retrè yo fèt sou demand, apati $25, nan mwayen peman ou chwazi a."
+        ],
+        "checkbox": "Mwen li epi mwen aksepte kondisyon yo.",
+        "errorTerms": "Ou dwe aksepte kondisyon yo pou kontinye."
+      },
+      "back": "Retounen",
+      "next": "Kontinye",
+      "submit": "Voye kandidati mwen",
+      "submitting": "N ap voye…",
+      "successTitle": "Kandidati resevwa",
+      "sealLabel": "Resevwa",
+      "successBody": "Nou resevwa kandidati w. Ekip nou an ap revize l epi n ap kontakte w — an kreyòl oswa an franse.",
+      "errorGeneric": "Yon erè rive. Tanpri eseye ankò.",
+      "errorDbRequired": "Sistèm kandidati a poko aktif. Tanpri eseye pita.",
+      "errorAlreadyActive": "Ou gen yon pwofil anseyan aktif deja.",
+      "status": {
+        "pending": {
+          "title": "N ap revize kandidati w",
+          "body": "Ekip nou an ap gade kandidati w pou kenbe bon nivo platfòm nan. Nou reponn ou vit — an kreyòl oswa an franse."
+        },
+        "approved": {
+          "title": "Kandidati w apwouve",
+          "body": "Byenveni kòm anseyan sou PNICE Academy. Estidyo w ap tann ou — kreye premye fòmasyon w kounye a.",
+          "studioCta": "Antre nan estidyo mwen"
+        },
+        "rejected": {
+          "title": "Kandidati w pa t apwouve",
+          "body": "Men nòt ekip nou an. Ou ka korije epi soumèt yon nouvo kandidati.",
+          "noteLabel": "Nòt ekip la",
+          "reapplyCta": "Soumèt yon nouvo kandidati"
+        },
+        "suspended": {
+          "title": "Pwofil anseyan w sispann",
+          "body": "Pwofil anseyan w sispann kounye a. Kontakte sipò si ou panse sa se yon erè."
+        }
+      }
+    },
+    "studio": {
+      "eyebrow": "Estidyo w",
+      "greeting": "Byenveni nan estidyo w",
+      "greetingNamed": "Byenveni, {name}",
+      "untitled": "(san tit)",
+      "backToStudio": "Tounen nan estidyo",
+      "myCourses": "Fòmasyon mwen yo",
+      "newCourse": "Nouvo fòmasyon",
+      "emptyCourses": "Ou poko gen okenn fòmasyon. Kreye premye a.",
+      "editCta": "Modifye",
+      "submitCta": "Soumèt pou revizyon",
+      "unpublishCta": "Retire nan piblik",
+      "viewPublic": "Wè paj piblik la",
+      "needLessons": "Ajoute omwen yon leson anvan ou soumèt.",
+      "submittedAt": "Soumèt {date}",
+      "reviewNoteLabel": "Nòt ekip la",
+      "pendingReviewNote": "Ekip nou an ap revize l kounye a.",
+      "col": {
+        "price": "Pri",
+        "sales": "Vant",
+        "revenue": "Revni"
+      },
+      "status": {
+        "draft": "Bwouyon",
+        "pending_review": "N ap revize",
+        "published": "Pibliye",
+        "rejected": "Rejte",
+        "archived": "Achive"
+      },
+      "error": {
+        "invalid_status": "Aksyon sa a pa posib nan eta kou a kounye a.",
+        "not_found": "Fòmasyon pa jwenn.",
+        "forbidden": "Aksyon pa otorize.",
+        "db_required": "Sistèm nan poko aktif. Tanpri eseye pita.",
+        "generic": "Yon erè rive."
+      },
+      "balance": {
+        "title": "Balans ou",
+        "threshold": "Retrè minimòm : {amount}",
+        "quota": "Kota videyo : {minutes} min",
+        "pendingNote": "Yon demand retrè ap tann ({amount}).",
+        "requestCta": "Mande yon retrè",
+        "submit": "Voye demand lan",
+        "cancel": "Anile",
+        "success": "Demand retrè w voye. L ap trete talè.",
+        "error": {
+          "below_threshold": "Kantite a pi piti pase minimòm retrè a.",
+          "insufficient_balance": "Kantite a depase balans ou genyen.",
+          "pending_exists": "Ou gen yon demand retrè k ap tann deja.",
+          "no_payout_method": "Pa gen mwayen peman anrejistre sou pwofil ou.",
+          "invalid_amount": "Antre yon kantite ki valab.",
+          "forbidden": "Aksyon pa otorize.",
+          "db_required": "Sistèm nan poko aktif. Tanpri eseye pita.",
+          "generic": "Yon erè rive."
+        }
+      },
+      "payout": {
+        "title": "Mwayen peman ou",
+        "method": "Mwayen peman",
+        "methods": {
+          "moncash": "MonCash",
+          "natcash": "NatCash",
+          "paypal": "PayPal",
+          "bank": "Kont bank"
+        },
+        "destination": "Detay kont ou",
+        "hints": {
+          "moncash": "Nimewo MonCash ou (egzanp: 3712 3456).",
+          "natcash": "Nimewo NatCash ou.",
+          "paypal": "Imèl kont PayPal ou.",
+          "bank": "Non bank lan ak nimewo kont ou."
+        },
+        "current": "Kounye a : {method} — {destination}",
+        "notSet": "Pa gen mwayen peman anrejistre — ajoute yonn anvan ou mande yon retrè.",
+        "editCta": "Modifye",
+        "save": "Anrejistre",
+        "cancel": "Anile",
+        "success": "Mwayen peman mete ajou.",
+        "errorDestination": "Antre kote ou vle resevwa lajan w.",
+        "errorDestinationTooLong": "Detay kont ou dwe pase 200 karaktè.",
+        "error": {
+          "payout_method_invalid": "Mwayen peman envalid.",
+          "payout_destination_required": "Antre kote ou vle resevwa lajan w.",
+          "payout_destination_too_long": "Detay kont ou dwe pase 200 karaktè.",
+          "forbidden": "Aksyon pa otorize.",
+          "db_required": "Sistèm nan poko aktif. Tanpri eseye pita.",
+          "generic": "Yon erè rive."
+        }
+      },
+      "ledger": {
+        "title": "Dènye antre yo",
+        "empty": "Poko gen antre.",
+        "kind": {
+          "sale": "Vant",
+          "refund": "Ranbousman",
+          "withdrawal": "Retrè",
+          "adjustment": "Ajisteman"
+        }
+      },
+      "create": {
+        "title": "Kreye yon fòmasyon",
+        "back": "Tounen nan estidyo",
+        "help": "Fòmasyon an kreye an bwouyon ; w ap konplete rès la nan editè a anvan ou soumèt li.",
+        "titleHt": "Tit (Kreyòl)",
+        "titleFr": "Tit (Franse)",
+        "price": "Pri ($)",
+        "draftNote": "Kreye an bwouyon — se sèl ou ki wè l jiskaske ekip nou an valide l.",
+        "submit": "Kreye an bwouyon",
+        "titleRequired": "Yon tit obligatwa.",
+        "error": "Erè."
+      }
     }
   },
   "checkout": {
@@ -472,6 +707,7 @@
   "kont": {
     "title": "Mon kont",
     "loading": "N ap chaje enfòmasyon ou yo…",
+    "teachEntry": "Vin anseyan",
     "tabs": {
       "profile": "Pwofil",
       "security": "Sekirite",
@@ -782,6 +1018,8 @@
     "nav": {
       "overview": "Apèsi jeneral",
       "users": "Itilizatè",
+      "teachers": "Pwofesè",
+      "payouts": "Retrè",
       "courses": "Fòmasyon",
       "subscriptions": "Abònman",
       "payments": "Peman",
@@ -967,7 +1205,16 @@
         "update_template": "Modèl modifye",
         "delete_template": "Modèl efase",
         "replay_webhook": "Webhook rejwe",
-        "set_digest": "Rezime chak jou modifye"
+        "set_digest": "Rezime chak jou modifye",
+        "approve_teacher": "Pwofil pwofesè apwouve",
+        "reject_teacher": "Pwofil pwofesè rejte",
+        "suspend_teacher": "Pwofil pwofesè sispann",
+        "reactivate_teacher": "Pwofil pwofesè reaktive",
+        "approve_course": "Fòmasyon apwouve",
+        "reject_course": "Fòmasyon rejte",
+        "mark_withdrawal_paid": "Retrè make peye",
+        "reject_withdrawal": "Retrè rejte",
+        "remove_review": "Avi retire"
       },
       "actions": {
         "title": "Aksyon manyèl",
@@ -1041,6 +1288,12 @@
         },
         "roles": {
           "manage": "Jere wòl admin"
+        },
+        "teachers": {
+          "review": "Apwouve pwofesè ak fòmasyon (fil moderasyon)"
+        },
+        "payouts": {
+          "process": "Trete fil retrè pwofesè yo (make peye, rejte)"
         }
       },
       "forbiddenSection": "Ou pa gen aksè nan seksyon sa a."
@@ -1143,6 +1396,100 @@
         "drop": "Chit",
         "avgWatch": "Tan mwayen",
         "biggestDrop": "Pi gwo chit"
+      }
+    },
+    "teachers": {
+      "subtitle": "Kandidati ak pwofil pwofesè — apwouve, rejte, sispann.",
+      "viewTabs": {
+        "teachers": "Pwofesè",
+        "reviews": "Avi siyale"
+      },
+      "tabs": {
+        "pending": "An atant",
+        "approved": "Apwouve",
+        "suspended": "Sispann",
+        "rejected": "Rejte"
+      },
+      "col": {
+        "teacher": "Pwofesè",
+        "bio": "Bio",
+        "payout": "Peman",
+        "appliedAt": "Kandidati",
+        "actions": "Aksyon"
+      },
+      "empty": "Pa gen pwofesè nan fil sa a.",
+      "noBio": "(pa gen bio)",
+      "noPayout": "Pa ranpli",
+      "actions": {
+        "approve": "Apwouve",
+        "reject": "Rejte",
+        "suspend": "Sispann",
+        "reactivate": "Reaktive",
+        "noteHelp": "Rezon an ap anrejistre nan jounal odit la.",
+        "notePlaceholder": "Rezon…",
+        "cancel": "Anile",
+        "confirm": "Konfime",
+        "done": "Fèt.",
+        "error": "Gen yon erè ki fèt."
+      }
+    },
+    "reviews": {
+      "subtitle": "Avi ki pibliye sou tout fòmasyon yo — retire yon avi ki siyale oswa ki pa apwopriye.",
+      "col": {
+        "course": "Fòmasyon",
+        "reviewer": "Elèv",
+        "stars": "Nòt",
+        "comment": "Kòmantè",
+        "status": "Estati",
+        "date": "Dat",
+        "actions": "Aksyon"
+      },
+      "status": {
+        "published": "Pibliye",
+        "removed": "Retire"
+      },
+      "reportedBadge": "Siyale",
+      "noComment": "(pa gen kòmantè)",
+      "empty": "Pa gen avi pou kounye a.",
+      "actions": {
+        "remove": "Retire",
+        "noteHelp": "Rezon an ap anrejistre nan jounal odit la.",
+        "notePlaceholder": "Rezon…",
+        "cancel": "Anile",
+        "confirm": "Konfime",
+        "done": "Fèt.",
+        "error": "Gen yon erè ki fèt."
+      }
+    },
+    "payouts": {
+      "subtitle": "Fil demann retrè pwofesè yo — make peye (+referans) oswa rejte (+nòt).",
+      "tabs": {
+        "pending": "An atant",
+        "paid": "Peye",
+        "rejected": "Rejte"
+      },
+      "col": {
+        "teacher": "Pwofesè",
+        "amount": "Montan",
+        "method": "Metòd",
+        "destination": "Destinasyon",
+        "balance": "Solid",
+        "requestedAt": "Demann",
+        "actions": "Aksyon"
+      },
+      "empty": "Pa gen demann nan fil sa a.",
+      "noMethod": "Pa ranpli",
+      "actions": {
+        "markPaid": "Make peye",
+        "reject": "Rejte",
+        "referenceHelp": "Referans peman an (tranzaksyon MonCash/NatCash/PayPal/vireman) ap anrejistre nan jounal odit la.",
+        "referencePlaceholder": "Referans…",
+        "noteHelp": "Rezon an ap anrejistre nan jounal odit la.",
+        "notePlaceholder": "Rezon…",
+        "cancel": "Anile",
+        "confirm": "Konfime",
+        "done": "Fèt.",
+        "error": "Gen yon erè ki fèt."
       }
     },
     "analytics": {
@@ -1415,6 +1762,20 @@
         "actions": "Aksyon",
         "pendingChanges": "chanjman"
       },
+      "review": {
+        "tabAll": "Tout",
+        "tabPending": "Pou revize",
+        "empty": "Pa gen kou pou revize.",
+        "submittedAt": "Soumèt le",
+        "approve": "Apwouve",
+        "reject": "Rejte",
+        "noteHelp": "Pwofesè a ap wè rezon an; li ap anrejistre nan jounal odit la.",
+        "notePlaceholder": "Rezon rejè a…",
+        "cancel": "Anile",
+        "confirm": "Konfime",
+        "done": "Fèt.",
+        "error": "Gen yon erè ki fèt."
+      },
       "create": {
         "title": "Kreye yon kou",
         "back": "Tounen nan kou yo",
@@ -1444,6 +1805,7 @@
         "impactRevenue": "Revni pwojte : {count} vant → {revenue}",
         "impactWarn": "Pri sa a depase {code}, kou ki pi chè a — ou sèten ?",
         "salesPage": "Paj vant",
+        "level": "Nivo",
         "promise": "Pwomès",
         "problem": "Pwoblèm rezoud",
         "deliverables": "Liv",
@@ -1464,6 +1826,8 @@
         "add": "Ajoute yon leson",
         "titleHt": "Tit (ht)",
         "titleFr": "Tit (fr)",
+        "descHt": "Deskripsyon (ht)",
+        "descFr": "Deskripsyon (fr)",
         "bunnyId": "ID videyo Bunny",
         "validate": "Valide",
         "bunnyOk": "✓ videyo jwenn",
@@ -1485,12 +1849,14 @@
       "publish": {
         "status": {
           "draft": "Bouyon",
-          "published": "Pibliye"
+          "pending_review": "N ap revize",
+          "published": "Pibliye",
+          "rejected": "Rejte",
+          "archived": "Achive"
         },
         "unpublishedChanges": "Chanjman ap tann",
         "preview": "Previzyalize",
         "publish": "Pibliye",
-        "publishChanges": "Pibliye chanjman yo",
         "published": "Pibliye ✓",
         "unpublish": "Depibliye",
         "unpublishWarn": "Kou a disparèt nan katalòg piblik la, men elèv ki deja enskri yo kenbe aksè yo.",
@@ -1500,6 +1866,10 @@
         "confirmDelete": "Efase nèt",
         "hasEnrollments": "{count} elèv enskri — efasman bloke. Depibliye pito.",
         "codeMismatch": "Kòd la pa koresponn.",
+        "invalidStatus": "Aksyon sa a pa posib nan eta kou a kounye a.",
+        "inReview": "L ap tann validasyon yon administratè — ni pwofesè a ni CMS la pa ka pibliye l toutotan revizyon an poko fini.",
+        "rejectedNote": "Kou sa a rejte. Pwofesè a dwe korije l epi soumèt li ankò nan studio l ; li pa ka pibliye dirèkteman.",
+        "reviewNoteLabel": "Nòt ekip la",
         "cancel": "Anile",
         "error": "Erè."
       },
@@ -1926,7 +2296,16 @@
         "add_lesson": "Leson ajoute",
         "update_lesson": "Leson modifye",
         "delete_lesson": "Leson efase",
-        "reorder_lesson": "Leson reòdone"
+        "reorder_lesson": "Leson reòdone",
+        "approve_teacher": "Pwofesè apwouve",
+        "reject_teacher": "Pwofesè rejte",
+        "suspend_teacher": "Pwofesè sispann",
+        "reactivate_teacher": "Pwofesè reaktive",
+        "approve_course": "Fòmasyon apwouve",
+        "reject_course": "Fòmasyon rejte",
+        "mark_withdrawal_paid": "Retrè make peye",
+        "reject_withdrawal": "Retrè rejte",
+        "remove_review": "Avi retire"
       }
     },
     "platform": {

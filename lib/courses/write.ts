@@ -51,6 +51,12 @@ const T = schema;
 type DbCourseRow = typeof T.courses.$inferSelect;
 type DbLessonRow = typeof T.lessons.$inferSelect;
 
+/** The raw DB course status (draft/pending_review/published/rejected/archived)
+ *  — exported for lib/teacher/studio.ts (Task C3-T4), which surfaces every
+ *  status a teacher's own course can be in, unlike `AdminCourseStatus` above
+ *  (narrowed to the binary the pre-C3 CMS UI understood). */
+export type DbCourseStatus = DbCourseRow['status'];
+
 export type CourseWriteResult = { ok: boolean; message?: string; slug?: string; count?: number };
 
 function dbRequired(): CourseWriteResult {
@@ -59,18 +65,24 @@ function dbRequired(): CourseWriteResult {
 
 /* -------------------------------------------------------------------------- */
 /* Admin-facing types (mirror the retired ContentCourse/ContentLesson/…       */
-/* field names so components/admin/content/*.tsx barely change) — DB-status   */
-/* narrowed to the binary the current CMS UI understands; anything other than */
-/* 'published' (pending_review/rejected/archived — none reachable from this    */
-/* CMS today) displays as 'draft'.                                            */
+/* field names so components/admin/content/*.tsx barely change) — `status`    */
+/* now carries the REAL DB status (Task C3 fix: it used to collapse           */
+/* pending_review/rejected/archived down to 'draft', which let PublishBar     */
+/* render a one-click Publish button for a course still awaiting/failing      */
+/* moderation — see `toAdminStatus` below). Identical to `rawStatus`/          */
+/* `DbCourseStatus`; kept as its own alias so admin components can import a   */
+/* name that describes intent without reaching into the DB row type.         */
 /* -------------------------------------------------------------------------- */
 
-export type AdminCourseStatus = 'draft' | 'published';
+export type AdminCourseStatus = DbCourseStatus;
 
 export type AdminLesson = {
   id: string;
   title_ht: string;
   title_fr: string;
+  /** Per-lesson description (Task C3-T4 — wires the C2 gap into the editors). */
+  desc_ht: string;
+  desc_fr: string;
   bunnyVideoId: string;
   durationSeconds: number;
   isPreview: boolean;
@@ -95,6 +107,19 @@ export type AdminCourse = {
   priceCents: number;
   status: AdminCourseStatus;
   hasUnpublishedChanges: boolean;
+  /**
+   * Identical to `status` above (Task C3-T4, mirrors `AdminCourseListRow`'s
+   * fields of the same name) — kept as a separate field since call sites
+   * across the CMS/studio already key off `rawStatus` by name; `status` no
+   * longer collapses anything (see `toAdminStatus`), so the two are always
+   * the same value today.
+   */
+  rawStatus: DbCourseStatus;
+  reviewNote: string | null;
+  submittedAt: string | null;
+  /** Sales-page difficulty level (Task C3-T4 — wires the C2 gap into the editors). */
+  level_ht: string;
+  level_fr: string;
   promise_ht: string;
   promise_fr: string;
   problem_ht: string;
@@ -118,10 +143,29 @@ export type AdminCourseListRow = {
   status: AdminCourseStatus;
   hasUnpublishedChanges: boolean;
   lessonsCount: number;
+  /**
+   * Identical to `status` above (Task C3-T3) — the `/admin/cours`
+   * course-review queue tab keys off `rawStatus` by name to find
+   * 'pending_review' rows and tell them apart from plain drafts/rejections.
+   */
+  rawStatus: DbCourseRow['status'];
+  reviewNote: string | null;
+  submittedAt: string | null;
 };
 
-function toAdminStatus(status: string): AdminCourseStatus {
-  return status === 'published' ? 'published' : 'draft';
+/**
+ * Task C3 fix: this used to collapse every non-'published' status
+ * (pending_review/rejected/archived) down to 'draft' — harmless for the
+ * pre-C3, single-owner CMS (nothing but draft/published ever existed), but
+ * once teacher-submitted courses can sit in pending_review/rejected, it hid
+ * that fact from `PublishBar`, which then rendered a one-click Publish
+ * button for a course still awaiting (or having failed) moderation. Now a
+ * pass-through — kept as a named seam (not inlined at the two call sites)
+ * so a future admin-only status (e.g. a real 'archived' UI state) has one
+ * place to special-case instead of two.
+ */
+export function toAdminStatus(status: DbCourseStatus): AdminCourseStatus {
+  return status;
 }
 
 function mapRowToAdminCourse(row: DbCourseRow, lessonRows: DbLessonRow[]): AdminCourse {
@@ -156,6 +200,11 @@ function mapRowToAdminCourse(row: DbCourseRow, lessonRows: DbLessonRow[]): Admin
     priceCents: row.priceCents ?? 0,
     status: toAdminStatus(row.status),
     hasUnpublishedChanges: row.hasUnpublishedChanges,
+    rawStatus: row.status,
+    reviewNote: row.reviewNote ?? null,
+    submittedAt: row.submittedAt ? row.submittedAt.toISOString() : null,
+    level_ht: row.levelHt ?? '',
+    level_fr: row.levelFr ?? '',
     promise_ht: row.promiseHt ?? '',
     promise_fr: row.promiseFr ?? '',
     problem_ht: row.problemHt ?? '',
@@ -170,6 +219,8 @@ function mapRowToAdminCourse(row: DbCourseRow, lessonRows: DbLessonRow[]): Admin
         id: l.id,
         title_ht: l.titleHt,
         title_fr: l.titleFr,
+        desc_ht: l.descHt ?? '',
+        desc_fr: l.descFr ?? '',
         bunnyVideoId: l.bunnyVideoId ?? '',
         durationSeconds: l.durationSeconds ?? 0,
         isPreview: l.isPreview,
@@ -203,6 +254,9 @@ export async function getAdminCourses(): Promise<AdminCourseListRow[]> {
       status: toAdminStatus(r.status),
       hasUnpublishedChanges: r.hasUnpublishedChanges,
       lessonsCount: lessonCounts.get(r.slug) ?? 0,
+      rawStatus: r.status,
+      reviewNote: r.reviewNote ?? null,
+      submittedAt: r.submittedAt ? r.submittedAt.toISOString() : null,
     }));
   } catch (err) {
     console.error('[courses/write] getAdminCourses DB read failed, gracefully degrading:', err);
@@ -271,8 +325,15 @@ async function resolveOwnerUserId(): Promise<string | null> {
   return null;
 }
 
-/** Public routes affected by a course's content/publish state (both locales). */
-function revalidateCoursePaths(slug: string): void {
+/**
+ * Public routes affected by a course's content/publish state (both locales).
+ * Exported for lib/teacher/studio-actions.ts (Task C3-T4 fix): the studio's
+ * re-review gate (a published course an owning teacher edits drops back to
+ * `pending_review`, see that file) needs to revalidate the same public paths
+ * this module's own status-changing writes do, without duplicating the
+ * locale/path list here.
+ */
+export function revalidateCoursePaths(slug: string): void {
   for (const locale of ['ht', 'fr'] as const) {
     revalidatePath(`/${locale}`);
     revalidatePath(`/${locale}/formations`);
@@ -304,7 +365,19 @@ export type NewCourseInput = {
   priceCents?: number;
 };
 
-export async function createCourse(input: NewCourseInput, actor: AdminActor): Promise<CourseWriteResult> {
+/**
+ * `ownerUserIdOverride`: Task C3-T4's teacher studio creates a course owned
+ * by the SIGNED-IN teacher, not the site owner `resolveOwnerUserId()` would
+ * resolve — pass the teacher's `users.id` explicitly (see
+ * lib/teacher/studio-actions.ts's `createMyCourseAction`). `undefined` (the
+ * admin CMS's call site, unchanged) keeps the original `resolveOwnerUserId()`
+ * behaviour; `null` would deliberately create an ownerless row (unused today).
+ */
+export async function createCourse(
+  input: NewCourseInput,
+  actor: AdminActor,
+  ownerUserIdOverride?: string | null,
+): Promise<CourseWriteResult> {
   if (!dbConfigured()) return dbRequired();
 
   const code = input.code?.trim() || (await getNextCourseCode());
@@ -320,7 +393,7 @@ export async function createCourse(input: NewCourseInput, actor: AdminActor): Pr
     slug = `${slug}-${i}`;
   }
 
-  const ownerUserId = await resolveOwnerUserId();
+  const ownerUserId = ownerUserIdOverride !== undefined ? ownerUserIdOverride : await resolveOwnerUserId();
 
   await db.insert(T.courses).values({
     ownerUserId: ownerUserId ?? null,
@@ -416,16 +489,67 @@ export async function submitForReview(slug: string, actor: AdminActor): Promise<
   return { ok: true };
 }
 
+/**
+ * Task C3 fix: requires `current.status === 'draft'` — this is the
+ * generic, courses.edit-gated CMS path (any editeur-contenu can reach it),
+ * NOT the moderation queue. Before this guard, it could publish a
+ * pending_review/rejected/already-published course directly, completely
+ * bypassing `teachers.review`'s approve/reject step and the studio's
+ * re-review-on-edit gate (`reenterReviewIfWasPublished`) — a teacher's
+ * course pulled back into pending_review for re-review could be pushed
+ * live again by anyone with mere content-edit rights. A pending_review
+ * course must go through `approveCourse` (teachers.review-gated); a
+ * rejected one must be resubmitted (teacher's studio) then approved; an
+ * already-published one has nothing to "publish" — see `unpublishCourse`.
+ */
 export async function publishCourse(slug: string, actor: AdminActor): Promise<CourseWriteResult> {
   if (!dbConfigured()) return dbRequired();
   const [current] = await db.select({ status: T.courses.status }).from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
   if (!current) return { ok: false, message: 'not_found' };
+  if (current.status !== 'draft') return { ok: false, message: 'invalid_status' };
   const now = new Date();
   await db
     .update(T.courses)
     .set({ status: 'published', hasUnpublishedChanges: false, publishedAt: now, updatedAt: now })
     .where(eq(T.courses.slug, slug));
   await recordAudit({ action: 'publish_course', userId: actor.id, admin: actor, detail: slug });
+  revalidateCoursePaths(slug);
+  return { ok: true };
+}
+
+/**
+ * Admin course-review queue (Task C3-T3): approve a `pending_review` course
+ * → 'published' (same public-facing effect as `publishCourse`, plus it
+ * records the reviewing admin — `reviewedBy` — which the direct-publish path
+ * above has no reason to set since the owner publishes their own course
+ * there). Requires `current.status === 'pending_review'`.
+ */
+export async function approveCourse(slug: string, actor: AdminActor): Promise<CourseWriteResult> {
+  if (!dbConfigured()) return dbRequired();
+  const [current] = await db.select({ status: T.courses.status }).from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
+  if (!current) return { ok: false, message: 'not_found' };
+  if (current.status !== 'pending_review') return { ok: false, message: 'invalid_status' };
+  const now = new Date();
+  await db
+    .update(T.courses)
+    .set({ status: 'published', hasUnpublishedChanges: false, publishedAt: now, reviewedBy: actor.id, updatedAt: now })
+    .where(eq(T.courses.slug, slug));
+  await recordAudit({ action: 'approve_course', userId: actor.id, admin: actor, detail: slug });
+  revalidateCoursePaths(slug);
+  return { ok: true };
+}
+
+/** Admin course-review queue (Task C3-T3): reject a submitted course with a required note. Requires `current.status === 'pending_review'`. */
+export async function rejectCourse(slug: string, note: string, actor: AdminActor): Promise<CourseWriteResult> {
+  if (!dbConfigured()) return dbRequired();
+  const [current] = await db.select({ status: T.courses.status }).from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
+  if (!current) return { ok: false, message: 'not_found' };
+  if (current.status !== 'pending_review') return { ok: false, message: 'invalid_status' };
+  await db
+    .update(T.courses)
+    .set({ status: 'rejected', reviewNote: note, reviewedBy: actor.id, updatedAt: new Date() })
+    .where(eq(T.courses.slug, slug));
+  await recordAudit({ action: 'reject_course', userId: actor.id, admin: actor, detail: slug, reason: note });
   revalidateCoursePaths(slug);
   return { ok: true };
 }
@@ -482,6 +606,9 @@ export async function addLesson(slug: string, actor: AdminActor): Promise<Course
 export type LessonPatch = Partial<{
   title_ht: string;
   title_fr: string;
+  /** Per-lesson description (Task C3-T4 — wires the C2 gap into the editors). */
+  desc_ht: string;
+  desc_fr: string;
   bunnyVideoId: string;
   durationSeconds: number;
   isPreview: boolean;
@@ -497,6 +624,8 @@ export async function updateLesson(
   const set: Partial<typeof T.lessons.$inferInsert> = { updatedAt: new Date() };
   if (patch.title_ht !== undefined) set.titleHt = patch.title_ht;
   if (patch.title_fr !== undefined) set.titleFr = patch.title_fr;
+  if (patch.desc_ht !== undefined) set.descHt = patch.desc_ht;
+  if (patch.desc_fr !== undefined) set.descFr = patch.desc_fr;
   if (patch.bunnyVideoId !== undefined) set.bunnyVideoId = patch.bunnyVideoId || null;
   if (patch.durationSeconds !== undefined) set.durationSeconds = patch.durationSeconds;
   if (patch.isPreview !== undefined) set.isPreview = patch.isPreview;

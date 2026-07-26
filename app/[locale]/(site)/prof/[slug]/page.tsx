@@ -12,26 +12,24 @@ import { buttonClasses } from '@/components/ui/Button';
 import { Price, PriceSecondary } from '@/components/ui/Price';
 import { AuthCta } from '@/components/auth/AuthCta';
 import { CourseCatalogCard } from '@/components/courses/CourseCatalogCard';
-import {
-  teachers,
-  getTeacher,
-  teacherCourses,
-  teacherBio,
-  teacherDocNo,
-} from '@/data/teachers';
+import { teachers } from '@/data/teachers';
 import {
   subscription,
   subscriptionPerks_ht,
   subscriptionPerks_fr,
 } from '@/data/pricing';
 import { siteImageSrc } from '@/lib/courseImage';
+import { getPublicTeacher } from '@/lib/teacher/public';
 
+// Known teachers today (data/teachers.ts — teacher #1). See lib/teacher/public.ts
+// for the v1 slug-resolution note: a real teacher_profiles.slug column is the
+// follow-up once a second real teacher exists.
 export function generateStaticParams() {
   return teachers.map((t) => ({ slug: t.slug }));
 }
 
-// The course grid below is DB-backed via teacherCourses() → getPublishedCourses()
-// (Task C2-T3) — revalidate periodically instead of staying purely static.
+// DB-backed via getPublicTeacher() (Task C3-T7, gated + fallback) — revalidate
+// periodically instead of staying purely static.
 export const revalidate = 300;
 
 export async function generateMetadata({
@@ -39,14 +37,14 @@ export async function generateMetadata({
 }: {
   params: { slug: string; locale: string };
 }): Promise<Metadata> {
-  const teacher = getTeacher(slug);
+  const teacher = await getPublicTeacher(slug, locale);
   if (!teacher) return {};
   return {
     // Teacher #1 IS the platform — avoid « PNICE Academy — PNICE Academy ».
     title: teacher.displayName.includes('PNICE Academy')
       ? teacher.displayName
       : `${teacher.displayName} — PNICE Academy`,
-    description: teacherBio(teacher, locale),
+    description: teacher.bio,
   };
 }
 
@@ -55,7 +53,9 @@ export async function generateMetadata({
  * « document d'expéditeur » (marketplace spec C3.5): a printed teacher sheet
  * with a mono registry rail, the personal seal stamped onto it, an honest
  * « Nòt — » cachet until reviews exist, and the stats strip as document
- * data. Static data today (data/teachers.ts); shape-ready for the C3 DB.
+ * data. DB-backed via `getPublicTeacher()` (Task C3-T7): an approved
+ * teacher's live profile/courses/rating; teacher #1 always falls back to
+ * `data/teachers.ts` when no live row exists yet — identical to before C3-T7.
  */
 export default async function ProfPage({
   params: { locale, slug },
@@ -63,18 +63,22 @@ export default async function ProfPage({
   params: { locale: string; slug: string };
 }) {
   setRequestLocale(locale);
-  const teacher = getTeacher(slug);
+  const teacher = await getPublicTeacher(slug, locale);
   if (!teacher) notFound();
 
   const t = await getTranslations('prof');
   const tc = await getTranslations('common');
 
-  const courses = await teacherCourses(teacher);
+  const courses = teacher.courses;
   const lessonCount = courses.reduce((sum, c) => sum + c.lessons.length, 0);
-  const bio = teacherBio(teacher, locale);
+  const bio = teacher.bio;
   const perks = locale === 'ht' ? subscriptionPerks_ht : subscriptionPerks_fr;
-  const photo = siteImageSrc(teacher.imageName);
-  const rating = teacher.rating === null ? '—' : teacher.rating.toFixed(1);
+  // The branded local placeholder — shown whenever there's no validated live
+  // `photo_url` (no profile row, not approved, or an unsafe/malformed URL —
+  // see getPublicTeacher's photoUrl resolution).
+  const placeholderPhoto = siteImageSrc(teacher.imageName);
+  const ratingIsEmpty = teacher.rating.avg === null;
+  const rating = ratingIsEmpty ? '—' : teacher.rating.avg!.toFixed(1);
   // `studentCount` is null until real marketplace sales exist — the ICU
   // plural in `stats.students` expects a number, so a null count is never
   // fed into it; it renders the plain mono `studentsUnknown` string instead.
@@ -102,7 +106,7 @@ export default async function ProfPage({
                 {t('docLabel')} · {t('docBrand')}
               </span>
               <span className="whitespace-nowrap text-[11px] tracking-[0.14em] text-ink/55 md:text-xs">
-                {t('docNo', { docNo: teacherDocNo(teacher) })}
+                {t('docNo', { docNo: teacher.docNo })}
               </span>
             </div>
 
@@ -116,14 +120,28 @@ export default async function ProfPage({
             <div className="flex flex-col gap-6 px-5 py-7 md:flex-row md:items-center md:gap-10 md:px-10 md:py-10">
               <div className="flex items-start justify-between gap-4 md:contents">
                 <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-xl border border-ink/15 bg-ink md:order-1 md:h-36 md:w-36">
-                  <SmartImage
-                    src={photo}
-                    alt={t('photoAlt', { name: teacher.displayName })}
-                    fill
-                    sizes="144px"
-                    className="object-cover"
-                    priority
-                  />
+                  {teacher.photoUrl ? (
+                    // A self-serve teacher's photo_url is an arbitrary external
+                    // host (validated http(s) protocol-only, never a domain
+                    // allowlist next/image would need) — a plain <img>, same
+                    // pattern already used for Clerk avatars (AvatarLink.tsx /
+                    // ProfileTab.tsx), avoids next/image's remote-host config.
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={teacher.photoUrl}
+                      alt={t('photoAlt', { name: teacher.displayName })}
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                  ) : (
+                    <SmartImage
+                      src={placeholderPhoto}
+                      alt={t('photoAlt', { name: teacher.displayName })}
+                      fill
+                      sizes="144px"
+                      className="object-cover"
+                      priority
+                    />
+                  )}
                 </div>
                 <div className="shrink-0 md:order-3 md:self-center">
                   <Stamp rotate={-8}>
@@ -157,9 +175,13 @@ export default async function ProfPage({
                   <span className="font-display text-2xl font-black leading-none text-ink">
                     {rating}
                   </span>
-                  {teacher.rating === null && (
+                  {ratingIsEmpty ? (
                     <span className="font-mono text-[10px] text-ink/45">
                       {t('noteEmpty')}
+                    </span>
+                  ) : (
+                    <span className="font-mono text-[10px] text-ink/45">
+                      {t('noteCount', { count: teacher.rating.count })}
                     </span>
                   )}
                 </p>
@@ -212,7 +234,9 @@ export default async function ProfPage({
         </Container>
       </Section>
 
-      {/* ---------- Subscription offer ---------- */}
+      {/* ---------- Subscription offer (only teachers with an active $79 all-access
+          plan get this block — see getPublicTeacher's hasPlan resolution) ---------- */}
+      {teacher.hasPlan && (
       <Section>
         <Container>
           <Reveal>
@@ -259,6 +283,7 @@ export default async function ProfPage({
           </Reveal>
         </Container>
       </Section>
+      )}
 
       {/* ---------- Final CTA ---------- */}
       <section className="bg-ink py-16 text-center text-paper-light">

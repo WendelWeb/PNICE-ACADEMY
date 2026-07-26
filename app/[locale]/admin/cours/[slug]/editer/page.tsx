@@ -21,6 +21,10 @@ export default async function EditCoursePage({
   setRequestLocale(locale);
   if (!(await hasCap('courses.edit'))) return <Forbidden />;
   const t = await getTranslations('admin.cms');
+  // Task C3 fix: publish/unpublish/delete are teachers.review-gated now —
+  // PublishBar hides those buttons for an editeur-contenu (courses.edit
+  // only), who can still edit draft content below.
+  const canModerate = await hasCap('teachers.review');
 
   const course = await getAdminCourse(slug);
   if (!course) notFound();
@@ -44,7 +48,14 @@ export default async function EditCoursePage({
         </h1>
       </div>
 
-      <PublishBar slug={course.slug} code={course.code} status={course.status} hasUnpublishedChanges={course.hasUnpublishedChanges} />
+      <PublishBar
+        slug={course.slug}
+        code={course.code}
+        status={course.status}
+        hasUnpublishedChanges={course.hasUnpublishedChanges}
+        reviewNote={course.reviewNote}
+        canModerate={canModerate}
+      />
       <CourseEditor course={course} salesCount={salesCount} priciest={priciest ? { code: priciest.code, priceCents: priciest.priceCents } : null} />
       <LessonsManager slug={course.slug} lessons={course.lessons} isDraft={course.status === 'draft'} />
       <ImagesManager slug={course.slug} mainImage={course.mainImage} secondary={course.secondaryImages} />

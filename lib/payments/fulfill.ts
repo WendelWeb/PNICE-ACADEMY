@@ -19,6 +19,7 @@ import { buildReceiptHtml } from '@/lib/email/templates';
 import { buildReceiptPdf } from '@/lib/pdf/receipt';
 import { htgLabel } from '@/lib/money';
 import { getCourseBySlug } from '@/lib/courses/source';
+import { recordSaleEarning, recordRefundReversal } from '@/lib/teacher/earnings';
 import type { StripeAction } from './stripe-events';
 
 export async function fulfillAction(action: StripeAction): Promise<'processed' | 'ignored'> {
@@ -45,10 +46,27 @@ async function paymentExists(providerRef: string): Promise<boolean> {
   return rows.length > 0;
 }
 
-async function findPaymentByRef(providerRef: string): Promise<{ id: string } | undefined> {
+async function findPaymentByRef(providerRef: string): Promise<
+  | {
+      id: string;
+      amountCents: number;
+      currency: string;
+      productType: 'course' | 'subscription';
+      courseSlug: string | null;
+      relatedSubscriptionId: string | null;
+    }
+  | undefined
+> {
   return (
     await db
-      .select({ id: payments.id })
+      .select({
+        id: payments.id,
+        amountCents: payments.amountCents,
+        currency: payments.currency,
+        productType: payments.productType,
+        courseSlug: payments.courseSlug,
+        relatedSubscriptionId: payments.relatedSubscriptionId,
+      })
       .from(payments)
       .where(and(eq(payments.provider, 'stripe'), eq(payments.providerRef, providerRef)))
       .limit(1)
@@ -99,6 +117,20 @@ async function fulfillCheckoutCompleted(a: CheckoutCompleted): Promise<'processe
     // failed before the enrollment insert landed — re-run the idempotent
     // enrollment upsert so access self-heals. Do not resend the receipt
     // email or re-insert the sale notification on this path.
+    //
+    // Additive: also heal a missed earnings-ledger row — if a prior delivery
+    // died between the payment insert committing and the ledger insert below,
+    // every redelivery would otherwise land here and never record the
+    // earning. NEVER THROWS and idempotent (sale-dedup unique index +
+    // onConflictDoNothing — see lib/teacher/earnings.ts), so this is a safe
+    // no-op once already ledgered.
+    await recordSaleEarning({
+      id: existingPayment.id,
+      amountCents: existingPayment.amountCents,
+      currency: existingPayment.currency,
+      productType: existingPayment.productType,
+      courseSlug: existingPayment.courseSlug,
+    });
     await ensureCourseEnrollment(userDbId, a.productType, a.courseSlug, existingPayment.id);
     return 'processed';
   }
@@ -172,10 +204,33 @@ async function fulfillCheckoutCompleted(a: CheckoutCompleted): Promise<'processe
     // heal down the same path as an ordinary retry duplicate, no email/notif.
     const raced = await findPaymentByRef(providerRef);
     if (!raced) throw new Error(`payment ${providerRef} lost after onConflictDoNothing race`);
+    // Additive: heal a missed earnings-ledger row for the same reason as the
+    // existingPayment branch above — NEVER THROWS and idempotent, no-op once
+    // already ledgered.
+    await recordSaleEarning({
+      id: raced.id,
+      amountCents: raced.amountCents,
+      currency: raced.currency,
+      productType: raced.productType,
+      courseSlug: raced.courseSlug,
+    });
     await ensureCourseEnrollment(userDbId, a.productType, a.courseSlug, raced.id);
     return 'processed';
   }
   const payment = insertedPayments[0];
+
+  // 2b. Additive: record the teacher's earnings-ledger 'sale' row for this
+  // payment (course purchase, or subscription initial charge). NEVER THROWS
+  // and internally idempotent (see lib/teacher/earnings.ts's file header) —
+  // this can never fail or block fulfillment, which is already durably
+  // recorded above.
+  await recordSaleEarning({
+    id: payment.id,
+    amountCents: a.amountCents,
+    currency: a.currency,
+    productType: a.productType,
+    courseSlug: a.courseSlug,
+  });
 
   // 3. Course purchase → enrollment (skip if already enrolled and active).
   await ensureCourseEnrollment(userDbId, a.productType, a.courseSlug, payment.id);
@@ -308,6 +363,18 @@ async function fulfillInvoicePaid(a: InvoicePaid): Promise<'processed' | 'ignore
     .onConflictDoNothing({ target: [payments.provider, payments.providerRef] })
     .returning({ id: payments.id });
   if (insertedRenewals.length === 0) return 'processed'; // concurrent delivery won the race
+
+  // Additive: record the teacher's earnings-ledger 'sale' row for this
+  // renewal charge. NEVER THROWS and internally idempotent (see
+  // lib/teacher/earnings.ts's file header) — never blocks fulfillment.
+  await recordSaleEarning({
+    id: insertedRenewals[0].id,
+    amountCents: a.amountCents,
+    currency: a.currency,
+    productType: 'subscription',
+    courseSlug: null,
+  });
+
   await db
     .update(subscriptions)
     .set({ status: 'active', currentPeriodEnd: periodEnd, updatedAt: new Date() })
@@ -356,6 +423,12 @@ async function fulfillChargeRefunded(a: ChargeRefunded): Promise<'processed' | '
   if (!payment) return 'ignored'; // refund of a charge we never recorded
   if (payment.status === 'refunded') return 'processed'; // duplicate
   await db.update(payments).set({ status: 'refunded' }).where(eq(payments.id, payment.id));
+
+  // Additive: reverse the teacher's earnings-ledger 'sale' row for this
+  // payment with a negative 'refund' row. NEVER THROWS (see
+  // lib/teacher/earnings.ts's file header) — never blocks fulfillment.
+  await recordRefundReversal({ id: payment.id });
+
   if (payment.productType === 'course') {
     await db
       .update(enrollments)

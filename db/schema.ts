@@ -7,7 +7,9 @@ import {
   timestamp,
   jsonb,
   unique,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 /**
  * PNICE Academy — Drizzle/Neon schema (Phase 2 foundation).
@@ -399,6 +401,10 @@ export const platformSettings = pgTable('platform_settings', {
   fxRateHtg: integer('fx_rate_htg'),
   dailyDigestEnabled: boolean('daily_digest_enabled').default(true).notNull(),
   dailyDigestHour: integer('daily_digest_hour').default(8).notNull(),
+  // C3 marketplace settings (Task C3-T1) — see docs/superpowers/specs/2026-07-22-marketplace-design.md §3/§4.
+  commissionPct: integer('commission_pct').default(30).notNull(),
+  payoutThresholdCents: integer('payout_threshold_cents').default(2500).notNull(),
+  defaultVideoQuotaMinutes: integer('default_video_quota_minutes').default(600).notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -552,6 +558,161 @@ export const teacherPlans = pgTable('teacher_plans', {
   stripeProductId: text('stripe_product_id'),
   stripePriceId: text('stripe_price_id'),
   status: text('status').$type<'active' | 'inactive'>().default('active').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+/* -------------------------------------------------------------------------- */
+/* Phase C3 — Teacher marketplace layer (schema + data-access foundation,     */
+/* Task C3-T1). See docs/superpowers/plans/2026-07-24-c3-teacher-marketplace.md  */
+/* + docs/superpowers/specs/2026-07-22-marketplace-design.md §3/§4.           */
+/*                                                                            */
+/* KEY DECISIONS:                                                            */
+/* - `earnings_ledger.net_cents` is the ONLY source of a teacher's balance —  */
+/*   `SUM(net_cents)` over their rows, never denormalised on teacher_profiles. */
+/*   `commission_pct_applied` is frozen per-row at sale time (rate changes    */
+/*   only affect future sales), per the spec's "commission figée à la vente". */
+/* - `earnings_ledger.payment_id` is nullable (adjustments/manual ledger rows */
+/*   have none) and FKs to `payments` with `onDelete: 'set null'` — deleting  */
+/*   a payment record must never delete the earnings history.                */
+/* - `course_reviews` keys off `courses.slug` (text), matching the C2 pattern */
+/*   of keying by slug instead of a `course_id` FK (see courses table header). */
+/*   The "reviewer must have an active enrollment" rule is enforced in code   */
+/*   (server action), not the DB — mirrors how promo/referral rules aren't    */
+/*   DB constraints either.                                                  */
+/* - Nothing here is consumed yet: this task only adds schema + read helpers  */
+/*   (lib/teacher/). Later C3 tasks (onboarding, studio, ledger writes,       */
+/*   ratings) wire mutations against these tables. No money-path change.     */
+/* -------------------------------------------------------------------------- */
+
+export const teacherProfiles = pgTable('teacher_profiles', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .notNull()
+    .unique()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  displayName: text('display_name'),
+  bioHt: text('bio_ht'),
+  bioFr: text('bio_fr'),
+  photoUrl: text('photo_url'),
+  status: text('status')
+    .$type<'pending' | 'approved' | 'suspended' | 'rejected'>()
+    .default('pending')
+    .notNull(),
+  payoutMethod: text('payout_method').$type<'moncash' | 'natcash' | 'paypal' | 'bank'>(),
+  payoutDestination: text('payout_destination'),
+  videoQuotaMinutes: integer('video_quota_minutes'),
+  termsAcceptedAt: timestamp('terms_accepted_at', { withTimezone: true }),
+  reviewNote: text('review_note'),
+  // Clerk id of the reviewing admin (admins are Clerk accounts, not `users` rows).
+  reviewedBy: text('reviewed_by'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const earningsLedger = pgTable(
+  'earnings_ledger',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    teacherUserId: uuid('teacher_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    // Nullable — adjustments/manual entries have no originating payment.
+    paymentId: uuid('payment_id').references(() => payments.id, { onDelete: 'set null' }),
+    kind: text('kind').$type<'sale' | 'refund' | 'withdrawal' | 'adjustment'>().notNull(),
+    grossCents: integer('gross_cents').notNull(),
+    // Frozen at write time — see header note ("commission figée à la vente").
+    commissionPctApplied: integer('commission_pct_applied').notNull(),
+    commissionCents: integer('commission_cents').notNull(),
+    // Negative for refund/withdrawal rows. Balance = SUM(net_cents), never denormalised.
+    netCents: integer('net_cents').notNull(),
+    currency: text('currency').default('USD').notNull(),
+    note: text('note'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    // Idempotency guard (Task C3-T5, lib/teacher/earnings.ts's `recordSaleEarning`):
+    // Stripe's at-least-once webhook delivery must never produce a second
+    // 'sale' row for the same payment — this partial unique index is the DB-
+    // enforced backstop (the insert uses `.onConflictDoNothing()` against it).
+    // Partial (kind='sale' only) because a refund row legitimately shares its
+    // originating sale's payment_id (it reverses that exact row) and
+    // withdrawal/adjustment rows have no payment_id at all — neither should
+    // be constrained by this index.
+    uniqSalePerPayment: uniqueIndex('earnings_ledger_sale_payment_uniq')
+      .on(t.paymentId)
+      .where(sql`${t.paymentId} IS NOT NULL AND ${t.kind} = 'sale'`),
+  }),
+);
+
+export const withdrawalRequests = pgTable(
+  'withdrawal_requests',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    teacherUserId: uuid('teacher_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    amountCents: integer('amount_cents').notNull(),
+    method: text('method'),
+    destinationSnapshot: text('destination_snapshot'),
+    status: text('status').$type<'pending' | 'paid' | 'rejected'>().default('pending').notNull(),
+    // Clerk id of the admin who processed the request.
+    processedBy: text('processed_by'),
+    processedAt: timestamp('processed_at', { withTimezone: true }),
+    reference: text('reference'),
+    note: text('note'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    // Race-condition guard (Task C3-T4 fix, withdrawal double-pending bug):
+    // `requestWithdrawalAction` (lib/teacher/studio-actions.ts) does a
+    // check-then-insert ("no existing pending row?") that is NOT atomic —
+    // two concurrent requests can both pass that check and both insert,
+    // producing two pending rows whose combined amount can exceed the
+    // teacher's actual balance. A partial unique index makes Postgres the
+    // real guard: at most one 'pending' row per teacher can ever exist,
+    // full stop. The app-layer pre-checks stay (good UX / fast-path
+    // rejection); this index is the backstop that makes them correct under
+    // concurrency. A unique-violation on insert is caught by the action and
+    // returned as `{ ok: false, message: 'pending_exists' }`.
+    onePendingPerTeacher: uniqueIndex('withdrawal_one_pending_per_teacher')
+      .on(t.teacherUserId)
+      .where(sql`${t.status} = 'pending'`),
+  }),
+);
+
+export const courseReviews = pgTable(
+  'course_reviews',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    courseSlug: text('course_slug')
+      .notNull()
+      .references(() => courses.slug, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    stars: integer('stars').notNull(),
+    comment: text('comment'),
+    status: text('status').$type<'published' | 'removed'>().default('published').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    uniqCourseUser: unique().on(t.courseSlug, t.userId),
+  }),
+);
+
+export const bundles = pgTable('bundles', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  ownerUserId: uuid('owner_user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  titleHt: text('title_ht'),
+  titleFr: text('title_fr'),
+  courseSlugs: jsonb('course_slugs').$type<string[]>(),
+  priceCents: integer('price_cents').notNull(),
+  status: text('status').$type<'draft' | 'published' | 'archived'>().default('draft').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });

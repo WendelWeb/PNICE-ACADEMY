@@ -14,13 +14,19 @@ import { resolveUserId } from '@/lib/learner/access';
 export type SiteActionResult = { ok: boolean; message?: string; id?: string };
 
 /**
- * A signed-in learner registers interest in becoming a teacher (home
- * `TeachTeaser` + the future `/enseigner` page — same capture, per the plan).
- * No teacher marketplace exists yet, so this simply files a ticket that
- * surfaces in the admin support inbox via the existing Phase D Lot 2
+ * A signed-in learner registers interest in becoming a teacher. Filed a
+ * ticket in the admin support inbox via the existing Phase D Lot 2
  * data-layer contract (`createTicket`, type 'other') — zero schema change.
- * Mirrors `submitSupportTicketAction`'s auth pattern; signed-out visitors
- * never reach this (the UI gates them behind the sign-up modal instead).
+ *
+ * SUPERSEDED for signed-in users by Task C3-T2: real applications are open
+ * now (`lib/teacher/actions.ts`'s `applyAsTeacherAction`, wired through
+ * `/enseigner`'s wizard), so `components/home/TeachInterestCta.tsx` no
+ * longer calls this — it just links signed-in visitors to /enseigner
+ * instead. Left in place (unused today) rather than deleted: it's a small,
+ * working, independently-testable function, and removing it isn't part of
+ * this task's scope. Mirrors `submitSupportTicketAction`'s auth pattern;
+ * signed-out visitors never reached this (the UI gated them behind the
+ * sign-up modal instead).
  */
 export async function registerTeachInterestAction(): Promise<SiteActionResult> {
   try {

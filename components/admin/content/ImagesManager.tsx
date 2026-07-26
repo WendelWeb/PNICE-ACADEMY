@@ -14,14 +14,37 @@ import {
 import type { AdminImage } from '@/lib/courses/write';
 import { inputCls } from './fields';
 
+type ContentResult = { ok: boolean; message?: string; slug?: string; count?: number };
+
+/** Same shape as `lib/admin/content-actions.ts`'s 4 image actions — the
+ *  studio (Task C3-T4) injects its own owner-scoped versions here instead. */
+export type ImageActions = {
+  setMain: (slug: string, url: string) => Promise<ContentResult>;
+  addSecondary: (slug: string, url: string, alt: string) => Promise<ContentResult>;
+  removeSecondary: (slug: string, imageId: string) => Promise<ContentResult>;
+  moveSecondary: (slug: string, imageId: string, dir: 'up' | 'down') => Promise<ContentResult>;
+};
+
+const defaultImageActions: ImageActions = {
+  setMain: setMainImageAction,
+  addSecondary: addSecondaryImageAction,
+  removeSecondary: removeSecondaryImageAction,
+  moveSecondary: moveSecondaryImageAction,
+};
+
 export function ImagesManager({
   slug,
   mainImage,
   secondary,
+  actions = defaultImageActions,
 }: {
   slug: string;
   mainImage: string | null;
   secondary: AdminImage[];
+  /** Injected by the teacher studio (Task C3-T4); defaults to the admin CMS
+   *  actions so every existing `/admin/cours/[slug]/editer` call site is
+   *  unchanged. */
+  actions?: ImageActions;
 }) {
   const t = useTranslations('admin.cms.images');
   const router = useRouter();
@@ -49,7 +72,7 @@ export function ImagesManager({
             <span className="grid h-12 w-16 place-items-center rounded border border-dashed border-ink/20 font-mono text-[9px] text-ink/40">—</span>
           )}
           <input value={main} onChange={(e) => setMain(e.target.value)} placeholder={t('urlPlaceholder')} className={inputCls} />
-          <button type="button" disabled={pending} onClick={() => act(() => setMainImageAction(slug, main))} className="shrink-0 rounded border border-ink/15 px-2.5 py-1.5 font-mono text-[11px] text-ink/70 hover:bg-ink/[0.04]">
+          <button type="button" disabled={pending} onClick={() => act(() => actions.setMain(slug, main))} className="shrink-0 rounded border border-ink/15 px-2.5 py-1.5 font-mono text-[11px] text-ink/70 hover:bg-ink/[0.04]">
             {t('setMain')}
           </button>
         </div>
@@ -65,9 +88,9 @@ export function ImagesManager({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={img.url} alt={img.alt} className="h-9 w-12 rounded object-cover" />
                 <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-ink/55">{img.url}</span>
-                <button type="button" onClick={() => act(() => moveSecondaryImageAction(slug, img.id, 'up'))} disabled={i === 0} className={iconBtn}><IconChevronUp size={12} /></button>
-                <button type="button" onClick={() => act(() => moveSecondaryImageAction(slug, img.id, 'down'))} disabled={i === secondary.length - 1} className={iconBtn}><IconChevronDown size={12} /></button>
-                <button type="button" onClick={() => act(() => removeSecondaryImageAction(slug, img.id))} className={cn(iconBtn, 'text-stampred')}><IconTrash size={12} /></button>
+                <button type="button" onClick={() => act(() => actions.moveSecondary(slug, img.id, 'up'))} disabled={i === 0} className={iconBtn}><IconChevronUp size={12} /></button>
+                <button type="button" onClick={() => act(() => actions.moveSecondary(slug, img.id, 'down'))} disabled={i === secondary.length - 1} className={iconBtn}><IconChevronDown size={12} /></button>
+                <button type="button" onClick={() => act(() => actions.removeSecondary(slug, img.id))} className={cn(iconBtn, 'text-stampred')}><IconTrash size={12} /></button>
               </li>
             ))}
           </ul>
@@ -78,7 +101,7 @@ export function ImagesManager({
           <button
             type="button"
             disabled={pending || !url.trim()}
-            onClick={() => act(async () => { const r = await addSecondaryImageAction(slug, url, alt); if (r.ok) { setUrl(''); setAlt(''); } return r; })}
+            onClick={() => act(async () => { const r = await actions.addSecondary(slug, url, alt); if (r.ok) { setUrl(''); setAlt(''); } return r; })}
             className="inline-flex items-center gap-1 rounded border border-teal/40 px-2.5 py-1.5 font-mono text-[11px] text-teal hover:bg-teal/10"
           >
             {pending ? <IconLoader2 size={12} className="animate-spin" /> : <IconPlus size={12} />} {t('add')}

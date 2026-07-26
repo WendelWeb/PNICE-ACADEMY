@@ -8,6 +8,7 @@ import { cn } from '@/lib/cn';
 import { Reveal } from '@/components/ui/Reveal';
 import { CourseCatalogCard } from '@/components/courses/CourseCatalogCard';
 import { COURSE_CATEGORIES, type Course, type CourseCategory } from '@/data/courses';
+import { getCourseTeacher } from '@/data/teachers';
 
 type SortKey = 'priceAsc' | 'priceDesc' | 'az';
 const SORTS: SortKey[] = ['priceAsc', 'priceDesc', 'az'];
@@ -55,11 +56,21 @@ function mergeParams(
 
 /**
  * The interactive discovery toolbar for /formations: debounced text search
- * (both languages), category chips, locale-aware sort, results count and a
- * styled empty state. State is synced to the URL (?q=&cat=&sort=) so it
- * survives reload/sharing. Hydrates over a server-rendered unfiltered grid
- * (see the Suspense fallback in the page) so the plain catalogue stays
- * crawlable without JS.
+ * (both languages), category chips, a teacher filter, locale-aware sort,
+ * results count and a styled empty state. State is synced to the URL
+ * (?q=&cat=&sort=&teacher=) so it survives reload/sharing. Hydrates over a
+ * server-rendered unfiltered grid (see the Suspense fallback in the page) so
+ * the plain catalogue stays crawlable without JS.
+ *
+ * Teacher filter (Task C3-T7): derived from `getCourseTeacher()` (the same
+ * static registry lookup `CourseCatalogCard`'s teacher attribution line
+ * already uses — client-safe, no DB) over the `courses` PROP, not the full
+ * catalogue — so the chip row only ever lists teachers who actually have a
+ * course in view. Rendered only when 2+ distinct teachers are present (a
+ * single-teacher marketplace has nothing to filter by); the ?teacher=
+ * URL param and filtering logic work for any count, so this becomes a real
+ * multi-teacher chooser the moment a second teacher's course publishes —
+ * no mechanism change needed then.
  */
 export function CatalogBrowser({ courses }: { courses: Course[] }) {
   const t = useTranslations('catalog');
@@ -86,6 +97,23 @@ export function CatalogBrowser({ courses }: { courses: Course[] }) {
   const sort: SortKey = SORTS.includes(rawSort as SortKey)
     ? (rawSort as SortKey)
     : DEFAULT_SORT;
+
+  // Teacher chips: distinct (slug, displayName) pairs among the courses in
+  // view, in first-seen order — stable across renders since `courses` is a
+  // stable prop reference for the lifetime of one /formations visit.
+  const teacherEntries = useMemo(() => {
+    const bySlug = new Map<string, string>();
+    for (const c of courses) {
+      const teacher = getCourseTeacher(c.slug);
+      if (teacher && !bySlug.has(teacher.slug)) bySlug.set(teacher.slug, teacher.displayName);
+    }
+    return [...bySlug.entries()];
+  }, [courses]);
+
+  const rawTeacher = get('teacher');
+  const teacherFilter: string | 'all' = teacherEntries.some(([s]) => s === rawTeacher)
+    ? rawTeacher
+    : 'all';
 
   // Clears the flash-guard flag (see PENDING_FILTERS_SCRIPT in the page)
   // once mounted: by the time this effect runs, `category`/`sort`/`query`
@@ -125,7 +153,10 @@ export function CatalogBrowser({ courses }: { courses: Course[] }) {
 
   const filtered = useMemo(() => {
     const list = courses.filter(
-      (c) => (category === 'all' || c.category === category) && matchesQuery(c, needle),
+      (c) =>
+        (category === 'all' || c.category === category) &&
+        (teacherFilter === 'all' || getCourseTeacher(c.slug)?.slug === teacherFilter) &&
+        matchesQuery(c, needle),
     );
     if (sort === 'priceAsc') return [...list].sort((a, b) => a.priceUsd - b.priceUsd);
     if (sort === 'priceDesc') return [...list].sort((a, b) => b.priceUsd - a.priceUsd);
@@ -136,9 +167,9 @@ export function CatalogBrowser({ courses }: { courses: Course[] }) {
         locale === 'ht' ? b.title_ht : b.title_fr,
       ),
     );
-  }, [courses, category, needle, sort, locale]);
+  }, [courses, category, teacherFilter, needle, sort, locale]);
 
-  const hasFilters = !!get('q') || !!get('cat') || !!get('sort');
+  const hasFilters = !!get('q') || !!get('cat') || !!get('sort') || !!get('teacher');
 
   const reset = () => {
     setQuery('');
@@ -221,6 +252,48 @@ export function CatalogBrowser({ courses }: { courses: Course[] }) {
             </button>
           ))}
         </div>
+
+        {/* Teacher filter — subtle by design: only shown once there's an
+            actual choice to make (2+ teachers among the courses in view). */}
+        {teacherEntries.length > 1 && (
+          <div
+            role="group"
+            aria-label={t('toolbar.teacherLabel')}
+            className="flex flex-wrap gap-2"
+          >
+            <button
+              type="button"
+              onClick={() => push({ teacher: null })}
+              aria-pressed={teacherFilter === 'all'}
+              className={cn(
+                'rounded-full border px-3.5 py-1.5 font-mono text-xs uppercase tracking-wide transition-colors motion-reduce:transition-none',
+                focusRing,
+                teacherFilter === 'all'
+                  ? 'border-ink bg-ink text-paper-light'
+                  : 'border-ink/20 text-ink/65 hover:border-ink/40',
+              )}
+            >
+              {t('toolbar.teacherAll')}
+            </button>
+            {teacherEntries.map(([slug, name]) => (
+              <button
+                key={slug}
+                type="button"
+                onClick={() => push({ teacher: teacherFilter === slug ? null : slug })}
+                aria-pressed={teacherFilter === slug}
+                className={cn(
+                  'rounded-full border px-3.5 py-1.5 font-mono text-xs uppercase tracking-wide transition-colors motion-reduce:transition-none',
+                  focusRing,
+                  teacherFilter === slug
+                    ? 'border-teal bg-teal/15 text-teal'
+                    : 'border-ink/20 text-ink/65 hover:border-ink/40',
+                )}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* results count + reset */}

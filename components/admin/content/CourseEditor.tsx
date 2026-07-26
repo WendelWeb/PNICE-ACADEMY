@@ -7,8 +7,13 @@ import { IconDeviceFloppy, IconLoader2, IconAlertTriangle } from '@tabler/icons-
 import { cn } from '@/lib/cn';
 import { buttonClasses } from '@/components/ui/Button';
 import { updateCourseAction } from '@/lib/admin/content-actions';
-import type { AdminCourse } from '@/lib/courses/write';
+import type { AdminCourse, CoursePatch } from '@/lib/courses/write';
 import { BilingualText, PairedList, FaqEditor, inputCls, type FaqItem } from './fields';
+
+type UpdateResult = { ok: boolean; message?: string };
+/** Same shape as `lib/admin/content-actions.ts`'s `updateCourseAction` — the
+ *  studio (Task C3-T4) passes its own owner-scoped action here instead. */
+type UpdateAction = (slug: string, patch: CoursePatch) => Promise<UpdateResult>;
 
 const ICON_KEYS = [
   'credit-card', 'shopping-cart', 'ship', 'speakerphone', 'palette',
@@ -21,10 +26,15 @@ export function CourseEditor({
   course,
   salesCount,
   priciest,
+  updateAction = updateCourseAction,
 }: {
   course: AdminCourse;
   salesCount: number;
   priciest: { code: string; priceCents: number } | null;
+  /** Injected by the teacher studio (Task C3-T4) as the owner-scoped
+   *  `updateMyCourseAction`; defaults to the admin CMS action so every
+   *  existing `/admin/cours/[slug]/editer` call site is unchanged. */
+  updateAction?: UpdateAction;
 }) {
   const t = useTranslations('admin.cms.editor');
   const router = useRouter();
@@ -45,13 +55,14 @@ export function CourseEditor({
   const onSave = () =>
     start(async () => {
       setSave('saving');
-      const res = await updateCourseAction(course.slug, {
+      const res = await updateAction(course.slug, {
         icon: c.icon,
         title_ht: c.title_ht, title_fr: c.title_fr,
         tagline_ht: c.tagline_ht, tagline_fr: c.tagline_fr,
         audience_ht: c.audience_ht, audience_fr: c.audience_fr,
         learn_ht: c.learn_ht, learn_fr: c.learn_fr,
         priceCents: newPriceCents,
+        level_ht: c.level_ht, level_fr: c.level_fr,
         promise_ht: c.promise_ht, promise_fr: c.promise_fr,
         problem_ht: c.problem_ht, problem_fr: c.problem_fr,
         deliverables_ht: c.deliverables_ht, deliverables_fr: c.deliverables_fr,
@@ -104,6 +115,7 @@ export function CourseEditor({
       <section className="rounded-xl border border-ink/12 bg-paper-light p-4">
         <h2 className="font-mono text-[11px] uppercase tracking-wide text-ink/55">{t('salesPage')}</h2>
         <div className="mt-3 space-y-3">
+          <BilingualText label={t('level')} ht={c.level_ht} fr={c.level_fr} onHt={(v) => set('level_ht', v)} onFr={(v) => set('level_fr', v)} />
           <BilingualText label={t('promise')} area ht={c.promise_ht} fr={c.promise_fr} onHt={(v) => set('promise_ht', v)} onFr={(v) => set('promise_fr', v)} />
           <BilingualText label={t('problem')} area ht={c.problem_ht} fr={c.problem_fr} onHt={(v) => set('problem_ht', v)} onFr={(v) => set('problem_fr', v)} />
           <PairedList label={t('deliverables')} ht={c.deliverables_ht} fr={c.deliverables_fr} onChange={(ht, fr) => { set('deliverables_ht', ht); set('deliverables_fr', fr); }} />

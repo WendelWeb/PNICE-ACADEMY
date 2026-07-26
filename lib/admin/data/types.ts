@@ -185,7 +185,19 @@ export type AuditAction =
   | 'add_lesson'
   | 'update_lesson'
   | 'delete_lesson'
-  | 'reorder_lesson';
+  | 'reorder_lesson'
+  // Teacher marketplace moderation (Phase C3-T3)
+  | 'approve_teacher'
+  | 'reject_teacher'
+  | 'suspend_teacher'
+  | 'reactivate_teacher'
+  | 'approve_course'
+  | 'reject_course'
+  // Teacher marketplace payouts (Phase C3-T5)
+  | 'mark_withdrawal_paid'
+  | 'reject_withdrawal'
+  // Course ratings/reviews moderation (Phase C3-T6)
+  | 'remove_review';
 
 export type AdminActor = { id: string; name: string };
 

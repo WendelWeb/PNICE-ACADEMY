@@ -30,8 +30,7 @@
       },
       "teach": {
         "title": "Enseigner",
-        "badge": "Bientôt",
-        "teaser": "Tu maîtrises un savoir-faire ? Bientôt tu pourras l'enseigner ici."
+        "teaser": "Tu maîtrises un savoir-faire ? Viens l'enseigner sur la plateforme."
       },
       "help": {
         "title": "Aide",
@@ -100,16 +99,14 @@
       ]
     },
     "teachTeaser": {
-      "eyebrow": "Bientôt sur PNICE Academy",
-      "title": "Tu maîtrises un savoir-faire ? Bientôt tu pourras l'enseigner ici.",
-      "body": "Toute personne qui maîtrise une compétence pourra créer sa propre formation sur la plateforme. Tu fixes ton prix, tu gardes 70 % de chaque vente, et l'argent arrive directement sur ton MonCash.",
+      "eyebrow": "Sur PNICE Academy",
+      "title": "Tu maîtrises un savoir-faire ? Tu peux l'enseigner ici.",
+      "body": "Toute personne qui maîtrise une compétence peut créer sa propre formation sur la plateforme. Tu fixes ton prix, tu gardes 70 % de chaque vente, et l'argent arrive directement sur ton MonCash.",
       "facts": ["Fixe ton prix", "70 % pour toi", "Payé via MonCash"],
       "ctaLearnMore": "En savoir plus",
-      "interestCta": "Je suis intéressé(e)",
-      "interestSuccess": "Nous avons bien reçu ton intérêt — on te contacte bientôt.",
-      "interestError": "Impossible d'enregistrer ta demande. Réessaie.",
+      "interestCta": "Devenir enseignant",
       "sealTop": "Formateur",
-      "sealBottom": "Bientôt"
+      "sealBottom": "Ouvert"
     },
     "manifest": {
       "eyebrow": "Le manifeste",
@@ -236,6 +233,8 @@
       "searchLabel": "Rechercher dans le catalogue",
       "searchPlaceholder": "Cherche une formation...",
       "categoryLabel": "Filtrer par catégorie",
+      "teacherLabel": "Filtrer par enseignant",
+      "teacherAll": "Tous les enseignants",
       "sortLabel": "Trier par",
       "sort": {
         "priceAsc": "Prix ↑",
@@ -296,6 +295,7 @@
     "since": "Enseignant depuis {year}",
     "noteLabel": "Note",
     "noteEmpty": "pas encore d'avis",
+    "noteCount": "{count, plural, one {1 avis} other {# avis}}",
     "sealTop": "Enseignant",
     "photoAlt": "{name} — enseignant sur PNICE Academy",
     "stats": {
@@ -327,13 +327,44 @@
       "teachLink": "Tu maîtrises un savoir-faire toi aussi ? Deviens enseignant"
     }
   },
+  "reviews": {
+    "title": "Avis",
+    "empty": "Il n'y a pas encore d'avis pour cette formation.",
+    "countLabel": "{count, plural, one {1 avis} other {# avis}}",
+    "reviewerFallback": "Un élève",
+    "widget": {
+      "rateTitle": "Donne ta note",
+      "editTitle": "Modifie ta note",
+      "commentPlaceholder": "Écris ton commentaire (optionnel)…",
+      "submit": "Envoyer",
+      "update": "Mettre à jour",
+      "notEnrolledNote": "Achète cette formation pour pouvoir donner ta note.",
+      "submitted": "Merci ! Ta note a été enregistrée.",
+      "errors": {
+        "unauthorized": "Connecte-toi pour donner une note.",
+        "not_enrolled": "Tu dois d'abord acheter cette formation.",
+        "invalid_stars": "Choisis une note entre 1 et 5 étoiles.",
+        "comment_too_long": "Le commentaire est trop long.",
+        "db_required": "Ce service n'est pas disponible pour le moment.",
+        "review_removed": "Ton avis a été retiré.",
+        "error": "Une erreur est survenue. Réessaie."
+      },
+      "reviewRemoved": "Ton avis a été retiré"
+    },
+    "report": {
+      "action": "Signaler",
+      "confirm": "Confirmer le signalement ?",
+      "done": "Merci, nous avons reçu ton signalement.",
+      "error": "Une erreur est survenue."
+    }
+  },
   "teach": {
     "metaTitle": "Enseigner sur PNICE Academy",
-    "metaDescription": "Tu maîtrises un savoir-faire ? Crée ta formation sur PNICE Academy, fixe ton prix et touche 70 % sur chaque vente, payé en MonCash. Laisse ton intérêt — les candidatures ouvrent bientôt.",
+    "metaDescription": "Tu maîtrises un savoir-faire ? Crée ta formation sur PNICE Academy, fixe ton prix et touche 70 % sur chaque vente, payé en MonCash. Soumets ta candidature dès maintenant.",
     "eyebrow": "Devenir enseignant",
-    "soonBadge": "Bientôt",
+    "openBadge": "Candidatures ouvertes",
     "title": "Tu maîtrises un savoir-faire ? Enseigne-le.",
-    "subtitle": "Crée tes propres formations sur PNICE Academy. Tu fixes ton prix, tu touches 70 % sur chaque vente, les élèves paient en MonCash. Les candidatures ouvrent bientôt — laisse ton intérêt dès aujourd'hui.",
+    "subtitle": "Crée tes propres formations sur PNICE Academy. Tu fixes ton prix, tu touches 70 % sur chaque vente, les élèves paient en MonCash. Les candidatures sont ouvertes maintenant — soumets la tienne plus bas.",
     "exampleCta": "Voir un exemple de page enseignant",
     "facts": ["70 % pour toi", "Fixe ton prix", "Retrait MonCash"],
     "stepsEyebrow": "Le parcours enseignant",
@@ -341,7 +372,7 @@
     "steps": [
       {
         "title": "Candidature",
-        "body": "Tu postules avec le compte que tu as déjà : ton nom, ce que tu veux enseigner, une courte présentation. 10 minutes suffisent."
+        "body": "Tu postules avec le compte que tu as déjà : ton nom, ce que tu veux enseigner, une courte présentation. 5 minutes suffisent."
       },
       {
         "title": "Approbation",
@@ -364,8 +395,8 @@
         "a": "C'est le même compte. Pas besoin d'en créer un deuxième : tu postules avec ton compte actuel, et une fois approuvé, il gagne un espace enseignant — en plus de ton espace élève."
       },
       {
-        "q": "Quand les candidatures ouvrent-elles ?",
-        "a": "Bientôt. Nous finissons de construire les outils enseignants. Laisse ton intérêt dès aujourd'hui — on te contactera personnellement dès l'ouverture."
+        "q": "Comment démarrer ma candidature ?",
+        "a": "Les candidatures sont ouvertes maintenant. Clique sur « Commencer ma candidature » plus bas, remplis ton profil, choisis comment tu veux recevoir ton argent, puis accepte les conditions. Ça prend environ 5 minutes."
       },
       {
         "q": "Combien vais-je toucher ?",
@@ -381,9 +412,213 @@
       }
     ],
     "final": {
-      "badge": "Bientôt",
-      "title": "Les candidatures ouvrent bientôt",
-      "body": "Laisse ton intérêt dès maintenant — on te contactera avant tout le monde à l'ouverture. Sans aucun engagement."
+      "title": "Prêt à commencer ta candidature ?",
+      "body": "Crée un compte gratuit pour soumettre ton profil. Nous examinons chaque candidature avant de te répondre."
+    },
+    "apply": {
+      "startTitle": "Commence ta candidature",
+      "startBody": "Ça prend environ 5 minutes : ton profil, comment tu veux recevoir ton argent, et les conditions.",
+      "startCta": "Commencer ma candidature",
+      "viewStatusCta": "Voir le statut de ma candidature",
+      "signedOutTitle": "Crée un compte pour commencer",
+      "signedOutBody": "Il te faut un compte pour soumettre ta candidature. C'est le même compte que tu utiliseras pour apprendre OU pour enseigner.",
+      "signedOutCta": "Créer mon compte",
+      "stepOf": "Étape {step} sur {total}",
+      "steps": {
+        "profile": "Profil",
+        "payout": "Paiement",
+        "terms": "Conditions"
+      },
+      "profile": {
+        "title": "Ton profil enseignant",
+        "displayName": "Ton nom public",
+        "displayNamePlaceholder": "Exemple : Jean Pierre",
+        "bioHt": "Biographie (créole)",
+        "bioHtPlaceholder": "Raconte ce que tu maîtrises et comment tu peux aider les élèves…",
+        "bioFr": "Biographie (français)",
+        "bioFrPlaceholder": "Raconte ce que tu maîtrises et comment tu peux aider les élèves…",
+        "bioHelp": "Au moins {min} caractères.",
+        "photoUrl": "Photo de profil (lien, optionnel)",
+        "photoUrlPlaceholder": "https://…",
+        "errorDisplayName": "Indique ton nom.",
+        "errorBioHt": "Écris au moins {min} caractères en créole.",
+        "errorBioFr": "Écris au moins {min} caractères en français.",
+        "errorBioHtTooLong": "La biographie en créole ne doit pas dépasser 2000 caractères.",
+        "errorBioFrTooLong": "La biographie en français ne doit pas dépasser 2000 caractères.",
+        "errorPhotoUrlInvalid": "L'URL de la photo doit commencer par http:// ou https://."
+      },
+      "payout": {
+        "title": "Comment tu veux recevoir ton argent",
+        "method": "Moyen de paiement",
+        "methods": {
+          "moncash": "MonCash",
+          "natcash": "NatCash",
+          "paypal": "PayPal",
+          "bank": "Compte bancaire"
+        },
+        "destination": "Détails de ton compte",
+        "hints": {
+          "moncash": "Ton numéro MonCash (exemple : 3712 3456).",
+          "natcash": "Ton numéro NatCash.",
+          "paypal": "L'e-mail de ton compte PayPal.",
+          "bank": "Le nom de la banque et ton numéro de compte."
+        },
+        "errorDestination": "Indique où tu veux recevoir ton argent.",
+        "errorDestinationTooLong": "Les détails de ton compte ne doivent pas dépasser 200 caractères."
+      },
+      "terms": {
+        "title": "Les conditions",
+        "summary": [
+          "Tu touches 70 % sur chaque vente — 30 % vont à la plateforme.",
+          "Nous vérifions chaque cours avant sa publication pour maintenir le niveau de la plateforme.",
+          "Les retraits se font sur demande, à partir de 25 $, selon le moyen de paiement choisi."
+        ],
+        "checkbox": "J'ai lu et j'accepte les conditions.",
+        "errorTerms": "Tu dois accepter les conditions pour continuer."
+      },
+      "back": "Retour",
+      "next": "Continuer",
+      "submit": "Envoyer ma candidature",
+      "submitting": "Envoi en cours…",
+      "successTitle": "Candidature reçue",
+      "sealLabel": "Reçue",
+      "successBody": "Nous avons bien reçu ta candidature. Notre équipe l'examine et te contactera — en créole ou en français.",
+      "errorGeneric": "Une erreur est survenue. Réessaie.",
+      "errorDbRequired": "Le système de candidature n'est pas encore actif. Réessaie plus tard.",
+      "errorAlreadyActive": "Tu as déjà un profil enseignant actif.",
+      "status": {
+        "pending": {
+          "title": "Ta candidature est en cours d'examen",
+          "body": "Notre équipe examine ta candidature pour maintenir le niveau de la plateforme. On te répond vite — en créole ou en français."
+        },
+        "approved": {
+          "title": "Ta candidature est approuvée",
+          "body": "Bienvenue comme enseignant sur PNICE Academy. Ton studio t'attend — crée ta première formation dès maintenant.",
+          "studioCta": "Entrer dans mon studio"
+        },
+        "rejected": {
+          "title": "Ta candidature n'a pas été approuvée",
+          "body": "Voici la note de notre équipe. Tu peux corriger et soumettre une nouvelle candidature.",
+          "noteLabel": "Note de l'équipe",
+          "reapplyCta": "Soumettre une nouvelle candidature"
+        },
+        "suspended": {
+          "title": "Ton profil enseignant est suspendu",
+          "body": "Ton profil enseignant est actuellement suspendu. Contacte le support si tu penses que c'est une erreur."
+        }
+      }
+    },
+    "studio": {
+      "eyebrow": "Ton studio",
+      "greeting": "Bienvenue dans ton studio",
+      "greetingNamed": "Bienvenue, {name}",
+      "untitled": "(sans titre)",
+      "backToStudio": "Retour au studio",
+      "myCourses": "Mes formations",
+      "newCourse": "Nouvelle formation",
+      "emptyCourses": "Tu n'as encore aucune formation. Crée la première.",
+      "editCta": "Éditer",
+      "submitCta": "Soumettre pour validation",
+      "unpublishCta": "Dépublier",
+      "viewPublic": "Voir la page publique",
+      "needLessons": "Ajoute au moins une leçon avant de soumettre.",
+      "submittedAt": "Soumis le {date}",
+      "reviewNoteLabel": "Note de l'équipe",
+      "pendingReviewNote": "En cours de validation par notre équipe.",
+      "col": {
+        "price": "Prix",
+        "sales": "Ventes",
+        "revenue": "Revenu"
+      },
+      "status": {
+        "draft": "Brouillon",
+        "pending_review": "En validation",
+        "published": "Publié",
+        "rejected": "Rejeté",
+        "archived": "Archivé"
+      },
+      "error": {
+        "invalid_status": "Cette action n'est pas possible dans l'état actuel.",
+        "not_found": "Formation introuvable.",
+        "forbidden": "Action non autorisée.",
+        "db_required": "Le système n'est pas encore actif. Réessaie plus tard.",
+        "generic": "Une erreur est survenue."
+      },
+      "balance": {
+        "title": "Ton solde",
+        "threshold": "Retrait minimum : {amount}",
+        "quota": "Quota vidéo : {minutes} min",
+        "pendingNote": "Demande de retrait en cours ({amount}).",
+        "requestCta": "Demander un retrait",
+        "submit": "Envoyer la demande",
+        "cancel": "Annuler",
+        "success": "Ta demande de retrait a été envoyée. Elle sera traitée bientôt.",
+        "error": {
+          "below_threshold": "Le montant est inférieur au minimum de retrait.",
+          "insufficient_balance": "Le montant dépasse ton solde disponible.",
+          "pending_exists": "Tu as déjà une demande de retrait en cours.",
+          "no_payout_method": "Aucun moyen de paiement enregistré sur ton profil.",
+          "invalid_amount": "Indique un montant valide.",
+          "forbidden": "Action non autorisée.",
+          "db_required": "Le système n'est pas encore actif. Réessaie plus tard.",
+          "generic": "Une erreur est survenue."
+        }
+      },
+      "payout": {
+        "title": "Ton moyen de paiement",
+        "method": "Moyen de paiement",
+        "methods": {
+          "moncash": "MonCash",
+          "natcash": "NatCash",
+          "paypal": "PayPal",
+          "bank": "Compte bancaire"
+        },
+        "destination": "Détails de ton compte",
+        "hints": {
+          "moncash": "Ton numéro MonCash (exemple : 3712 3456).",
+          "natcash": "Ton numéro NatCash.",
+          "paypal": "L'e-mail de ton compte PayPal.",
+          "bank": "Le nom de la banque et ton numéro de compte."
+        },
+        "current": "Actuellement : {method} — {destination}",
+        "notSet": "Aucun moyen de paiement enregistré — ajoute-en un avant de demander un retrait.",
+        "editCta": "Modifier",
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "success": "Moyen de paiement mis à jour.",
+        "errorDestination": "Indique où tu veux recevoir ton argent.",
+        "errorDestinationTooLong": "Les détails de ton compte ne doivent pas dépasser 200 caractères.",
+        "error": {
+          "payout_method_invalid": "Moyen de paiement invalide.",
+          "payout_destination_required": "Indique où tu veux recevoir ton argent.",
+          "payout_destination_too_long": "Les détails de ton compte ne doivent pas dépasser 200 caractères.",
+          "forbidden": "Action non autorisée.",
+          "db_required": "Le système n'est pas encore actif. Réessaie plus tard.",
+          "generic": "Une erreur est survenue."
+        }
+      },
+      "ledger": {
+        "title": "Dernières entrées",
+        "empty": "Aucune entrée pour l'instant.",
+        "kind": {
+          "sale": "Vente",
+          "refund": "Remboursement",
+          "withdrawal": "Retrait",
+          "adjustment": "Ajustement"
+        }
+      },
+      "create": {
+        "title": "Créer une formation",
+        "back": "Retour au studio",
+        "help": "La formation est créée en brouillon ; tu la compléteras dans l'éditeur avant de la soumettre.",
+        "titleHt": "Titre (Kreyòl)",
+        "titleFr": "Titre (Français)",
+        "price": "Prix ($)",
+        "draftNote": "Créée en brouillon — visible seulement par toi jusqu'à validation par notre équipe.",
+        "submit": "Créer en brouillon",
+        "titleRequired": "Un titre est requis.",
+        "error": "Erreur."
+      }
     }
   },
   "checkout": {
@@ -472,6 +707,7 @@
   "kont": {
     "title": "Mon compte",
     "loading": "Chargement de tes informations…",
+    "teachEntry": "Devenir enseignant",
     "tabs": {
       "profile": "Profil",
       "security": "Sécurité",
@@ -782,6 +1018,8 @@
     "nav": {
       "overview": "Vue d'ensemble",
       "users": "Utilisateurs",
+      "teachers": "Enseignants",
+      "payouts": "Retraits",
       "courses": "Cours",
       "subscriptions": "Abonnements",
       "payments": "Paiements",
@@ -967,7 +1205,16 @@
         "update_template": "Template modifié",
         "delete_template": "Template supprimé",
         "replay_webhook": "Webhook rejoué",
-        "set_digest": "Récapitulatif quotidien modifié"
+        "set_digest": "Récapitulatif quotidien modifié",
+        "approve_teacher": "Profil enseignant approuvé",
+        "reject_teacher": "Profil enseignant rejeté",
+        "suspend_teacher": "Profil enseignant suspendu",
+        "reactivate_teacher": "Profil enseignant réactivé",
+        "approve_course": "Formation approuvée",
+        "reject_course": "Formation rejetée",
+        "mark_withdrawal_paid": "Retrait marqué payé",
+        "reject_withdrawal": "Retrait rejeté",
+        "remove_review": "Avis retiré"
       },
       "actions": {
         "title": "Actions manuelles",
@@ -1041,6 +1288,12 @@
         },
         "roles": {
           "manage": "Gérer les rôles admin"
+        },
+        "teachers": {
+          "review": "Approuver enseignants et cours (file de modération)"
+        },
+        "payouts": {
+          "process": "Traiter la file de retraits enseignants (marquer payé, rejeter)"
         }
       },
       "forbiddenSection": "Tu n'as pas accès à cette section."
@@ -1143,6 +1396,100 @@
         "drop": "Chute",
         "avgWatch": "Temps moyen",
         "biggestDrop": "Plus grande chute"
+      }
+    },
+    "teachers": {
+      "subtitle": "Candidatures et profils enseignants — approuve, rejette, suspends.",
+      "viewTabs": {
+        "teachers": "Enseignants",
+        "reviews": "Avis signalés"
+      },
+      "tabs": {
+        "pending": "En attente",
+        "approved": "Approuvés",
+        "suspended": "Suspendus",
+        "rejected": "Rejetés"
+      },
+      "col": {
+        "teacher": "Enseignant",
+        "bio": "Bio",
+        "payout": "Paiement",
+        "appliedAt": "Candidature",
+        "actions": "Actions"
+      },
+      "empty": "Aucun enseignant dans cette file.",
+      "noBio": "(pas de bio)",
+      "noPayout": "Non renseigné",
+      "actions": {
+        "approve": "Approuver",
+        "reject": "Rejeter",
+        "suspend": "Suspendre",
+        "reactivate": "Réactiver",
+        "noteHelp": "La raison sera enregistrée dans le journal d'audit.",
+        "notePlaceholder": "Raison…",
+        "cancel": "Annuler",
+        "confirm": "Confirmer",
+        "done": "Fait.",
+        "error": "Une erreur est survenue."
+      }
+    },
+    "reviews": {
+      "subtitle": "Avis publiés sur toutes les formations — retire un avis signalé ou inapproprié.",
+      "col": {
+        "course": "Formation",
+        "reviewer": "Élève",
+        "stars": "Note",
+        "comment": "Commentaire",
+        "status": "Statut",
+        "date": "Date",
+        "actions": "Actions"
+      },
+      "status": {
+        "published": "Publié",
+        "removed": "Retiré"
+      },
+      "reportedBadge": "Signalé",
+      "noComment": "(pas de commentaire)",
+      "empty": "Aucun avis pour le moment.",
+      "actions": {
+        "remove": "Retirer",
+        "noteHelp": "La raison sera enregistrée dans le journal d'audit.",
+        "notePlaceholder": "Raison…",
+        "cancel": "Annuler",
+        "confirm": "Confirmer",
+        "done": "Fait.",
+        "error": "Une erreur est survenue."
+      }
+    },
+    "payouts": {
+      "subtitle": "File des demandes de retrait enseignants — marque payé (+référence) ou rejette (+note).",
+      "tabs": {
+        "pending": "En attente",
+        "paid": "Payés",
+        "rejected": "Rejetés"
+      },
+      "col": {
+        "teacher": "Enseignant",
+        "amount": "Montant",
+        "method": "Méthode",
+        "destination": "Destination",
+        "balance": "Solde",
+        "requestedAt": "Demande",
+        "actions": "Actions"
+      },
+      "empty": "Aucune demande dans cette file.",
+      "noMethod": "Non renseigné",
+      "actions": {
+        "markPaid": "Marquer payé",
+        "reject": "Rejeter",
+        "referenceHelp": "La référence du paiement (transaction MonCash/NatCash/PayPal/virement) sera enregistrée dans le journal d'audit.",
+        "referencePlaceholder": "Référence…",
+        "noteHelp": "La raison sera enregistrée dans le journal d'audit.",
+        "notePlaceholder": "Raison…",
+        "cancel": "Annuler",
+        "confirm": "Confirmer",
+        "done": "Fait.",
+        "error": "Une erreur est survenue."
       }
     },
     "analytics": {
@@ -1415,6 +1762,20 @@
         "actions": "Actions",
         "pendingChanges": "modifs"
       },
+      "review": {
+        "tabAll": "Tous",
+        "tabPending": "À valider",
+        "empty": "Aucun cours à valider.",
+        "submittedAt": "Soumis le",
+        "approve": "Approuver",
+        "reject": "Rejeter",
+        "noteHelp": "La raison sera visible par l'enseignant et enregistrée dans le journal d'audit.",
+        "notePlaceholder": "Raison du rejet…",
+        "cancel": "Annuler",
+        "confirm": "Confirmer",
+        "done": "Fait.",
+        "error": "Une erreur est survenue."
+      },
       "create": {
         "title": "Créer un cours",
         "back": "Retour aux cours",
@@ -1444,6 +1805,7 @@
         "impactRevenue": "Revenu projeté : {count} ventes → {revenue}",
         "impactWarn": "Ce prix dépasse {code}, la formation la plus chère — sûr ?",
         "salesPage": "Page de vente",
+        "level": "Niveau",
         "promise": "Promesse",
         "problem": "Problème résolu",
         "deliverables": "Livrables",
@@ -1464,6 +1826,8 @@
         "add": "Ajouter une leçon",
         "titleHt": "Titre (ht)",
         "titleFr": "Titre (fr)",
+        "descHt": "Description (ht)",
+        "descFr": "Description (fr)",
         "bunnyId": "ID vidéo Bunny",
         "validate": "Valider",
         "bunnyOk": "✓ vidéo trouvée",
@@ -1485,12 +1849,14 @@
       "publish": {
         "status": {
           "draft": "Brouillon",
-          "published": "Publié"
+          "pending_review": "En révision",
+          "published": "Publié",
+          "rejected": "Rejeté",
+          "archived": "Archivé"
         },
         "unpublishedChanges": "Modifs en attente",
         "preview": "Prévisualiser",
         "publish": "Publier",
-        "publishChanges": "Publier les modifications",
         "published": "Publié ✓",
         "unpublish": "Dépublier",
         "unpublishWarn": "Le cours disparaît du catalogue public, mais les élèves déjà inscrits gardent leur accès.",
@@ -1500,6 +1866,10 @@
         "confirmDelete": "Supprimer définitivement",
         "hasEnrollments": "{count} élève(s) inscrit(s) — suppression bloquée. Dépublie plutôt.",
         "codeMismatch": "Le code ne correspond pas.",
+        "invalidStatus": "Action impossible dans l'état actuel du cours.",
+        "inReview": "En attente de validation par un administrateur — ni l'enseignant ni le CMS ne peuvent le publier tant que la revue n'est pas terminée.",
+        "rejectedNote": "Ce cours a été rejeté. L'enseignant doit le corriger et le soumettre à nouveau depuis son studio ; il ne peut pas être publié directement.",
+        "reviewNoteLabel": "Note de l'équipe",
         "cancel": "Annuler",
         "error": "Erreur."
       },
@@ -1926,7 +2296,16 @@
         "add_lesson": "Leçon ajoutée",
         "update_lesson": "Leçon modifiée",
         "delete_lesson": "Leçon supprimée",
-        "reorder_lesson": "Leçon réordonnée"
+        "reorder_lesson": "Leçon réordonnée",
+        "approve_teacher": "Enseignant approuvé",
+        "reject_teacher": "Enseignant rejeté",
+        "suspend_teacher": "Enseignant suspendu",
+        "reactivate_teacher": "Enseignant réactivé",
+        "approve_course": "Formation approuvée",
+        "reject_course": "Formation rejetée",
+        "mark_withdrawal_paid": "Retrait marqué payé",
+        "reject_withdrawal": "Retrait rejeté",
+        "remove_review": "Avis retiré"
       }
     },
     "platform": {
