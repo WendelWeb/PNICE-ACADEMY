@@ -25,6 +25,7 @@ import {
   subscriptionPerks_fr,
 } from '@/data/pricing';
 import { siteImageSrc } from '@/lib/courseImage';
+import { getTeacherOwnerUserId, getTeacherRating } from '@/lib/reviews/reviews';
 
 export function generateStaticParams() {
   return teachers.map((t) => ({ slug: t.slug }));
@@ -74,7 +75,15 @@ export default async function ProfPage({
   const bio = teacherBio(teacher, locale);
   const perks = locale === 'ht' ? subscriptionPerks_ht : subscriptionPerks_fr;
   const photo = siteImageSrc(teacher.imageName);
-  const rating = teacher.rating === null ? '—' : teacher.rating.toFixed(1);
+  // Real weighted rating across the teacher's published courses' reviews
+  // (Task C3-T6) — resolved via their DB owner_user_id (teacher.rating, the
+  // static field, is always null: it existed only as a shape placeholder
+  // before reviews existed). No DB / no owner resolved / no reviews yet ⇒
+  // the same honest "—" this page has always shown.
+  const ownerUserId = await getTeacherOwnerUserId(teacher.courseSlugs);
+  const teacherRating = ownerUserId ? await getTeacherRating(ownerUserId) : { avg: null, count: 0 };
+  const ratingIsEmpty = teacherRating.avg === null;
+  const rating = ratingIsEmpty ? '—' : teacherRating.avg!.toFixed(1);
   // `studentCount` is null until real marketplace sales exist — the ICU
   // plural in `stats.students` expects a number, so a null count is never
   // fed into it; it renders the plain mono `studentsUnknown` string instead.
@@ -157,9 +166,13 @@ export default async function ProfPage({
                   <span className="font-display text-2xl font-black leading-none text-ink">
                     {rating}
                   </span>
-                  {teacher.rating === null && (
+                  {ratingIsEmpty ? (
                     <span className="font-mono text-[10px] text-ink/45">
                       {t('noteEmpty')}
+                    </span>
+                  ) : (
+                    <span className="font-mono text-[10px] text-ink/45">
+                      {t('noteCount', { count: teacherRating.count })}
                     </span>
                   )}
                 </p>

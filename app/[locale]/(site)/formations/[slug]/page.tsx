@@ -20,12 +20,15 @@ import { CourseSlideshow } from '@/components/courses/CourseSlideshow';
 import { ManifestList, type ManifestRow } from '@/components/courses/ManifestList';
 import { MobileBuyBar } from '@/components/courses/MobileBuyBar';
 import { AuthCta } from '@/components/auth/AuthCta';
+import { RatingSummary } from '@/components/reviews/RatingSummary';
+import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { categoryTone } from '@/lib/courseCategory';
 import {
   getPublishedCourses,
   getPublishedCourseBySlug,
   getCourseDetail,
 } from '@/lib/courses/source';
+import { getCourseRating } from '@/lib/reviews/reviews';
 import { getCourseTeacher, teacherShortBio } from '@/data/teachers';
 import { getCourseTestimonial } from '@/lib/admin/site/ops';
 import { courseImages, siteImageSrc } from '@/lib/courseImage';
@@ -79,6 +82,8 @@ export default async function CourseDetail({
   const t = await getTranslations('course');
   const tc = await getTranslations('common');
   const tCatalog = await getTranslations('catalog');
+  const tReviews = await getTranslations('reviews');
+  const rating = await getCourseRating(slug);
 
   const learn = courseLearn(course, locale);
   const deliverables =
@@ -166,6 +171,15 @@ export default async function CourseDetail({
                   <p className="mt-3 max-w-xl text-lg leading-relaxed text-graphite">
                     {courseTagline(course, locale)}
                   </p>
+                  {rating.avg !== null && (
+                    <RatingSummary
+                      avg={rating.avg}
+                      countLabel={tReviews('countLabel', { count: rating.count })}
+                      emptyLabel=""
+                      size={15}
+                      className="mt-2"
+                    />
+                  )}
                   {teacher && (
                     <Link
                       href={`/prof/${teacher.slug}`}
@@ -322,6 +336,9 @@ export default async function CourseDetail({
                   </div>
                 </Reveal>
               )}
+
+              {/* ratings + reviews */}
+              <ReviewsSection courseSlug={course.slug} />
 
               {/* social proof — only if a real, published testimonial matches */}
               {testimonial && testimonialQuote && (

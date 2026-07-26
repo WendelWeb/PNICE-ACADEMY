@@ -293,6 +293,7 @@
     "since": "Enseignant depuis {year}",
     "noteLabel": "Note",
     "noteEmpty": "pas encore d'avis",
+    "noteCount": "{count, plural, one {1 avis} other {# avis}}",
     "sealTop": "Enseignant",
     "photoAlt": "{name} — enseignant sur PNICE Academy",
     "stats": {
@@ -322,6 +323,35 @@
       "primary": "Commencer à apprendre",
       "secondary": "Voir tout le catalogue",
       "teachLink": "Tu maîtrises un savoir-faire toi aussi ? Deviens enseignant"
+    }
+  },
+  "reviews": {
+    "title": "Avis",
+    "empty": "Il n'y a pas encore d'avis pour cette formation.",
+    "countLabel": "{count, plural, one {1 avis} other {# avis}}",
+    "reviewerFallback": "Un élève",
+    "widget": {
+      "rateTitle": "Donne ta note",
+      "editTitle": "Modifie ta note",
+      "commentPlaceholder": "Écris ton commentaire (optionnel)…",
+      "submit": "Envoyer",
+      "update": "Mettre à jour",
+      "notEnrolledNote": "Achète cette formation pour pouvoir donner ta note.",
+      "submitted": "Merci ! Ta note a été enregistrée.",
+      "errors": {
+        "unauthorized": "Connecte-toi pour donner une note.",
+        "not_enrolled": "Tu dois d'abord acheter cette formation.",
+        "invalid_stars": "Choisis une note entre 1 et 5 étoiles.",
+        "comment_too_long": "Le commentaire est trop long.",
+        "db_required": "Ce service n'est pas disponible pour le moment.",
+        "error": "Une erreur est survenue. Réessaie."
+      }
+    },
+    "report": {
+      "action": "Signaler",
+      "confirm": "Confirmer le signalement ?",
+      "done": "Merci, nous avons reçu ton signalement.",
+      "error": "Une erreur est survenue."
     }
   },
   "teach": {
@@ -1146,7 +1176,8 @@
         "approve_course": "Formation approuvée",
         "reject_course": "Formation rejetée",
         "mark_withdrawal_paid": "Retrait marqué payé",
-        "reject_withdrawal": "Retrait rejeté"
+        "reject_withdrawal": "Retrait rejeté",
+        "remove_review": "Avis retiré"
       },
       "actions": {
         "title": "Actions manuelles",
@@ -1332,6 +1363,10 @@
     },
     "teachers": {
       "subtitle": "Candidatures et profils enseignants — approuve, rejette, suspends.",
+      "viewTabs": {
+        "teachers": "Enseignants",
+        "reviews": "Avis signalés"
+      },
       "tabs": {
         "pending": "En attente",
         "approved": "Approuvés",
@@ -1353,6 +1388,34 @@
         "reject": "Rejeter",
         "suspend": "Suspendre",
         "reactivate": "Réactiver",
+        "noteHelp": "La raison sera enregistrée dans le journal d'audit.",
+        "notePlaceholder": "Raison…",
+        "cancel": "Annuler",
+        "confirm": "Confirmer",
+        "done": "Fait.",
+        "error": "Une erreur est survenue."
+      }
+    },
+    "reviews": {
+      "subtitle": "Avis publiés sur toutes les formations — retire un avis signalé ou inapproprié.",
+      "col": {
+        "course": "Formation",
+        "reviewer": "Élève",
+        "stars": "Note",
+        "comment": "Commentaire",
+        "status": "Statut",
+        "date": "Date",
+        "actions": "Actions"
+      },
+      "status": {
+        "published": "Publié",
+        "removed": "Retiré"
+      },
+      "reportedBadge": "Signalé",
+      "noComment": "(pas de commentaire)",
+      "empty": "Aucun avis pour le moment.",
+      "actions": {
+        "remove": "Retirer",
         "noteHelp": "La raison sera enregistrée dans le journal d'audit.",
         "notePlaceholder": "Raison…",
         "cancel": "Annuler",
@@ -2198,7 +2261,8 @@
         "approve_course": "Formation approuvée",
         "reject_course": "Formation rejetée",
         "mark_withdrawal_paid": "Retrait marqué payé",
-        "reject_withdrawal": "Retrait rejeté"
+        "reject_withdrawal": "Retrait rejeté",
+        "remove_review": "Avis retiré"
       }
     },
     "platform": {

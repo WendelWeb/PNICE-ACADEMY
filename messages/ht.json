@@ -293,6 +293,7 @@
     "since": "Anseyan depi {year}",
     "noteLabel": "Nòt",
     "noteEmpty": "poko gen avi",
+    "noteCount": "{count, plural, one {1 avi} other {# avi}}",
     "sealTop": "Anseyan",
     "photoAlt": "{name} — anseyan sou PNICE Academy",
     "stats": {
@@ -322,6 +323,35 @@
       "primary": "Kòmanse aprann",
       "secondary": "Gade tout katalòg la",
       "teachLink": "Ou metrize yon konesans tou? Vin anseyan"
+    }
+  },
+  "reviews": {
+    "title": "Avi",
+    "empty": "Poko gen avi pou fòmasyon sa a.",
+    "countLabel": "{count, plural, one {1 avi} other {# avi}}",
+    "reviewerFallback": "Yon elèv",
+    "widget": {
+      "rateTitle": "Bay nòt ou",
+      "editTitle": "Modifye nòt ou",
+      "commentPlaceholder": "Ekri kòmantè ou (opsyonèl)…",
+      "submit": "Voye",
+      "update": "Mete ajou",
+      "notEnrolledNote": "Achte fòmasyon sa a pou w ka bay nòt ou.",
+      "submitted": "Mèsi! Nòt ou anrejistre.",
+      "errors": {
+        "unauthorized": "Konekte pou w bay yon nòt.",
+        "not_enrolled": "Ou dwe achte fòmasyon sa a anvan.",
+        "invalid_stars": "Chwazi yon nòt ant 1 ak 5 zetwal.",
+        "comment_too_long": "Kòmantè a twò long.",
+        "db_required": "Sèvis la pa disponib kounye a.",
+        "error": "Gen yon erè ki fèt. Eseye ankò."
+      }
+    },
+    "report": {
+      "action": "Siyale",
+      "confirm": "Konfime siyalman an?",
+      "done": "Mèsi, nou resevwa siyalman ou.",
+      "error": "Gen yon erè ki fèt."
     }
   },
   "teach": {
@@ -1146,7 +1176,8 @@
         "approve_course": "Fòmasyon apwouve",
         "reject_course": "Fòmasyon rejte",
         "mark_withdrawal_paid": "Retrè make peye",
-        "reject_withdrawal": "Retrè rejte"
+        "reject_withdrawal": "Retrè rejte",
+        "remove_review": "Avi retire"
       },
       "actions": {
         "title": "Aksyon manyèl",
@@ -1332,6 +1363,10 @@
     },
     "teachers": {
       "subtitle": "Kandidati ak pwofil pwofesè — apwouve, rejte, sispann.",
+      "viewTabs": {
+        "teachers": "Pwofesè",
+        "reviews": "Avi siyale"
+      },
       "tabs": {
         "pending": "An atant",
         "approved": "Apwouve",
@@ -1353,6 +1388,34 @@
         "reject": "Rejte",
         "suspend": "Sispann",
         "reactivate": "Reaktive",
+        "noteHelp": "Rezon an ap anrejistre nan jounal odit la.",
+        "notePlaceholder": "Rezon…",
+        "cancel": "Anile",
+        "confirm": "Konfime",
+        "done": "Fèt.",
+        "error": "Gen yon erè ki fèt."
+      }
+    },
+    "reviews": {
+      "subtitle": "Avi ki pibliye sou tout fòmasyon yo — retire yon avi ki siyale oswa ki pa apwopriye.",
+      "col": {
+        "course": "Fòmasyon",
+        "reviewer": "Elèv",
+        "stars": "Nòt",
+        "comment": "Kòmantè",
+        "status": "Estati",
+        "date": "Dat",
+        "actions": "Aksyon"
+      },
+      "status": {
+        "published": "Pibliye",
+        "removed": "Retire"
+      },
+      "reportedBadge": "Siyale",
+      "noComment": "(pa gen kòmantè)",
+      "empty": "Pa gen avi pou kounye a.",
+      "actions": {
+        "remove": "Retire",
         "noteHelp": "Rezon an ap anrejistre nan jounal odit la.",
         "notePlaceholder": "Rezon…",
         "cancel": "Anile",
@@ -2198,7 +2261,8 @@
         "approve_course": "Fòmasyon apwouve",
         "reject_course": "Fòmasyon rejte",
         "mark_withdrawal_paid": "Retrè make peye",
-        "reject_withdrawal": "Retrè rejte"
+        "reject_withdrawal": "Retrè rejte",
+        "remove_review": "Avi retire"
       }
     },
     "platform": {

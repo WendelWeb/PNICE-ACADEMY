@@ -195,7 +195,9 @@ export type AuditAction =
   | 'reject_course'
   // Teacher marketplace payouts (Phase C3-T5)
   | 'mark_withdrawal_paid'
-  | 'reject_withdrawal';
+  | 'reject_withdrawal'
+  // Course ratings/reviews moderation (Phase C3-T6)
+  | 'remove_review';
 
 export type AdminActor = { id: string; name: string };
 
