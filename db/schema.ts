@@ -7,7 +7,9 @@ import {
   timestamp,
   jsonb,
   unique,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 /**
  * PNICE Academy — Drizzle/Neon schema (Phase 2 foundation).
@@ -627,23 +629,42 @@ export const earningsLedger = pgTable('earnings_ledger', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
-export const withdrawalRequests = pgTable('withdrawal_requests', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  teacherUserId: uuid('teacher_user_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  amountCents: integer('amount_cents').notNull(),
-  method: text('method'),
-  destinationSnapshot: text('destination_snapshot'),
-  status: text('status').$type<'pending' | 'paid' | 'rejected'>().default('pending').notNull(),
-  // Clerk id of the admin who processed the request.
-  processedBy: text('processed_by'),
-  processedAt: timestamp('processed_at', { withTimezone: true }),
-  reference: text('reference'),
-  note: text('note'),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-});
+export const withdrawalRequests = pgTable(
+  'withdrawal_requests',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    teacherUserId: uuid('teacher_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    amountCents: integer('amount_cents').notNull(),
+    method: text('method'),
+    destinationSnapshot: text('destination_snapshot'),
+    status: text('status').$type<'pending' | 'paid' | 'rejected'>().default('pending').notNull(),
+    // Clerk id of the admin who processed the request.
+    processedBy: text('processed_by'),
+    processedAt: timestamp('processed_at', { withTimezone: true }),
+    reference: text('reference'),
+    note: text('note'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    // Race-condition guard (Task C3-T4 fix, withdrawal double-pending bug):
+    // `requestWithdrawalAction` (lib/teacher/studio-actions.ts) does a
+    // check-then-insert ("no existing pending row?") that is NOT atomic —
+    // two concurrent requests can both pass that check and both insert,
+    // producing two pending rows whose combined amount can exceed the
+    // teacher's actual balance. A partial unique index makes Postgres the
+    // real guard: at most one 'pending' row per teacher can ever exist,
+    // full stop. The app-layer pre-checks stay (good UX / fast-path
+    // rejection); this index is the backstop that makes them correct under
+    // concurrency. A unique-violation on insert is caught by the action and
+    // returned as `{ ok: false, message: 'pending_exists' }`.
+    onePendingPerTeacher: uniqueIndex('withdrawal_one_pending_per_teacher')
+      .on(t.teacherUserId)
+      .where(sql`${t.status} = 'pending'`),
+  }),
+);
 
 export const courseReviews = pgTable(
   'course_reviews',

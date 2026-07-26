@@ -41,7 +41,7 @@
  * `{ ok: false, message: 'db_required' }`, never throws.
  */
 import { auth } from '@clerk/nextjs/server';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { db, schema } from '@/db';
 import { dbConfigured } from '@/lib/courses/source';
 import { resolveUserId } from '@/lib/learner/access';
@@ -83,18 +83,65 @@ async function requireApprovedTeacher(): Promise<{ userId: string; actor: AdminA
 /**
  * THE SECURITY CORE (see file header): requires an approved teacher AND that
  * `slug` is a course they own. Every mutation on an EXISTING course/lesson/
- * image set calls this first.
+ * image set calls this first. Also returns `wasPublished` (the course's
+ * status AT THE MOMENT OF THE CHECK, before any write below runs) — every
+ * caller feeds this into `reenterReviewIfWasPublished` after its write
+ * succeeds (see that function's header for why).
  */
-async function requireOwnedCourse(slug: string): Promise<{ userId: string; actor: AdminActor }> {
+async function requireOwnedCourse(
+  slug: string,
+): Promise<{ userId: string; actor: AdminActor; wasPublished: boolean }> {
   const { userId, actor } = await requireApprovedTeacher();
   const [course] = await db
-    .select({ ownerUserId: T.courses.ownerUserId })
+    .select({ ownerUserId: T.courses.ownerUserId, status: T.courses.status })
     .from(T.courses)
     .where(eq(T.courses.slug, slug))
     .limit(1);
   if (!course) throw new Error('not_found');
   if (course.ownerUserId !== userId) throw new Error('forbidden');
-  return { userId, actor };
+  return { userId, actor, wasPublished: course.status === 'published' };
+}
+
+/**
+ * RE-REVIEW GATE (Task C3-T4 fix — binding marketplace decision: "admin
+ * reviews EVERY course change before it's public"). Before this fix, a
+ * teacher editing an already-PUBLISHED course applied their edit immediately
+ * and it stayed live with no re-approval — every studio mutation below calls
+ * this AFTER its write succeeds so that's no longer possible: if the course
+ * WAS 'published' at the start of the action (per `requireOwnedCourse`'s
+ * `wasPublished`), it is pulled back into 'pending_review' (same
+ * submittedAt/hasUnpublishedChanges bookkeeping `writeOps.submitForReview`
+ * uses) and the public catalog paths are revalidated, so the now-unpublished
+ * course actually disappears from the public site instead of lingering in
+ * ISR cache until the next ~ window.
+ *
+ * `submitMyCourseForReviewAction`/`unpublishMyCourseAction` do NOT call this
+ * — they already own the status transition for their own paths (draft/
+ * rejected → pending_review, published → draft) and must not be double-
+ * applied on top of it.
+ *
+ * Scoped by slug AND ownerUserId (belt-and-suspenders on top of the caller's
+ * `requireOwnedCourse` check) — this must never touch a course this teacher
+ * doesn't own.
+ *
+ * v1 (deliberate, see the plan): this takes the course OFFLINE for the
+ * duration of the re-review — there is no separate draft/published fork (see
+ * lib/courses/write.ts's file header), so "keep the last-approved version
+ * live while the pending edit is reviewed" would need real content
+ * versioning. That's a v2 follow-up; taking the course down until
+ * re-approved is the safe, moderation-correct default for v1. The existing
+ * `teach.studio.status.pending_review` badge + `pendingReviewNote` copy
+ * ("En cours de validation par notre équipe." / Kreyòl equivalent) already
+ * surfaces this to the teacher the moment the page refreshes post-edit — no
+ * new i18n key needed for that.
+ */
+async function reenterReviewIfWasPublished(slug: string, ownerUserId: string, wasPublished: boolean): Promise<void> {
+  if (!wasPublished) return;
+  await db
+    .update(T.courses)
+    .set({ status: 'pending_review', submittedAt: new Date(), hasUnpublishedChanges: true, updatedAt: new Date() })
+    .where(and(eq(T.courses.slug, slug), eq(T.courses.ownerUserId, ownerUserId)));
+  writeOps.revalidateCoursePaths(slug);
 }
 
 /* -------------------------------- course ------------------------------- */
@@ -123,8 +170,10 @@ export async function createMyCourseAction(
 export async function updateMyCourseAction(slug: string, patch: CoursePatch): Promise<StudioResult> {
   if (!dbConfigured()) return dbRequired();
   try {
-    const { actor } = await requireOwnedCourse(slug);
-    return await writeOps.updateCourse(slug, patch, actor);
+    const { userId, actor, wasPublished } = await requireOwnedCourse(slug);
+    const result = await writeOps.updateCourse(slug, patch, actor);
+    if (result.ok) await reenterReviewIfWasPublished(slug, userId, wasPublished);
+    return result;
   } catch (e) {
     return fail(e);
   }
@@ -169,8 +218,10 @@ export async function unpublishMyCourseAction(slug: string): Promise<StudioResul
 export async function addMyLessonAction(slug: string): Promise<StudioResult> {
   if (!dbConfigured()) return dbRequired();
   try {
-    const { actor } = await requireOwnedCourse(slug);
-    return await writeOps.addLesson(slug, actor);
+    const { userId, actor, wasPublished } = await requireOwnedCourse(slug);
+    const result = await writeOps.addLesson(slug, actor);
+    if (result.ok) await reenterReviewIfWasPublished(slug, userId, wasPublished);
+    return result;
   } catch (e) {
     return fail(e);
   }
@@ -179,8 +230,10 @@ export async function addMyLessonAction(slug: string): Promise<StudioResult> {
 export async function updateMyLessonAction(slug: string, lessonId: string, patch: LessonPatch): Promise<StudioResult> {
   if (!dbConfigured()) return dbRequired();
   try {
-    const { actor } = await requireOwnedCourse(slug);
-    return await writeOps.updateLesson(slug, lessonId, patch, actor);
+    const { userId, actor, wasPublished } = await requireOwnedCourse(slug);
+    const result = await writeOps.updateLesson(slug, lessonId, patch, actor);
+    if (result.ok) await reenterReviewIfWasPublished(slug, userId, wasPublished);
+    return result;
   } catch (e) {
     return fail(e);
   }
@@ -189,8 +242,10 @@ export async function updateMyLessonAction(slug: string, lessonId: string, patch
 export async function deleteMyLessonAction(slug: string, lessonId: string): Promise<StudioResult> {
   if (!dbConfigured()) return dbRequired();
   try {
-    const { actor } = await requireOwnedCourse(slug);
-    return await writeOps.deleteLesson(slug, lessonId, actor);
+    const { userId, actor, wasPublished } = await requireOwnedCourse(slug);
+    const result = await writeOps.deleteLesson(slug, lessonId, actor);
+    if (result.ok) await reenterReviewIfWasPublished(slug, userId, wasPublished);
+    return result;
   } catch (e) {
     return fail(e);
   }
@@ -199,8 +254,10 @@ export async function deleteMyLessonAction(slug: string, lessonId: string): Prom
 export async function moveMyLessonAction(slug: string, lessonId: string, dir: 'up' | 'down'): Promise<StudioResult> {
   if (!dbConfigured()) return dbRequired();
   try {
-    const { actor } = await requireOwnedCourse(slug);
-    return await writeOps.reorderLessons(slug, lessonId, dir, actor);
+    const { userId, actor, wasPublished } = await requireOwnedCourse(slug);
+    const result = await writeOps.reorderLessons(slug, lessonId, dir, actor);
+    if (result.ok) await reenterReviewIfWasPublished(slug, userId, wasPublished);
+    return result;
   } catch (e) {
     return fail(e);
   }
@@ -232,11 +289,13 @@ export async function validateMyBunnyVideoAction(videoId: string): Promise<Studi
 export async function setMyMainImageAction(slug: string, url: string): Promise<StudioResult> {
   if (!dbConfigured()) return dbRequired();
   try {
-    const { actor } = await requireOwnedCourse(slug);
+    const { userId, actor, wasPublished } = await requireOwnedCourse(slug);
     const course = await writeOps.getAdminCourse(slug);
     if (!course) return { ok: false, message: 'not_found' };
     const secondary = course.secondaryImages.map((i) => ({ url: i.url, alt: i.alt }));
-    return await writeOps.setCourseImages(slug, { main: url.trim() || null, secondary }, actor);
+    const result = await writeOps.setCourseImages(slug, { main: url.trim() || null, secondary }, actor);
+    if (result.ok) await reenterReviewIfWasPublished(slug, userId, wasPublished);
+    return result;
   } catch (e) {
     return fail(e);
   }
@@ -245,12 +304,14 @@ export async function setMyMainImageAction(slug: string, url: string): Promise<S
 export async function addMySecondaryImageAction(slug: string, url: string, alt: string): Promise<StudioResult> {
   if (!dbConfigured()) return dbRequired();
   try {
-    const { actor } = await requireOwnedCourse(slug);
+    const { userId, actor, wasPublished } = await requireOwnedCourse(slug);
     if (!url.trim()) return { ok: false, message: 'empty' };
     const course = await writeOps.getAdminCourse(slug);
     if (!course) return { ok: false, message: 'not_found' };
     const secondary = [...course.secondaryImages.map((i) => ({ url: i.url, alt: i.alt })), { url: url.trim(), alt: alt.trim() }];
-    return await writeOps.setCourseImages(slug, { main: course.mainImage, secondary }, actor);
+    const result = await writeOps.setCourseImages(slug, { main: course.mainImage, secondary }, actor);
+    if (result.ok) await reenterReviewIfWasPublished(slug, userId, wasPublished);
+    return result;
   } catch (e) {
     return fail(e);
   }
@@ -259,11 +320,13 @@ export async function addMySecondaryImageAction(slug: string, url: string, alt: 
 export async function removeMySecondaryImageAction(slug: string, imageId: string): Promise<StudioResult> {
   if (!dbConfigured()) return dbRequired();
   try {
-    const { actor } = await requireOwnedCourse(slug);
+    const { userId, actor, wasPublished } = await requireOwnedCourse(slug);
     const course = await writeOps.getAdminCourse(slug);
     if (!course) return { ok: false, message: 'not_found' };
     const secondary = course.secondaryImages.filter((i) => i.id !== imageId).map((i) => ({ url: i.url, alt: i.alt }));
-    return await writeOps.setCourseImages(slug, { main: course.mainImage, secondary }, actor);
+    const result = await writeOps.setCourseImages(slug, { main: course.mainImage, secondary }, actor);
+    if (result.ok) await reenterReviewIfWasPublished(slug, userId, wasPublished);
+    return result;
   } catch (e) {
     return fail(e);
   }
@@ -272,7 +335,7 @@ export async function removeMySecondaryImageAction(slug: string, imageId: string
 export async function moveMySecondaryImageAction(slug: string, imageId: string, dir: 'up' | 'down'): Promise<StudioResult> {
   if (!dbConfigured()) return dbRequired();
   try {
-    const { actor } = await requireOwnedCourse(slug);
+    const { userId, actor, wasPublished } = await requireOwnedCourse(slug);
     const course = await writeOps.getAdminCourse(slug);
     if (!course) return { ok: false, message: 'not_found' };
     const i = course.secondaryImages.findIndex((x) => x.id === imageId);
@@ -281,7 +344,9 @@ export async function moveMySecondaryImageAction(slug: string, imageId: string, 
     const reordered = [...course.secondaryImages];
     [reordered[i], reordered[j]] = [reordered[j], reordered[i]];
     const secondary = reordered.map((im) => ({ url: im.url, alt: im.alt }));
-    return await writeOps.setCourseImages(slug, { main: course.mainImage, secondary }, actor);
+    const result = await writeOps.setCourseImages(slug, { main: course.mainImage, secondary }, actor);
+    if (result.ok) await reenterReviewIfWasPublished(slug, userId, wasPublished);
+    return result;
   } catch (e) {
     return fail(e);
   }
@@ -324,13 +389,28 @@ export async function requestWithdrawalAction(amountCents: number): Promise<With
     if (amountCents < thresholdCents) return { ok: false, message: 'below_threshold' };
     if (amountCents > balanceCents) return { ok: false, message: 'insufficient_balance' };
 
-    await db.insert(T.withdrawalRequests).values({
-      teacherUserId: userId,
-      amountCents,
-      method: profile.payoutMethod,
-      destinationSnapshot: profile.payoutDestination,
-      status: 'pending',
-    });
+    // The `withdrawals.some(...)` check above is a pre-check for good UX
+    // (fast, clear rejection) — it is NOT the real guard: two concurrent
+    // calls can both pass it before either inserts, both scheduling a
+    // 'pending' row that together exceed the teacher's balance. The DB's
+    // `withdrawal_one_pending_per_teacher` partial unique index
+    // (db/schema.ts) is the actual guard — it lets at most one 'pending' row
+    // per teacher exist, full stop. A concurrent second insert hits that
+    // constraint and throws; caught here and reported the same way the
+    // pre-check above reports it, since to the caller it's the same
+    // situation ("you already have one pending").
+    try {
+      await db.insert(T.withdrawalRequests).values({
+        teacherUserId: userId,
+        amountCents,
+        method: profile.payoutMethod,
+        destinationSnapshot: profile.payoutDestination,
+        status: 'pending',
+      });
+    } catch (insertErr) {
+      console.error('[teacher/studio-actions] requestWithdrawalAction insert failed:', insertErr);
+      return { ok: false, message: 'pending_exists' };
+    }
     return { ok: true };
   } catch (e) {
     console.error('[teacher/studio-actions] requestWithdrawalAction failed:', e);

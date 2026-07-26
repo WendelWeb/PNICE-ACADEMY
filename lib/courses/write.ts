@@ -312,8 +312,15 @@ async function resolveOwnerUserId(): Promise<string | null> {
   return null;
 }
 
-/** Public routes affected by a course's content/publish state (both locales). */
-function revalidateCoursePaths(slug: string): void {
+/**
+ * Public routes affected by a course's content/publish state (both locales).
+ * Exported for lib/teacher/studio-actions.ts (Task C3-T4 fix): the studio's
+ * re-review gate (a published course an owning teacher edits drops back to
+ * `pending_review`, see that file) needs to revalidate the same public paths
+ * this module's own status-changing writes do, without duplicating the
+ * locale/path list here.
+ */
+export function revalidateCoursePaths(slug: string): void {
   for (const locale of ['ht', 'fr'] as const) {
     revalidatePath(`/${locale}`);
     revalidatePath(`/${locale}/formations`);

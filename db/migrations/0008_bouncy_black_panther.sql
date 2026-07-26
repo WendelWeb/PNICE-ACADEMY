@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "withdrawal_one_pending_per_teacher" ON "withdrawal_requests" USING btree ("teacher_user_id") WHERE "withdrawal_requests"."status" = 'pending';
