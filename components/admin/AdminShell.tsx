@@ -24,6 +24,7 @@ import {
   IconX,
   IconExternalLink,
   IconTool,
+  IconUserCheck,
   type Icon as TablerIcon,
 } from '@tabler/icons-react';
 import { Link, usePathname } from '@/i18n/routing';
@@ -38,6 +39,7 @@ import { SupportNavBadge } from './support/SupportNavBadge';
 const ICONS: Record<string, TablerIcon> = {
   overview: IconLayoutDashboard,
   users: IconUsers,
+  teachers: IconUserCheck,
   courses: IconBook,
   subscriptions: IconRefresh,
   payments: IconCreditCard,

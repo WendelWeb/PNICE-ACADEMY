@@ -16,7 +16,9 @@ export type Capability =
   | 'support.read'
   | 'support.act'
   | 'settings.manage'
-  | 'roles.manage';
+  | 'roles.manage'
+  // C3 marketplace: teacher-profile + course-review moderation queue.
+  | 'teachers.review';
 
 export const ALL_CAPABILITIES: Capability[] = [
   'overview.read',
@@ -30,6 +32,7 @@ export const ALL_CAPABILITIES: Capability[] = [
   'support.act',
   'settings.manage',
   'roles.manage',
+  'teachers.review',
 ];
 
 const MATRIX: Record<AdminRole, Capability[]> = {
@@ -47,6 +50,7 @@ const MATRIX: Record<AdminRole, Capability[]> = {
     'support.read',
     'support.act',
     'settings.manage',
+    'teachers.review',
   ],
   // Support desk: read operational data + run the support workbench (tickets,
   // replies, system health) — but no refunds, role or content mutations.

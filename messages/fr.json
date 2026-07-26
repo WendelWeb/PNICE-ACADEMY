@@ -873,6 +873,7 @@
     "nav": {
       "overview": "Vue d'ensemble",
       "users": "Utilisateurs",
+      "teachers": "Enseignants",
       "courses": "Cours",
       "subscriptions": "Abonnements",
       "payments": "Paiements",
@@ -1058,7 +1059,13 @@
         "update_template": "Template modifié",
         "delete_template": "Template supprimé",
         "replay_webhook": "Webhook rejoué",
-        "set_digest": "Récapitulatif quotidien modifié"
+        "set_digest": "Récapitulatif quotidien modifié",
+        "approve_teacher": "Profil enseignant approuvé",
+        "reject_teacher": "Profil enseignant rejeté",
+        "suspend_teacher": "Profil enseignant suspendu",
+        "reactivate_teacher": "Profil enseignant réactivé",
+        "approve_course": "Formation approuvée",
+        "reject_course": "Formation rejetée"
       },
       "actions": {
         "title": "Actions manuelles",
@@ -1132,6 +1139,9 @@
         },
         "roles": {
           "manage": "Gérer les rôles admin"
+        },
+        "teachers": {
+          "review": "Approuver enseignants et cours (file de modération)"
         }
       },
       "forbiddenSection": "Tu n'as pas accès à cette section."
@@ -1234,6 +1244,37 @@
         "drop": "Chute",
         "avgWatch": "Temps moyen",
         "biggestDrop": "Plus grande chute"
+      }
+    },
+    "teachers": {
+      "subtitle": "Candidatures et profils enseignants — approuve, rejette, suspends.",
+      "tabs": {
+        "pending": "En attente",
+        "approved": "Approuvés",
+        "suspended": "Suspendus",
+        "rejected": "Rejetés"
+      },
+      "col": {
+        "teacher": "Enseignant",
+        "bio": "Bio",
+        "payout": "Paiement",
+        "appliedAt": "Candidature",
+        "actions": "Actions"
+      },
+      "empty": "Aucun enseignant dans cette file.",
+      "noBio": "(pas de bio)",
+      "noPayout": "Non renseigné",
+      "actions": {
+        "approve": "Approuver",
+        "reject": "Rejeter",
+        "suspend": "Suspendre",
+        "reactivate": "Réactiver",
+        "noteHelp": "La raison sera enregistrée dans le journal d'audit.",
+        "notePlaceholder": "Raison…",
+        "cancel": "Annuler",
+        "confirm": "Confirmer",
+        "done": "Fait.",
+        "error": "Une erreur est survenue."
       }
     },
     "analytics": {
@@ -1505,6 +1546,20 @@
         "edit": "Éditer",
         "actions": "Actions",
         "pendingChanges": "modifs"
+      },
+      "review": {
+        "tabAll": "Tous",
+        "tabPending": "À valider",
+        "empty": "Aucun cours à valider.",
+        "submittedAt": "Soumis le",
+        "approve": "Approuver",
+        "reject": "Rejeter",
+        "noteHelp": "La raison sera visible par l'enseignant et enregistrée dans le journal d'audit.",
+        "notePlaceholder": "Raison du rejet…",
+        "cancel": "Annuler",
+        "confirm": "Confirmer",
+        "done": "Fait.",
+        "error": "Une erreur est survenue."
       },
       "create": {
         "title": "Créer un cours",
@@ -2017,7 +2072,13 @@
         "add_lesson": "Leçon ajoutée",
         "update_lesson": "Leçon modifiée",
         "delete_lesson": "Leçon supprimée",
-        "reorder_lesson": "Leçon réordonnée"
+        "reorder_lesson": "Leçon réordonnée",
+        "approve_teacher": "Enseignant approuvé",
+        "reject_teacher": "Enseignant rejeté",
+        "suspend_teacher": "Enseignant suspendu",
+        "reactivate_teacher": "Enseignant réactivé",
+        "approve_course": "Formation approuvée",
+        "reject_course": "Formation rejetée"
       }
     },
     "platform": {

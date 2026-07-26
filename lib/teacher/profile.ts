@@ -75,6 +75,7 @@ export type WithdrawalRow = {
 
 const DEFAULT_COMMISSION_PCT = 30;
 const DEFAULT_PAYOUT_THRESHOLD_CENTS = 2500;
+const DEFAULT_VIDEO_QUOTA_MINUTES = 600;
 
 type DbTeacherProfileRow = typeof T.teacherProfiles.$inferSelect;
 type DbLedgerRow = typeof T.earningsLedger.$inferSelect;
@@ -261,5 +262,28 @@ export async function getPayoutThresholdCents(): Promise<number> {
   } catch (err) {
     console.error('[teacher/profile] getPayoutThresholdCents DB read failed, falling back to default:', err);
     return DEFAULT_PAYOUT_THRESHOLD_CENTS;
+  }
+}
+
+/**
+ * The default video-storage quota (minutes) granted to a NEWLY approved
+ * teacher (`platform_settings.default_video_quota_minutes`), copied onto
+ * `teacher_profiles.video_quota_minutes` at approval time (Task C3-T3 —
+ * see lib/teacher/admin.ts's `approveTeacherProfile`). GATED + FALLBACK: no
+ * DATABASE_URL, no settings row, or a failed query ⇒ the spec default
+ * (600 min = 10h), never throws.
+ */
+export async function getDefaultVideoQuotaMinutes(): Promise<number> {
+  if (!dbConfigured()) return DEFAULT_VIDEO_QUOTA_MINUTES;
+  try {
+    const [row] = await db
+      .select()
+      .from(T.platformSettings)
+      .where(eq(T.platformSettings.id, 'singleton'))
+      .limit(1);
+    return row?.defaultVideoQuotaMinutes ?? DEFAULT_VIDEO_QUOTA_MINUTES;
+  } catch (err) {
+    console.error('[teacher/profile] getDefaultVideoQuotaMinutes DB read failed, falling back to default:', err);
+    return DEFAULT_VIDEO_QUOTA_MINUTES;
   }
 }

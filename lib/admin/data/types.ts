@@ -185,7 +185,14 @@ export type AuditAction =
   | 'add_lesson'
   | 'update_lesson'
   | 'delete_lesson'
-  | 'reorder_lesson';
+  | 'reorder_lesson'
+  // Teacher marketplace moderation (Phase C3-T3)
+  | 'approve_teacher'
+  | 'reject_teacher'
+  | 'suspend_teacher'
+  | 'reactivate_teacher'
+  | 'approve_course'
+  | 'reject_course';
 
 export type AdminActor = { id: string; name: string };
 

@@ -873,6 +873,7 @@
     "nav": {
       "overview": "Apèsi jeneral",
       "users": "Itilizatè",
+      "teachers": "Pwofesè",
       "courses": "Fòmasyon",
       "subscriptions": "Abònman",
       "payments": "Peman",
@@ -1058,7 +1059,13 @@
         "update_template": "Modèl modifye",
         "delete_template": "Modèl efase",
         "replay_webhook": "Webhook rejwe",
-        "set_digest": "Rezime chak jou modifye"
+        "set_digest": "Rezime chak jou modifye",
+        "approve_teacher": "Pwofil pwofesè apwouve",
+        "reject_teacher": "Pwofil pwofesè rejte",
+        "suspend_teacher": "Pwofil pwofesè sispann",
+        "reactivate_teacher": "Pwofil pwofesè reaktive",
+        "approve_course": "Fòmasyon apwouve",
+        "reject_course": "Fòmasyon rejte"
       },
       "actions": {
         "title": "Aksyon manyèl",
@@ -1132,6 +1139,9 @@
         },
         "roles": {
           "manage": "Jere wòl admin"
+        },
+        "teachers": {
+          "review": "Apwouve pwofesè ak fòmasyon (fil moderasyon)"
         }
       },
       "forbiddenSection": "Ou pa gen aksè nan seksyon sa a."
@@ -1234,6 +1244,37 @@
         "drop": "Chit",
         "avgWatch": "Tan mwayen",
         "biggestDrop": "Pi gwo chit"
+      }
+    },
+    "teachers": {
+      "subtitle": "Kandidati ak pwofil pwofesè — apwouve, rejte, sispann.",
+      "tabs": {
+        "pending": "An atant",
+        "approved": "Apwouve",
+        "suspended": "Sispann",
+        "rejected": "Rejte"
+      },
+      "col": {
+        "teacher": "Pwofesè",
+        "bio": "Bio",
+        "payout": "Peman",
+        "appliedAt": "Kandidati",
+        "actions": "Aksyon"
+      },
+      "empty": "Pa gen pwofesè nan fil sa a.",
+      "noBio": "(pa gen bio)",
+      "noPayout": "Pa ranpli",
+      "actions": {
+        "approve": "Apwouve",
+        "reject": "Rejte",
+        "suspend": "Sispann",
+        "reactivate": "Reaktive",
+        "noteHelp": "Rezon an ap anrejistre nan jounal odit la.",
+        "notePlaceholder": "Rezon…",
+        "cancel": "Anile",
+        "confirm": "Konfime",
+        "done": "Fèt.",
+        "error": "Gen yon erè ki fèt."
       }
     },
     "analytics": {
@@ -1505,6 +1546,20 @@
         "edit": "Modifye",
         "actions": "Aksyon",
         "pendingChanges": "chanjman"
+      },
+      "review": {
+        "tabAll": "Tout",
+        "tabPending": "Pou revize",
+        "empty": "Pa gen kou pou revize.",
+        "submittedAt": "Soumèt le",
+        "approve": "Apwouve",
+        "reject": "Rejte",
+        "noteHelp": "Pwofesè a ap wè rezon an; li ap anrejistre nan jounal odit la.",
+        "notePlaceholder": "Rezon rejè a…",
+        "cancel": "Anile",
+        "confirm": "Konfime",
+        "done": "Fèt.",
+        "error": "Gen yon erè ki fèt."
       },
       "create": {
         "title": "Kreye yon kou",
@@ -2017,7 +2072,13 @@
         "add_lesson": "Leson ajoute",
         "update_lesson": "Leson modifye",
         "delete_lesson": "Leson efase",
-        "reorder_lesson": "Leson reòdone"
+        "reorder_lesson": "Leson reòdone",
+        "approve_teacher": "Pwofesè apwouve",
+        "reject_teacher": "Pwofesè rejte",
+        "suspend_teacher": "Pwofesè sispann",
+        "reactivate_teacher": "Pwofesè reaktive",
+        "approve_course": "Fòmasyon apwouve",
+        "reject_course": "Fòmasyon rejte"
       }
     },
     "platform": {

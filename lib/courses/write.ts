@@ -118,6 +118,15 @@ export type AdminCourseListRow = {
   status: AdminCourseStatus;
   hasUnpublishedChanges: boolean;
   lessonsCount: number;
+  /**
+   * Raw DB status (Task C3-T3) — `status` above narrows everything but
+   * 'published' down to 'draft' for the pre-C3 CMS UI (see the file header);
+   * the `/admin/cours` course-review queue tab needs the real value to find
+   * 'pending_review' rows and tell them apart from plain drafts/rejections.
+   */
+  rawStatus: DbCourseRow['status'];
+  reviewNote: string | null;
+  submittedAt: string | null;
 };
 
 function toAdminStatus(status: string): AdminCourseStatus {
@@ -203,6 +212,9 @@ export async function getAdminCourses(): Promise<AdminCourseListRow[]> {
       status: toAdminStatus(r.status),
       hasUnpublishedChanges: r.hasUnpublishedChanges,
       lessonsCount: lessonCounts.get(r.slug) ?? 0,
+      rawStatus: r.status,
+      reviewNote: r.reviewNote ?? null,
+      submittedAt: r.submittedAt ? r.submittedAt.toISOString() : null,
     }));
   } catch (err) {
     console.error('[courses/write] getAdminCourses DB read failed, gracefully degrading:', err);
@@ -426,6 +438,42 @@ export async function publishCourse(slug: string, actor: AdminActor): Promise<Co
     .set({ status: 'published', hasUnpublishedChanges: false, publishedAt: now, updatedAt: now })
     .where(eq(T.courses.slug, slug));
   await recordAudit({ action: 'publish_course', userId: actor.id, admin: actor, detail: slug });
+  revalidateCoursePaths(slug);
+  return { ok: true };
+}
+
+/**
+ * Admin course-review queue (Task C3-T3): approve a `pending_review` course
+ * → 'published' (same public-facing effect as `publishCourse`, plus it
+ * records the reviewing admin — `reviewedBy` — which the direct-publish path
+ * above has no reason to set since the owner publishes their own course
+ * there). Callable on any status, not just `pending_review`, so an admin can
+ * still approve a course a teacher edited-and-resubmitted from any state.
+ */
+export async function approveCourse(slug: string, actor: AdminActor): Promise<CourseWriteResult> {
+  if (!dbConfigured()) return dbRequired();
+  const [current] = await db.select({ status: T.courses.status }).from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
+  if (!current) return { ok: false, message: 'not_found' };
+  const now = new Date();
+  await db
+    .update(T.courses)
+    .set({ status: 'published', hasUnpublishedChanges: false, publishedAt: now, reviewedBy: actor.id, updatedAt: now })
+    .where(eq(T.courses.slug, slug));
+  await recordAudit({ action: 'approve_course', userId: actor.id, admin: actor, detail: slug });
+  revalidateCoursePaths(slug);
+  return { ok: true };
+}
+
+/** Admin course-review queue (Task C3-T3): reject a submitted course with a required note. */
+export async function rejectCourse(slug: string, note: string, actor: AdminActor): Promise<CourseWriteResult> {
+  if (!dbConfigured()) return dbRequired();
+  const [current] = await db.select({ status: T.courses.status }).from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
+  if (!current) return { ok: false, message: 'not_found' };
+  await db
+    .update(T.courses)
+    .set({ status: 'rejected', reviewNote: note, reviewedBy: actor.id, updatedAt: new Date() })
+    .where(eq(T.courses.slug, slug));
+  await recordAudit({ action: 'reject_course', userId: actor.id, admin: actor, detail: slug, reason: note });
   revalidateCoursePaths(slug);
   return { ok: true };
 }

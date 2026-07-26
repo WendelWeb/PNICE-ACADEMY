@@ -18,6 +18,7 @@ export type AdminNavItem = {
 export const ADMIN_NAV: AdminNavItem[] = [
   { key: 'overview', href: '/admin', icon: 'overview', enabled: true, cap: 'overview.read' },
   { key: 'users', href: '/admin/utilisateurs', icon: 'users', enabled: true, cap: 'users.read' },
+  { key: 'teachers', href: '/admin/enseignants', icon: 'teachers', enabled: true, cap: 'teachers.review' },
   { key: 'courses', href: '/admin/cours', icon: 'courses', enabled: true, cap: 'courses.read' },
   { key: 'subscriptions', href: '/admin/abonnements', icon: 'subscriptions', enabled: true, cap: 'transactions.read' },
   { key: 'payments', href: '/admin/transactions', icon: 'payments', enabled: true, cap: 'transactions.read' },
