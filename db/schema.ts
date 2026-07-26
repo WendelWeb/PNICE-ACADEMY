@@ -610,24 +610,40 @@ export const teacherProfiles = pgTable('teacher_profiles', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
-export const earningsLedger = pgTable('earnings_ledger', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  teacherUserId: uuid('teacher_user_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  // Nullable — adjustments/manual entries have no originating payment.
-  paymentId: uuid('payment_id').references(() => payments.id, { onDelete: 'set null' }),
-  kind: text('kind').$type<'sale' | 'refund' | 'withdrawal' | 'adjustment'>().notNull(),
-  grossCents: integer('gross_cents').notNull(),
-  // Frozen at write time — see header note ("commission figée à la vente").
-  commissionPctApplied: integer('commission_pct_applied').notNull(),
-  commissionCents: integer('commission_cents').notNull(),
-  // Negative for refund/withdrawal rows. Balance = SUM(net_cents), never denormalised.
-  netCents: integer('net_cents').notNull(),
-  currency: text('currency').default('USD').notNull(),
-  note: text('note'),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
+export const earningsLedger = pgTable(
+  'earnings_ledger',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    teacherUserId: uuid('teacher_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    // Nullable — adjustments/manual entries have no originating payment.
+    paymentId: uuid('payment_id').references(() => payments.id, { onDelete: 'set null' }),
+    kind: text('kind').$type<'sale' | 'refund' | 'withdrawal' | 'adjustment'>().notNull(),
+    grossCents: integer('gross_cents').notNull(),
+    // Frozen at write time — see header note ("commission figée à la vente").
+    commissionPctApplied: integer('commission_pct_applied').notNull(),
+    commissionCents: integer('commission_cents').notNull(),
+    // Negative for refund/withdrawal rows. Balance = SUM(net_cents), never denormalised.
+    netCents: integer('net_cents').notNull(),
+    currency: text('currency').default('USD').notNull(),
+    note: text('note'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    // Idempotency guard (Task C3-T5, lib/teacher/earnings.ts's `recordSaleEarning`):
+    // Stripe's at-least-once webhook delivery must never produce a second
+    // 'sale' row for the same payment — this partial unique index is the DB-
+    // enforced backstop (the insert uses `.onConflictDoNothing()` against it).
+    // Partial (kind='sale' only) because a refund row legitimately shares its
+    // originating sale's payment_id (it reverses that exact row) and
+    // withdrawal/adjustment rows have no payment_id at all — neither should
+    // be constrained by this index.
+    uniqSalePerPayment: uniqueIndex('earnings_ledger_sale_payment_uniq')
+      .on(t.paymentId)
+      .where(sql`${t.paymentId} IS NOT NULL AND ${t.kind} = 'sale'`),
+  }),
+);
 
 export const withdrawalRequests = pgTable(
   'withdrawal_requests',

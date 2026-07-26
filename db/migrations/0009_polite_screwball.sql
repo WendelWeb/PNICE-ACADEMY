@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "earnings_ledger_sale_payment_uniq" ON "earnings_ledger" USING btree ("payment_id") WHERE "earnings_ledger"."payment_id" IS NOT NULL AND "earnings_ledger"."kind" = 'sale';
