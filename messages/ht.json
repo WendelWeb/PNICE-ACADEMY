@@ -233,6 +233,8 @@
       "searchLabel": "Chèche nan katalòg la",
       "searchPlaceholder": "Chèche yon fòmasyon...",
       "categoryLabel": "Filtre pa kategori",
+      "teacherLabel": "Filtre pa anseyan",
+      "teacherAll": "Tout anseyan yo",
       "sortLabel": "Triye pa",
       "sort": {
         "priceAsc": "Pri ↑",

@@ -27,15 +27,17 @@ export const revalidate = 300;
  * `document.currentScript.parentElement` resolves synchronously (no
  * need to wait for the rest of the div to parse) and runs before the
  * fallback/CatalogBrowser content beneath it is painted. If the URL
- * carries q/cat/sort, it flips a data attribute the CSS in globals.css
- * reacts to, hiding the (possibly wrong) grid and showing a neutral
- * skeleton instead; CatalogBrowser clears the attribute once it has
+ * carries q/cat/sort/teacher, it flips a data attribute the CSS in
+ * globals.css reacts to, hiding the (possibly wrong) grid and showing a
+ * neutral skeleton instead; CatalogBrowser clears the attribute once it has
  * mounted with the correct, already-filtered content. Unfiltered
  * visits never match the regex, so nothing is set and the static HTML
- * is unchanged.
+ * is unchanged. `teacher` (Task C3-T7's catalog filter) is included for the
+ * exact same reason q/cat/sort are — a shared deep link like
+ * ?teacher=pnice-academy must not flash the full unfiltered grid either.
  */
 const PENDING_FILTERS_SCRIPT = `(function(){
-  if (/[?&](q|cat|sort)=/.test(location.search)) {
+  if (/[?&](q|cat|sort|teacher)=/.test(location.search)) {
     document.currentScript.parentElement.dataset.pendingFilters = '1';
   }
 })();`;

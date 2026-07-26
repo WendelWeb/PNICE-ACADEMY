@@ -67,8 +67,13 @@ export function validateApplyInput(input: ApplyAsTeacherInput): string | null {
   return null;
 }
 
-/** Validate that a URL is http(s) and well-formed. */
-function isValidHttpUrl(urlString: string): boolean {
+/**
+ * Validate that a URL is http(s) and well-formed. Exported: also reused as
+ * the RENDER-time protocol allowlist for a teacher's public `photo_url`
+ * (`lib/teacher/public.ts`'s `isSafePhotoUrl`) — the same rule enforced here
+ * at write time, applied again in defense-in-depth before any public render.
+ */
+export function isValidHttpUrl(urlString: string): boolean {
   try {
     const url = new URL(urlString);
     return ['http:', 'https:'].includes(url.protocol);

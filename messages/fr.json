@@ -233,6 +233,8 @@
       "searchLabel": "Rechercher dans le catalogue",
       "searchPlaceholder": "Cherche une formation...",
       "categoryLabel": "Filtrer par catégorie",
+      "teacherLabel": "Filtrer par enseignant",
+      "teacherAll": "Tous les enseignants",
       "sortLabel": "Trier par",
       "sort": {
         "priceAsc": "Prix ↑",
