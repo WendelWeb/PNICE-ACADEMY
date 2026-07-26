@@ -110,12 +110,13 @@ export async function countTeacherProfilesByStatus(): Promise<Record<TeacherProf
  * C3-T3 — `platform_settings.default_video_quota_minutes`, frozen onto the
  * profile the same way a course's commission is frozen at sale time, so a
  * later platform-default change doesn't retroactively shrink/grow an
- * already-approved teacher's quota).
+ * already-approved teacher's quota). Requires `current.status === 'pending' || 'rejected'`.
  */
 export async function approveTeacherProfile(p: { userId: string; admin: AdminActor }): Promise<TeacherAdminResult> {
   if (!dbConfigured()) return dbRequired();
-  const [current] = await db.select({ id: T.teacherProfiles.id }).from(T.teacherProfiles).where(eq(T.teacherProfiles.userId, p.userId)).limit(1);
+  const [current] = await db.select({ status: T.teacherProfiles.status }).from(T.teacherProfiles).where(eq(T.teacherProfiles.userId, p.userId)).limit(1);
   if (!current) return { ok: false, message: 'not_found' };
+  if (current.status !== 'pending' && current.status !== 'rejected') return { ok: false, message: 'invalid_status' };
   const quota = await getDefaultVideoQuotaMinutes();
   await db
     .update(T.teacherProfiles)
@@ -125,11 +126,12 @@ export async function approveTeacherProfile(p: { userId: string; admin: AdminAct
   return { ok: true };
 }
 
-/** Reject a pending (or previously approved) teacher profile with a required note. */
+/** Reject a pending teacher profile with a required note. Requires `current.status === 'pending'`. */
 export async function rejectTeacherProfile(p: { userId: string; note: string; admin: AdminActor }): Promise<TeacherAdminResult> {
   if (!dbConfigured()) return dbRequired();
-  const [current] = await db.select({ id: T.teacherProfiles.id }).from(T.teacherProfiles).where(eq(T.teacherProfiles.userId, p.userId)).limit(1);
+  const [current] = await db.select({ status: T.teacherProfiles.status }).from(T.teacherProfiles).where(eq(T.teacherProfiles.userId, p.userId)).limit(1);
   if (!current) return { ok: false, message: 'not_found' };
+  if (current.status !== 'pending') return { ok: false, message: 'invalid_status' };
   await db
     .update(T.teacherProfiles)
     .set({ status: 'rejected', reviewNote: p.note, reviewedBy: p.admin.id, updatedAt: new Date() })
@@ -138,11 +140,12 @@ export async function rejectTeacherProfile(p: { userId: string; note: string; ad
   return { ok: true };
 }
 
-/** Suspend an approved teacher (blocks new publishing — enforced by later C3 tasks) with a required reason. */
+/** Suspend an approved teacher (blocks new publishing — enforced by later C3 tasks) with a required reason. Requires `current.status === 'approved'`. */
 export async function suspendTeacherProfile(p: { userId: string; reason: string; admin: AdminActor }): Promise<TeacherAdminResult> {
   if (!dbConfigured()) return dbRequired();
-  const [current] = await db.select({ id: T.teacherProfiles.id }).from(T.teacherProfiles).where(eq(T.teacherProfiles.userId, p.userId)).limit(1);
+  const [current] = await db.select({ status: T.teacherProfiles.status }).from(T.teacherProfiles).where(eq(T.teacherProfiles.userId, p.userId)).limit(1);
   if (!current) return { ok: false, message: 'not_found' };
+  if (current.status !== 'approved') return { ok: false, message: 'invalid_status' };
   await db
     .update(T.teacherProfiles)
     .set({ status: 'suspended', reviewNote: p.reason, reviewedBy: p.admin.id, updatedAt: new Date() })
@@ -151,14 +154,15 @@ export async function suspendTeacherProfile(p: { userId: string; reason: string;
   return { ok: true };
 }
 
-/** Reactivate a suspended teacher back to 'approved'. */
+/** Reactivate a suspended teacher back to 'approved'. Requires `current.status === 'suspended'` and sets reviewedBy to the acting admin. */
 export async function reactivateTeacherProfile(p: { userId: string; admin: AdminActor }): Promise<TeacherAdminResult> {
   if (!dbConfigured()) return dbRequired();
-  const [current] = await db.select({ id: T.teacherProfiles.id }).from(T.teacherProfiles).where(eq(T.teacherProfiles.userId, p.userId)).limit(1);
+  const [current] = await db.select({ status: T.teacherProfiles.status }).from(T.teacherProfiles).where(eq(T.teacherProfiles.userId, p.userId)).limit(1);
   if (!current) return { ok: false, message: 'not_found' };
+  if (current.status !== 'suspended') return { ok: false, message: 'invalid_status' };
   await db
     .update(T.teacherProfiles)
-    .set({ status: 'approved', updatedAt: new Date() })
+    .set({ status: 'approved', reviewedBy: p.admin.id, updatedAt: new Date() })
     .where(eq(T.teacherProfiles.userId, p.userId));
   await recordAudit({ action: 'reactivate_teacher', userId: p.userId, admin: p.admin });
   return { ok: true };

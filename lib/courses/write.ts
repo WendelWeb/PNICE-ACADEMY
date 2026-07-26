@@ -447,13 +447,13 @@ export async function publishCourse(slug: string, actor: AdminActor): Promise<Co
  * → 'published' (same public-facing effect as `publishCourse`, plus it
  * records the reviewing admin — `reviewedBy` — which the direct-publish path
  * above has no reason to set since the owner publishes their own course
- * there). Callable on any status, not just `pending_review`, so an admin can
- * still approve a course a teacher edited-and-resubmitted from any state.
+ * there). Requires `current.status === 'pending_review'`.
  */
 export async function approveCourse(slug: string, actor: AdminActor): Promise<CourseWriteResult> {
   if (!dbConfigured()) return dbRequired();
   const [current] = await db.select({ status: T.courses.status }).from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
   if (!current) return { ok: false, message: 'not_found' };
+  if (current.status !== 'pending_review') return { ok: false, message: 'invalid_status' };
   const now = new Date();
   await db
     .update(T.courses)
@@ -464,11 +464,12 @@ export async function approveCourse(slug: string, actor: AdminActor): Promise<Co
   return { ok: true };
 }
 
-/** Admin course-review queue (Task C3-T3): reject a submitted course with a required note. */
+/** Admin course-review queue (Task C3-T3): reject a submitted course with a required note. Requires `current.status === 'pending_review'`. */
 export async function rejectCourse(slug: string, note: string, actor: AdminActor): Promise<CourseWriteResult> {
   if (!dbConfigured()) return dbRequired();
   const [current] = await db.select({ status: T.courses.status }).from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
   if (!current) return { ok: false, message: 'not_found' };
+  if (current.status !== 'pending_review') return { ok: false, message: 'invalid_status' };
   await db
     .update(T.courses)
     .set({ status: 'rejected', reviewNote: note, reviewedBy: actor.id, updatedAt: new Date() })
