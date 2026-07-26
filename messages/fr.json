@@ -344,8 +344,10 @@
         "invalid_stars": "Choisis une note entre 1 et 5 étoiles.",
         "comment_too_long": "Le commentaire est trop long.",
         "db_required": "Ce service n'est pas disponible pour le moment.",
+        "review_removed": "Ton avis a été retiré.",
         "error": "Une erreur est survenue. Réessaie."
-      }
+      },
+      "reviewRemoved": "Ton avis a été retiré"
     },
     "report": {
       "action": "Signaler",

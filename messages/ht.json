@@ -344,8 +344,10 @@
         "invalid_stars": "Chwazi yon nòt ant 1 ak 5 zetwal.",
         "comment_too_long": "Kòmantè a twò long.",
         "db_required": "Sèvis la pa disponib kounye a.",
+        "review_removed": "Nòt ou te retire.",
         "error": "Gen yon erè ki fèt. Eseye ankò."
-      }
+      },
+      "reviewRemoved": "Nòt ou te retire"
     },
     "report": {
       "action": "Siyale",

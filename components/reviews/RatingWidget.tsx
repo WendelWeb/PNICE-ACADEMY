@@ -33,7 +33,8 @@ import { COMMENT_MAX_LENGTH } from '@/lib/reviews/reviews';
 type LoadState =
   | { phase: 'loading' }
   | { phase: 'not_enrolled' }
-  | { phase: 'ready'; stars: number; comment: string; hadReview: boolean };
+  | { phase: 'ready'; stars: number; comment: string; hadReview: boolean; reviewStatus?: 'published' | 'removed' };
+
 
 export function RatingWidget({ courseSlug }: { courseSlug: string }) {
   const t = useTranslations('reviews.widget');
@@ -55,6 +56,7 @@ export function RatingWidget({ courseSlug }: { courseSlug: string }) {
         stars: res.myReview?.stars ?? 0,
         comment: res.myReview?.comment ?? '',
         hadReview: Boolean(res.myReview),
+        reviewStatus: res.myReview?.status,
       });
     });
     return () => {
@@ -66,19 +68,19 @@ export function RatingWidget({ courseSlug }: { courseSlug: string }) {
     if (!message) return t('errors.error');
     const key = `errors.${message}`;
     // next-intl throws on a missing key in dev; guard with a known-set check.
-    const known = ['unauthorized', 'not_enrolled', 'invalid_stars', 'comment_too_long', 'db_required', 'error'];
+    const known = ['unauthorized', 'not_enrolled', 'invalid_stars', 'comment_too_long', 'db_required', 'review_removed', 'error'];
     return known.includes(message) ? t(key) : t('errors.error');
   }
 
   function submit() {
     if (state.phase !== 'ready' || state.stars < 1) return;
-    const { stars, comment } = state;
+    const { stars, comment, reviewStatus } = state;
     startTransition(async () => {
       setFeedback(null);
       const res: ReviewActionResult = await submitReviewAction(courseSlug, stars, comment);
       if (res.ok) {
         setFeedback({ type: 'ok', text: t('submitted') });
-        setState({ phase: 'ready', stars, comment, hadReview: true });
+        setState({ phase: 'ready', stars, comment, hadReview: true, reviewStatus });
         router.refresh();
       } else {
         setFeedback({ type: 'err', text: errorText(res.message) });
@@ -92,6 +94,17 @@ export function RatingWidget({ courseSlug }: { courseSlug: string }) {
 
   if (state.phase === 'not_enrolled') {
     return <p className="font-mono text-xs italic text-ink/45">{t('notEnrolledNote')}</p>;
+  }
+
+  // If the learner's review was removed by admin, show notice instead of form.
+  if (state.phase === 'ready' && state.reviewStatus === 'removed') {
+    return (
+      <div className="max-w-md rounded-xl border border-ink/12 bg-paper-light p-4">
+        <p className="font-mono text-[11px] uppercase tracking-wide text-stampred">
+          {t('reviewRemoved')}
+        </p>
+      </div>
+    );
   }
 
   return (

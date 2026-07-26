@@ -115,6 +115,13 @@ export async function submitReviewAction(
     const userId = await resolveUserId(clerkId);
     if (!userId) return { ok: false, message: 'unauthorized' };
 
+    // CRITICAL GUARD: if the learner's review was removed by admin, it's final —
+    // reject any attempt to resurrect it. This prevents circumventing moderation.
+    const existing = await getMyReview(userId, courseSlug);
+    if (existing?.status === 'removed') {
+      return { ok: false, message: 'review_removed' };
+    }
+
     const now = new Date();
     await db
       .insert(T.courseReviews)
