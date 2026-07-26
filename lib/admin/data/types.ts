@@ -192,7 +192,10 @@ export type AuditAction =
   | 'suspend_teacher'
   | 'reactivate_teacher'
   | 'approve_course'
-  | 'reject_course';
+  | 'reject_course'
+  // Teacher marketplace payouts (Phase C3-T5)
+  | 'mark_withdrawal_paid'
+  | 'reject_withdrawal';
 
 export type AdminActor = { id: string; name: string };
 

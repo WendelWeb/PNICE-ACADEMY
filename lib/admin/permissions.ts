@@ -18,7 +18,9 @@ export type Capability =
   | 'settings.manage'
   | 'roles.manage'
   // C3 marketplace: teacher-profile + course-review moderation queue.
-  | 'teachers.review';
+  | 'teachers.review'
+  // C3 marketplace: admin withdrawal/payout queue (money-critical).
+  | 'payouts.process';
 
 export const ALL_CAPABILITIES: Capability[] = [
   'overview.read',
@@ -33,6 +35,7 @@ export const ALL_CAPABILITIES: Capability[] = [
   'settings.manage',
   'roles.manage',
   'teachers.review',
+  'payouts.process',
 ];
 
 const MATRIX: Record<AdminRole, Capability[]> = {
@@ -51,6 +54,7 @@ const MATRIX: Record<AdminRole, Capability[]> = {
     'support.act',
     'settings.manage',
     'teachers.review',
+    'payouts.process',
   ],
   // Support desk: read operational data + run the support workbench (tickets,
   // replies, system health) — but no refunds, role or content mutations.

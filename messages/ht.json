@@ -952,6 +952,7 @@
       "overview": "Apèsi jeneral",
       "users": "Itilizatè",
       "teachers": "Pwofesè",
+      "payouts": "Retrè",
       "courses": "Fòmasyon",
       "subscriptions": "Abònman",
       "payments": "Peman",
@@ -1143,7 +1144,9 @@
         "suspend_teacher": "Pwofil pwofesè sispann",
         "reactivate_teacher": "Pwofil pwofesè reaktive",
         "approve_course": "Fòmasyon apwouve",
-        "reject_course": "Fòmasyon rejte"
+        "reject_course": "Fòmasyon rejte",
+        "mark_withdrawal_paid": "Retrè make peye",
+        "reject_withdrawal": "Retrè rejte"
       },
       "actions": {
         "title": "Aksyon manyèl",
@@ -1220,6 +1223,9 @@
         },
         "teachers": {
           "review": "Apwouve pwofesè ak fòmasyon (fil moderasyon)"
+        },
+        "payouts": {
+          "process": "Trete fil retrè pwofesè yo (make peye, rejte)"
         }
       },
       "forbiddenSection": "Ou pa gen aksè nan seksyon sa a."
@@ -1347,6 +1353,37 @@
         "reject": "Rejte",
         "suspend": "Sispann",
         "reactivate": "Reaktive",
+        "noteHelp": "Rezon an ap anrejistre nan jounal odit la.",
+        "notePlaceholder": "Rezon…",
+        "cancel": "Anile",
+        "confirm": "Konfime",
+        "done": "Fèt.",
+        "error": "Gen yon erè ki fèt."
+      }
+    },
+    "payouts": {
+      "subtitle": "Fil demann retrè pwofesè yo — make peye (+referans) oswa rejte (+nòt).",
+      "tabs": {
+        "pending": "An atant",
+        "paid": "Peye",
+        "rejected": "Rejte"
+      },
+      "col": {
+        "teacher": "Pwofesè",
+        "amount": "Montan",
+        "method": "Metòd",
+        "destination": "Destinasyon",
+        "balance": "Solid",
+        "requestedAt": "Demann",
+        "actions": "Aksyon"
+      },
+      "empty": "Pa gen demann nan fil sa a.",
+      "noMethod": "Pa ranpli",
+      "actions": {
+        "markPaid": "Make peye",
+        "reject": "Rejte",
+        "referenceHelp": "Referans peman an (tranzaksyon MonCash/NatCash/PayPal/vireman) ap anrejistre nan jounal odit la.",
+        "referencePlaceholder": "Referans…",
         "noteHelp": "Rezon an ap anrejistre nan jounal odit la.",
         "notePlaceholder": "Rezon…",
         "cancel": "Anile",
@@ -2159,7 +2196,9 @@
         "suspend_teacher": "Pwofesè sispann",
         "reactivate_teacher": "Pwofesè reaktive",
         "approve_course": "Fòmasyon apwouve",
-        "reject_course": "Fòmasyon rejte"
+        "reject_course": "Fòmasyon rejte",
+        "mark_withdrawal_paid": "Retrè make peye",
+        "reject_withdrawal": "Retrè rejte"
       }
     },
     "platform": {

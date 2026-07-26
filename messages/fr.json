@@ -952,6 +952,7 @@
       "overview": "Vue d'ensemble",
       "users": "Utilisateurs",
       "teachers": "Enseignants",
+      "payouts": "Retraits",
       "courses": "Cours",
       "subscriptions": "Abonnements",
       "payments": "Paiements",
@@ -1143,7 +1144,9 @@
         "suspend_teacher": "Profil enseignant suspendu",
         "reactivate_teacher": "Profil enseignant réactivé",
         "approve_course": "Formation approuvée",
-        "reject_course": "Formation rejetée"
+        "reject_course": "Formation rejetée",
+        "mark_withdrawal_paid": "Retrait marqué payé",
+        "reject_withdrawal": "Retrait rejeté"
       },
       "actions": {
         "title": "Actions manuelles",
@@ -1220,6 +1223,9 @@
         },
         "teachers": {
           "review": "Approuver enseignants et cours (file de modération)"
+        },
+        "payouts": {
+          "process": "Traiter la file de retraits enseignants (marquer payé, rejeter)"
         }
       },
       "forbiddenSection": "Tu n'as pas accès à cette section."
@@ -1347,6 +1353,37 @@
         "reject": "Rejeter",
         "suspend": "Suspendre",
         "reactivate": "Réactiver",
+        "noteHelp": "La raison sera enregistrée dans le journal d'audit.",
+        "notePlaceholder": "Raison…",
+        "cancel": "Annuler",
+        "confirm": "Confirmer",
+        "done": "Fait.",
+        "error": "Une erreur est survenue."
+      }
+    },
+    "payouts": {
+      "subtitle": "File des demandes de retrait enseignants — marque payé (+référence) ou rejette (+note).",
+      "tabs": {
+        "pending": "En attente",
+        "paid": "Payés",
+        "rejected": "Rejetés"
+      },
+      "col": {
+        "teacher": "Enseignant",
+        "amount": "Montant",
+        "method": "Méthode",
+        "destination": "Destination",
+        "balance": "Solde",
+        "requestedAt": "Demande",
+        "actions": "Actions"
+      },
+      "empty": "Aucune demande dans cette file.",
+      "noMethod": "Non renseigné",
+      "actions": {
+        "markPaid": "Marquer payé",
+        "reject": "Rejeter",
+        "referenceHelp": "La référence du paiement (transaction MonCash/NatCash/PayPal/virement) sera enregistrée dans le journal d'audit.",
+        "referencePlaceholder": "Référence…",
         "noteHelp": "La raison sera enregistrée dans le journal d'audit.",
         "notePlaceholder": "Raison…",
         "cancel": "Annuler",
@@ -2159,7 +2196,9 @@
         "suspend_teacher": "Enseignant suspendu",
         "reactivate_teacher": "Enseignant réactivé",
         "approve_course": "Formation approuvée",
-        "reject_course": "Formation rejetée"
+        "reject_course": "Formation rejetée",
+        "mark_withdrawal_paid": "Retrait marqué payé",
+        "reject_withdrawal": "Retrait rejeté"
       }
     },
     "platform": {

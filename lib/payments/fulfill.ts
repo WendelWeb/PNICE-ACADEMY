@@ -19,6 +19,7 @@ import { buildReceiptHtml } from '@/lib/email/templates';
 import { buildReceiptPdf } from '@/lib/pdf/receipt';
 import { htgLabel } from '@/lib/money';
 import { getCourseBySlug } from '@/lib/courses/source';
+import { recordSaleEarning, recordRefundReversal } from '@/lib/teacher/earnings';
 import type { StripeAction } from './stripe-events';
 
 export async function fulfillAction(action: StripeAction): Promise<'processed' | 'ignored'> {
@@ -177,6 +178,19 @@ async function fulfillCheckoutCompleted(a: CheckoutCompleted): Promise<'processe
   }
   const payment = insertedPayments[0];
 
+  // 2b. Additive: record the teacher's earnings-ledger 'sale' row for this
+  // payment (course purchase, or subscription initial charge). NEVER THROWS
+  // and internally idempotent (see lib/teacher/earnings.ts's file header) —
+  // this can never fail or block fulfillment, which is already durably
+  // recorded above.
+  await recordSaleEarning({
+    id: payment.id,
+    amountCents: a.amountCents,
+    currency: a.currency,
+    productType: a.productType,
+    courseSlug: a.courseSlug,
+  });
+
   // 3. Course purchase → enrollment (skip if already enrolled and active).
   await ensureCourseEnrollment(userDbId, a.productType, a.courseSlug, payment.id);
 
@@ -308,6 +322,18 @@ async function fulfillInvoicePaid(a: InvoicePaid): Promise<'processed' | 'ignore
     .onConflictDoNothing({ target: [payments.provider, payments.providerRef] })
     .returning({ id: payments.id });
   if (insertedRenewals.length === 0) return 'processed'; // concurrent delivery won the race
+
+  // Additive: record the teacher's earnings-ledger 'sale' row for this
+  // renewal charge. NEVER THROWS and internally idempotent (see
+  // lib/teacher/earnings.ts's file header) — never blocks fulfillment.
+  await recordSaleEarning({
+    id: insertedRenewals[0].id,
+    amountCents: a.amountCents,
+    currency: a.currency,
+    productType: 'subscription',
+    courseSlug: null,
+  });
+
   await db
     .update(subscriptions)
     .set({ status: 'active', currentPeriodEnd: periodEnd, updatedAt: new Date() })
@@ -356,6 +382,12 @@ async function fulfillChargeRefunded(a: ChargeRefunded): Promise<'processed' | '
   if (!payment) return 'ignored'; // refund of a charge we never recorded
   if (payment.status === 'refunded') return 'processed'; // duplicate
   await db.update(payments).set({ status: 'refunded' }).where(eq(payments.id, payment.id));
+
+  // Additive: reverse the teacher's earnings-ledger 'sale' row for this
+  // payment with a negative 'refund' row. NEVER THROWS (see
+  // lib/teacher/earnings.ts's file header) — never blocks fulfillment.
+  await recordRefundReversal({ id: payment.id });
+
   if (payment.productType === 'course') {
     await db
       .update(enrollments)

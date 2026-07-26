@@ -25,6 +25,7 @@ import {
   IconExternalLink,
   IconTool,
   IconUserCheck,
+  IconCashBanknote,
   type Icon as TablerIcon,
 } from '@tabler/icons-react';
 import { Link, usePathname } from '@/i18n/routing';
@@ -40,6 +41,7 @@ const ICONS: Record<string, TablerIcon> = {
   overview: IconLayoutDashboard,
   users: IconUsers,
   teachers: IconUserCheck,
+  payouts: IconCashBanknote,
   courses: IconBook,
   subscriptions: IconRefresh,
   payments: IconCreditCard,

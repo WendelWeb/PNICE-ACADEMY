@@ -14,6 +14,7 @@ const ACTIONS = [
   'create_course', 'update_course', 'update_course_images', 'submit_course_review', 'publish_course', 'unpublish_course',
   'delete_course', 'add_lesson', 'update_lesson', 'delete_lesson', 'reorder_lesson',
   'approve_teacher', 'reject_teacher', 'suspend_teacher', 'reactivate_teacher', 'approve_course', 'reject_course',
+  'mark_withdrawal_paid', 'reject_withdrawal',
 ];
 const fieldCls = 'rounded-lg border border-ink/15 bg-paper-light px-2.5 py-1.5 font-mono text-xs text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ochre';
 
