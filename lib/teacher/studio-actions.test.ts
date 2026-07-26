@@ -27,6 +27,7 @@ import {
   removeMySecondaryImageAction,
   moveMySecondaryImageAction,
   requestWithdrawalAction,
+  updateMyPayoutSettingsAction,
 } from './studio-actions';
 
 describe('lib/teacher/studio-actions.ts — env gate (no DATABASE_URL, never reaches Clerk/db)', () => {
@@ -80,5 +81,13 @@ describe('lib/teacher/studio-actions.ts — env gate (no DATABASE_URL, never rea
   it('requestWithdrawalAction returns db_required', async () => {
     delete process.env.DATABASE_URL;
     expect(await requestWithdrawalAction(5000)).toEqual({ ok: false, message: 'db_required' });
+  });
+
+  it('updateMyPayoutSettingsAction returns db_required', async () => {
+    delete process.env.DATABASE_URL;
+    expect(await updateMyPayoutSettingsAction('moncash', '+509 3712 3456')).toEqual({
+      ok: false,
+      message: 'db_required',
+    });
   });
 });

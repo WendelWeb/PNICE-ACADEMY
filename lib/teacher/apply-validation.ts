@@ -52,11 +52,8 @@ export function validateApplyInput(input: ApplyAsTeacherInput): string | null {
   if (bioFrTrimmed.length < BIO_MIN_LENGTH) return 'bio_fr_too_short';
   if (bioFrTrimmed.length > BIO_MAX_LENGTH) return 'bio_fr_too_long';
 
-  if (!PAYOUT_METHODS.includes(input.payoutMethod)) return 'payout_method_invalid';
-
-  const payoutDest = input.payoutDestination?.trim() ?? '';
-  if (!payoutDest) return 'payout_destination_required';
-  if (payoutDest.length > PAYOUT_DESTINATION_MAX_LENGTH) return 'payout_destination_too_long';
+  const payoutError = validatePayoutSettings(input.payoutMethod, input.payoutDestination);
+  if (payoutError) return payoutError;
 
   if (input.photoUrl?.trim()) {
     const photoUrl = input.photoUrl.trim();
@@ -64,6 +61,29 @@ export function validateApplyInput(input: ApplyAsTeacherInput): string | null {
   }
 
   if (!input.termsAccepted) return 'terms_required';
+  return null;
+}
+
+/**
+ * Payout method + destination validation, extracted out of
+ * `validateApplyInput` (Task C3 fix) so `lib/teacher/studio-actions.ts`'s
+ * `updateMyPayoutSettingsAction` — an ALREADY-APPROVED teacher changing how
+ * they get paid, reached from the studio rather than the apply wizard — can
+ * enforce the EXACT SAME rule instead of duplicating it: a payout value the
+ * apply flow would reject must never be writable through the studio's
+ * settings form either. Returns the first failing field's error code, or
+ * `null` if acceptable (same contract as `validateApplyInput`).
+ */
+export function validatePayoutSettings(
+  payoutMethod: PayoutMethod,
+  payoutDestination: string,
+): string | null {
+  if (!PAYOUT_METHODS.includes(payoutMethod)) return 'payout_method_invalid';
+
+  const payoutDest = payoutDestination?.trim() ?? '';
+  if (!payoutDest) return 'payout_destination_required';
+  if (payoutDest.length > PAYOUT_DESTINATION_MAX_LENGTH) return 'payout_destination_too_long';
+
   return null;
 }
 

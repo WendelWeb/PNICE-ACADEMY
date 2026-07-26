@@ -48,6 +48,8 @@ import { resolveUserId } from '@/lib/learner/access';
 import * as writeOps from '@/lib/courses/write';
 import type { CoursePatch, LessonPatch, NewCourseInput } from '@/lib/courses/write';
 import { getTeacherProfile, isApprovedTeacher, getTeacherBalanceCents, getPayoutThresholdCents, getWithdrawals } from './profile';
+import { validatePayoutSettings, type PayoutMethod } from './apply-validation';
+import { recordAudit } from '@/lib/admin/data/real/users';
 import type { AdminActor } from '@/lib/admin/data/types';
 
 const T = schema;
@@ -347,6 +349,51 @@ export async function moveMySecondaryImageAction(slug: string, imageId: string, 
     const result = await writeOps.setCourseImages(slug, { main: course.mainImage, secondary }, actor);
     if (result.ok) await reenterReviewIfWasPublished(slug, userId, wasPublished);
     return result;
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/* ---------------------------- payout settings ----------------------------- */
+
+/**
+ * Task C3 fix: an APPROVED teacher (incl. the owner) had NO in-app way to
+ * set/change `teacher_profiles.payout_method`/`payout_destination` once
+ * approved — the apply wizard refuses to re-run for an already-approved
+ * profile (`applyAsTeacherAction`), and `requestWithdrawalAction` above hard-
+ * refuses without both fields set (`no_payout_method`). This is the missing
+ * write path, reached from the studio's payout-settings card.
+ *
+ * OWNER-SCOPED (the one property every other choice here is subordinate to):
+ * `requireApprovedTeacher()` resolves `userId` from the SIGNED-IN Clerk
+ * session — there is no id parameter a caller could substitute to target
+ * another teacher's row. The `where` clause below is scoped to that same
+ * resolved `userId`, never a value from the arguments.
+ *
+ * Validation reuses `apply-validation.ts`'s `validatePayoutSettings` — the
+ * EXACT SAME rule the apply wizard enforces (method allowlist + destination
+ * required/max-length) — so this can never write a value the original apply
+ * flow would have rejected.
+ */
+export async function updateMyPayoutSettingsAction(
+  payoutMethod: PayoutMethod,
+  payoutDestination: string,
+): Promise<StudioResult> {
+  if (!dbConfigured()) return dbRequired();
+  try {
+    const { userId, actor } = await requireApprovedTeacher();
+
+    const error = validatePayoutSettings(payoutMethod, payoutDestination);
+    if (error) return { ok: false, message: error };
+    const destination = payoutDestination.trim();
+
+    await db
+      .update(T.teacherProfiles)
+      .set({ payoutMethod, payoutDestination: destination, updatedAt: new Date() })
+      .where(eq(T.teacherProfiles.userId, userId));
+
+    await recordAudit({ action: 'update_payout_settings', userId, admin: actor, detail: payoutMethod });
+    return { ok: true };
   } catch (e) {
     return fail(e);
   }

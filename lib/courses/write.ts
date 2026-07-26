@@ -65,13 +65,16 @@ function dbRequired(): CourseWriteResult {
 
 /* -------------------------------------------------------------------------- */
 /* Admin-facing types (mirror the retired ContentCourse/ContentLesson/…       */
-/* field names so components/admin/content/*.tsx barely change) — DB-status   */
-/* narrowed to the binary the current CMS UI understands; anything other than */
-/* 'published' (pending_review/rejected/archived — none reachable from this    */
-/* CMS today) displays as 'draft'.                                            */
+/* field names so components/admin/content/*.tsx barely change) — `status`    */
+/* now carries the REAL DB status (Task C3 fix: it used to collapse           */
+/* pending_review/rejected/archived down to 'draft', which let PublishBar     */
+/* render a one-click Publish button for a course still awaiting/failing      */
+/* moderation — see `toAdminStatus` below). Identical to `rawStatus`/          */
+/* `DbCourseStatus`; kept as its own alias so admin components can import a   */
+/* name that describes intent without reaching into the DB row type.         */
 /* -------------------------------------------------------------------------- */
 
-export type AdminCourseStatus = 'draft' | 'published';
+export type AdminCourseStatus = DbCourseStatus;
 
 export type AdminLesson = {
   id: string;
@@ -105,11 +108,11 @@ export type AdminCourse = {
   status: AdminCourseStatus;
   hasUnpublishedChanges: boolean;
   /**
-   * Raw DB status + review trail (Task C3-T4, mirrors `AdminCourseListRow`'s
-   * fields of the same name) — the teacher studio's status bar needs to
-   * distinguish pending_review/rejected, which `status` above collapses to
-   * 'draft' for the pre-C3 admin CMS UI (see the file header note on
-   * `toAdminStatus`).
+   * Identical to `status` above (Task C3-T4, mirrors `AdminCourseListRow`'s
+   * fields of the same name) — kept as a separate field since call sites
+   * across the CMS/studio already key off `rawStatus` by name; `status` no
+   * longer collapses anything (see `toAdminStatus`), so the two are always
+   * the same value today.
    */
   rawStatus: DbCourseStatus;
   reviewNote: string | null;
@@ -141,9 +144,8 @@ export type AdminCourseListRow = {
   hasUnpublishedChanges: boolean;
   lessonsCount: number;
   /**
-   * Raw DB status (Task C3-T3) — `status` above narrows everything but
-   * 'published' down to 'draft' for the pre-C3 CMS UI (see the file header);
-   * the `/admin/cours` course-review queue tab needs the real value to find
+   * Identical to `status` above (Task C3-T3) — the `/admin/cours`
+   * course-review queue tab keys off `rawStatus` by name to find
    * 'pending_review' rows and tell them apart from plain drafts/rejections.
    */
   rawStatus: DbCourseRow['status'];
@@ -151,8 +153,19 @@ export type AdminCourseListRow = {
   submittedAt: string | null;
 };
 
-function toAdminStatus(status: string): AdminCourseStatus {
-  return status === 'published' ? 'published' : 'draft';
+/**
+ * Task C3 fix: this used to collapse every non-'published' status
+ * (pending_review/rejected/archived) down to 'draft' — harmless for the
+ * pre-C3, single-owner CMS (nothing but draft/published ever existed), but
+ * once teacher-submitted courses can sit in pending_review/rejected, it hid
+ * that fact from `PublishBar`, which then rendered a one-click Publish
+ * button for a course still awaiting (or having failed) moderation. Now a
+ * pass-through — kept as a named seam (not inlined at the two call sites)
+ * so a future admin-only status (e.g. a real 'archived' UI state) has one
+ * place to special-case instead of two.
+ */
+export function toAdminStatus(status: DbCourseStatus): AdminCourseStatus {
+  return status;
 }
 
 function mapRowToAdminCourse(row: DbCourseRow, lessonRows: DbLessonRow[]): AdminCourse {
@@ -476,10 +489,24 @@ export async function submitForReview(slug: string, actor: AdminActor): Promise<
   return { ok: true };
 }
 
+/**
+ * Task C3 fix: requires `current.status === 'draft'` — this is the
+ * generic, courses.edit-gated CMS path (any editeur-contenu can reach it),
+ * NOT the moderation queue. Before this guard, it could publish a
+ * pending_review/rejected/already-published course directly, completely
+ * bypassing `teachers.review`'s approve/reject step and the studio's
+ * re-review-on-edit gate (`reenterReviewIfWasPublished`) — a teacher's
+ * course pulled back into pending_review for re-review could be pushed
+ * live again by anyone with mere content-edit rights. A pending_review
+ * course must go through `approveCourse` (teachers.review-gated); a
+ * rejected one must be resubmitted (teacher's studio) then approved; an
+ * already-published one has nothing to "publish" — see `unpublishCourse`.
+ */
 export async function publishCourse(slug: string, actor: AdminActor): Promise<CourseWriteResult> {
   if (!dbConfigured()) return dbRequired();
   const [current] = await db.select({ status: T.courses.status }).from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
   if (!current) return { ok: false, message: 'not_found' };
+  if (current.status !== 'draft') return { ok: false, message: 'invalid_status' };
   const now = new Date();
   await db
     .update(T.courses)

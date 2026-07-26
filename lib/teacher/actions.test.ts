@@ -11,8 +11,11 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import {
   validateApplyInput,
+  validatePayoutSettings,
   BIO_MIN_LENGTH,
+  PAYOUT_DESTINATION_MAX_LENGTH,
   type ApplyAsTeacherInput,
+  type PayoutMethod,
 } from './apply-validation';
 import { applyAsTeacherAction } from './actions';
 
@@ -86,6 +89,45 @@ describe('validateApplyInput — pure field validation', () => {
     for (const payoutMethod of ['moncash', 'natcash', 'paypal', 'bank'] as const) {
       expect(validateApplyInput({ ...validInput, payoutMethod })).toBeNull();
     }
+  });
+});
+
+describe('validatePayoutSettings — pure field validation (Task C3 fix, shared with updateMyPayoutSettingsAction)', () => {
+  it('accepts a valid method + destination', () => {
+    expect(validatePayoutSettings('moncash', '+509 3712 3456')).toBeNull();
+  });
+
+  it('validates every payout method as acceptable on its own', () => {
+    for (const payoutMethod of ['moncash', 'natcash', 'paypal', 'bank'] as const) {
+      expect(validatePayoutSettings(payoutMethod, 'some-destination')).toBeNull();
+    }
+  });
+
+  it('rejects an invalid payout method', () => {
+    expect(validatePayoutSettings('bitcoin' as PayoutMethod, 'x')).toBe('payout_method_invalid');
+  });
+
+  it('rejects an empty destination', () => {
+    expect(validatePayoutSettings('moncash', '')).toBe('payout_destination_required');
+  });
+
+  it('rejects a whitespace-only destination', () => {
+    expect(validatePayoutSettings('moncash', '   ')).toBe('payout_destination_required');
+  });
+
+  it('rejects a destination over the max length', () => {
+    expect(validatePayoutSettings('moncash', 'x'.repeat(PAYOUT_DESTINATION_MAX_LENGTH + 1))).toBe(
+      'payout_destination_too_long',
+    );
+  });
+
+  it('accepts a destination exactly at the max length', () => {
+    expect(validatePayoutSettings('moncash', 'x'.repeat(PAYOUT_DESTINATION_MAX_LENGTH))).toBeNull();
+  });
+
+  it('agrees with validateApplyInput on the same payout inputs (no drift after extraction)', () => {
+    const bad: ApplyAsTeacherInput = { ...validInput, payoutMethod: 'bitcoin' as PayoutMethod };
+    expect(validateApplyInput(bad)).toBe(validatePayoutSettings(bad.payoutMethod, bad.payoutDestination));
   });
 });
 

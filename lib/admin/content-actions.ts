@@ -1,14 +1,17 @@
 'use server';
 
 /**
- * CMS content server actions (Task C2-T4). All gated on `courses.edit`.
- * A thin auth+wiring layer over `lib/courses/write.ts` — the real DB write
- * ops — mirroring the established `lib/admin/*-actions.ts` →
- * `lib/admin/data/real/*.ts` division of labour (auth here, logic + audit
- * there). Retires the in-memory content store (lib/admin/content/{store,
- * ops}.ts): a save/publish/lesson/image edit here now writes a REAL
- * `courses`/`lessons` row, so it reflects on the public site (via
- * lib/courses/source.ts) as soon as the ISR path is revalidated.
+ * CMS content server actions (Task C2-T4). Content edits (create/update
+ * course, lessons, images) are gated on `courses.edit`; publish/unpublish/
+ * delete are gated on `teachers.review` (Task C3 fix — see `requireModerator`
+ * below: those are moderation acts, not content edits, and must go through
+ * the same capability as the review queue). A thin auth+wiring layer over
+ * `lib/courses/write.ts` — the real DB write ops — mirroring the established
+ * `lib/admin/*-actions.ts` → `lib/admin/data/real/*.ts` division of labour
+ * (auth here, logic + audit there). Retires the in-memory content store
+ * (lib/admin/content/{store, ops}.ts): a save/publish/lesson/image edit here
+ * now writes a REAL `courses`/`lessons` row, so it reflects on the public
+ * site (via lib/courses/source.ts) as soon as the ISR path is revalidated.
  *
  * Without a live DATABASE_URL (today, until the owner runs `db:push` +
  * `db:seed-courses`), every write below resolves `{ ok: false, message:
@@ -33,6 +36,28 @@ async function requireEditor(): Promise<AdminActor> {
   const user = await client.users.getUser(userId);
   const role = resolveAdminRole(user);
   if (!role || !can(role, 'courses.edit')) throw new Error('forbidden');
+  const name =
+    [user.firstName, user.lastName].filter(Boolean).join(' ') || user.emailAddresses[0]?.emailAddress || userId;
+  return { id: userId, name };
+}
+
+/**
+ * Task C3 fix: publish/unpublish/delete are MODERATION acts now, not plain
+ * content edits — gated on `teachers.review` (mirrors
+ * `lib/courses/review-actions.ts`'s `requireReviewer`, duplicated locally
+ * rather than imported so this file's auth story stays self-contained, same
+ * as `requireEditor` above). An `editeur-contenu` (has `courses.edit`, not
+ * `teachers.review`) can still draft/edit course content via
+ * `updateCourseAction`, but can no longer one-click push any course live,
+ * take it down, or delete it — that bypassed the review queue entirely.
+ */
+async function requireModerator(): Promise<AdminActor> {
+  const { userId } = await auth();
+  if (!userId) throw new Error('unauthorized');
+  const client = await clerkClient();
+  const user = await client.users.getUser(userId);
+  const role = resolveAdminRole(user);
+  if (!role || !can(role, 'teachers.review')) throw new Error('forbidden');
   const name =
     [user.firstName, user.lastName].filter(Boolean).join(' ') || user.emailAddresses[0]?.emailAddress || userId;
   return { id: userId, name };
@@ -64,7 +89,7 @@ export async function updateCourseAction(slug: string, patch: CoursePatch): Prom
 
 export async function publishCourseAction(slug: string): Promise<ContentResult> {
   try {
-    const actor = await requireEditor();
+    const actor = await requireModerator();
     return await writeOps.publishCourse(slug, actor);
   } catch (e) {
     return fail(e);
@@ -73,7 +98,7 @@ export async function publishCourseAction(slug: string): Promise<ContentResult> 
 
 export async function unpublishCourseAction(slug: string): Promise<ContentResult> {
   try {
-    const actor = await requireEditor();
+    const actor = await requireModerator();
     return await writeOps.unpublishCourse(slug, actor);
   } catch (e) {
     return fail(e);
@@ -82,7 +107,7 @@ export async function unpublishCourseAction(slug: string): Promise<ContentResult
 
 export async function deleteCourseAction(slug: string, confirmCode: string): Promise<ContentResult> {
   try {
-    const actor = await requireEditor();
+    const actor = await requireModerator();
     // write.ts's deleteCourse does the real enrollment-count + code-match guard.
     return await writeOps.deleteCourse(slug, confirmCode, actor);
   } catch (e) {

@@ -13,6 +13,7 @@ import { isApprovedTeacher, getTeacherProfile } from '@/lib/teacher/profile';
 import { getMyCourses, getMyStudioSummary } from '@/lib/teacher/studio';
 import { CourseCard } from '@/components/teacher/studio/CourseCard';
 import { WithdrawalPanel } from '@/components/teacher/studio/WithdrawalPanel';
+import { PayoutSettingsForm } from '@/components/teacher/studio/PayoutSettingsForm';
 
 // Per-request Clerk identity + live DB reads (balance, courses) — never
 // cache across teachers.
@@ -61,6 +62,10 @@ export default async function StudioPage({
         </Reveal>
 
         <Reveal delay={80} className="mt-8">
+          <PayoutSettingsForm payoutMethod={profile?.payoutMethod ?? null} payoutDestination={profile?.payoutDestination ?? null} />
+        </Reveal>
+
+        <Reveal delay={110} className="mt-4">
           <WithdrawalPanel
             balanceCents={summary.balanceCents}
             thresholdCents={summary.thresholdCents}

@@ -564,6 +564,39 @@
           "generic": "Une erreur est survenue."
         }
       },
+      "payout": {
+        "title": "Ton moyen de paiement",
+        "method": "Moyen de paiement",
+        "methods": {
+          "moncash": "MonCash",
+          "natcash": "NatCash",
+          "paypal": "PayPal",
+          "bank": "Compte bancaire"
+        },
+        "destination": "Détails de ton compte",
+        "hints": {
+          "moncash": "Ton numéro MonCash (exemple : 3712 3456).",
+          "natcash": "Ton numéro NatCash.",
+          "paypal": "L'e-mail de ton compte PayPal.",
+          "bank": "Le nom de la banque et ton numéro de compte."
+        },
+        "current": "Actuellement : {method} — {destination}",
+        "notSet": "Aucun moyen de paiement enregistré — ajoute-en un avant de demander un retrait.",
+        "editCta": "Modifier",
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "success": "Moyen de paiement mis à jour.",
+        "errorDestination": "Indique où tu veux recevoir ton argent.",
+        "errorDestinationTooLong": "Les détails de ton compte ne doivent pas dépasser 200 caractères.",
+        "error": {
+          "payout_method_invalid": "Moyen de paiement invalide.",
+          "payout_destination_required": "Indique où tu veux recevoir ton argent.",
+          "payout_destination_too_long": "Les détails de ton compte ne doivent pas dépasser 200 caractères.",
+          "forbidden": "Action non autorisée.",
+          "db_required": "Le système n'est pas encore actif. Réessaie plus tard.",
+          "generic": "Une erreur est survenue."
+        }
+      },
       "ledger": {
         "title": "Dernières entrées",
         "empty": "Aucune entrée pour l'instant.",
@@ -1816,12 +1849,14 @@
       "publish": {
         "status": {
           "draft": "Brouillon",
-          "published": "Publié"
+          "pending_review": "En révision",
+          "published": "Publié",
+          "rejected": "Rejeté",
+          "archived": "Archivé"
         },
         "unpublishedChanges": "Modifs en attente",
         "preview": "Prévisualiser",
         "publish": "Publier",
-        "publishChanges": "Publier les modifications",
         "published": "Publié ✓",
         "unpublish": "Dépublier",
         "unpublishWarn": "Le cours disparaît du catalogue public, mais les élèves déjà inscrits gardent leur accès.",
@@ -1831,6 +1866,10 @@
         "confirmDelete": "Supprimer définitivement",
         "hasEnrollments": "{count} élève(s) inscrit(s) — suppression bloquée. Dépublie plutôt.",
         "codeMismatch": "Le code ne correspond pas.",
+        "invalidStatus": "Action impossible dans l'état actuel du cours.",
+        "inReview": "En attente de validation par un administrateur — ni l'enseignant ni le CMS ne peuvent le publier tant que la revue n'est pas terminée.",
+        "rejectedNote": "Ce cours a été rejeté. L'enseignant doit le corriger et le soumettre à nouveau depuis son studio ; il ne peut pas être publié directement.",
+        "reviewNoteLabel": "Note de l'équipe",
         "cancel": "Annuler",
         "error": "Erreur."
       },
