@@ -1,6 +1,7 @@
 /**
- * scripts/seed-courses.ts — Task C2-T2
- * (docs/superpowers/plans/2026-07-24-c2-courses-to-db.md)
+ * scripts/seed-courses.ts — Task C2-T2, extended by Task C3-T8a
+ * (docs/superpowers/plans/2026-07-24-c2-courses-to-db.md,
+ *  docs/superpowers/plans/2026-07-24-c3-teacher-marketplace.md).
  *
  * Moves the 9 static courses (data/courses.ts) + their sales-page content
  * (data/courseDetails.ts, keyed by course `code`) + lessons + the $79/mo
@@ -10,8 +11,18 @@
  * `courses`/`lessons`/`teacher_plans` tables exactly (see that module's header
  * for the read side of this contract).
  *
- * REQUIRES the C2-T1 tables live (`npm run db:push`) — this script does not
- * create them.
+ * Task C3-T8a ALSO seeds teacher #1's `teacher_profiles` row (pre-approved —
+ * the owner never goes through the /enseigner apply→admin-approve flow other
+ * teachers do), so `/prof/pnice-academy` + `/enseigner/studio` are fully
+ * DB-backed the moment this script runs, instead of relying on
+ * `lib/teacher/public.ts`'s `isTeacherOne` static fallback forever. See
+ * section 4 below for the exact shape + why it's insert-only (never
+ * overwritten on rerun).
+ *
+ * REQUIRES the C2-T1 tables live (`npm run db:push`) for courses/lessons/
+ * teacher_plans, AND the C3-T1 tables live (same `npm run db:push` — it also
+ * applies migrations 0007/0008/0009) for `teacher_profiles` — this script
+ * does not create any of them.
  *
  * Owner resolution (the "owner" = teacher #1, the founder account):
  *   1. If ADMIN_BOOTSTRAP_EMAILS is set (lib/admin/access.ts bootstrapEmails()),
@@ -22,13 +33,21 @@
  *      ADMIN_BOOTSTRAP_EMAILS in .env.local to disambiguate.
  *
  * Idempotent — safe to run repeatedly:
- *   - courses:       onConflict(slug)               DO UPDATE (createdAt untouched)
- *   - lessons:       onConflict(course_slug, index)  DO UPDATE (createdAt untouched)
- *   - teacher_plans: no unique constraint on owner_user_id in the schema, so
+ *   - courses:          onConflict(slug)               DO UPDATE (createdAt untouched)
+ *   - lessons:          onConflict(course_slug, index)  DO UPDATE (createdAt untouched)
+ *   - teacher_plans:    no unique constraint on owner_user_id in the schema, so
  *     this is check-then-insert-or-update instead of onConflictDoUpdate.
+ *   - teacher_profiles: `user_id` IS unique in the schema, but this is
+ *     deliberately check-then-INSERT-ONLY (never updated on rerun) — unlike
+ *     courses/lessons/teacher_plans, which are meant to always mirror the
+ *     static source, a teacher profile is a live, admin/teacher-mutated
+ *     record (status can be suspended/reactivated, payout info can be set)
+ *     the moment it exists. Re-running this script must never silently
+ *     revert those real changes back to the seed defaults.
  *
- * --dry-run: resolves the owner (1 SELECT) + builds every row in memory,
- * prints a preview, but issues NO writes — every insert/update is skipped.
+ * --dry-run: resolves the owner (1 SELECT) + checks for an existing
+ * teacher_profiles row (1 SELECT) + builds every row in memory, prints a
+ * preview, but issues NO writes — every insert/update is skipped.
  *
  * Usage:
  *   npm run db:seed-courses
@@ -43,8 +62,17 @@ config({ path: '.env.local' });
 
 import { courses as staticCourses, isPreviewLesson } from '../data/courses';
 import { courseDetails } from '../data/courseDetails';
+import { getTeacher } from '../data/teachers';
 import { bootstrapEmails } from '../lib/admin/access';
 import { resolveProduct } from '../lib/payments/products';
+
+/** Mirrors `platform_settings.default_video_quota_minutes`'s schema default
+ *  (db/schema.ts) — the quota granted to a newly-approved teacher. Teacher #1
+ *  is seeded directly (never goes through `approveTeacherProfile`, which
+ *  reads the live setting), so this is a literal, documented mirror rather
+ *  than a live read — the seed script has no need for a second DB round-trip
+ *  to a table that may not even have its singleton row yet. */
+const DEFAULT_VIDEO_QUOTA_MINUTES = 600;
 
 async function main() {
   if (!process.env.DATABASE_URL) {
@@ -169,8 +197,53 @@ async function main() {
     updatedAt: now,
   };
 
+  /* ------------------------------------------------------------------ */
+  /* 4. Teacher #1's `teacher_profiles` row (Task C3-T8a) — pre-approved. */
+  /* Built from data/teachers.ts's static registry entry (same bio/name  */
+  /* the public /prof page falls back to today), so the seeded row and   */
+  /* the static fallback never disagree on day one.                     */
+  /* ------------------------------------------------------------------ */
+  const teacherOne = getTeacher('pnice-academy');
+  if (!teacherOne) {
+    throw new Error(`data/teachers.ts n'a pas d'entrée pour le slug "pnice-academy" (teacher #1).`);
+  }
+  const teacherProfileRow = {
+    userId: owner.id,
+    displayName: teacherOne.displayName,
+    bioHt: teacherOne.bio_ht,
+    bioFr: teacherOne.bio_fr,
+    // No photo on file yet — the public page falls back to the branded
+    // placeholder (lib/teacher/public.ts) until one is uploaded.
+    photoUrl: null,
+    // Teacher #1 is pre-approved by product decision (marketplace spec §C3:
+    // "l'owner = teacher #1 ; pas de cas particulier" — but HIS profile row
+    // skips the apply→admin-approve flow every other teacher goes through,
+    // since there's no admin yet to approve him).
+    status: 'approved' as const,
+    // No payout rail configured at seed time — see the runbook
+    // (docs/launch-checklist.md, "Marketplace enseignants (C3)") for how the
+    // owner sets this once a payout method is chosen; until then,
+    // requestWithdrawalAction correctly refuses with 'no_payout_method'.
+    payoutMethod: null,
+    payoutDestination: null,
+    videoQuotaMinutes: DEFAULT_VIDEO_QUOTA_MINUTES,
+    termsAcceptedAt: now,
+    reviewNote: null,
+    reviewedBy: null,
+    updatedAt: now,
+  };
+
+  // Read-only existence check — safe to run even under --dry-run (issues no
+  // writes), and lets the dry-run preview accurately say created vs. already
+  // exists instead of always claiming "will insert".
+  const [existingProfile] = await db
+    .select({ id: T.teacherProfiles.id, status: T.teacherProfiles.status })
+    .from(T.teacherProfiles)
+    .where(eq(T.teacherProfiles.userId, owner.id))
+    .limit(1);
+
   console.log(
-    `\n${dryRun ? '[dry-run] ' : ''}${courseRows.length} formation(s), ${lessonRows.length} leçon(s), 1 plan enseignant à écrire.`,
+    `\n${dryRun ? '[dry-run] ' : ''}${courseRows.length} formation(s), ${lessonRows.length} leçon(s), 1 plan enseignant, 1 profil enseignant à écrire.`,
   );
 
   if (dryRun) {
@@ -188,12 +261,15 @@ async function main() {
     console.log(
       `  teacher_plans: "${teacherPlanRow.titleHt}" / "${teacherPlanRow.titleFr}" — $${(teacherPlanRow.priceCentsMonthly / 100).toFixed(2)}/mo — owner=${teacherPlanRow.ownerUserId}`,
     );
+    console.log(
+      `  teacher_profiles: "${teacherProfileRow.displayName}" — status=${teacherProfileRow.status} — quota=${teacherProfileRow.videoQuotaMinutes}min — payout=${teacherProfileRow.payoutMethod ?? '(non configuré)'} — ${existingProfile ? `existe déjà (status actuel=${existingProfile.status}, INCHANGÉ)` : 'sera créé'}`,
+    );
     console.log('\nRelance sans --dry-run pour écrire réellement.');
     return;
   }
 
   /* ------------------------------------------------------------------ */
-  /* 4. Write (idempotent upserts)                                       */
+  /* 5. Write (idempotent upserts)                                       */
   /* ------------------------------------------------------------------ */
   let coursesUpserted = 0;
   for (const row of courseRows) {
@@ -223,8 +299,15 @@ async function main() {
     await db.insert(T.teacherPlans).values(teacherPlanRow);
   }
 
+  // Insert-only (see the header note + section 4 comment above): an existing
+  // teacher_profiles row for the owner is left completely untouched — never
+  // reset to these seed defaults on rerun.
+  if (!existingProfile) {
+    await db.insert(T.teacherProfiles).values(teacherProfileRow);
+  }
+
   console.log(
-    `\n✓ Seed terminé : ${coursesUpserted} formation(s), ${lessonsUpserted} leçon(s), 1 plan enseignant (${existingPlan ? 'mis à jour' : 'créé'}).`,
+    `\n✓ Seed terminé : ${coursesUpserted} formation(s), ${lessonsUpserted} leçon(s), 1 plan enseignant (${existingPlan ? 'mis à jour' : 'créé'}), 1 profil enseignant (${existingProfile ? 'déjà existant, inchangé' : 'créé'}).`,
   );
 }
 

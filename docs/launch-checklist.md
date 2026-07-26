@@ -31,6 +31,11 @@ npm run db:push
 `ADMIN_DATA_SOURCE=real`. Sans `0004`, les lectures réelles de certificats/cours
 plantent (colonne `revoked` manquante).
 
+**Depuis, `db:push` applique aussi 0005-0009** (cours/leçons/plan enseignant,
+puis les 5 tables du marketplace enseignants + leurs index anti-doublon) —
+même commande, toujours additive. Voir **« Marketplace enseignants (C3) »**
+plus bas pour l'activer une fois ces migrations pushées.
+
 ---
 
 ## Étape 2 — Tester le paiement Stripe en réel (mode test)
@@ -150,6 +155,63 @@ Ces points n'ont pas pu être testés automatiquement (base quasi vide) :
 
 ---
 
+## Marketplace enseignants (C3)
+
+C2 (cours/leçons en base) et C3 (onboarding enseignant, studio, validation,
+registre 70/30, retraits, avis) sont **codés et prêts** — cette section les
+active. Fait après l'Étape 1 :
+
+```bash
+npm run db:push          # applique 0005-0009 (voir Étape 1)
+npm run db:seed-courses  # écrit les 9 formations + leçons + plan $79/mo,
+                          # ET seed maintenant ton profil enseignant #1
+```
+
+`db:seed-courses` upsert désormais aussi UNE ligne `teacher_profiles` pour toi
+(le propriétaire résolu) : `display_name` + bio ht/fr (depuis `data/teachers.ts`),
+`status = 'approved'` (pré-approuvé — tu ne passes pas par `/enseigner` comme
+les autres), quota vidéo 600 min. **Idempotent et non-destructif** : si ta ligne
+existe déjà (tu l'as modifiée depuis — statut suspendu, infos de paiement
+ajoutées…), un re-run de `db:seed-courses` ne l'écrase JAMAIS ; seul un premier
+run crée la ligne.
+
+Une fois les deux commandes lancées, le marketplace est actif de bout en bout :
+
+- **Candidature** : un compte connecté postule sur `/enseigner` (bio ht/fr,
+  méthode de paiement, CGU).
+- **Approbation** : toi (ou un admin) approuves/rejettes sur
+  `/admin/enseignants` (cap `teachers.review`).
+- **Studio** : un enseignant approuvé obtient `/enseigner/studio` — crée/édite
+  SES cours, les soumet en révision (jamais d'auto-publication : toi seul
+  publies, depuis `/admin/cours` → onglet « à valider »), voit son solde +
+  registre de gains, demande un retrait.
+- **Argent** : chaque vente écrit une ligne `earnings_ledger` — 70 % net pour
+  l'enseignant, 30 % de commission, **figée au moment de la vente** (changer le
+  taux plus tard ne touche jamais les ventes déjà faites).
+- **Retraits** : manuels, sur demande (≥ seuil), traités sur `/admin/retraits`
+  (cap `payouts.process`) — tu payes hors-app (MonCash/NatCash/PayPal/virement)
+  puis marques la demande « payée » avec une référence.
+- **Avis** : un apprenant inscrit note 1-5 étoiles + commentaire sur un cours
+  acheté ; visible sur la page de vente et `/prof/[slug]`.
+
+**Réglages par défaut (déjà dans le schéma `platform_settings`, aucune action
+requise pour lancer)** : commission = **30 %**, seuil de retrait = **25 $**,
+quota vidéo par défaut = 600 min. Pour les changer, il n'y a pas encore d'écran
+admin dédié — modifie la ligne singleton directement : `npm run db:studio` →
+table `platform_settings` → `commission_pct` / `payout_threshold_cents` /
+`default_video_quota_minutes`.
+
+**⚠ Ton profil enseignant #1 est seedé SANS méthode de paiement** (tu n'es
+jamais passé par le formulaire de candidature, qui est la seule UI qui les
+renseigne aujourd'hui). Tant que `payout_method`/`payout_destination` restent
+vides, une demande de retrait pour TOI-MÊME échoue (`no_payout_method`) — ça
+ne bloque rien au lancement, seulement le jour où tu voudras te retirer un
+premier paiement. Renseigne les deux champs via `db:studio` (table
+`teacher_profiles`, ta ligne) à ce moment-là. Les autres enseignants, eux,
+les configurent normalement dans l'assistant `/enseigner`.
+
+---
+
 ## Résumé — la porte de lancement
 
 `/admin/sante → Branchement backend` affiche **« Prêt »** quand : DB + Clerk +
@@ -157,6 +219,6 @@ webhook Clerk configurés **+** `ADMIN_DATA_SOURCE=real` **+** au moins un rail 
 paiement live. Chemin le plus court vers de l'argent réel : Étapes 1→2 (paiement),
 4 (email), 5 (vidéo), 6 (déploiement), 9 (prix). Le reste peut suivre juste après.
 
-**Prochaines phases produit (déjà planifiées, pas au lancement)** : C2 (cours en
-base de données, marketplace-ready) puis C3 (onboarding enseignant, studio,
-validation, registre 70/30, retraits, avis). Specs dans `docs/superpowers/`.
+**Marketplace enseignants (C2+C3)** : codé et prêt, voir la section
+« Marketplace enseignants (C3) » ci-dessus pour l'activer (`db:push` +
+`db:seed-courses`). Specs dans `docs/superpowers/`.
