@@ -459,9 +459,8 @@
         },
         "approved": {
           "title": "Ta candidature est approuvée",
-          "body": "Bienvenue comme enseignant sur PNICE Academy. Le studio pour créer tes cours arrive bientôt — on te préviendra dès qu'il sera prêt.",
-          "badge": "Bientôt",
-          "studioLabel": "Studio enseignant"
+          "body": "Bienvenue comme enseignant sur PNICE Academy. Ton studio t'attend — crée ta première formation dès maintenant.",
+          "studioCta": "Entrer dans mon studio"
         },
         "rejected": {
           "title": "Ta candidature n'a pas été approuvée",
@@ -473,6 +472,85 @@
           "title": "Ton profil enseignant est suspendu",
           "body": "Ton profil enseignant est actuellement suspendu. Contacte le support si tu penses que c'est une erreur."
         }
+      }
+    },
+    "studio": {
+      "eyebrow": "Ton studio",
+      "greeting": "Bienvenue dans ton studio",
+      "greetingNamed": "Bienvenue, {name}",
+      "untitled": "(sans titre)",
+      "backToStudio": "Retour au studio",
+      "myCourses": "Mes formations",
+      "newCourse": "Nouvelle formation",
+      "emptyCourses": "Tu n'as encore aucune formation. Crée la première.",
+      "editCta": "Éditer",
+      "submitCta": "Soumettre pour validation",
+      "unpublishCta": "Dépublier",
+      "viewPublic": "Voir la page publique",
+      "needLessons": "Ajoute au moins une leçon avant de soumettre.",
+      "submittedAt": "Soumis le {date}",
+      "reviewNoteLabel": "Note de l'équipe",
+      "pendingReviewNote": "En cours de validation par notre équipe.",
+      "col": {
+        "price": "Prix",
+        "sales": "Ventes",
+        "revenue": "Revenu"
+      },
+      "status": {
+        "draft": "Brouillon",
+        "pending_review": "En validation",
+        "published": "Publié",
+        "rejected": "Rejeté",
+        "archived": "Archivé"
+      },
+      "error": {
+        "invalid_status": "Cette action n'est pas possible dans l'état actuel.",
+        "not_found": "Formation introuvable.",
+        "forbidden": "Action non autorisée.",
+        "db_required": "Le système n'est pas encore actif. Réessaie plus tard.",
+        "generic": "Une erreur est survenue."
+      },
+      "balance": {
+        "title": "Ton solde",
+        "threshold": "Retrait minimum : {amount}",
+        "quota": "Quota vidéo : {minutes} min",
+        "pendingNote": "Demande de retrait en cours ({amount}).",
+        "requestCta": "Demander un retrait",
+        "submit": "Envoyer la demande",
+        "cancel": "Annuler",
+        "success": "Ta demande de retrait a été envoyée. Elle sera traitée bientôt.",
+        "error": {
+          "below_threshold": "Le montant est inférieur au minimum de retrait.",
+          "insufficient_balance": "Le montant dépasse ton solde disponible.",
+          "pending_exists": "Tu as déjà une demande de retrait en cours.",
+          "no_payout_method": "Aucun moyen de paiement enregistré sur ton profil.",
+          "invalid_amount": "Indique un montant valide.",
+          "forbidden": "Action non autorisée.",
+          "db_required": "Le système n'est pas encore actif. Réessaie plus tard.",
+          "generic": "Une erreur est survenue."
+        }
+      },
+      "ledger": {
+        "title": "Dernières entrées",
+        "empty": "Aucune entrée pour l'instant.",
+        "kind": {
+          "sale": "Vente",
+          "refund": "Remboursement",
+          "withdrawal": "Retrait",
+          "adjustment": "Ajustement"
+        }
+      },
+      "create": {
+        "title": "Créer une formation",
+        "back": "Retour au studio",
+        "help": "La formation est créée en brouillon ; tu la compléteras dans l'éditeur avant de la soumettre.",
+        "titleHt": "Titre (Kreyòl)",
+        "titleFr": "Titre (Français)",
+        "price": "Prix ($)",
+        "draftNote": "Créée en brouillon — visible seulement par toi jusqu'à validation par notre équipe.",
+        "submit": "Créer en brouillon",
+        "titleRequired": "Un titre est requis.",
+        "error": "Erreur."
       }
     }
   },
@@ -1590,6 +1668,7 @@
         "impactRevenue": "Revenu projeté : {count} ventes → {revenue}",
         "impactWarn": "Ce prix dépasse {code}, la formation la plus chère — sûr ?",
         "salesPage": "Page de vente",
+        "level": "Niveau",
         "promise": "Promesse",
         "problem": "Problème résolu",
         "deliverables": "Livrables",
@@ -1610,6 +1689,8 @@
         "add": "Ajouter une leçon",
         "titleHt": "Titre (ht)",
         "titleFr": "Titre (fr)",
+        "descHt": "Description (ht)",
+        "descFr": "Description (fr)",
         "bunnyId": "ID vidéo Bunny",
         "validate": "Valider",
         "bunnyOk": "✓ vidéo trouvée",

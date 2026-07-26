@@ -51,6 +51,12 @@ const T = schema;
 type DbCourseRow = typeof T.courses.$inferSelect;
 type DbLessonRow = typeof T.lessons.$inferSelect;
 
+/** The raw DB course status (draft/pending_review/published/rejected/archived)
+ *  — exported for lib/teacher/studio.ts (Task C3-T4), which surfaces every
+ *  status a teacher's own course can be in, unlike `AdminCourseStatus` above
+ *  (narrowed to the binary the pre-C3 CMS UI understood). */
+export type DbCourseStatus = DbCourseRow['status'];
+
 export type CourseWriteResult = { ok: boolean; message?: string; slug?: string; count?: number };
 
 function dbRequired(): CourseWriteResult {
@@ -71,6 +77,9 @@ export type AdminLesson = {
   id: string;
   title_ht: string;
   title_fr: string;
+  /** Per-lesson description (Task C3-T4 — wires the C2 gap into the editors). */
+  desc_ht: string;
+  desc_fr: string;
   bunnyVideoId: string;
   durationSeconds: number;
   isPreview: boolean;
@@ -95,6 +104,19 @@ export type AdminCourse = {
   priceCents: number;
   status: AdminCourseStatus;
   hasUnpublishedChanges: boolean;
+  /**
+   * Raw DB status + review trail (Task C3-T4, mirrors `AdminCourseListRow`'s
+   * fields of the same name) — the teacher studio's status bar needs to
+   * distinguish pending_review/rejected, which `status` above collapses to
+   * 'draft' for the pre-C3 admin CMS UI (see the file header note on
+   * `toAdminStatus`).
+   */
+  rawStatus: DbCourseStatus;
+  reviewNote: string | null;
+  submittedAt: string | null;
+  /** Sales-page difficulty level (Task C3-T4 — wires the C2 gap into the editors). */
+  level_ht: string;
+  level_fr: string;
   promise_ht: string;
   promise_fr: string;
   problem_ht: string;
@@ -165,6 +187,11 @@ function mapRowToAdminCourse(row: DbCourseRow, lessonRows: DbLessonRow[]): Admin
     priceCents: row.priceCents ?? 0,
     status: toAdminStatus(row.status),
     hasUnpublishedChanges: row.hasUnpublishedChanges,
+    rawStatus: row.status,
+    reviewNote: row.reviewNote ?? null,
+    submittedAt: row.submittedAt ? row.submittedAt.toISOString() : null,
+    level_ht: row.levelHt ?? '',
+    level_fr: row.levelFr ?? '',
     promise_ht: row.promiseHt ?? '',
     promise_fr: row.promiseFr ?? '',
     problem_ht: row.problemHt ?? '',
@@ -179,6 +206,8 @@ function mapRowToAdminCourse(row: DbCourseRow, lessonRows: DbLessonRow[]): Admin
         id: l.id,
         title_ht: l.titleHt,
         title_fr: l.titleFr,
+        desc_ht: l.descHt ?? '',
+        desc_fr: l.descFr ?? '',
         bunnyVideoId: l.bunnyVideoId ?? '',
         durationSeconds: l.durationSeconds ?? 0,
         isPreview: l.isPreview,
@@ -316,7 +345,19 @@ export type NewCourseInput = {
   priceCents?: number;
 };
 
-export async function createCourse(input: NewCourseInput, actor: AdminActor): Promise<CourseWriteResult> {
+/**
+ * `ownerUserIdOverride`: Task C3-T4's teacher studio creates a course owned
+ * by the SIGNED-IN teacher, not the site owner `resolveOwnerUserId()` would
+ * resolve — pass the teacher's `users.id` explicitly (see
+ * lib/teacher/studio-actions.ts's `createMyCourseAction`). `undefined` (the
+ * admin CMS's call site, unchanged) keeps the original `resolveOwnerUserId()`
+ * behaviour; `null` would deliberately create an ownerless row (unused today).
+ */
+export async function createCourse(
+  input: NewCourseInput,
+  actor: AdminActor,
+  ownerUserIdOverride?: string | null,
+): Promise<CourseWriteResult> {
   if (!dbConfigured()) return dbRequired();
 
   const code = input.code?.trim() || (await getNextCourseCode());
@@ -332,7 +373,7 @@ export async function createCourse(input: NewCourseInput, actor: AdminActor): Pr
     slug = `${slug}-${i}`;
   }
 
-  const ownerUserId = await resolveOwnerUserId();
+  const ownerUserId = ownerUserIdOverride !== undefined ? ownerUserIdOverride : await resolveOwnerUserId();
 
   await db.insert(T.courses).values({
     ownerUserId: ownerUserId ?? null,
@@ -531,6 +572,9 @@ export async function addLesson(slug: string, actor: AdminActor): Promise<Course
 export type LessonPatch = Partial<{
   title_ht: string;
   title_fr: string;
+  /** Per-lesson description (Task C3-T4 — wires the C2 gap into the editors). */
+  desc_ht: string;
+  desc_fr: string;
   bunnyVideoId: string;
   durationSeconds: number;
   isPreview: boolean;
@@ -546,6 +590,8 @@ export async function updateLesson(
   const set: Partial<typeof T.lessons.$inferInsert> = { updatedAt: new Date() };
   if (patch.title_ht !== undefined) set.titleHt = patch.title_ht;
   if (patch.title_fr !== undefined) set.titleFr = patch.title_fr;
+  if (patch.desc_ht !== undefined) set.descHt = patch.desc_ht;
+  if (patch.desc_fr !== undefined) set.descFr = patch.desc_fr;
   if (patch.bunnyVideoId !== undefined) set.bunnyVideoId = patch.bunnyVideoId || null;
   if (patch.durationSeconds !== undefined) set.durationSeconds = patch.durationSeconds;
   if (patch.isPreview !== undefined) set.isPreview = patch.isPreview;

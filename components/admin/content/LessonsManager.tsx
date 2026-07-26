@@ -21,8 +21,28 @@ import {
   moveLessonAction,
   validateBunnyVideoAction,
 } from '@/lib/admin/content-actions';
-import type { AdminLesson } from '@/lib/courses/write';
+import type { AdminLesson, LessonPatch } from '@/lib/courses/write';
 import { inputCls } from './fields';
+
+type ContentResult = { ok: boolean; message?: string; slug?: string; count?: number };
+
+/** Same shape as `lib/admin/content-actions.ts`'s 5 lesson actions — the
+ *  studio (Task C3-T4) injects its own owner-scoped versions here instead. */
+export type LessonActions = {
+  addLesson: (slug: string) => Promise<ContentResult>;
+  updateLesson: (slug: string, lessonId: string, patch: LessonPatch) => Promise<ContentResult>;
+  deleteLesson: (slug: string, lessonId: string) => Promise<ContentResult>;
+  moveLesson: (slug: string, lessonId: string, dir: 'up' | 'down') => Promise<ContentResult>;
+  validateBunnyVideo: (videoId: string) => Promise<ContentResult>;
+};
+
+const defaultLessonActions: LessonActions = {
+  addLesson: addLessonAction,
+  updateLesson: updateLessonAction,
+  deleteLesson: deleteLessonAction,
+  moveLesson: moveLessonAction,
+  validateBunnyVideo: validateBunnyVideoAction,
+};
 
 function secToMmss(s: number): string {
   const m = Math.floor(s / 60);
@@ -33,7 +53,20 @@ function mmssToSec(v: string): number {
   return v.includes(':') ? m * 60 + (s || 0) : (Number(v) || 0);
 }
 
-export function LessonsManager({ slug, lessons, isDraft }: { slug: string; lessons: AdminLesson[]; isDraft: boolean }) {
+export function LessonsManager({
+  slug,
+  lessons,
+  isDraft,
+  actions = defaultLessonActions,
+}: {
+  slug: string;
+  lessons: AdminLesson[];
+  isDraft: boolean;
+  /** Injected by the teacher studio (Task C3-T4); defaults to the admin CMS
+   *  actions so every existing `/admin/cours/[slug]/editer` call site is
+   *  unchanged. */
+  actions?: LessonActions;
+}) {
   const t = useTranslations('admin.cms.lessons');
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -51,12 +84,12 @@ export function LessonsManager({ slug, lessons, isDraft }: { slug: string; lesso
       ) : (
         <ul className="mt-3 space-y-2">
           {lessons.map((l, i) => (
-            <LessonRow key={l.id} slug={slug} lesson={l} index={i} total={lessons.length} isDraft={isDraft} onAct={act} />
+            <LessonRow key={l.id} slug={slug} lesson={l} index={i} total={lessons.length} isDraft={isDraft} onAct={act} actions={actions} />
           ))}
         </ul>
       )}
 
-      <button type="button" onClick={() => act(() => addLessonAction(slug))} className="mt-3 inline-flex items-center gap-1 font-mono text-[11px] text-teal hover:underline">
+      <button type="button" onClick={() => act(() => actions.addLesson(slug))} className="mt-3 inline-flex items-center gap-1 font-mono text-[11px] text-teal hover:underline">
         <IconPlus size={13} /> {t('add')}
       </button>
     </section>
@@ -70,6 +103,7 @@ function LessonRow({
   total,
   isDraft,
   onAct,
+  actions,
 }: {
   slug: string;
   lesson: AdminLesson;
@@ -77,10 +111,13 @@ function LessonRow({
   total: number;
   isDraft: boolean;
   onAct: (fn: () => Promise<{ ok: boolean }>) => void;
+  actions: LessonActions;
 }) {
   const t = useTranslations('admin.cms.lessons');
   const [titleHt, setTitleHt] = useState(lesson.title_ht);
   const [titleFr, setTitleFr] = useState(lesson.title_fr);
+  const [descHt, setDescHt] = useState(lesson.desc_ht);
+  const [descFr, setDescFr] = useState(lesson.desc_fr);
   const [video, setVideo] = useState(lesson.bunnyVideoId);
   const [dur, setDur] = useState(secToMmss(lesson.durationSeconds));
   const [bunny, setBunny] = useState<string | null>(null);
@@ -89,7 +126,7 @@ function LessonRow({
   const noVideo = !lesson.bunnyVideoId;
   const iconBtn = 'grid h-6 w-6 place-items-center rounded border border-ink/15 text-ink/55 hover:bg-ink/[0.04] disabled:opacity-30';
 
-  const commit = (patch: Partial<AdminLesson>) => onAct(() => updateLessonAction(slug, lesson.id, patch));
+  const commit = (patch: LessonPatch) => onAct(() => actions.updateLesson(slug, lesson.id, patch));
 
   return (
     <li className={cn('rounded-lg border bg-paper p-2.5', noVideo && !isDraft ? 'border-stampred/40' : 'border-ink/10')}>
@@ -100,6 +137,10 @@ function LessonRow({
             <input value={titleHt} onChange={(e) => setTitleHt(e.target.value)} onBlur={() => titleHt !== lesson.title_ht && commit({ title_ht: titleHt })} placeholder={t('titleHt')} className={inputCls} />
             <input value={titleFr} onChange={(e) => setTitleFr(e.target.value)} onBlur={() => titleFr !== lesson.title_fr && commit({ title_fr: titleFr })} placeholder={t('titleFr')} className={inputCls} />
           </div>
+          <div className="grid gap-1.5 sm:grid-cols-2">
+            <textarea value={descHt} onChange={(e) => setDescHt(e.target.value)} onBlur={() => descHt !== lesson.desc_ht && commit({ desc_ht: descHt })} placeholder={t('descHt')} className={cn(inputCls, 'min-h-[44px] resize-y')} />
+            <textarea value={descFr} onChange={(e) => setDescFr(e.target.value)} onBlur={() => descFr !== lesson.desc_fr && commit({ desc_fr: descFr })} placeholder={t('descFr')} className={cn(inputCls, 'min-h-[44px] resize-y')} />
+          </div>
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="flex items-center gap-1">
               {noVideo ? <IconVideoOff size={13} className="text-stampred" /> : <IconVideo size={13} className="text-teal" />}
@@ -108,7 +149,7 @@ function LessonRow({
             <button
               type="button"
               disabled={vp}
-              onClick={() => vStart(async () => { const r = await validateBunnyVideoAction(video); setBunny(r.ok ? (r.message === 'unvalidated_mock' ? t('bunnyMock') : t('bunnyOk')) : t('bunnyBad')); })}
+              onClick={() => vStart(async () => { const r = await actions.validateBunnyVideo(video); setBunny(r.ok ? (r.message === 'unvalidated_mock' ? t('bunnyMock') : t('bunnyOk')) : t('bunnyBad')); })}
               className="rounded border border-ink/15 px-2 py-1 font-mono text-[10px] text-ink/60 hover:bg-ink/[0.04]"
             >
               {vp ? <IconLoader2 size={11} className="animate-spin" /> : t('validate')}
@@ -125,9 +166,9 @@ function LessonRow({
           )}
         </div>
         <span className="flex shrink-0 flex-col gap-0.5">
-          <button type="button" onClick={() => onAct(() => moveLessonAction(slug, lesson.id, 'up'))} disabled={index === 0} className={iconBtn}><IconChevronUp size={12} /></button>
-          <button type="button" onClick={() => onAct(() => moveLessonAction(slug, lesson.id, 'down'))} disabled={index === total - 1} className={iconBtn}><IconChevronDown size={12} /></button>
-          <button type="button" onClick={() => onAct(() => deleteLessonAction(slug, lesson.id))} className={cn(iconBtn, 'text-stampred')}><IconTrash size={12} /></button>
+          <button type="button" onClick={() => onAct(() => actions.moveLesson(slug, lesson.id, 'up'))} disabled={index === 0} className={iconBtn}><IconChevronUp size={12} /></button>
+          <button type="button" onClick={() => onAct(() => actions.moveLesson(slug, lesson.id, 'down'))} disabled={index === total - 1} className={iconBtn}><IconChevronDown size={12} /></button>
+          <button type="button" onClick={() => onAct(() => actions.deleteLesson(slug, lesson.id))} className={cn(iconBtn, 'text-stampred')}><IconTrash size={12} /></button>
         </span>
       </div>
     </li>

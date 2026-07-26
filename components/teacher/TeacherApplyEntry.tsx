@@ -12,6 +12,7 @@ import {
 import { cn } from '@/lib/cn';
 import { buttonClasses } from '@/components/ui/Button';
 import { Sceau } from '@/components/ui/Sceau';
+import { Link } from '@/i18n/routing';
 import { ApplyWizard } from './ApplyWizard';
 import type { TeacherProfile } from '@/lib/teacher/profile';
 
@@ -130,12 +131,9 @@ function ApprovedCard() {
       title={t('status.approved.title')}
       body={t('status.approved.body')}
     >
-      <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-ochre/40 bg-ochre/10 px-4 py-1.5 font-mono text-xs uppercase tracking-wide text-ochre">
-        {t('status.approved.badge')}
-        <span className="text-ink/60 normal-case tracking-normal">
-          {t('status.approved.studioLabel')}
-        </span>
-      </div>
+      <Link href="/enseigner/studio" className={cn(buttonClasses('primary', 'lg'), 'mt-6')}>
+        {t('status.approved.studioCta')}
+      </Link>
     </StatusShell>
   );
 }

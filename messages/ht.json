@@ -459,9 +459,8 @@
         },
         "approved": {
           "title": "Kandidati w apwouve",
-          "body": "Byenveni kòm anseyan sou PNICE Academy. Studio pou kreye kou w ap vini talè — n ap avize w depi li disponib.",
-          "badge": "Byento",
-          "studioLabel": "Studio anseyan"
+          "body": "Byenveni kòm anseyan sou PNICE Academy. Estidyo w ap tann ou — kreye premye fòmasyon w kounye a.",
+          "studioCta": "Antre nan estidyo mwen"
         },
         "rejected": {
           "title": "Kandidati w pa t apwouve",
@@ -473,6 +472,85 @@
           "title": "Pwofil anseyan w sispann",
           "body": "Pwofil anseyan w sispann kounye a. Kontakte sipò si ou panse sa se yon erè."
         }
+      }
+    },
+    "studio": {
+      "eyebrow": "Estidyo w",
+      "greeting": "Byenveni nan estidyo w",
+      "greetingNamed": "Byenveni, {name}",
+      "untitled": "(san tit)",
+      "backToStudio": "Tounen nan estidyo",
+      "myCourses": "Fòmasyon mwen yo",
+      "newCourse": "Nouvo fòmasyon",
+      "emptyCourses": "Ou poko gen okenn fòmasyon. Kreye premye a.",
+      "editCta": "Modifye",
+      "submitCta": "Soumèt pou revizyon",
+      "unpublishCta": "Retire nan piblik",
+      "viewPublic": "Wè paj piblik la",
+      "needLessons": "Ajoute omwen yon leson anvan ou soumèt.",
+      "submittedAt": "Soumèt {date}",
+      "reviewNoteLabel": "Nòt ekip la",
+      "pendingReviewNote": "Ekip nou an ap revize l kounye a.",
+      "col": {
+        "price": "Pri",
+        "sales": "Vant",
+        "revenue": "Revni"
+      },
+      "status": {
+        "draft": "Bwouyon",
+        "pending_review": "N ap revize",
+        "published": "Pibliye",
+        "rejected": "Rejte",
+        "archived": "Achive"
+      },
+      "error": {
+        "invalid_status": "Aksyon sa a pa posib nan eta kou a kounye a.",
+        "not_found": "Fòmasyon pa jwenn.",
+        "forbidden": "Aksyon pa otorize.",
+        "db_required": "Sistèm nan poko aktif. Tanpri eseye pita.",
+        "generic": "Yon erè rive."
+      },
+      "balance": {
+        "title": "Balans ou",
+        "threshold": "Retrè minimòm : {amount}",
+        "quota": "Kota videyo : {minutes} min",
+        "pendingNote": "Yon demand retrè ap tann ({amount}).",
+        "requestCta": "Mande yon retrè",
+        "submit": "Voye demand lan",
+        "cancel": "Anile",
+        "success": "Demand retrè w voye. L ap trete talè.",
+        "error": {
+          "below_threshold": "Kantite a pi piti pase minimòm retrè a.",
+          "insufficient_balance": "Kantite a depase balans ou genyen.",
+          "pending_exists": "Ou gen yon demand retrè k ap tann deja.",
+          "no_payout_method": "Pa gen mwayen peman anrejistre sou pwofil ou.",
+          "invalid_amount": "Antre yon kantite ki valab.",
+          "forbidden": "Aksyon pa otorize.",
+          "db_required": "Sistèm nan poko aktif. Tanpri eseye pita.",
+          "generic": "Yon erè rive."
+        }
+      },
+      "ledger": {
+        "title": "Dènye antre yo",
+        "empty": "Poko gen antre.",
+        "kind": {
+          "sale": "Vant",
+          "refund": "Ranbousman",
+          "withdrawal": "Retrè",
+          "adjustment": "Ajisteman"
+        }
+      },
+      "create": {
+        "title": "Kreye yon fòmasyon",
+        "back": "Tounen nan estidyo",
+        "help": "Fòmasyon an kreye an bwouyon ; w ap konplete rès la nan editè a anvan ou soumèt li.",
+        "titleHt": "Tit (Kreyòl)",
+        "titleFr": "Tit (Franse)",
+        "price": "Pri ($)",
+        "draftNote": "Kreye an bwouyon — se sèl ou ki wè l jiskaske ekip nou an valide l.",
+        "submit": "Kreye an bwouyon",
+        "titleRequired": "Yon tit obligatwa.",
+        "error": "Erè."
       }
     }
   },
@@ -1590,6 +1668,7 @@
         "impactRevenue": "Revni pwojte : {count} vant → {revenue}",
         "impactWarn": "Pri sa a depase {code}, kou ki pi chè a — ou sèten ?",
         "salesPage": "Paj vant",
+        "level": "Nivo",
         "promise": "Pwomès",
         "problem": "Pwoblèm rezoud",
         "deliverables": "Liv",
@@ -1610,6 +1689,8 @@
         "add": "Ajoute yon leson",
         "titleHt": "Tit (ht)",
         "titleFr": "Tit (fr)",
+        "descHt": "Deskripsyon (ht)",
+        "descFr": "Deskripsyon (fr)",
         "bunnyId": "ID videyo Bunny",
         "validate": "Valide",
         "bunnyOk": "✓ videyo jwenn",
