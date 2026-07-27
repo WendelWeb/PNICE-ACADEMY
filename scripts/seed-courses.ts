@@ -84,8 +84,26 @@ async function main() {
 
   // Imported AFTER dotenv config so the Neon client sees DATABASE_URL.
   const { db, schema } = await import('../db/index');
-  const { eq } = await import('drizzle-orm');
+  const { eq, sql } = await import('drizzle-orm');
   const T = schema;
+
+  // Neon serverless auto-suspends when idle; the FIRST query after a cold
+  // start can fail once, then succeed. Warm the connection with a few retries
+  // so a cold DB doesn't abort the whole seed on its first real query.
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await db.execute(sql`select 1`);
+      if (attempt > 1) console.log('Base réveillée.');
+      break;
+    } catch (e) {
+      if (attempt >= 6) {
+        console.error(`La base ne répond pas après ${attempt} tentatives.`);
+        throw e;
+      }
+      console.warn(`Réveil de la base Neon (tentative ${attempt})…`);
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+  }
 
   /* ------------------------------------------------------------------ */
   /* 1. Resolve the owner (teacher #1)                                   */
