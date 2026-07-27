@@ -62,9 +62,17 @@ config({ path: '.env.local' });
 
 import { courses as staticCourses, isPreviewLesson } from '../data/courses';
 import { courseDetails } from '../data/courseDetails';
-import { getTeacher } from '../data/teachers';
 import { bootstrapEmails } from '../lib/admin/access';
-import { resolveProduct } from '../lib/payments/products';
+import { SUBSCRIPTION_USD } from '../data/pricing';
+// CRITICAL: do NOT statically import anything that transitively imports `@/db`.
+// ES modules evaluate ALL imports BEFORE this file's top-level `config()` runs,
+// so such an import binds the Neon client to the placeholder connection string
+// BEFORE DATABASE_URL is loaded → every query then fails with "fetch failed".
+// Two known offenders reach `db` via `lib/courses/source`:
+//   • lib/payments/products  (→ source → db)
+//   • data/teachers          (→ source → db)  ← imported dynamically in main()
+// `db` and anything on that chain are imported dynamically inside main() (after
+// config) for exactly this reason. Keep new static imports here db-free.
 
 /** Mirrors `platform_settings.default_video_quota_minutes`'s schema default
  *  (db/schema.ts) — the quota granted to a newly-approved teacher. Teacher #1
@@ -85,6 +93,10 @@ async function main() {
   // Imported AFTER dotenv config so the Neon client sees DATABASE_URL.
   const { db, schema } = await import('../db/index');
   const { eq, sql } = await import('drizzle-orm');
+  // Dynamic (post-config) — data/teachers → lib/courses/source → db; a static
+  // import would poison the db client before DATABASE_URL is loaded (see the
+  // import-graph note at the top of this file).
+  const { getTeacher } = await import('../data/teachers');
   const T = schema;
 
   // Neon serverless auto-suspends when idle; the FIRST query after a cold
@@ -96,7 +108,7 @@ async function main() {
       if (attempt > 1) console.log('Base réveillée.');
       break;
     } catch (e) {
-      if (attempt >= 6) {
+      if (attempt >= 20) {
         console.error(`La base ne répond pas après ${attempt} tentatives.`);
         throw e;
       }
@@ -204,12 +216,14 @@ async function main() {
   /* lib/payments/products.ts so the seeded plan matches what a buyer     */
   /* actually sees at checkout.                                          */
   /* ------------------------------------------------------------------ */
-  const subscriptionProduct = (await resolveProduct({ productType: 'subscription' }))!;
+  // Mirrors resolveProduct({productType:'subscription'}) WITHOUT importing
+  // lib/payments/products (which would poison the DB client — see the import
+  // note at the top). The $79 canonical price + the same display names.
   const teacherPlanRow = {
     ownerUserId: owner.id,
-    titleHt: subscriptionProduct.nameHt,
-    titleFr: subscriptionProduct.nameFr,
-    priceCentsMonthly: subscriptionProduct.amountCents,
+    titleHt: 'Abònman chak mwa PNICE Academy',
+    titleFr: 'Abonnement mensuel PNICE Academy',
+    priceCentsMonthly: SUBSCRIPTION_USD * 100,
     includesAll: true,
     status: 'active' as const,
     updatedAt: now,
@@ -329,9 +343,28 @@ async function main() {
   );
 }
 
-main()
-  .then(() => process.exit(0))
-  .catch((e) => {
-    console.error('✗ Seed échoué :', e instanceof Error ? e.message : e);
-    process.exit(1);
-  });
+/**
+ * The whole seed is idempotent (see the header), so on a transient Neon
+ * connection blip we simply re-run it from scratch a few times rather than
+ * aborting. A pooled Neon endpoint occasionally drops requests for a few
+ * seconds; retrying the whole idempotent seed rides through those windows.
+ */
+async function runWithRetry() {
+  const maxRuns = 5;
+  for (let run = 1; run <= maxRuns; run++) {
+    try {
+      await main();
+      return;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (run >= maxRuns) {
+        console.error(`✗ Seed échoué après ${run} essais :`, msg);
+        process.exit(1);
+      }
+      console.warn(`\n⚠ Coupure de connexion (essai ${run}/${maxRuns}) : ${msg}\n   Nouvelle tentative dans 4 s… (le seed est idempotent, aucun risque)`);
+      await new Promise((r) => setTimeout(r, 4000));
+    }
+  }
+}
+
+runWithRetry().then(() => process.exit(0));
