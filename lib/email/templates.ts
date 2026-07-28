@@ -2,7 +2,7 @@
  * Bilingual transactional email bodies. Pure functions (no env, no fetch) so
  * they are unit-testable; sending stays in lib/email/resend.ts.
  */
-import { toHtg } from '@/lib/money';
+import { toHtgAt, USD_TO_HTG } from '@/lib/money';
 
 const usd = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 
@@ -16,9 +16,14 @@ export function buildReceiptHtml(input: {
   amountCents: number;
   dateIso: string;
   ref: string;
+  /** USD→HTG rate for the "(~X HTG)" line, ideally the live DB rate
+   *  (lib/fx.ts's `getFxRate`) passed by the caller (lib/payments/fulfill.ts).
+   *  Optional + defaults to the env constant so existing callers/tests keep
+   *  working unchanged (Task fix/fx-rate-unify). */
+  rateHtg?: number;
 }): { subject: string; html: string } {
   const fr = input.locale === 'fr';
-  const htg = Math.round(toHtg(input.amountCents / 100)).toLocaleString('fr-FR');
+  const htg = Math.round(toHtgAt(input.amountCents / 100, input.rateHtg ?? USD_TO_HTG)).toLocaleString('fr-FR');
   const date = new Date(input.dateIso).toLocaleDateString(fr ? 'fr-FR' : 'fr-HT');
   const hello = input.name
     ? (fr ? `Bonjour ${escapeHtml(input.name)},` : `Bonjou ${escapeHtml(input.name)},`)
@@ -58,7 +63,9 @@ export function buildCartReminderHtml(input: {
   resumeUrl?: string | null;
 }): { subject: string; html: string } {
   const fr = input.locale === 'fr';
-  const htg = Math.round(toHtg(input.amountCents / 100)).toLocaleString('fr-FR');
+  // Not wired to the live DB rate (Task fix/fx-rate-unify scoped the receipt
+  // email only — this cart reminder keeps the env-default rate).
+  const htg = Math.round(toHtgAt(input.amountCents / 100, USD_TO_HTG)).toLocaleString('fr-FR');
   const hello = input.name
     ? (fr ? `Bonjour ${escapeHtml(input.name)},` : `Bonjou ${escapeHtml(input.name)},`)
     : (fr ? 'Bonjour,' : 'Bonjou,');

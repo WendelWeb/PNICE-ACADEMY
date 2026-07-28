@@ -19,7 +19,7 @@ export function FxRatePanel({
   locale,
 }: {
   rate: number;
-  updatedAt: string;
+  updatedAt: string | null;
   canEdit: boolean;
   locale: 'ht' | 'fr';
 }) {

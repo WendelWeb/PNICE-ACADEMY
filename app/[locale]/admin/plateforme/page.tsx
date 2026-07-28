@@ -3,7 +3,7 @@ import { auth, clerkClient } from '@clerk/nextjs/server';
 import { IconCurrencyDollar, IconAlertTriangle } from '@tabler/icons-react';
 import { resolveAdminRole } from '@/lib/admin/access';
 import { getPlatform } from '@/lib/admin/platform/store';
-import { getFxRate } from '@/lib/admin/settings';
+import { getFxRate } from '@/lib/fx';
 import { getAuditLog } from '@/lib/admin/data';
 import { fmtDateTime } from '@/lib/admin/format';
 import { Forbidden } from '@/components/admin/Forbidden';
@@ -22,10 +22,17 @@ export default async function PlatformPage({ params: { locale } }: { params: { l
 
   const t = await getTranslations('admin.platform');
   const platform = getPlatform();
-  const { rate, updatedAt } = getFxRate();
-  const fxStale = Date.now() - Date.parse(updatedAt) > 7 * DAY;
+  const rate = await getFxRate();
   const lastFx = await getAuditLog({ action: 'set_fx_rate', pageSize: 1 });
   const lastFxAdmin = lastFx.rows[0]?.adminName ?? null;
+  // Task fix/fx-rate-unify: the rate itself is DB-backed now (lib/fx.ts),
+  // which has no "last updated" column of its own worth trusting on its own
+  // — platform_settings.updatedAt is shared by every setting on the same
+  // singleton row (referral credit, subscription price, …), not just FX. The
+  // audit log's own `set_fx_rate` entries are the accurate per-setting
+  // timestamp; never edited ⇒ unknown provenance, treated as stale.
+  const updatedAt = lastFx.rows[0]?.createdAt ?? null;
+  const fxStale = !updatedAt || Date.now() - Date.parse(updatedAt) > 7 * DAY;
 
   return (
     <div className="mx-auto max-w-[1180px] space-y-4">

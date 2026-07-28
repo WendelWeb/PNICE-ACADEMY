@@ -15,10 +15,11 @@
  * are recorded in the audit log but not executed; the real SDK path is noted.
  */
 import { auth, clerkClient } from '@clerk/nextjs/server';
+import { revalidatePath } from 'next/cache';
 import { resolveAdminRole } from '@/lib/admin/access';
 import { isAdminRole, type AdminRole } from '@/lib/admin/roles';
 import { can, type Capability } from '@/lib/admin/permissions';
-import { setFxRate } from '@/lib/admin/settings';
+import { setFxRate } from '@/lib/fx';
 import {
   grantCourseAccess,
   revokeCourseAccess,
@@ -152,8 +153,15 @@ export async function setFxRateAction(rate: number): Promise<ActionResult> {
     if (!Number.isFinite(rate) || rate <= 0 || rate > 100000) {
       return { ok: false, message: 'invalid_rate' };
     }
-    setFxRate(rate);
+    await setFxRate(rate);
     await recordAudit({ action: 'set_fx_rate', userId: actor.id, admin: actor, detail: String(rate) });
+    // Task fix/fx-rate-unify: the public site's (site) layout is
+    // force-dynamic and reads the DB rate fresh on every request, but this
+    // still busts the Next.js Router/Full Route Cache for every public
+    // route across both locales so an already-cached client picks up the
+    // new rate immediately rather than on next natural revalidation —
+    // mirrors lib/courses/write.ts's revalidateCoursePaths.
+    revalidatePath('/[locale]', 'layout');
     return { ok: true };
   } catch (e) {
     return fail(e);

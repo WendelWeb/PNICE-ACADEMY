@@ -5,6 +5,8 @@ import { Footer } from '@/components/layout/Footer';
 import { RouteLine } from '@/components/layout/RouteLine';
 import { UtmCapture } from '@/components/UtmCapture';
 import { getPlatform } from '@/lib/admin/platform/store';
+import { getFxRate } from '@/lib/fx';
+import { FxRateProvider } from '@/components/ui/FxRateProvider';
 import { clerkEnabled } from '@/lib/clerk';
 
 // Dynamic so the maintenance toggle takes effect live on every public route.
@@ -42,15 +44,25 @@ export default async function SiteLayout({
     );
   }
 
+  // Live USD→HTG display rate (platform_settings.fx_rate_htg) — read fresh
+  // on every request since this layout is force-dynamic. Provided to every
+  // client price component via FxRateProvider so an admin's FX rate edit
+  // (lib/admin/actions.ts's setFxRateAction) shows up here immediately,
+  // without waiting on a build. GATED + NEVER-THROW (lib/fx.ts): falls back
+  // to the env constant with no live DB.
+  const fxRate = await getFxRate();
+
   return (
-    <div className="flex min-h-screen flex-col">
-      {clerkEnabled && <UtmCapture />}
-      <Nav />
-      <main className="relative flex-1">
-        <RouteLine />
-        <div className="relative z-10">{children}</div>
-      </main>
-      <Footer />
-    </div>
+    <FxRateProvider rate={fxRate}>
+      <div className="flex min-h-screen flex-col">
+        {clerkEnabled && <UtmCapture />}
+        <Nav />
+        <main className="relative flex-1">
+          <RouteLine />
+          <div className="relative z-10">{children}</div>
+        </main>
+        <Footer />
+      </div>
+    </FxRateProvider>
   );
 }

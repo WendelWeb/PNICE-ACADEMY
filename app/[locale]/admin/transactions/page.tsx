@@ -1,7 +1,7 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { getTransactions, getMethodVolumes } from '@/lib/admin/data';
 import { parseTxQuery } from '@/lib/admin/tx-query';
-import { getFxRate } from '@/lib/admin/settings';
+import { getFxRate } from '@/lib/fx';
 import { hasCap } from '@/lib/admin/guard';
 import { type RawSearchParams } from '@/lib/admin/users-query';
 import { Forbidden } from '@/components/admin/Forbidden';
@@ -33,7 +33,7 @@ export default async function TransactionsPage({
   const query = parseTxQuery(searchParams);
   const data = await getTransactions(query);
   const volumes = await getMethodVolumes();
-  const { rate } = getFxRate();
+  const rate = await getFxRate();
 
   return (
     <div className="mx-auto max-w-[1180px] space-y-4">

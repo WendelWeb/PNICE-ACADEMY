@@ -3,16 +3,19 @@
  * the gourdes equivalent is derived at the configured rate (lib/money.ts), the
  * same way the public site shows HTG everywhere a USD amount appears.
  */
-import { toHtg } from '@/lib/money';
+import { toHtgAt, USD_TO_HTG } from '@/lib/money';
 
 /** "$12,480" — whole-dollar, thousands-separated. */
 export function fmtUsdCents(cents: number): string {
   return '$' + Math.round(cents / 100).toLocaleString('en-US');
 }
 
-/** "≈ 1 647 360 HTG" — gourdes equivalent of a USD-cents amount. */
-export function fmtHtgFromCents(cents: number): string {
-  return '≈ ' + toHtg(cents / 100).toLocaleString('fr-FR') + ' HTG';
+/** "≈ 1 647 360 HTG" — gourdes equivalent of a USD-cents amount, at an
+ *  explicit rate when the caller has one in hand (e.g. lib/fx.ts's live DB
+ *  rate); defaults to the env constant otherwise (Task fix/fx-rate-unify —
+ *  same fallback lib/fx.ts's `getFxRate` itself uses with no live DB). */
+export function fmtHtgFromCents(cents: number, rate: number = USD_TO_HTG): string {
+  return '≈ ' + toHtgAt(cents / 100, rate).toLocaleString('fr-FR') + ' HTG';
 }
 
 /** Plain integer with thin-space grouping ("1 264"). */

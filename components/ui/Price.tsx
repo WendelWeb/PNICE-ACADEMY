@@ -2,7 +2,8 @@
 
 import { clerkEnabled } from '@/lib/clerk';
 import { useDisplayCurrency } from '@/lib/useDisplayCurrency';
-import { formatUsd, htgLabel } from '@/lib/money';
+import { useFxRate } from '@/components/ui/FxRateProvider';
+import { formatUsd, htgLabelAt } from '@/lib/money';
 
 /**
  * Primary price in the user's preferred display currency (USD by default).
@@ -27,9 +28,16 @@ export function PriceSecondary({
   usd: number;
   className?: string;
 }) {
-  if (!clerkEnabled)
-    return <span className={className}>~{htgLabel(usd)}</span>;
+  if (!clerkEnabled) return <PriceSecondaryStatic usd={usd} className={className} />;
   return <PriceSecondaryInner usd={usd} className={className} />;
+}
+
+/** Clerk-off path: still reads the live DB rate via `FxRateProvider`
+ *  (Task fix/fx-rate-unify) so an admin's rate edit shows up even with no
+ *  ClerkProvider mounted. */
+function PriceSecondaryStatic({ usd, className }: { usd: number; className?: string }) {
+  const rate = useFxRate();
+  return <span className={className}>~{htgLabelAt(usd, rate)}</span>;
 }
 
 function PriceSecondaryInner({
