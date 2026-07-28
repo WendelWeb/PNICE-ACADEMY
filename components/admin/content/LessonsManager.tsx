@@ -20,13 +20,16 @@ import {
   deleteLessonAction,
   moveLessonAction,
   validateBunnyVideoAction,
+  createVideoUploadAction,
 } from '@/lib/admin/content-actions';
 import type { AdminLesson, LessonPatch } from '@/lib/courses/write';
+import type { BunnyUploadResult } from '@/lib/bunny/upload';
+import { VideoUpload } from '@/components/content/VideoUpload';
 import { inputCls } from './fields';
 
 type ContentResult = { ok: boolean; message?: string; slug?: string; count?: number };
 
-/** Same shape as `lib/admin/content-actions.ts`'s 5 lesson actions — the
+/** Same shape as `lib/admin/content-actions.ts`'s 6 lesson actions — the
  *  studio (Task C3-T4) injects its own owner-scoped versions here instead. */
 export type LessonActions = {
   addLesson: (slug: string) => Promise<ContentResult>;
@@ -34,6 +37,11 @@ export type LessonActions = {
   deleteLesson: (slug: string, lessonId: string) => Promise<ContentResult>;
   moveLesson: (slug: string, lessonId: string, dir: 'up' | 'down') => Promise<ContentResult>;
   validateBunnyVideo: (videoId: string) => Promise<ContentResult>;
+  /** Autonomous upload (Task: video upload): creates the Bunny video object
+   *  + TUS upload authorization for this lesson. Studio/admin each inject
+   *  their own ownership/capability-gated version (createMyVideoUploadAction
+   *  / createVideoUploadAction) — see components/content/VideoUpload.tsx. */
+  createUpload: (slug: string, lessonId: string, title: string) => Promise<BunnyUploadResult>;
 };
 
 const defaultLessonActions: LessonActions = {
@@ -42,6 +50,7 @@ const defaultLessonActions: LessonActions = {
   deleteLesson: deleteLessonAction,
   moveLesson: moveLessonAction,
   validateBunnyVideo: validateBunnyVideoAction,
+  createUpload: createVideoUploadAction,
 };
 
 function secToMmss(s: number): string {
@@ -155,6 +164,14 @@ function LessonRow({
               {vp ? <IconLoader2 size={11} className="animate-spin" /> : t('validate')}
             </button>
             {bunny && <span className="font-mono text-[10px] text-ink/55">{bunny}</span>}
+            <VideoUpload
+              lessonTitle={titleHt || titleFr || lesson.title_ht || lesson.title_fr}
+              createUpload={(title) => actions.createUpload(slug, lesson.id, title)}
+              onUploaded={(guid) => {
+                setVideo(guid);
+                onAct(() => actions.updateLesson(slug, lesson.id, { bunnyVideoId: guid }));
+              }}
+            />
             <input value={dur} onChange={(e) => setDur(e.target.value)} onBlur={() => commit({ durationSeconds: mmssToSec(dur) })} placeholder="mm:ss" className={cn(inputCls, 'w-16 text-center')} />
             <label className="flex items-center gap-1 font-mono text-[10px] text-ink/60">
               <input type="checkbox" checked={lesson.isPreview} onChange={(e) => commit({ isPreview: e.target.checked })} className="h-3.5 w-3.5 accent-ochre" />

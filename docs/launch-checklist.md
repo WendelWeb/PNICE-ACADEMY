@@ -87,9 +87,15 @@ Clerk (URL publique), et le déploiement prod.
 
 1. https://dash.bunny.net → menu **Stream → Add Video Library**.
 2. Onglet **API** de la librairie → `BUNNY_STREAM_API_KEY` + le **Library ID** → `BUNNY_STREAM_LIBRARY_ID`.
-3. **Uploade tes vidéos**, puis renseigne l'ID vidéo de chaque leçon dans le champ
-   `bunnyVideoId` (par leçon dans `data/courses.ts` aujourd'hui ; via le CMS une fois
-   les cours en DB à C2). Sans ID, le lecteur montre le placeholder.
+3. Une fois ces deux clés posées dans l'env (Vercel + `.env.local`), **l'upload vidéo
+   devient autonome** : un prof (dans son studio) ou un admin (dans le CMS) choisit
+   directement un fichier vidéo dans l'éditeur de leçon — il part du navigateur droit
+   vers Bunny (Stream/TUS), et le champ `bunnyVideoId` de la leçon se remplit tout
+   seul dès que l'envoi se termine. **Plus besoin de copier un GUID à la main** ; le
+   champ + bouton "Valider" restent disponibles en repli si tu préfères coller un ID
+   existant. Un prof ne voit jamais la clé Bunny et ne peut uploader que dans SES
+   propres cours. Sans les deux clés ci-dessus, le contrôle d'upload affiche
+   simplement "non configuré" (aucun crash) et le lecteur montre le placeholder.
 4. **⚠ Sécurité paywall** : l'embed est public par défaut — quiconque a l'URL peut
    regarder. **Active Token Authentication OU une restriction par referrer dans le
    dashboard Bunny** avant de publier des vidéos payantes.

@@ -26,6 +26,7 @@ import * as writeOps from '@/lib/courses/write';
 import { getAdminCourse } from '@/lib/courses/write';
 import type { CoursePatch, LessonPatch, NewCourseInput } from '@/lib/courses/write';
 import type { AdminActor } from '@/lib/admin/data/types';
+import { createBunnyVideo, bunnyUploadConfigured, type BunnyUploadResult } from '@/lib/bunny/upload';
 
 export type ContentResult = { ok: boolean; message?: string; slug?: string; count?: number };
 
@@ -165,6 +166,34 @@ export async function validateBunnyVideoAction(videoId: string): Promise<Content
     return { ok: true };
   } catch (e) {
     return fail(e);
+  }
+}
+
+/**
+ * Autonomous direct-to-Bunny upload (admin CMS path): gated the same as
+ * every other content edit (`requireEditor` → `courses.edit`), then creates
+ * the video object in the owner's Bunny library and returns the TUS
+ * upload-authorization payload for the BROWSER to use — see
+ * lib/bunny/upload.ts's file header for why the API key itself never
+ * appears in this return value. `slug`/`lessonId` aren't sent to Bunny (a
+ * video object doesn't belong to a course there); they're accepted so the
+ * caller's shape matches `updateLessonAction` and so a future audit trail
+ * can log which lesson an upload was meant for.
+ */
+export async function createVideoUploadAction(
+  // slug/lessonId aren't sent to Bunny (see doc comment above) — kept in the
+  // signature so this matches updateLessonAction's shape and every call
+  // site can pass the same three args regardless of which action runs.
+  _slug: string,
+  _lessonId: string,
+  title: string,
+): Promise<BunnyUploadResult> {
+  try {
+    await requireEditor();
+    if (!bunnyUploadConfigured()) return { ok: false, message: 'not_configured' };
+    return await createBunnyVideo(title);
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : 'error' };
   }
 }
 

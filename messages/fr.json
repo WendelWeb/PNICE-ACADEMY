@@ -1835,7 +1835,15 @@
         "bunnyBad": "✗ introuvable",
         "bunnyMock": "non vérifié (Bunny non configuré)",
         "preview": "Aperçu gratuit",
-        "noVideoWarn": "Aucune vidéo liée"
+        "noVideoWarn": "Aucune vidéo liée",
+        "uploadChooseFile": "Choisir une vidéo",
+        "uploadPreparing": "Préparation…",
+        "uploadUploading": "Envoi… {percent}%",
+        "uploadUploaded": "Vidéo envoyée ✓",
+        "uploadError": "Erreur pendant l'envoi",
+        "uploadNotConfigured": "Upload automatique non configuré — colle l'ID Bunny manuellement",
+        "uploadCancel": "Annuler l'envoi",
+        "uploadRetry": "Réessayer"
       },
       "images": {
         "title": "Images",
