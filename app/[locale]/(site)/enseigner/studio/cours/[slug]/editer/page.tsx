@@ -20,6 +20,7 @@ import {
   deleteMyLessonAction,
   moveMyLessonAction,
   validateMyBunnyVideoAction,
+  createMyVideoUploadAction,
   setMyMainImageAction,
   addMySecondaryImageAction,
   removeMySecondaryImageAction,
@@ -34,6 +35,7 @@ const lessonActions: LessonActions = {
   deleteLesson: deleteMyLessonAction,
   moveLesson: moveMyLessonAction,
   validateBunnyVideo: validateMyBunnyVideoAction,
+  createUpload: createMyVideoUploadAction,
 };
 
 const imageActions: ImageActions = {

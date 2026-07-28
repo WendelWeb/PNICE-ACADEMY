@@ -1835,7 +1835,15 @@
         "bunnyBad": "✗ pa jwenn",
         "bunnyMock": "pa verifye (Bunny pa konfigire)",
         "preview": "Apèsi gratis",
-        "noVideoWarn": "Pa gen videyo lye"
+        "noVideoWarn": "Pa gen videyo lye",
+        "uploadChooseFile": "Chwazi yon videyo",
+        "uploadPreparing": "Preparasyon…",
+        "uploadUploading": "Ap voye… {percent}%",
+        "uploadUploaded": "Videyo voye ✓",
+        "uploadError": "Erè pandan voye a",
+        "uploadNotConfigured": "Upload otomatik pa konfigire — kole ID Bunny a alamen",
+        "uploadCancel": "Anile voye a",
+        "uploadRetry": "Eseye ankò"
       },
       "images": {
         "title": "Imaj",

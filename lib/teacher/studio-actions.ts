@@ -51,6 +51,7 @@ import { getTeacherProfile, isApprovedTeacher, getTeacherBalanceCents, getPayout
 import { validatePayoutSettings, type PayoutMethod } from './apply-validation';
 import { recordAudit } from '@/lib/admin/data/real/users';
 import type { AdminActor } from '@/lib/admin/data/types';
+import { createBunnyVideo, bunnyUploadConfigured, type BunnyUploadResult } from '@/lib/bunny/upload';
 
 const T = schema;
 
@@ -278,6 +279,32 @@ export async function validateMyBunnyVideoAction(videoId: string): Promise<Studi
     return { ok: true };
   } catch (e) {
     return fail(e);
+  }
+}
+
+/**
+ * Autonomous direct-to-Bunny upload (studio path). `requireOwnedCourse(slug)`
+ * runs FIRST — same ownership gate every other studio mutation uses — so a
+ * teacher can only ever create a video object destined for a lesson in a
+ * course THEY own; only after that check passes do we touch Bunny at all.
+ * Returns the TUS upload-authorization payload for the browser (guid,
+ * libraryId, signature, expire, tusEndpoint) — never the API key; see
+ * lib/bunny/upload.ts's file header. `lessonId` isn't sent to Bunny (a
+ * video object doesn't belong to a course/lesson there) — it's accepted so
+ * the call shape matches `updateMyLessonAction` for the client component.
+ */
+export async function createMyVideoUploadAction(
+  slug: string,
+  _lessonId: string,
+  title: string,
+): Promise<BunnyUploadResult> {
+  if (!dbConfigured()) return { ok: false, message: 'db_required' };
+  try {
+    await requireOwnedCourse(slug);
+    if (!bunnyUploadConfigured()) return { ok: false, message: 'not_configured' };
+    return await createBunnyVideo(title);
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : 'error' };
   }
 }
 
