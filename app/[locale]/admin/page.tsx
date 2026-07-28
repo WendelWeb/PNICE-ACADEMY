@@ -1,5 +1,6 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { getKpiOverview } from '@/lib/admin/data';
+import { getFxRate } from '@/lib/fx';
 import { fmtInt, fmtUsdCents, fmtHtgFromCents, fmtPct } from '@/lib/admin/format';
 import { KpiGroup, KpiCard, KpiSplitCard, MockNote } from '@/components/admin/ui';
 
@@ -13,6 +14,9 @@ export default async function AdminOverviewPage({
   setRequestLocale(locale);
   const t = await getTranslations('admin.overview');
   const k = await getKpiOverview();
+  // Task fix/fx-rate-unify: show HTG at the live admin-set rate, not the
+  // env-default fallback fmtHtgFromCents would otherwise use.
+  const rate = await getFxRate();
 
   const period = {
     today: t('period.today'),
@@ -36,19 +40,19 @@ export default async function AdminOverviewPage({
         <KpiCard
           label={t('kpi.mrr')}
           value={fmtUsdCents(k.mrrCents)}
-          secondary={fmtHtgFromCents(k.mrrCents)}
+          secondary={fmtHtgFromCents(k.mrrCents, rate)}
           hint={t('kpi.perMonth')}
           tone="ochre"
         />
         <KpiCard
           label={t('kpi.totalRevenue')}
           value={fmtUsdCents(k.totalRevenueCents)}
-          secondary={fmtHtgFromCents(k.totalRevenueCents)}
+          secondary={fmtHtgFromCents(k.totalRevenueCents, rate)}
         />
         <KpiCard
           label={t('kpi.revenueThisMonth')}
           value={fmtUsdCents(k.revenueThisMonthCents)}
-          secondary={fmtHtgFromCents(k.revenueThisMonthCents)}
+          secondary={fmtHtgFromCents(k.revenueThisMonthCents, rate)}
         />
       </KpiGroup>
 
@@ -100,12 +104,12 @@ export default async function AdminOverviewPage({
         <KpiCard
           label={t('kpi.arpu')}
           value={fmtUsdCents(k.arpuCents)}
-          secondary={fmtHtgFromCents(k.arpuCents)}
+          secondary={fmtHtgFromCents(k.arpuCents, rate)}
         />
         <KpiCard
           label={t('kpi.ltv')}
           value={fmtUsdCents(k.ltvCents)}
-          secondary={fmtHtgFromCents(k.ltvCents)}
+          secondary={fmtHtgFromCents(k.ltvCents, rate)}
         />
         <KpiCard
           label={t('kpi.refunds')}

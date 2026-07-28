@@ -30,6 +30,7 @@ import { db, schema } from '@/db';
 import { courses } from '@/data/courses';
 import { sendEmail } from '@/lib/email/resend';
 import { buildCartReminderHtml } from '@/lib/email/templates';
+import { getFxRate } from '@/lib/fx';
 import { checkCronAuth, cronAuthStatus } from '@/lib/cron/auth';
 
 export const runtime = 'nodejs';
@@ -63,6 +64,11 @@ export async function GET(req: Request): Promise<Response> {
     const markedAbandoned = toAbandon.length;
 
     const origin = new URL(req.url).origin;
+    // Task fix/fx-rate-unify: the reminder's "(~X HTG)" line reflects the
+    // CURRENT admin-set DB rate, not a build-time constant — GATED +
+    // NEVER-THROW (lib/fx.ts), so this can't newly break the cron. Fetched
+    // once per run (mirrors lib/payments/fulfill.ts's receipt-email path).
+    const rateHtg = await getFxRate();
     let remindersSent = 0;
     const candidates = await db
       .select()
@@ -109,6 +115,7 @@ export async function GET(req: Request): Promise<Response> {
         itemName,
         amountCents: session.amountCents,
         resumeUrl,
+        rateHtg,
       });
       const result = await sendEmail({ to: user.email, subject, html });
       if (result.sent) remindersSent++;

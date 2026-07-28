@@ -1034,6 +1034,7 @@
       "certificates": "Certificats",
       "audit": "Audit",
       "platform": "Plateforme",
+      "taux": "Taux de change",
       "health": "Santé système"
     },
     "roles": {
@@ -1370,7 +1371,7 @@
         "sent": "Envoyé ✓",
         "error": "Erreur"
       },
-      "fxMovedNote": "Géré dans Paramètres plateforme"
+      "fxMovedNote": "Géré dans Taux de change"
     },
     "courses": {
       "subtitle": "Statistiques de vente et de complétion par formation.",
@@ -2311,6 +2312,7 @@
     "platform": {
       "subtitle": "Providers de paiement, prix, taux de change, mode maintenance.",
       "fxStale": "Le taux n'a pas été mis à jour depuis plus de 7 jours.",
+      "fxCurrent": "Taux de change actuel",
       "fxLastBy": "Dernière modif : {name}",
       "fxNeverEdited": "Jamais modifié depuis l’admin",
       "providers": {
@@ -2350,6 +2352,13 @@
         "publicTitle": "Site en maintenance",
         "publicDefault": "Le site est en maintenance — reviens dans quelques minutes."
       }
+    },
+    "taux": {
+      "subtitle": "Le taux USD → HTG affiché partout sur le site et dans l'admin.",
+      "explain": "Ce taux convertit tous les prix USD→HTG affichés sur le site et l'admin.",
+      "fxStale": "Le taux n'a pas été mis à jour depuis plus de 7 jours.",
+      "fxLastBy": "Dernière modif : {name}",
+      "fxNeverEdited": "Jamais modifié depuis l’admin"
     },
     "support": {
       "subtitle": "Boîte de support : tickets des utilisateurs.",

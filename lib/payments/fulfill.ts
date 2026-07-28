@@ -17,7 +17,8 @@ import { getStripeSubscription } from './stripe';
 import { sendEmail, emailConfigured } from '@/lib/email/resend';
 import { buildReceiptHtml } from '@/lib/email/templates';
 import { buildReceiptPdf } from '@/lib/pdf/receipt';
-import { htgLabel } from '@/lib/money';
+import { htgLabelAt } from '@/lib/money';
+import { getFxRate } from '@/lib/fx';
 import { getCourseBySlug } from '@/lib/courses/source';
 import { recordSaleEarning, recordRefundReversal } from '@/lib/teacher/earnings';
 import type { StripeAction } from './stripe-events';
@@ -264,6 +265,10 @@ async function fulfillCheckoutCompleted(a: CheckoutCompleted): Promise<'processe
       ? (locale === 'fr' ? course.title_fr : course.title_ht)
       : a.courseSlug ?? (locale === 'fr' ? 'Abonnement mensuel' : 'Abònman chak mwa');
     const dateIso = new Date().toISOString();
+    // Task fix/fx-rate-unify: the receipt's "(~X HTG)" line reflects the
+    // CURRENT admin-set DB rate, not a build-time constant — GATED +
+    // NEVER-THROW (lib/fx.ts), so this can't newly break receipt sending.
+    const rateHtg = await getFxRate();
     const receipt = buildReceiptHtml({
       locale,
       name: user.name,
@@ -271,6 +276,7 @@ async function fulfillCheckoutCompleted(a: CheckoutCompleted): Promise<'processe
       amountCents: a.amountCents,
       dateIso,
       ref: providerRef,
+      rateHtg,
     });
 
     // Only bother generating the PDF when email is actually going to be sent
@@ -285,7 +291,7 @@ async function fulfillCheckoutCompleted(a: CheckoutCompleted): Promise<'processe
           itemName,
           amountCents: a.amountCents,
           currency: a.currency,
-          htgText: htgLabel(a.amountCents / 100),
+          htgText: htgLabelAt(a.amountCents / 100, rateHtg),
           dateIso,
           ref: providerRef,
           locale,

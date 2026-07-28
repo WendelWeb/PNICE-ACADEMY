@@ -34,4 +34,10 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { key: 'audit', href: '/admin/audit', icon: 'audit', enabled: true, cap: 'roles.manage' },
   { key: 'settings', href: '/admin/parametres', icon: 'settings', enabled: true, cap: 'courses.edit' },
   { key: 'platform', href: '/admin/plateforme', icon: 'platform', enabled: true, cap: 'roles.manage' },
+  // Task fix/fx-rate-unify: the FX rate had its own edit form buried inside
+  // /admin/plateforme (and a read-only link from /admin/transactions) — the
+  // owner asked for a dedicated, obvious page. Same cap as 'platform'
+  // (roles.manage ⇒ super-admin only in lib/admin/permissions's matrix): the
+  // rate is platform-owner-level, not a regular admin setting.
+  { key: 'taux', href: '/admin/taux', icon: 'taux', enabled: true, cap: 'roles.manage' },
 ];

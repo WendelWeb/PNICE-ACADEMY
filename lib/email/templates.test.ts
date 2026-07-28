@@ -31,6 +31,15 @@ describe('buildReceiptHtml', () => {
     expect(html).toContain('&lt;img src=x');
     expect(html).toContain('A &amp; B');
   });
+
+  it('uses an explicit rateHtg for the (~X HTG) line when given (fix/fx-rate-unify)', () => {
+    const { html: withDefault } = buildReceiptHtml({ ...base, locale: 'fr' });
+    const { html: withRate } = buildReceiptHtml({ ...base, locale: 'fr', rateHtg: 140 });
+    expect(withRate).not.toBe(withDefault);
+    // base.amountCents is 900 → $9.00 at an explicit 140 rate, rounded to 50.
+    const expectedHtg = Math.round((9 * 140) / 50) * 50;
+    expect(withRate).toContain(expectedHtg.toLocaleString('fr-FR'));
+  });
 });
 
 describe('buildCartReminderHtml', () => {

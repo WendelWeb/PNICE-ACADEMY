@@ -4,7 +4,7 @@ import { cn } from '@/lib/cn';
 import { fmtUsdCents, fmtHtgFromCents, fmtPct, fmtInt } from '@/lib/admin/format';
 import type { SubKpis as SubKpisData } from '@/lib/admin/data';
 
-export async function SubKpis({ data }: { data: SubKpisData }) {
+export async function SubKpis({ data, rate }: { data: SubKpisData; rate?: number }) {
   const t = await getTranslations('admin.subs.kpi');
   const up = data.mrrChangeCents >= 0;
 
@@ -15,7 +15,7 @@ export async function SubKpis({ data }: { data: SubKpisData }) {
           {fmtUsdCents(data.mrrCurrentCents)}
         </span>
         <span className="mt-1 block font-mono text-[10px] text-ink/45 tabular-nums">
-          {fmtHtgFromCents(data.mrrCurrentCents)}
+          {fmtHtgFromCents(data.mrrCurrentCents, rate)}
         </span>
         <span
           className={cn(

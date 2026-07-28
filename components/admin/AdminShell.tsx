@@ -26,6 +26,7 @@ import {
   IconTool,
   IconUserCheck,
   IconCashBanknote,
+  IconCurrencyDollar,
   type Icon as TablerIcon,
 } from '@tabler/icons-react';
 import { Link, usePathname } from '@/i18n/routing';
@@ -56,6 +57,7 @@ const ICONS: Record<string, TablerIcon> = {
   audit: IconHistory,
   settings: IconSettings,
   platform: IconAdjustments,
+  taux: IconCurrencyDollar,
 };
 
 const focusRing =
