@@ -58,7 +58,7 @@ export default async function TransactionsPage({
       />
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Link href="/admin/plateforme" className="flex items-center justify-between gap-2 rounded-xl border border-ink/12 bg-paper-light p-4 hover:border-ochre/40">
+        <Link href="/admin/taux" className="flex items-center justify-between gap-2 rounded-xl border border-ink/12 bg-paper-light p-4 hover:border-ochre/40">
           <span>
             <span className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wide text-ink/55">
               <IconCurrencyDollar size={13} /> {t('fx.title')}

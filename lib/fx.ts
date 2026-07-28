@@ -64,11 +64,19 @@ export async function getFxRate(): Promise<number> {
  * ('use server' action) already wraps every admin action in try/catch and
  * surfaces a failure message, the same division of labour as every other
  * lib/admin/data/real/*.ts writer.
+ *
+ * ROUNDED before the write: `fx_rate_htg` is an `integer` column but the
+ * admin FX input historically allowed fractional steps — an unrounded
+ * fractional rate (e.g. 132.5) throws a Postgres integer error on insert.
+ * `Math.round` here is the last-resort guard even if every caller already
+ * rounds (belt-and-suspenders, mirrors the same rounding in
+ * lib/admin/actions.ts's `setFxRateAction`).
  */
 export async function setFxRate(rate: number): Promise<void> {
   if (!dbConfigured()) throw new Error('db_required');
+  const rounded = Math.round(rate);
   await db
     .insert(T.platformSettings)
-    .values({ id: 'singleton', subscriptionUsdCents: SUB_CENTS, fxRateHtg: rate })
-    .onConflictDoUpdate({ target: T.platformSettings.id, set: { fxRateHtg: rate, updatedAt: new Date() } });
+    .values({ id: 'singleton', subscriptionUsdCents: SUB_CENTS, fxRateHtg: rounded })
+    .onConflictDoUpdate({ target: T.platformSettings.id, set: { fxRateHtg: rounded, updatedAt: new Date() } });
 }

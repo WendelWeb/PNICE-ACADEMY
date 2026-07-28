@@ -1034,6 +1034,7 @@
       "certificates": "Sètifika",
       "audit": "Odit",
       "platform": "Platefòm",
+      "taux": "To chanj",
       "health": "Sante sistèm"
     },
     "roles": {
@@ -1370,7 +1371,7 @@
         "sent": "Voye ✓",
         "error": "Erè"
       },
-      "fxMovedNote": "Jere nan Paramèt platefòm"
+      "fxMovedNote": "Jere nan To chanj"
     },
     "courses": {
       "subtitle": "Estatistik vant ak konpletay pa fòmasyon.",
@@ -2311,6 +2312,7 @@
     "platform": {
       "subtitle": "Provider peman, pri, to chanj, mòd antretyen.",
       "fxStale": "To a pa mete ajou depi plis pase 7 jou.",
+      "fxCurrent": "To chanj aktyèl",
       "fxLastBy": "Dènye modif : {name}",
       "fxNeverEdited": "Pa janm modifye depi admin",
       "providers": {
@@ -2350,6 +2352,13 @@
         "publicTitle": "Sit la ap fè antretyen",
         "publicDefault": "Sit la ap fè antretyen — tounen nan kèk minit."
       }
+    },
+    "taux": {
+      "subtitle": "To USD → HTG ki afiche toupatou sou sit la ak nan admin.",
+      "explain": "To sa a konvèti tout pri USD→HTG ki afiche sou sit la ak nan admin.",
+      "fxStale": "To a pa mete ajou depi plis pase 7 jou.",
+      "fxLastBy": "Dènye modif : {name}",
+      "fxNeverEdited": "Pa janm modifye depi admin"
     },
     "support": {
       "subtitle": "Bwat sipò : tikè itilizatè yo.",

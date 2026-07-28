@@ -153,8 +153,12 @@ export async function setFxRateAction(rate: number): Promise<ActionResult> {
     if (!Number.isFinite(rate) || rate <= 0 || rate > 100000) {
       return { ok: false, message: 'invalid_rate' };
     }
-    await setFxRate(rate);
-    await recordAudit({ action: 'set_fx_rate', userId: actor.id, admin: actor, detail: String(rate) });
+    // fx_rate_htg is an integer column — round here too (belt-and-suspenders
+    // on top of lib/fx.ts's own rounding) so the audit log records the exact
+    // value actually persisted, not the raw (possibly fractional) input.
+    const rounded = Math.round(rate);
+    await setFxRate(rounded);
+    await recordAudit({ action: 'set_fx_rate', userId: actor.id, admin: actor, detail: String(rounded) });
     // Task fix/fx-rate-unify: the public site's (site) layout is
     // force-dynamic and reads the DB rate fresh on every request, but this
     // still busts the Next.js Router/Full Route Cache for every public

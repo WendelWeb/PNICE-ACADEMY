@@ -19,6 +19,7 @@ import {
 } from '@tabler/icons-react';
 import { courses } from '@/data/courses';
 import { getUserById } from '@/lib/admin/data';
+import { getFxRate } from '@/lib/fx';
 import { hasCap } from '@/lib/admin/guard';
 import { Forbidden } from '@/components/admin/Forbidden';
 import { IssueCertOnFiche } from '@/components/admin/certs/IssueCertOnFiche';
@@ -103,6 +104,8 @@ export default async function UserDetailPage({
   const tm = await getTranslations('admin.marketing.credit');
   const detail = await getUserById(userId);
   if (!detail) notFound();
+  // Task fix/fx-rate-unify: HTG shown at the live admin-set rate.
+  const rate = await getFxRate();
 
   const { user, payments, courses: access, certificates, credits, creditBalanceCents, activity, audit, acquisition } =
     detail;
@@ -188,7 +191,7 @@ export default async function UserDetailPage({
                   {fmtUsdCents(creditBalanceCents)}
                 </span>
                 <span className="block font-mono text-[10px] text-ink/45">
-                  {fmtHtgFromCents(creditBalanceCents)}
+                  {fmtHtgFromCents(creditBalanceCents, rate)}
                 </span>
               </span>
             </div>

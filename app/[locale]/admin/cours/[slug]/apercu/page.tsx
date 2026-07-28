@@ -3,6 +3,7 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { IconArrowLeft, IconCheck, IconEye } from '@tabler/icons-react';
 import { hasCap } from '@/lib/admin/guard';
 import { getAdminCourse } from '@/lib/courses/write';
+import { getFxRate } from '@/lib/fx';
 import { fmtUsdCents, fmtHtgFromCents } from '@/lib/admin/format';
 import { Link } from '@/i18n/routing';
 import { Forbidden } from '@/components/admin/Forbidden';
@@ -20,6 +21,8 @@ export default async function CoursePreviewPage({
 
   const c = await getAdminCourse(slug);
   if (!c) notFound();
+  // Task fix/fx-rate-unify: HTG shown at the live admin-set rate.
+  const rate = await getFxRate();
   const L = (ht: string, fr: string) => (locale === 'ht' ? ht : fr);
   const learn = locale === 'ht' ? c.learn_ht : c.learn_fr;
   const deliverables = locale === 'ht' ? c.deliverables_ht : c.deliverables_fr;
@@ -43,7 +46,7 @@ export default async function CoursePreviewPage({
 
         <div className="mt-4 flex items-baseline gap-2">
           <span className="font-mono text-2xl font-bold text-ochre">{fmtUsdCents(c.priceCents)}</span>
-          <span className="font-mono text-xs text-ink/50">{fmtHtgFromCents(c.priceCents)}</span>
+          <span className="font-mono text-xs text-ink/50">{fmtHtgFromCents(c.priceCents, rate)}</span>
         </div>
 
         {L(c.promise_ht, c.promise_fr) && (

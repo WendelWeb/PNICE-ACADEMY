@@ -59,7 +59,7 @@ export function FxRatePanel({
             1 USD =
             <input
               type="number"
-              step="0.5"
+              step="1"
               min="1"
               value={val}
               disabled={!canEdit || pending}

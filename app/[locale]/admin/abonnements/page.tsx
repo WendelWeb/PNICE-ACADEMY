@@ -10,6 +10,7 @@ import {
   getCancellationReasons,
 } from '@/lib/admin/data';
 import { parseSubQuery } from '@/lib/admin/sub-query';
+import { getFxRate } from '@/lib/fx';
 import { hasCap } from '@/lib/admin/guard';
 import { type RawSearchParams } from '@/lib/admin/users-query';
 import { Forbidden } from '@/components/admin/Forbidden';
@@ -38,7 +39,7 @@ export default async function SubscriptionsPage({
   const t = await getTranslations('admin.subs');
   const query = parseSubQuery(searchParams);
 
-  const [kpis, page, events, dunning, renewals7, renewalSeries, cohorts, reasons] = await Promise.all([
+  const [kpis, page, events, dunning, renewals7, renewalSeries, cohorts, reasons, rate] = await Promise.all([
     getSubKpis(),
     getSubscriptions(query),
     getSubEvents(),
@@ -47,13 +48,15 @@ export default async function SubscriptionsPage({
     getRenewalSeries(30),
     getCohorts(),
     getCancellationReasons(),
+    // Task fix/fx-rate-unify: HTG shown at the live admin-set rate.
+    getFxRate(),
   ]);
 
   return (
     <div className="mx-auto max-w-[1180px] space-y-4">
       <p className="text-sm text-graphite/70">{t('subtitle')}</p>
 
-      <SubKpis data={kpis} />
+      <SubKpis data={kpis} rate={rate} />
       <SubFilters counts={{ past_due: page.counts.past_due, renew7: page.counts.renew7 }} />
       <SubTable rows={page.rows} searchParams={searchParams} locale={locale} />
       <Pagination

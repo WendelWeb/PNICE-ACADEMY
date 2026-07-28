@@ -61,11 +61,15 @@ export function buildCartReminderHtml(input: {
   itemName: string;
   amountCents: number;
   resumeUrl?: string | null;
+  /** USD→HTG rate for the "(~X HTG)" line, ideally the live DB rate
+   *  (lib/fx.ts's `getFxRate`) passed by the caller
+   *  (app/api/cron/abandoned-carts/route.ts). Optional + defaults to the env
+   *  constant so existing callers/tests keep working unchanged (Task
+   *  fix/fx-rate-unify — same shape as `buildReceiptHtml`'s `rateHtg`). */
+  rateHtg?: number;
 }): { subject: string; html: string } {
   const fr = input.locale === 'fr';
-  // Not wired to the live DB rate (Task fix/fx-rate-unify scoped the receipt
-  // email only — this cart reminder keeps the env-default rate).
-  const htg = Math.round(toHtgAt(input.amountCents / 100, USD_TO_HTG)).toLocaleString('fr-FR');
+  const htg = Math.round(toHtgAt(input.amountCents / 100, input.rateHtg ?? USD_TO_HTG)).toLocaleString('fr-FR');
   const hello = input.name
     ? (fr ? `Bonjour ${escapeHtml(input.name)},` : `Bonjou ${escapeHtml(input.name)},`)
     : (fr ? 'Bonjour,' : 'Bonjou,');
