@@ -4,6 +4,7 @@
  * Indexé par `code` (PA-0X). `lessonDetails` suit le même ordre/longueur que
  * `course.lessons`. Bilingue ht/fr. Contenu de départ — affinable.
  */
+import type { CourseResource } from '@/db/schema';
 
 export type CourseFaq = {
   q_ht: string;
@@ -16,6 +17,41 @@ export type LessonDetail = {
   minutes: number;
   desc_ht: string;
   desc_fr: string;
+};
+
+/**
+ * A single lesson within the curriculum view (Task K1 — plan de cours
+ * complet), richer than `LessonDetail` above: carries the real DB lesson
+ * `id` (needed to link a chapter's lessons back to the flat `lessons`
+ * array/progress-by-index model) plus the new notes/resources fields.
+ * Only ever produced by `lib/courses/source.ts`'s DB-backed
+ * `mapDbCourseToDetail` — the static fallback never has chapters (see
+ * `CourseDetail.chapters` below).
+ */
+export type CurriculumLesson = {
+  id: string;
+  /** 1-based position within the course's flat, global lesson order (matches `course.lessons`/`lessonDetails`). */
+  index: number;
+  title_ht: string;
+  title_fr: string;
+  desc_ht: string;
+  desc_fr: string;
+  minutes: number;
+  bunnyVideoId?: string;
+  isPreview: boolean;
+  notes_ht: string;
+  notes_fr: string;
+  resources: CourseResource[];
+};
+
+/** A course's part/module (Task K1), in display order, with its lessons already sorted. */
+export type CourseChapterView = {
+  id: string;
+  title_ht: string;
+  title_fr: string;
+  summary_ht: string;
+  summary_fr: string;
+  lessons: CurriculumLesson[];
 };
 
 export type CourseDetail = {
@@ -31,6 +67,15 @@ export type CourseDetail = {
   requirements_fr: string[];
   lessonDetails: LessonDetail[];
   faq: CourseFaq[];
+  /**
+   * Curriculum grouping (Task K1) — OPTIONAL and only ever populated by the
+   * DB-backed mapper (`mapDbCourseToDetail`); the static catalog below (and
+   * `getCourseDetail`'s no-DB fallback) never sets these, which is exactly
+   * "zero chapters" — every existing static course/consumer is unaffected.
+   */
+  chapters?: CourseChapterView[];
+  /** Lessons not in any chapter, in flat order — see `chapters` above. */
+  ungroupedLessons?: CurriculumLesson[];
 };
 
 export const courseDetails: Record<string, CourseDetail> = {

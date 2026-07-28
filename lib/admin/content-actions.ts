@@ -24,7 +24,7 @@ import { resolveAdminRole } from '@/lib/admin/access';
 import { can } from '@/lib/admin/permissions';
 import * as writeOps from '@/lib/courses/write';
 import { getAdminCourse } from '@/lib/courses/write';
-import type { CoursePatch, LessonPatch, NewCourseInput } from '@/lib/courses/write';
+import type { CoursePatch, LessonPatch, NewCourseInput, ChapterPatch } from '@/lib/courses/write';
 import type { AdminActor } from '@/lib/admin/data/types';
 import { createBunnyVideo, bunnyUploadConfigured, type BunnyUploadResult } from '@/lib/bunny/upload';
 
@@ -148,6 +148,60 @@ export async function moveLessonAction(slug: string, lessonId: string, dir: 'up'
   try {
     const actor = await requireEditor();
     return await writeOps.reorderLessons(slug, lessonId, dir, actor);
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/* ------------------------------- chapters --------------------------------- */
+/** Task K1 (plan de cours complet) — same `courses.edit` gate as the lesson mutations above. */
+export async function createChapterAction(
+  slug: string,
+  input: { title_ht: string; title_fr: string },
+): Promise<ContentResult> {
+  try {
+    const actor = await requireEditor();
+    return await writeOps.createChapter(slug, input, actor);
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function updateChapterAction(slug: string, chapterId: string, patch: ChapterPatch): Promise<ContentResult> {
+  try {
+    const actor = await requireEditor();
+    return await writeOps.updateChapter(slug, chapterId, patch, actor);
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function deleteChapterAction(slug: string, chapterId: string): Promise<ContentResult> {
+  try {
+    const actor = await requireEditor();
+    return await writeOps.deleteChapter(slug, chapterId, actor);
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function reorderChapterAction(slug: string, chapterId: string, dir: 'up' | 'down'): Promise<ContentResult> {
+  try {
+    const actor = await requireEditor();
+    return await writeOps.reorderChapters(slug, chapterId, dir, actor);
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function moveLessonToChapterAction(
+  slug: string,
+  lessonId: string,
+  chapterId: string | null,
+): Promise<ContentResult> {
+  try {
+    const actor = await requireEditor();
+    return await writeOps.moveLessonToChapter(slug, lessonId, chapterId, actor);
   } catch (e) {
     return fail(e);
   }

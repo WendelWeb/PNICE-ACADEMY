@@ -46,7 +46,7 @@ import { db, schema } from '@/db';
 import { dbConfigured } from '@/lib/courses/source';
 import { resolveUserId } from '@/lib/learner/access';
 import * as writeOps from '@/lib/courses/write';
-import type { CoursePatch, LessonPatch, NewCourseInput } from '@/lib/courses/write';
+import type { CoursePatch, LessonPatch, NewCourseInput, ChapterPatch } from '@/lib/courses/write';
 import { getTeacherProfile, isApprovedTeacher, getTeacherBalanceCents, getPayoutThresholdCents, getWithdrawals } from './profile';
 import { validatePayoutSettings, type PayoutMethod } from './apply-validation';
 import { recordAudit } from '@/lib/admin/data/real/users';
@@ -259,6 +259,90 @@ export async function moveMyLessonAction(slug: string, lessonId: string, dir: 'u
   try {
     const { userId, actor, wasPublished } = await requireOwnedCourse(slug);
     const result = await writeOps.reorderLessons(slug, lessonId, dir, actor);
+    if (result.ok) await reenterReviewIfWasPublished(slug, userId, wasPublished);
+    return result;
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/* ------------------------------- chapters -------------------------------- */
+/**
+ * Task K1 (plan de cours complet) — owner-scoped wrappers for the curriculum
+ * ops in lib/courses/write.ts, same shape as the lesson mutations just above:
+ * `requireOwnedCourse(slug)` FIRST, then the write, then
+ * `reenterReviewIfWasPublished` so an already-published course a teacher
+ * edits re-enters moderation exactly like every other studio mutation.
+ */
+
+export async function createMyChapterAction(
+  slug: string,
+  input: { title_ht: string; title_fr: string },
+): Promise<StudioResult> {
+  if (!dbConfigured()) return dbRequired();
+  try {
+    const { userId, actor, wasPublished } = await requireOwnedCourse(slug);
+    const result = await writeOps.createChapter(slug, input, actor);
+    if (result.ok) await reenterReviewIfWasPublished(slug, userId, wasPublished);
+    return result;
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function updateMyChapterAction(
+  slug: string,
+  chapterId: string,
+  patch: ChapterPatch,
+): Promise<StudioResult> {
+  if (!dbConfigured()) return dbRequired();
+  try {
+    const { userId, actor, wasPublished } = await requireOwnedCourse(slug);
+    const result = await writeOps.updateChapter(slug, chapterId, patch, actor);
+    if (result.ok) await reenterReviewIfWasPublished(slug, userId, wasPublished);
+    return result;
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function deleteMyChapterAction(slug: string, chapterId: string): Promise<StudioResult> {
+  if (!dbConfigured()) return dbRequired();
+  try {
+    const { userId, actor, wasPublished } = await requireOwnedCourse(slug);
+    const result = await writeOps.deleteChapter(slug, chapterId, actor);
+    if (result.ok) await reenterReviewIfWasPublished(slug, userId, wasPublished);
+    return result;
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function reorderMyChapterAction(
+  slug: string,
+  chapterId: string,
+  dir: 'up' | 'down',
+): Promise<StudioResult> {
+  if (!dbConfigured()) return dbRequired();
+  try {
+    const { userId, actor, wasPublished } = await requireOwnedCourse(slug);
+    const result = await writeOps.reorderChapters(slug, chapterId, dir, actor);
+    if (result.ok) await reenterReviewIfWasPublished(slug, userId, wasPublished);
+    return result;
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function moveMyLessonToChapterAction(
+  slug: string,
+  lessonId: string,
+  chapterId: string | null,
+): Promise<StudioResult> {
+  if (!dbConfigured()) return dbRequired();
+  try {
+    const { userId, actor, wasPublished } = await requireOwnedCourse(slug);
+    const result = await writeOps.moveLessonToChapter(slug, lessonId, chapterId, actor);
     if (result.ok) await reenterReviewIfWasPublished(slug, userId, wasPublished);
     return result;
   } catch (e) {

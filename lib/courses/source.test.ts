@@ -56,6 +56,7 @@ describe('mapDbCourseToCourse — DB row → Course shape', () => {
     reviewedBy: null,
     publishedAt: null,
     hasUnpublishedChanges: false,
+    resources: null,
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-01T00:00:00Z'),
   };
@@ -64,11 +65,15 @@ describe('mapDbCourseToCourse — DB row → Course shape', () => {
     {
       id: 'l-2',
       courseSlug: 'test-course',
+      chapterId: null,
       index: 2,
       titleHt: 'Leson 2 kreyòl',
       titleFr: 'Leçon 2 français',
       descHt: null,
       descFr: null,
+      notesHt: null,
+      notesFr: null,
+      resources: null,
       bunnyVideoId: null,
       durationSeconds: null,
       isPreview: false,
@@ -78,11 +83,15 @@ describe('mapDbCourseToCourse — DB row → Course shape', () => {
     {
       id: 'l-1',
       courseSlug: 'test-course',
+      chapterId: null,
       index: 1,
       titleHt: 'Leson 1 kreyòl',
       titleFr: 'Leçon 1 français',
       descHt: null,
       descFr: null,
+      notesHt: null,
+      notesFr: null,
+      resources: null,
       bunnyVideoId: 'bunny-abc123',
       durationSeconds: 300,
       isPreview: true,
@@ -93,11 +102,15 @@ describe('mapDbCourseToCourse — DB row → Course shape', () => {
     {
       id: 'l-3',
       courseSlug: 'other-course',
+      chapterId: null,
       index: 1,
       titleHt: 'Lòt leson',
       titleFr: 'Autre leçon',
       descHt: null,
       descFr: null,
+      notesHt: null,
+      notesFr: null,
+      resources: null,
       bunnyVideoId: null,
       durationSeconds: null,
       isPreview: true,
@@ -201,6 +214,7 @@ describe('mapDbCourseToDetail — DB row → CourseDetail shape', () => {
     reviewedBy: null,
     publishedAt: null,
     hasUnpublishedChanges: false,
+    resources: null,
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-01T00:00:00Z'),
   };
@@ -209,11 +223,15 @@ describe('mapDbCourseToDetail — DB row → CourseDetail shape', () => {
     {
       id: 'l-1',
       courseSlug: 'test-course',
+      chapterId: null,
       index: 1,
       titleHt: 'Leson 1',
       titleFr: 'Leçon 1',
       descHt: 'Deskripsyon DB 1',
       descFr: 'Description DB 1',
+      notesHt: null,
+      notesFr: null,
+      resources: null,
       bunnyVideoId: null,
       durationSeconds: 600,
       isPreview: true,
@@ -223,11 +241,15 @@ describe('mapDbCourseToDetail — DB row → CourseDetail shape', () => {
     {
       id: 'l-2',
       courseSlug: 'test-course',
+      chapterId: null,
       index: 2,
       titleHt: 'Leson 2',
       titleFr: 'Leçon 2',
       descHt: null, // no desc on the DB row — falls back to the static entry
       descFr: null,
+      notesHt: null,
+      notesFr: null,
+      resources: null,
       bunnyVideoId: null,
       durationSeconds: null, // no duration on the DB row — falls back to static minutes
       isPreview: false,
@@ -282,6 +304,70 @@ describe('mapDbCourseToDetail — DB row → CourseDetail shape', () => {
     expect(detail.promise_ht).toBe('');
     expect(detail.faq).toEqual([]);
     expect(detail.lessonDetails).toEqual([]);
+  });
+
+  /**
+   * Task K1 (plan de cours complet) — curriculum grouping. A course with zero
+   * `course_chapters` rows (the default: no 3rd arg passed, exactly what
+   * every one of the 9 seeded courses looks like today) must report
+   * `chapters: []` and every lesson folded into `ungroupedLessons`, in order
+   * — this is the "renders exactly as today" backward-compat guarantee for
+   * every current course.
+   */
+  it('Task K1: zero chapters → chapters: [] and every lesson lands in ungroupedLessons, in order', () => {
+    const detail = mapDbCourseToDetail(fakeCourseRow, fakeLessonRows);
+    expect(detail.chapters).toEqual([]);
+    expect(detail.ungroupedLessons).toHaveLength(2);
+    expect(detail.ungroupedLessons?.[0]).toMatchObject({
+      id: 'l-1',
+      index: 1,
+      title_ht: 'Leson 1',
+      isPreview: true,
+      notes_ht: '',
+      notes_fr: '',
+      resources: [],
+    });
+    expect(detail.ungroupedLessons?.[1].id).toBe('l-2');
+  });
+
+  it('Task K1: groups a lesson into its chapter, leaving the rest in ungroupedLessons', () => {
+    const chapterRows = [
+      {
+        id: 'ch-1',
+        courseSlug: 'test-course',
+        index: 1,
+        titleHt: 'Chapit 1',
+        titleFr: 'Chapitre 1',
+        summaryHt: null,
+        summaryFr: null,
+        createdAt: new Date('2026-01-01T00:00:00Z'),
+        updatedAt: new Date('2026-01-01T00:00:00Z'),
+      },
+    ];
+    const lessonsWithChapter = [{ ...fakeLessonRows[0], chapterId: 'ch-1' }, fakeLessonRows[1]];
+    const detail = mapDbCourseToDetail(fakeCourseRow, lessonsWithChapter, chapterRows);
+    expect(detail.chapters).toHaveLength(1);
+    expect(detail.chapters?.[0].id).toBe('ch-1');
+    expect(detail.chapters?.[0].lessons.map((l) => l.id)).toEqual(['l-1']);
+    expect(detail.ungroupedLessons?.map((l) => l.id)).toEqual(['l-2']);
+  });
+
+  it('Task K1: carries notes_ht/fr and resources through from the DB row', () => {
+    const lessonsWithNotes = [
+      {
+        ...fakeLessonRows[0],
+        notesHt: 'Nòt anplis',
+        notesFr: 'Note en plus',
+        resources: [{ label_ht: 'Lyen', label_fr: 'Lien', url: 'https://example.com', kind: 'link' as const }],
+      },
+      fakeLessonRows[1],
+    ];
+    const detail = mapDbCourseToDetail(fakeCourseRow, lessonsWithNotes);
+    expect(detail.ungroupedLessons?.[0].notes_ht).toBe('Nòt anplis');
+    expect(detail.ungroupedLessons?.[0].notes_fr).toBe('Note en plus');
+    expect(detail.ungroupedLessons?.[0].resources).toEqual([
+      { label_ht: 'Lyen', label_fr: 'Lien', url: 'https://example.com', kind: 'link' },
+    ]);
   });
 });
 
