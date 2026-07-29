@@ -794,18 +794,54 @@ export async function deleteLesson(slug: string, lessonId: string, actor: AdminA
 }
 
 /**
- * Swaps a lesson with its adjacent-in-order neighbour. `lessons` has a
- * unique(course_slug, index) constraint, so a naive 2-statement swap can
- * transiently give two rows the same index within the same command (Postgres
- * checks a non-deferred unique constraint per row as it applies each
- * update) — the 3rd write through a scratch sentinel index (`-1`, never a
- * valid lesson position) avoids that collision. No transaction wraps this
- * (the neon-http driver doesn't support one — see db/index.ts): a failure
- * between steps would leave one lesson at `-1`, self-healing on the next
- * successful reorder of that same lesson, and never surfaced publicly since
- * `lib/courses/source.ts` always re-sorts by `index` before returning an
- * array (a temporarily-out-of-range value only affects relative order, it's
- * never rendered).
+ * Pure neighbour-selection + swap math for `reorderLessons` (mirroring
+ * `computeAdjacentSwap` further below, used by `reorderChapters`): given
+ * every lesson row of the course (already sorted by `index` ascending) and
+ * the id of the lesson being moved, first scopes the candidate neighbours
+ * down to lessons sharing the SAME `chapterId` as the moving lesson — `null`
+ * counts as its own group, matching the UI's "hors chapitre" bucket in
+ * LessonsManager.tsx — then delegates to `computeAdjacentSwap` for the
+ * actual up/down pick. Exported for unit testing without a DB.
+ *
+ * Scoping matters because `addLesson` always appends at the course-wide
+ * `max(index) + 1`, so chapters interleave under normal use (e.g. add 2
+ * lessons to chapter 1, 1 to chapter 2, then 1 more to chapter 1 ->
+ * ch1=[idx1,idx2,idx4], ch2=[idx3]). A naive GLOBALLY-adjacent swap would
+ * silently rewrite a lesson's index in a DIFFERENT chapter than the one
+ * being edited — invisible in the editor (the UI's up/down buttons are
+ * boundary-checked per chapter, so they never disable the button that
+ * triggers this), and it perturbs the shared flat `lessons` ordering other
+ * consumers rely on.
+ *
+ * BACKWARD COMPATIBLE: for a flat, pre-chapters course every lesson has
+ * `chapterId === null`, so "same chapter" is the whole course and this
+ * behaves exactly like the old course-wide adjacency.
+ */
+export function computeLessonSwap(
+  allSortedByIndex: { id: string; chapterId: string | null }[],
+  lessonId: string,
+  dir: 'up' | 'down',
+): [string, string] | null {
+  const moving = allSortedByIndex.find((r) => r.id === lessonId);
+  if (!moving) return null;
+  const scoped = allSortedByIndex.filter((r) => r.chapterId === moving.chapterId);
+  return computeAdjacentSwap(scoped.map((r) => r.id), lessonId, dir);
+}
+
+/**
+ * Swaps a lesson with its adjacent-in-order neighbour WITHIN ITS OWN CHAPTER
+ * (see `computeLessonSwap` above for why the neighbour must be chapter-
+ * scoped). `lessons` has a unique(course_slug, index) constraint, so a naive
+ * 2-statement swap can transiently give two rows the same index within the
+ * same command (Postgres checks a non-deferred unique constraint per row as
+ * it applies each update) — the 3rd write through a scratch sentinel index
+ * (`-1`, never a valid lesson position) avoids that collision. No
+ * transaction wraps this (the neon-http driver doesn't support one — see
+ * db/index.ts): a failure between steps would leave one lesson at `-1`,
+ * self-healing on the next successful reorder of that same lesson, and
+ * never surfaced publicly since `lib/courses/source.ts` always re-sorts by
+ * `index` before returning an array (a temporarily-out-of-range value only
+ * affects relative order, it's never rendered).
  */
 export async function reorderLessons(
   slug: string,
@@ -815,12 +851,11 @@ export async function reorderLessons(
 ): Promise<CourseWriteResult> {
   if (!dbConfigured()) return dbRequired();
   const rows = await db.select().from(T.lessons).where(eq(T.lessons.courseSlug, slug)).orderBy(asc(T.lessons.index));
-  const i = rows.findIndex((r) => r.id === lessonId);
-  const j = dir === 'up' ? i - 1 : i + 1;
-  if (i < 0 || j < 0 || j >= rows.length) return { ok: false, message: 'invalid_move' };
+  const swap = computeLessonSwap(rows, lessonId, dir);
+  if (!swap) return { ok: false, message: 'invalid_move' };
 
-  const a = rows[i];
-  const b = rows[j];
+  const a = rows.find((r) => r.id === swap[0])!;
+  const b = rows.find((r) => r.id === swap[1])!;
   const now = new Date();
   await db.update(T.lessons).set({ index: -1, updatedAt: now }).where(eq(T.lessons.id, a.id));
   await db.update(T.lessons).set({ index: a.index, updatedAt: now }).where(eq(T.lessons.id, b.id));

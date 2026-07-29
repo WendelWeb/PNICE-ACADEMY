@@ -18,6 +18,7 @@ import {
   validateResource,
   validateResources,
   computeAdjacentSwap,
+  computeLessonSwap,
   repackChapterIndices,
   type DbCourseStatus,
 } from './write';
@@ -144,5 +145,56 @@ describe('repackChapterIndices — closes gaps after a delete, preserves order (
 
   it('returns [] for an empty list', () => {
     expect(repackChapterIndices([])).toEqual([]);
+  });
+});
+
+/**
+ * Unit tests for the lesson reorder neighbour-selection math (K2 fix): a
+ * lesson's up/down swap must be scoped to lessons sharing its OWN
+ * `chapterId`, never a globally-adjacent lesson in a DIFFERENT chapter — see
+ * `computeLessonSwap`'s doc comment in write.ts for the interleaving bug this
+ * guards against (`addLesson`'s course-wide `max(index)+1` append naturally
+ * interleaves chapters under normal use).
+ */
+describe('computeLessonSwap — reorder neighbour must stay within the same chapter (K2 fix)', () => {
+  it('flat course (every chapterId null) behaves exactly like the old course-wide adjacency', () => {
+    const rows = [
+      { id: 'l1', chapterId: null },
+      { id: 'l2', chapterId: null },
+      { id: 'l3', chapterId: null },
+      { id: 'l4', chapterId: null },
+    ];
+    expect(computeLessonSwap(rows, 'l2', 'up')).toEqual(['l2', 'l1']);
+    expect(computeLessonSwap(rows, 'l2', 'down')).toEqual(['l2', 'l3']);
+    expect(computeLessonSwap(rows, 'l1', 'up')).toBeNull();
+    expect(computeLessonSwap(rows, 'l4', 'down')).toBeNull();
+  });
+
+  it('INTERLEAVED regression: ch1=[idx1,idx2,idx4], ch2=[idx3] — "down" on idx2 swaps with idx4 (its own chapter), not ch2\'s idx3', () => {
+    // Sorted by index ascending — idx1(ch1), idx2(ch1), idx3(ch2), idx4(ch1) —
+    // exactly what results from: add 2 lessons to ch1, 1 to ch2, then 1 more
+    // to ch1 (addLesson always appends at course-wide max(index)+1).
+    const rows = [
+      { id: 'idx1', chapterId: 'ch1' },
+      { id: 'idx2', chapterId: 'ch1' },
+      { id: 'idx3', chapterId: 'ch2' },
+      { id: 'idx4', chapterId: 'ch1' },
+    ];
+    expect(computeLessonSwap(rows, 'idx2', 'down')).toEqual(['idx2', 'idx4']);
+  });
+
+  it('boundary: last lesson in a chapter is invalid_move even when a globally-later lesson exists in another chapter', () => {
+    const rows = [
+      { id: 'a1', chapterId: 'ch1' },
+      { id: 'a2', chapterId: 'ch2' },
+      { id: 'a3', chapterId: 'ch1' }, // ch1's last lesson
+      { id: 'a4', chapterId: 'ch2' }, // comes after a3 globally, but a different chapter
+    ];
+    expect(computeLessonSwap(rows, 'a3', 'down')).toBeNull();
+  });
+
+  it('returns null when the lesson id is not found', () => {
+    const rows = [{ id: 'l1', chapterId: null }];
+    expect(computeLessonSwap(rows, 'zzz', 'up')).toBeNull();
   });
 });

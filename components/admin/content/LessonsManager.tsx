@@ -353,7 +353,10 @@ function ChapterGroup({
             onClick={() =>
               onAct(async () => {
                 const res = await actions.addLesson(slug);
-                if (res.ok && res.lessonId) await actions.moveLessonToChapter(slug, res.lessonId, chapter.id);
+                if (res.ok && res.lessonId) {
+                  const moved = await actions.moveLessonToChapter(slug, res.lessonId, chapter.id);
+                  if (!moved.ok) return moved;
+                }
                 return res;
               })
             }
