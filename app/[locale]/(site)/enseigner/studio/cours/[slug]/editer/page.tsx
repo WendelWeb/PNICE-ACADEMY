@@ -9,10 +9,12 @@ import { dbConfigured } from '@/lib/courses/source';
 import { resolveUserId } from '@/lib/learner/access';
 import { isApprovedTeacher } from '@/lib/teacher/profile';
 import { getMyCourse, getMyCourses } from '@/lib/teacher/studio';
+import { computeCourseReadiness, countMissingReadiness } from '@/lib/courses/readiness';
 import { CourseEditor } from '@/components/admin/content/CourseEditor';
 import { LessonsManager, type LessonActions } from '@/components/admin/content/LessonsManager';
 import { ImagesManager, type ImageActions } from '@/components/admin/content/ImagesManager';
 import { StudioStatusBar } from '@/components/teacher/studio/StudioStatusBar';
+import { CourseReadiness } from '@/components/content/CourseReadiness';
 import {
   updateMyCourseAction,
   addMyLessonAction,
@@ -21,6 +23,11 @@ import {
   moveMyLessonAction,
   validateMyBunnyVideoAction,
   createMyVideoUploadAction,
+  createMyChapterAction,
+  updateMyChapterAction,
+  deleteMyChapterAction,
+  reorderMyChapterAction,
+  moveMyLessonToChapterAction,
   setMyMainImageAction,
   addMySecondaryImageAction,
   removeMySecondaryImageAction,
@@ -36,6 +43,11 @@ const lessonActions: LessonActions = {
   moveLesson: moveMyLessonAction,
   validateBunnyVideo: validateMyBunnyVideoAction,
   createUpload: createMyVideoUploadAction,
+  createChapter: createMyChapterAction,
+  updateChapter: updateMyChapterAction,
+  deleteChapter: deleteMyChapterAction,
+  reorderChapter: reorderMyChapterAction,
+  moveLessonToChapter: moveMyLessonToChapterAction,
 };
 
 const imageActions: ImageActions = {
@@ -89,6 +101,12 @@ export default async function EditMyCoursePage({
   const myCourses = await getMyCourses(userId);
   const salesCount = myCourses.find((c) => c.slug === slug)?.salesCount ?? 0;
 
+  // Task K2 — the readiness checklist, computed once and shared by
+  // CourseReadiness (the list) and StudioStatusBar (the "N point(s) à
+  // compléter" badge next to the submit button).
+  const readinessItems = computeCourseReadiness(course);
+  const readinessMissing = countMissingReadiness(readinessItems);
+
   return (
     <Section>
       <Container className="max-w-[1180px]">
@@ -103,11 +121,18 @@ export default async function EditMyCoursePage({
             </h1>
           </div>
 
-          <StudioStatusBar slug={course.slug} status={course.rawStatus} reviewNote={course.reviewNote} />
+          <CourseReadiness items={readinessItems} />
+          <StudioStatusBar
+            slug={course.slug}
+            status={course.rawStatus}
+            reviewNote={course.reviewNote}
+            readinessMissing={readinessMissing}
+          />
           <CourseEditor course={course} salesCount={salesCount} priciest={null} updateAction={updateMyCourseAction} />
           <LessonsManager
             slug={course.slug}
             lessons={course.lessons}
+            chapters={course.chapters}
             isDraft={course.rawStatus === 'draft' || course.rawStatus === 'rejected'}
             actions={lessonActions}
           />

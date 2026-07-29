@@ -8,6 +8,7 @@ import { cn } from '@/lib/cn';
 import { buttonClasses } from '@/components/ui/Button';
 import { updateCourseAction } from '@/lib/admin/content-actions';
 import type { AdminCourse, CoursePatch } from '@/lib/courses/write';
+import { ResourcesEditor } from '@/components/content/ResourcesEditor';
 import { BilingualText, PairedList, FaqEditor, inputCls, type FaqItem } from './fields';
 
 type UpdateResult = { ok: boolean; message?: string };
@@ -40,6 +41,7 @@ export function CourseEditor({
   const router = useRouter();
   const [pending, start] = useTransition();
   const [save, setSave] = useState<SaveState>('idle');
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [c, setC] = useState(course);
   const [priceDollars, setPriceDollars] = useState(String(Math.round(course.priceCents / 100)));
 
@@ -55,6 +57,7 @@ export function CourseEditor({
   const onSave = () =>
     start(async () => {
       setSave('saving');
+      setSaveMessage(null);
       const res = await updateAction(course.slug, {
         icon: c.icon,
         title_ht: c.title_ht, title_fr: c.title_fr,
@@ -68,9 +71,12 @@ export function CourseEditor({
         deliverables_ht: c.deliverables_ht, deliverables_fr: c.deliverables_fr,
         requirements_ht: c.requirements_ht, requirements_fr: c.requirements_fr,
         faq: c.faq,
+        // Task K2 — course-level links/downloads ("liens en description").
+        resources: c.resources,
       });
       setSave(res.ok ? 'saved' : 'error');
       if (res.ok) router.refresh();
+      else setSaveMessage(res.message ?? null);
     });
 
   return (
@@ -121,6 +127,15 @@ export function CourseEditor({
           <PairedList label={t('deliverables')} ht={c.deliverables_ht} fr={c.deliverables_fr} onChange={(ht, fr) => { set('deliverables_ht', ht); set('deliverables_fr', fr); }} />
           <PairedList label={t('requirements')} ht={c.requirements_ht} fr={c.requirements_fr} onChange={(ht, fr) => { set('requirements_ht', ht); set('requirements_fr', fr); }} />
           <FaqEditor faq={c.faq as FaqItem[]} onChange={(f) => set('faq', f)} />
+          <div>
+            <ResourcesEditor
+              label={t('resourcesLabel')}
+              resources={c.resources}
+              onChange={(r) => set('resources', r)}
+              serverError={saveMessage?.startsWith('resource_') ? saveMessage : null}
+            />
+            <p className="mt-1 text-[11px] leading-snug text-graphite/55">{t('resourcesHelp')}</p>
+          </div>
         </div>
       </section>
 

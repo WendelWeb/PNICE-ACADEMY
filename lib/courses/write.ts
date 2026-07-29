@@ -45,11 +45,14 @@ import { dbConfigured } from './source';
 import { bootstrapEmails } from '@/lib/admin/access';
 import { recordAudit } from '@/lib/admin/data/real/users';
 import type { AdminActor } from '@/lib/admin/data/types';
+import { isValidHttpUrl } from '@/lib/teacher/apply-validation';
+import type { CourseResource } from '@/db/schema';
 
 const T = schema;
 
 type DbCourseRow = typeof T.courses.$inferSelect;
 type DbLessonRow = typeof T.lessons.$inferSelect;
+export type DbChapterRow = typeof T.courseChapters.$inferSelect;
 
 /** The raw DB course status (draft/pending_review/published/rejected/archived)
  *  — exported for lib/teacher/studio.ts (Task C3-T4), which surfaces every
@@ -57,7 +60,16 @@ type DbLessonRow = typeof T.lessons.$inferSelect;
  *  (narrowed to the binary the pre-C3 CMS UI understood). */
 export type DbCourseStatus = DbCourseRow['status'];
 
-export type CourseWriteResult = { ok: boolean; message?: string; slug?: string; count?: number };
+export type CourseWriteResult = {
+  ok: boolean;
+  message?: string;
+  slug?: string;
+  count?: number;
+  /** The created row's id (Task K2 — `addLesson` only): lets a caller that
+   *  just added a lesson immediately place it into a chapter via a second
+   *  `moveLessonToChapter` call, without a separate lookup. */
+  lessonId?: string;
+};
 
 function dbRequired(): CourseWriteResult {
   return { ok: false, message: 'db_required' };
@@ -87,10 +99,34 @@ export type AdminLesson = {
   durationSeconds: number;
   isPreview: boolean;
   sortOrder: number;
+  /** Task K2 (plan de cours complet) — which chapter this lesson belongs to,
+   *  `null` = "hors chapitre" (ungrouped). Mirrors `lessons.chapter_id`. */
+  chapterId: string | null;
+  /** Long-form teacher notes shown under the video (Task K2) — distinct from desc_ht/fr. */
+  notes_ht: string;
+  notes_fr: string;
+  /** Links/downloads attached to the lesson (Task K2) — validated on write, see `validateResources`. */
+  resources: CourseResource[];
 };
 
 export type AdminFaq = { id: string; q_ht: string; q_fr: string; a_ht: string; a_fr: string };
 export type AdminImage = { id: string; url: string; alt: string };
+
+/**
+ * A course's part/module (Task K2 — plan de cours complet), the CMS-facing
+ * shape of a `course_chapters` row. `sortOrder` mirrors `AdminLesson`'s field
+ * of the same name (both are just the row's `index` column, pre-sorted by
+ * `mapRowToAdminCourse` — exposed so the plan editor can enable/disable its
+ * up/down buttons without re-deriving order from array position alone).
+ */
+export type AdminChapter = {
+  id: string;
+  title_ht: string;
+  title_fr: string;
+  summary_ht: string;
+  summary_fr: string;
+  sortOrder: number;
+};
 
 export type AdminCourse = {
   code: string;
@@ -130,6 +166,12 @@ export type AdminCourse = {
   requirements_fr: string[];
   faq: AdminFaq[];
   lessons: AdminLesson[];
+  /** A course's parts/modules (Task K2), ordered by `sortOrder` — `[]` for
+   *  every course until a teacher/admin adds one (the flat, pre-K2 shape). */
+  chapters: AdminChapter[];
+  /** Course-level links/downloads (Task K2), rendered in the sales-page
+   *  description block ("lien en description"). Mirrors `courses.resources`. */
+  resources: CourseResource[];
   mainImage: string | null;
   secondaryImages: AdminImage[];
 };
@@ -168,10 +210,25 @@ export function toAdminStatus(status: DbCourseStatus): AdminCourseStatus {
   return status;
 }
 
-function mapRowToAdminCourse(row: DbCourseRow, lessonRows: DbLessonRow[]): AdminCourse {
+function mapRowToAdminCourse(
+  row: DbCourseRow,
+  lessonRows: DbLessonRow[],
+  chapterRows: DbChapterRow[] = [],
+): AdminCourse {
   const lessons = lessonRows
     .filter((l) => l.courseSlug === row.slug)
     .sort((a, b) => a.index - b.index);
+
+  const chapters: AdminChapter[] = [...chapterRows]
+    .sort((a, b) => a.index - b.index)
+    .map((c) => ({
+      id: c.id,
+      title_ht: c.titleHt,
+      title_fr: c.titleFr,
+      summary_ht: c.summaryHt ?? '',
+      summary_fr: c.summaryFr ?? '',
+      sortOrder: c.index,
+    }));
 
   const faqHt = row.faqHt ?? [];
   const faqFr = row.faqFr ?? [];
@@ -225,8 +282,14 @@ function mapRowToAdminCourse(row: DbCourseRow, lessonRows: DbLessonRow[]): Admin
         durationSeconds: l.durationSeconds ?? 0,
         isPreview: l.isPreview,
         sortOrder: l.index,
+        chapterId: l.chapterId ?? null,
+        notes_ht: l.notesHt ?? '',
+        notes_fr: l.notesFr ?? '',
+        resources: l.resources ?? [],
       }),
     ),
+    chapters,
+    resources: row.resources ?? [],
     mainImage: row.images?.main ?? null,
     secondaryImages: secondary.map((s, i): AdminImage => ({ id: String(i), url: s.url, alt: s.alt ?? '' })),
   };
@@ -271,8 +334,11 @@ export async function getAdminCourse(slug: string): Promise<AdminCourse | null> 
   try {
     const [row] = await db.select().from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
     if (!row) return null;
-    const lessonRows = await db.select().from(T.lessons).where(eq(T.lessons.courseSlug, slug));
-    return mapRowToAdminCourse(row, lessonRows);
+    const [lessonRows, chapterRows] = await Promise.all([
+      db.select().from(T.lessons).where(eq(T.lessons.courseSlug, slug)),
+      db.select().from(T.courseChapters).where(eq(T.courseChapters.courseSlug, slug)),
+    ]);
+    return mapRowToAdminCourse(row, lessonRows, chapterRows);
   } catch (err) {
     console.error('[courses/write] getAdminCourse DB read failed, gracefully degrading:', err);
     return null;
@@ -306,6 +372,50 @@ function slugify(text: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 60);
+}
+
+/* --------------------------- resource validation --------------------------- */
+
+/**
+ * Task K1 (plan de cours complet): a lesson/course `resources` entry is
+ * self-serve teacher input reaching a public render (link/download list) —
+ * every field is validated at WRITE time, mirroring
+ * lib/teacher/public.ts's `isSafePhotoUrl` allowlist (same `isValidHttpUrl`
+ * rule, reused rather than duplicated — see that module's own doc comment on
+ * why the write-time and render-time rule must never drift apart).
+ */
+export const RESOURCE_LABEL_MAX_LENGTH = 120;
+
+/** First failing reason code for one resource, or `null` if acceptable. Exported for unit testing. */
+export function validateResource(r: CourseResource): string | null {
+  const labelHt = r.label_ht?.trim() ?? '';
+  const labelFr = r.label_fr?.trim() ?? '';
+  if (!labelHt) return 'resource_label_ht_required';
+  if (!labelFr) return 'resource_label_fr_required';
+  if (labelHt.length > RESOURCE_LABEL_MAX_LENGTH) return 'resource_label_ht_too_long';
+  if (labelFr.length > RESOURCE_LABEL_MAX_LENGTH) return 'resource_label_fr_too_long';
+  if (r.kind !== 'link' && r.kind !== 'file') return 'resource_kind_invalid';
+  if (!isValidHttpUrl(r.url ?? '')) return 'resource_url_invalid';
+  return null;
+}
+
+/**
+ * First failing reason code across the whole list, or `null` if every entry
+ * is acceptable — callers (`updateLesson`/`updateCourse`) REJECT the whole
+ * write with this message rather than silently dropping the bad entry.
+ * Exported for unit testing.
+ */
+export function validateResources(resources: CourseResource[]): string | null {
+  for (const r of resources) {
+    const err = validateResource(r);
+    if (err) return err;
+  }
+  return null;
+}
+
+/** Trims every string field — applied only after `validateResources` passes. */
+function normalizeResource(r: CourseResource): CourseResource {
+  return { label_ht: r.label_ht.trim(), label_fr: r.label_fr.trim(), url: r.url.trim(), kind: r.kind };
 }
 
 /**
@@ -435,12 +545,19 @@ export type CoursePatch = Partial<{
   faq: AdminFaq[];
   level_ht: string;
   level_fr: string;
+  /** Course-level links/downloads (Task K1) — validated, see `validateResources`. */
+  resources: CourseResource[];
 }>;
 
 export async function updateCourse(slug: string, patch: CoursePatch, actor: AdminActor): Promise<CourseWriteResult> {
   if (!dbConfigured()) return dbRequired();
   const [current] = await db.select({ status: T.courses.status }).from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
   if (!current) return { ok: false, message: 'not_found' };
+
+  if (patch.resources !== undefined) {
+    const err = validateResources(patch.resources);
+    if (err) return { ok: false, message: err };
+  }
 
   const set: Partial<typeof T.courses.$inferInsert> = { updatedAt: new Date() };
   if (patch.icon !== undefined) set.icon = patch.icon;
@@ -467,6 +584,7 @@ export async function updateCourse(slug: string, patch: CoursePatch, actor: Admi
     set.faqHt = patch.faq.map((f) => ({ q: f.q_ht, a: f.a_ht }));
     set.faqFr = patch.faq.map((f) => ({ q: f.q_fr, a: f.a_fr }));
   }
+  if (patch.resources !== undefined) set.resources = patch.resources.map(normalizeResource);
 
   const wasPublished = current.status === 'published';
   if (wasPublished) set.hasUnpublishedChanges = true;
@@ -597,10 +715,16 @@ export async function addLesson(slug: string, actor: AdminActor): Promise<Course
   const rows = await db.select({ index: T.lessons.index }).from(T.lessons).where(eq(T.lessons.courseSlug, slug));
   const nextIndex = rows.length ? Math.max(...rows.map((r) => r.index)) + 1 : 1;
 
-  await db.insert(T.lessons).values({ courseSlug: slug, index: nextIndex, titleHt: '', titleFr: '', isPreview: false });
+  const [inserted] = await db
+    .insert(T.lessons)
+    .values({ courseSlug: slug, index: nextIndex, titleHt: '', titleFr: '', isPreview: false })
+    .returning({ id: T.lessons.id });
   await markDirtyAndRevalidateIfPublished(slug);
   await recordAudit({ action: 'add_lesson', userId: actor.id, admin: actor, detail: slug });
-  return { ok: true };
+  // Task K2: the new lesson's id, so a caller (LessonsManager's per-chapter
+  // "add lesson" button) can immediately `moveLessonToChapter` it — `addLesson`
+  // itself takes no chapterId (see the plan's K2 note on this two-step shape).
+  return { ok: true, lessonId: inserted?.id };
 }
 
 export type LessonPatch = Partial<{
@@ -612,6 +736,11 @@ export type LessonPatch = Partial<{
   bunnyVideoId: string;
   durationSeconds: number;
   isPreview: boolean;
+  /** Long-form teacher notes shown under the video (Task K1) — distinct from desc_ht/fr. */
+  notes_ht: string;
+  notes_fr: string;
+  /** Links/downloads attached to the lesson (Task K1) — validated, see `validateResources`. */
+  resources: CourseResource[];
 }>;
 
 export async function updateLesson(
@@ -621,6 +750,12 @@ export async function updateLesson(
   actor: AdminActor,
 ): Promise<CourseWriteResult> {
   if (!dbConfigured()) return dbRequired();
+
+  if (patch.resources !== undefined) {
+    const err = validateResources(patch.resources);
+    if (err) return { ok: false, message: err };
+  }
+
   const set: Partial<typeof T.lessons.$inferInsert> = { updatedAt: new Date() };
   if (patch.title_ht !== undefined) set.titleHt = patch.title_ht;
   if (patch.title_fr !== undefined) set.titleFr = patch.title_fr;
@@ -629,6 +764,9 @@ export async function updateLesson(
   if (patch.bunnyVideoId !== undefined) set.bunnyVideoId = patch.bunnyVideoId || null;
   if (patch.durationSeconds !== undefined) set.durationSeconds = patch.durationSeconds;
   if (patch.isPreview !== undefined) set.isPreview = patch.isPreview;
+  if (patch.notes_ht !== undefined) set.notesHt = patch.notes_ht;
+  if (patch.notes_fr !== undefined) set.notesFr = patch.notes_fr;
+  if (patch.resources !== undefined) set.resources = patch.resources.map(normalizeResource);
 
   const res = await db
     .update(T.lessons)
@@ -656,18 +794,54 @@ export async function deleteLesson(slug: string, lessonId: string, actor: AdminA
 }
 
 /**
- * Swaps a lesson with its adjacent-in-order neighbour. `lessons` has a
- * unique(course_slug, index) constraint, so a naive 2-statement swap can
- * transiently give two rows the same index within the same command (Postgres
- * checks a non-deferred unique constraint per row as it applies each
- * update) — the 3rd write through a scratch sentinel index (`-1`, never a
- * valid lesson position) avoids that collision. No transaction wraps this
- * (the neon-http driver doesn't support one — see db/index.ts): a failure
- * between steps would leave one lesson at `-1`, self-healing on the next
- * successful reorder of that same lesson, and never surfaced publicly since
- * `lib/courses/source.ts` always re-sorts by `index` before returning an
- * array (a temporarily-out-of-range value only affects relative order, it's
- * never rendered).
+ * Pure neighbour-selection + swap math for `reorderLessons` (mirroring
+ * `computeAdjacentSwap` further below, used by `reorderChapters`): given
+ * every lesson row of the course (already sorted by `index` ascending) and
+ * the id of the lesson being moved, first scopes the candidate neighbours
+ * down to lessons sharing the SAME `chapterId` as the moving lesson — `null`
+ * counts as its own group, matching the UI's "hors chapitre" bucket in
+ * LessonsManager.tsx — then delegates to `computeAdjacentSwap` for the
+ * actual up/down pick. Exported for unit testing without a DB.
+ *
+ * Scoping matters because `addLesson` always appends at the course-wide
+ * `max(index) + 1`, so chapters interleave under normal use (e.g. add 2
+ * lessons to chapter 1, 1 to chapter 2, then 1 more to chapter 1 ->
+ * ch1=[idx1,idx2,idx4], ch2=[idx3]). A naive GLOBALLY-adjacent swap would
+ * silently rewrite a lesson's index in a DIFFERENT chapter than the one
+ * being edited — invisible in the editor (the UI's up/down buttons are
+ * boundary-checked per chapter, so they never disable the button that
+ * triggers this), and it perturbs the shared flat `lessons` ordering other
+ * consumers rely on.
+ *
+ * BACKWARD COMPATIBLE: for a flat, pre-chapters course every lesson has
+ * `chapterId === null`, so "same chapter" is the whole course and this
+ * behaves exactly like the old course-wide adjacency.
+ */
+export function computeLessonSwap(
+  allSortedByIndex: { id: string; chapterId: string | null }[],
+  lessonId: string,
+  dir: 'up' | 'down',
+): [string, string] | null {
+  const moving = allSortedByIndex.find((r) => r.id === lessonId);
+  if (!moving) return null;
+  const scoped = allSortedByIndex.filter((r) => r.chapterId === moving.chapterId);
+  return computeAdjacentSwap(scoped.map((r) => r.id), lessonId, dir);
+}
+
+/**
+ * Swaps a lesson with its adjacent-in-order neighbour WITHIN ITS OWN CHAPTER
+ * (see `computeLessonSwap` above for why the neighbour must be chapter-
+ * scoped). `lessons` has a unique(course_slug, index) constraint, so a naive
+ * 2-statement swap can transiently give two rows the same index within the
+ * same command (Postgres checks a non-deferred unique constraint per row as
+ * it applies each update) — the 3rd write through a scratch sentinel index
+ * (`-1`, never a valid lesson position) avoids that collision. No
+ * transaction wraps this (the neon-http driver doesn't support one — see
+ * db/index.ts): a failure between steps would leave one lesson at `-1`,
+ * self-healing on the next successful reorder of that same lesson, and
+ * never surfaced publicly since `lib/courses/source.ts` always re-sorts by
+ * `index` before returning an array (a temporarily-out-of-range value only
+ * affects relative order, it's never rendered).
  */
 export async function reorderLessons(
   slug: string,
@@ -677,12 +851,11 @@ export async function reorderLessons(
 ): Promise<CourseWriteResult> {
   if (!dbConfigured()) return dbRequired();
   const rows = await db.select().from(T.lessons).where(eq(T.lessons.courseSlug, slug)).orderBy(asc(T.lessons.index));
-  const i = rows.findIndex((r) => r.id === lessonId);
-  const j = dir === 'up' ? i - 1 : i + 1;
-  if (i < 0 || j < 0 || j >= rows.length) return { ok: false, message: 'invalid_move' };
+  const swap = computeLessonSwap(rows, lessonId, dir);
+  if (!swap) return { ok: false, message: 'invalid_move' };
 
-  const a = rows[i];
-  const b = rows[j];
+  const a = rows.find((r) => r.id === swap[0])!;
+  const b = rows.find((r) => r.id === swap[1])!;
   const now = new Date();
   await db.update(T.lessons).set({ index: -1, updatedAt: now }).where(eq(T.lessons.id, a.id));
   await db.update(T.lessons).set({ index: a.index, updatedAt: now }).where(eq(T.lessons.id, b.id));
@@ -690,6 +863,215 @@ export async function reorderLessons(
 
   await markDirtyAndRevalidateIfPublished(slug);
   await recordAudit({ action: 'reorder_lesson', userId: actor.id, admin: actor, detail: `${slug}#${lessonId}:${dir}` });
+  return { ok: true };
+}
+
+/* ------------------------------- chapters ----------------------------------- */
+/**
+ * Task K1 (plan de cours complet) — a course's parts/modules. Every op below
+ * mirrors the lesson equivalents just above (same audited + revalidated
+ * shape); ownership is enforced one layer up, in the studio/admin wrappers
+ * (lib/teacher/studio-actions.ts / lib/admin/content-actions.ts), same
+ * division of labour as every other write in this file.
+ */
+
+export type ChapterPatch = Partial<{
+  title_ht: string;
+  title_fr: string;
+  summary_ht: string;
+  summary_fr: string;
+}>;
+
+/**
+ * Pure adjacent-swap index math shared by `reorderChapters` (and mirroring
+ * `reorderLessons`'s identical shape above): given ids already sorted in
+ * display order, the id to move, and a direction, returns the `[mover,
+ * neighbour]` pair to swap, or `null` if the move is invalid (id not found,
+ * or already at that edge). Exported for unit testing without a DB.
+ */
+export function computeAdjacentSwap(ids: string[], id: string, dir: 'up' | 'down'): [string, string] | null {
+  const i = ids.indexOf(id);
+  const j = dir === 'up' ? i - 1 : i + 1;
+  if (i < 0 || j < 0 || j >= ids.length) return null;
+  return [ids[i], ids[j]];
+}
+
+/**
+ * Pure repack math for `deleteChapter`: given the remaining chapters already
+ * sorted by their CURRENT index (ascending, gaps allowed — e.g. [1,2,4,5]
+ * after deleting the chapter that held index 3), returns the new sequential
+ * 1..n index each position should get ([1,2,3,4]), order preserved. Exported
+ * for unit testing without a DB — see `deleteChapter`'s doc comment for why
+ * the actual DB write still needs a two-phase scratch-index pass.
+ */
+export function repackChapterIndices<T>(remainingSortedByIndex: T[]): number[] {
+  return remainingSortedByIndex.map((_, i) => i + 1);
+}
+
+/** Appends a new chapter at the next index for `slug`. */
+export async function createChapter(
+  slug: string,
+  input: { title_ht: string; title_fr: string },
+  actor: AdminActor,
+): Promise<CourseWriteResult> {
+  if (!dbConfigured()) return dbRequired();
+  const [course] = await db.select({ slug: T.courses.slug }).from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
+  if (!course) return { ok: false, message: 'not_found' };
+
+  const rows = await db
+    .select({ index: T.courseChapters.index })
+    .from(T.courseChapters)
+    .where(eq(T.courseChapters.courseSlug, slug));
+  const nextIndex = rows.length ? Math.max(...rows.map((r) => r.index)) + 1 : 1;
+
+  await db.insert(T.courseChapters).values({
+    courseSlug: slug,
+    index: nextIndex,
+    titleHt: input.title_ht?.trim() || '',
+    titleFr: input.title_fr?.trim() || '',
+  });
+  await markDirtyAndRevalidateIfPublished(slug);
+  await recordAudit({ action: 'create_chapter', userId: actor.id, admin: actor, detail: slug });
+  return { ok: true };
+}
+
+export async function updateChapter(
+  slug: string,
+  chapterId: string,
+  patch: ChapterPatch,
+  actor: AdminActor,
+): Promise<CourseWriteResult> {
+  if (!dbConfigured()) return dbRequired();
+  const set: Partial<typeof T.courseChapters.$inferInsert> = { updatedAt: new Date() };
+  if (patch.title_ht !== undefined) set.titleHt = patch.title_ht;
+  if (patch.title_fr !== undefined) set.titleFr = patch.title_fr;
+  if (patch.summary_ht !== undefined) set.summaryHt = patch.summary_ht;
+  if (patch.summary_fr !== undefined) set.summaryFr = patch.summary_fr;
+
+  const res = await db
+    .update(T.courseChapters)
+    .set(set)
+    .where(and(eq(T.courseChapters.courseSlug, slug), eq(T.courseChapters.id, chapterId)))
+    .returning({ id: T.courseChapters.id });
+  if (res.length === 0) return { ok: false, message: 'not_found' };
+
+  await markDirtyAndRevalidateIfPublished(slug);
+  await recordAudit({ action: 'update_chapter', userId: actor.id, admin: actor, detail: `${slug}#${chapterId}` });
+  return { ok: true };
+}
+
+/**
+ * Deletes the chapter — NEVER its lessons (ungroups them: `chapter_id` ->
+ * null, "hors chapitre", per the plan) — then re-packs the remaining
+ * chapters' indices to close the gap. The re-pack uses the SAME two-phase
+ * scratch-index trick `reorderChapters`/`reorderLessons` use (negative
+ * sentinel values first, then the final sequential ones): a naive single-pass
+ * renumber can transiently collide with unique(course_slug, index) — e.g.
+ * moving row A from index 4 to 3 while row B still legitimately holds index 3
+ * until ITS OWN update runs later in the loop.
+ */
+export async function deleteChapter(slug: string, chapterId: string, actor: AdminActor): Promise<CourseWriteResult> {
+  if (!dbConfigured()) return dbRequired();
+
+  const [chapter] = await db
+    .select({ id: T.courseChapters.id })
+    .from(T.courseChapters)
+    .where(and(eq(T.courseChapters.courseSlug, slug), eq(T.courseChapters.id, chapterId)))
+    .limit(1);
+  if (!chapter) return { ok: false, message: 'not_found' };
+
+  await db
+    .update(T.lessons)
+    .set({ chapterId: null, updatedAt: new Date() })
+    .where(and(eq(T.lessons.courseSlug, slug), eq(T.lessons.chapterId, chapterId)));
+
+  await db.delete(T.courseChapters).where(eq(T.courseChapters.id, chapterId));
+
+  const remaining = await db
+    .select()
+    .from(T.courseChapters)
+    .where(eq(T.courseChapters.courseSlug, slug))
+    .orderBy(asc(T.courseChapters.index));
+  const newIndices = repackChapterIndices(remaining);
+  const now = new Date();
+  for (let i = 0; i < remaining.length; i++) {
+    await db.update(T.courseChapters).set({ index: -(i + 1), updatedAt: now }).where(eq(T.courseChapters.id, remaining[i].id));
+  }
+  for (let i = 0; i < remaining.length; i++) {
+    await db.update(T.courseChapters).set({ index: newIndices[i], updatedAt: now }).where(eq(T.courseChapters.id, remaining[i].id));
+  }
+
+  await markDirtyAndRevalidateIfPublished(slug);
+  await recordAudit({ action: 'delete_chapter', userId: actor.id, admin: actor, detail: `${slug}#${chapterId}` });
+  return { ok: true };
+}
+
+/** Swaps a chapter with its adjacent-in-order neighbour — same scratch-index-swap shape as `reorderLessons` above. */
+export async function reorderChapters(
+  slug: string,
+  chapterId: string,
+  dir: 'up' | 'down',
+  actor: AdminActor,
+): Promise<CourseWriteResult> {
+  if (!dbConfigured()) return dbRequired();
+  const rows = await db
+    .select()
+    .from(T.courseChapters)
+    .where(eq(T.courseChapters.courseSlug, slug))
+    .orderBy(asc(T.courseChapters.index));
+  const swap = computeAdjacentSwap(rows.map((r) => r.id), chapterId, dir);
+  if (!swap) return { ok: false, message: 'invalid_move' };
+
+  const a = rows.find((r) => r.id === swap[0])!;
+  const b = rows.find((r) => r.id === swap[1])!;
+  const now = new Date();
+  await db.update(T.courseChapters).set({ index: -1, updatedAt: now }).where(eq(T.courseChapters.id, a.id));
+  await db.update(T.courseChapters).set({ index: a.index, updatedAt: now }).where(eq(T.courseChapters.id, b.id));
+  await db.update(T.courseChapters).set({ index: b.index, updatedAt: now }).where(eq(T.courseChapters.id, a.id));
+
+  await markDirtyAndRevalidateIfPublished(slug);
+  await recordAudit({ action: 'reorder_chapter', userId: actor.id, admin: actor, detail: `${slug}#${chapterId}:${dir}` });
+  return { ok: true };
+}
+
+/**
+ * Moves a lesson into a chapter (or back to "hors chapitre" when `chapterId`
+ * is `null`) — only ever touches `chapter_id`, never `index`: ordering within
+ * a chapter follows the lesson's existing global per-course `index` ascending
+ * (see the plan's Rules section), so the unique(course_slug, index)
+ * constraint never needs a rewrite here.
+ */
+export async function moveLessonToChapter(
+  slug: string,
+  lessonId: string,
+  chapterId: string | null,
+  actor: AdminActor,
+): Promise<CourseWriteResult> {
+  if (!dbConfigured()) return dbRequired();
+
+  if (chapterId !== null) {
+    const [chapter] = await db
+      .select({ id: T.courseChapters.id })
+      .from(T.courseChapters)
+      .where(and(eq(T.courseChapters.courseSlug, slug), eq(T.courseChapters.id, chapterId)))
+      .limit(1);
+    if (!chapter) return { ok: false, message: 'invalid_chapter' };
+  }
+
+  const res = await db
+    .update(T.lessons)
+    .set({ chapterId, updatedAt: new Date() })
+    .where(and(eq(T.lessons.courseSlug, slug), eq(T.lessons.id, lessonId)))
+    .returning({ id: T.lessons.id });
+  if (res.length === 0) return { ok: false, message: 'not_found' };
+
+  await markDirtyAndRevalidateIfPublished(slug);
+  await recordAudit({
+    action: 'move_lesson_to_chapter',
+    userId: actor.id,
+    admin: actor,
+    detail: `${slug}#${lessonId}->${chapterId ?? 'none'}`,
+  });
   return { ok: true };
 }
 

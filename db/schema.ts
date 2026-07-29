@@ -513,9 +513,52 @@ export const courses = pgTable('courses', {
   reviewedBy: text('reviewed_by'),
   publishedAt: timestamp('published_at', { withTimezone: true }),
   hasUnpublishedChanges: boolean('has_unpublished_changes').default(false).notNull(),
+  // Course-level links/downloads (Task K1 — plan de cours complet), rendered
+  // in the sales-page description block ("lien en description"). Same shape
+  // as lessons.resources below — see CourseResource's own doc comment.
+  resources: jsonb('resources').$type<CourseResource[]>(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
+
+/**
+ * A course's parts/modules (Task K1 — plan de cours complet, see
+ * docs/superpowers/plans/2026-07-28-course-curriculum.md). Purely additive:
+ * `lessons.chapter_id` is nullable ("hors chapitre" = ungrouped), so a course
+ * with zero rows here renders EXACTLY as it did before this table existed —
+ * see lib/courses/source.ts's mapDbCourseToDetail. Defined before `lessons`
+ * so `lessons.chapter_id`'s FK can reference it (matches this file's existing
+ * convention of only ever forward-referencing an already-declared table).
+ */
+export const courseChapters = pgTable(
+  'course_chapters',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    courseSlug: text('course_slug')
+      .notNull()
+      .references(() => courses.slug, { onDelete: 'cascade' }),
+    index: integer('index').notNull(),
+    titleHt: text('title_ht').notNull(),
+    titleFr: text('title_fr').notNull(),
+    // Optional short intro shown before the chapter's lesson list.
+    summaryHt: text('summary_ht'),
+    summaryFr: text('summary_fr'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    uniqCourseIndex: unique().on(t.courseSlug, t.index),
+  }),
+);
+
+/**
+ * A link or downloadable file attached to a lesson (`lessons.resources`) or a
+ * course (`courses.resources`) — Task K1. `url` MUST be validated http(s)-only
+ * before it's ever written (see lib/courses/write.ts's `validateResources`,
+ * mirroring lib/teacher/public.ts's `isSafePhotoUrl` allowlist) — teachers are
+ * self-serve, so this is untrusted input reaching a public render.
+ */
+export type CourseResource = { label_ht: string; label_fr: string; url: string; kind: 'link' | 'file' };
 
 export const lessons = pgTable(
   'lessons',
@@ -524,6 +567,10 @@ export const lessons = pgTable(
     courseSlug: text('course_slug')
       .notNull()
       .references(() => courses.slug, { onDelete: 'cascade' }),
+    // Task K1 — which chapter this lesson belongs to. Nullable: null = "hors
+    // chapitre" (ungrouped); set-null (not cascade) so deleting a chapter
+    // NEVER deletes its lessons (lib/courses/write.ts's `deleteChapter`).
+    chapterId: uuid('chapter_id').references(() => courseChapters.id, { onDelete: 'set null' }),
     index: integer('index').notNull(),
     titleHt: text('title_ht').notNull(),
     titleFr: text('title_fr').notNull(),
@@ -533,6 +580,12 @@ export const lessons = pgTable(
     // until now. Nullable; falls back to the static entry when null.
     descHt: text('desc_ht'),
     descFr: text('desc_fr'),
+    // Task K1 — long-form teacher notes/recap shown to the enrolled learner
+    // under the video, distinct from the short desc_ht/fr above.
+    notesHt: text('notes_ht'),
+    notesFr: text('notes_fr'),
+    // Task K1 — links + downloadable files attached to the lesson.
+    resources: jsonb('resources').$type<CourseResource[]>(),
     // Bunny Stream video id (Task L4) — empty/undefined until the owner
     // records + uploads. Mirrors data/courses.ts Lesson.bunnyVideoId.
     bunnyVideoId: text('bunny_video_id'),

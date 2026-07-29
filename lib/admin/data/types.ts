@@ -197,7 +197,13 @@ export type AuditAction =
   | 'mark_withdrawal_paid'
   | 'reject_withdrawal'
   // Course ratings/reviews moderation (Phase C3-T6)
-  | 'remove_review';
+  | 'remove_review'
+  // Course curriculum — chapters + lesson→chapter moves (Task K1)
+  | 'create_chapter'
+  | 'update_chapter'
+  | 'delete_chapter'
+  | 'reorder_chapter'
+  | 'move_lesson_to_chapter';
 
 export type AdminActor = { id: string; name: string };
 

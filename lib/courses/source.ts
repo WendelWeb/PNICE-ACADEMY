@@ -18,6 +18,7 @@
  * `code`) IS read here too, via `getCourseDetail(slug)` (Task C2-T3) — see
  * that function's own doc comment for the mapping/fallback details.
  */
+import { eq, asc } from 'drizzle-orm';
 import { db, schema } from '@/db';
 import {
   courses as staticCourses,
@@ -30,12 +31,15 @@ import {
   type CourseDetail,
   type CourseFaq,
   type LessonDetail,
+  type CourseChapterView,
+  type CurriculumLesson,
 } from '@/data/courseDetails';
 
 const T = schema;
 
 type DbCourseRow = typeof T.courses.$inferSelect;
 type DbLessonRow = typeof T.lessons.$inferSelect;
+type DbChapterRow = typeof T.courseChapters.$inferSelect;
 
 /**
  * True only when a DB read is even worth attempting. Exported so
@@ -160,7 +164,11 @@ export async function getPublishedCourseBySlug(slug: string): Promise<Course | u
  * `minutes` comes from the real `lessons.duration_seconds` column when
  * present (falling back to the static minutes otherwise).
  */
-export function mapDbCourseToDetail(row: DbCourseRow, lessonRows: DbLessonRow[]): CourseDetail {
+export function mapDbCourseToDetail(
+  row: DbCourseRow,
+  lessonRows: DbLessonRow[],
+  chapterRows: DbChapterRow[] = [],
+): CourseDetail {
   const staticDetail = row.code ? getStaticCourseDetail(row.code) : undefined;
 
   const lessons = lessonRows
@@ -176,6 +184,41 @@ export function mapDbCourseToDetail(row: DbCourseRow, lessonRows: DbLessonRow[])
       desc_fr: l.descFr ?? staticLd?.desc_fr ?? '',
     };
   });
+
+  // Task K1 — curriculum grouping. Built from the SAME `lessons`/`lessonDetails`
+  // arrays above (index-aligned) so a lesson's rich fields (minutes/desc, via
+  // the same DB-then-static fallback) are never recomputed twice.
+  const toCurriculumLesson = (l: DbLessonRow, i: number): CurriculumLesson => ({
+    id: l.id,
+    index: l.index,
+    title_ht: l.titleHt,
+    title_fr: l.titleFr,
+    desc_ht: lessonDetails[i].desc_ht,
+    desc_fr: lessonDetails[i].desc_fr,
+    minutes: lessonDetails[i].minutes,
+    bunnyVideoId: l.bunnyVideoId ?? undefined,
+    isPreview: l.isPreview,
+    notes_ht: l.notesHt ?? '',
+    notes_fr: l.notesFr ?? '',
+    resources: l.resources ?? [],
+  });
+
+  const chaptersSorted = [...chapterRows].sort((a, b) => a.index - b.index);
+  const chapters: CourseChapterView[] = chaptersSorted.map((c) => ({
+    id: c.id,
+    title_ht: c.titleHt,
+    title_fr: c.titleFr,
+    summary_ht: c.summaryHt ?? '',
+    summary_fr: c.summaryFr ?? '',
+    lessons: lessons
+      .map((l, i) => ({ l, i }))
+      .filter(({ l }) => l.chapterId === c.id)
+      .map(({ l, i }) => toCurriculumLesson(l, i)),
+  }));
+  const ungroupedLessons: CurriculumLesson[] = lessons
+    .map((l, i) => ({ l, i }))
+    .filter(({ l }) => !l.chapterId)
+    .map(({ l, i }) => toCurriculumLesson(l, i));
 
   const faqHt = row.faqHt ?? [];
   const faqFr = row.faqFr ?? [];
@@ -202,7 +245,34 @@ export function mapDbCourseToDetail(row: DbCourseRow, lessonRows: DbLessonRow[])
     requirements_fr: row.prereqFr ?? staticDetail?.requirements_fr ?? [],
     lessonDetails,
     faq,
+    chapters,
+    ungroupedLessons,
+    // Task K3 — course-level links/downloads, rendered in the sales-page
+    // description block. Mirrors the lesson-level `resources` above (K1);
+    // no static counterpart, so the fallback path below never sets this.
+    resources: row.resources ?? [],
   };
+}
+
+/**
+ * Every `course_chapters` row for `slug`, ordered by `index` — the DB half of
+ * the curriculum grouping (Task K1). GATED + FALLBACK, same choke point as
+ * every other read here: no DATABASE_URL or a failed query ⇒ `[]`, never
+ * throws — `mapDbCourseToDetail` then reports zero chapters, same as a
+ * course that genuinely has none.
+ */
+async function readChapterRows(slug: string): Promise<DbChapterRow[]> {
+  if (!dbConfigured()) return [];
+  try {
+    return await db
+      .select()
+      .from(T.courseChapters)
+      .where(eq(T.courseChapters.courseSlug, slug))
+      .orderBy(asc(T.courseChapters.index));
+  } catch (err) {
+    console.error('[courses/source] readChapterRows DB read failed, falling back to []:', err);
+    return [];
+  }
 }
 
 /**
@@ -212,7 +282,8 @@ export function mapDbCourseToDetail(row: DbCourseRow, lessonRows: DbLessonRow[])
  * same choke point as the rest of this module: no DATABASE_URL, a failed
  * query, or an empty `courses` table ⇒ resolve the slug against the static
  * catalog and read `data/courseDetails.ts` by its `code`, byte-identical to
- * what the sales page fetched before Task C2-T3.
+ * what the sales page fetched before Task C2-T3 (no `chapters`/
+ * `ungroupedLessons` — see `CourseDetail`'s own doc comment, Task K1).
  */
 export async function getCourseDetail(slug: string): Promise<CourseDetail | undefined> {
   const rows = await readDbRows();
@@ -221,5 +292,7 @@ export async function getCourseDetail(slug: string): Promise<CourseDetail | unde
     return course ? getStaticCourseDetail(course.code) : undefined;
   }
   const row = rows.courseRows.find((r) => r.slug === slug);
-  return row ? mapDbCourseToDetail(row, rows.lessonRows) : undefined;
+  if (!row) return undefined;
+  const chapterRows = await readChapterRows(slug);
+  return mapDbCourseToDetail(row, rows.lessonRows, chapterRows);
 }

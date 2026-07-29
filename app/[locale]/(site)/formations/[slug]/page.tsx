@@ -18,6 +18,7 @@ import { buttonClasses } from '@/components/ui/Button';
 import { CourseFaqList } from '@/components/courses/CourseFaqList';
 import { CourseSlideshow } from '@/components/courses/CourseSlideshow';
 import { ManifestList, type ManifestRow } from '@/components/courses/ManifestList';
+import { ResourceLinks } from '@/components/courses/ResourceLinks';
 import { MobileBuyBar } from '@/components/courses/MobileBuyBar';
 import { AuthCta } from '@/components/auth/AuthCta';
 import { RatingSummary } from '@/components/reviews/RatingSummary';
@@ -110,6 +111,23 @@ export default async function CourseDetail({
       duration: ld ? `${ld.minutes} ${t('minShort')}` : undefined,
     };
   });
+
+  // Task K3 — curriculum grouping (Task K1/K2's chapters, optional). A course
+  // with zero chapters (every one of the 9 seeded courses, plus the no-DB
+  // static fallback where `chapters`/`ungroupedLessons` are undefined) must
+  // keep rendering the flat `lessonRows`/`ManifestList` above EXACTLY as
+  // before — `hasChapters` gates the ONLY branch that changes that.
+  const chapters = detail.chapters ?? [];
+  const ungroupedLessons = detail.ungroupedLessons ?? [];
+  const hasChapters = chapters.length > 0;
+  const curriculumRow = (l: (typeof ungroupedLessons)[number]): ManifestRow => ({
+    title: lessonTitle(l, locale),
+    desc: locale === 'ht' ? l.desc_ht : l.desc_fr,
+    duration: `${l.minutes} ${t('minShort')}`,
+    preview: l.isPreview,
+    number: l.index,
+  });
+  const courseResources = detail.resources ?? [];
 
   const teacher = getCourseTeacher(course.slug);
   // Optional teacher-rating line in the teacher block below (Task C3-T7) —
@@ -219,6 +237,16 @@ export default async function CourseDetail({
                 <p className="mt-2 max-w-xl leading-relaxed text-graphite">
                   {problem}
                 </p>
+                {courseResources.length > 0 && (
+                  <div className="mt-4">
+                    <p className="font-mono text-[11px] uppercase tracking-wide text-ink/45">
+                      {t('resourcesTitle')}
+                    </p>
+                    <div className="mt-2">
+                      <ResourceLinks resources={courseResources} locale={locale} />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* quick facts — document data strip */}
@@ -299,9 +327,55 @@ export default async function CourseDetail({
                 <h2 className="font-display text-2xl font-bold text-ink">
                   {t('lessonsTitle')}
                 </h2>
-                <div className="mt-5">
-                  <ManifestList rows={lessonRows} previewLabel={t('manifest.previewLabel')} />
-                </div>
+                <p className="mt-2 font-mono text-xs text-graphite/60">
+                  {t('lessonsCount', { count: course.lessons.length })}
+                  {' · '}
+                  {duration}
+                  {hasChapters && (
+                    <>
+                      {' · '}
+                      {t('manifest.chaptersCount', { count: chapters.length })}
+                    </>
+                  )}
+                </p>
+                {hasChapters ? (
+                  <div className="mt-5 space-y-8">
+                    {chapters.map((c, ci) => {
+                      const summary = locale === 'ht' ? c.summary_ht : c.summary_fr;
+                      return (
+                        <div key={c.id}>
+                          <h3 className="font-display text-lg font-bold text-ink">
+                            {t('manifest.partLabel', {
+                              n: ci + 1,
+                              title: locale === 'ht' ? c.title_ht : c.title_fr,
+                            })}
+                          </h3>
+                          {summary && (
+                            <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-graphite/75">
+                              {summary}
+                            </p>
+                          )}
+                          <div className="mt-3">
+                            <ManifestList
+                              rows={c.lessons.map(curriculumRow)}
+                              previewLabel={t('manifest.previewLabel')}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {ungroupedLessons.length > 0 && (
+                      <ManifestList
+                        rows={ungroupedLessons.map(curriculumRow)}
+                        previewLabel={t('manifest.previewLabel')}
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <div className="mt-5">
+                    <ManifestList rows={lessonRows} previewLabel={t('manifest.previewLabel')} />
+                  </div>
+                )}
               </Reveal>
 
               {/* faq */}

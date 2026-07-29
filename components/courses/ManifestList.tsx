@@ -8,6 +8,12 @@ export type ManifestRow = {
   duration?: string;
   /** Marks the row as a free preview — only rendered when `previewLabel` is also given. */
   preview?: boolean;
+  /**
+   * Overrides the row's displayed number (defaults to its 1-based position
+   * in `rows`). Task K3: lets a caller show a lesson's real position in the
+   * course's full curriculum when `rows` is only one chapter's slice of it.
+   */
+  number?: number;
 };
 
 /**
@@ -31,7 +37,7 @@ export function ManifestList({
           <Reveal delay={Math.min(i, 8) * 45}>
             <div className="flex gap-4 py-5">
               <span className="font-display text-2xl font-black leading-none text-ochre tabular-nums">
-                {String(i + 1).padStart(2, '0')}
+                {String(row.number ?? i + 1).padStart(2, '0')}
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
