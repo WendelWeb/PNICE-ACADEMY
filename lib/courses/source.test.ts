@@ -369,6 +369,18 @@ describe('mapDbCourseToDetail — DB row → CourseDetail shape', () => {
       { label_ht: 'Lyen', label_fr: 'Lien', url: 'https://example.com', kind: 'link' },
     ]);
   });
+
+  it('Task K3: carries course-level resources through from the DB row, defaulting to [] when null', () => {
+    expect(mapDbCourseToDetail(fakeCourseRow, fakeLessonRows).resources).toEqual([]);
+
+    const rowWithResources = {
+      ...fakeCourseRow,
+      resources: [{ label_ht: 'Sit la', label_fr: 'Le site', url: 'https://pnice.academy', kind: 'link' as const }],
+    };
+    expect(mapDbCourseToDetail(rowWithResources, fakeLessonRows).resources).toEqual([
+      { label_ht: 'Sit la', label_fr: 'Le site', url: 'https://pnice.academy', kind: 'link' },
+    ]);
+  });
 });
 
 describe('gated fallback — no DATABASE_URL', () => {

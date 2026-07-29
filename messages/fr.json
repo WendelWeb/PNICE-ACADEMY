@@ -269,6 +269,7 @@
     "hourShort": "h",
     "ctaTitle": "Prêt à commencer ?",
     "ctaText": "Achète cette formation seule, ou prends l'abonnement PNICE Academy pour débloquer toutes ses formations.",
+    "resourcesTitle": "Ressources et liens",
     "facts": {
       "languages": "2 langues",
       "certificate": "Certificat"
@@ -278,7 +279,9 @@
       "subscribeCta": "Abonnement {price}/mois"
     },
     "manifest": {
-      "previewLabel": "Aperçu"
+      "previewLabel": "Aperçu",
+      "chaptersCount": "{count} parties",
+      "partLabel": "Partie {n} · {title}"
     },
     "teacher": {
       "eyebrow": "L'enseignant",
@@ -693,7 +696,11 @@
     "certIssuedToast": "Bravo ! Tu as terminé tout le cours — ton certificat est prêt.",
     "viewCertificate": "Voir le certificat",
     "buyForAccess": "Achète pour avoir accès",
-    "previewNotice": "Tu regardes un aperçu gratuit. Achète la formation pour accéder à toutes les leçons."
+    "previewNotice": "Tu regardes un aperçu gratuit. Achète la formation pour accéder à toutes les leçons.",
+    "partLabel": "Partie {n} · {title}",
+    "partAndLesson": "Partie {part} · Leçon {n}",
+    "notesTitle": "Notes de l'enseignant",
+    "resourcesTitle": "Ressources"
   },
   "auth": {
     "signInTitle": "Connexion",

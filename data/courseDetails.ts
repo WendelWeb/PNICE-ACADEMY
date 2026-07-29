@@ -76,6 +76,14 @@ export type CourseDetail = {
   chapters?: CourseChapterView[];
   /** Lessons not in any chapter, in flat order — see `chapters` above. */
   ungroupedLessons?: CurriculumLesson[];
+  /**
+   * Course-level links/downloads (Task K1's `courses.resources` column,
+   * wired through to this read-side shape in Task K3 — the sales page
+   * renders these in its description block, "lien en description"). OPTIONAL
+   * like `chapters`/`ungroupedLessons` above: only the DB-backed mapper sets
+   * it; the static catalog has no course-level resources.
+   */
+  resources?: CourseResource[];
 };
 
 export const courseDetails: Record<string, CourseDetail> = {

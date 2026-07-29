@@ -247,6 +247,10 @@ export function mapDbCourseToDetail(
     faq,
     chapters,
     ungroupedLessons,
+    // Task K3 — course-level links/downloads, rendered in the sales-page
+    // description block. Mirrors the lesson-level `resources` above (K1);
+    // no static counterpart, so the fallback path below never sets this.
+    resources: row.resources ?? [],
   };
 }
 

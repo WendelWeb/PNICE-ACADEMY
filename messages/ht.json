@@ -269,6 +269,7 @@
     "hourShort": "h",
     "ctaTitle": "Pare pou kòmanse?",
     "ctaText": "Achte fòmasyon sa a poukont li, oswa pran abònman PNICE Academy pou louvri tout fòmasyon li yo.",
+    "resourcesTitle": "Resous ak lyen",
     "facts": {
       "languages": "2 lang",
       "certificate": "Sètifika"
@@ -278,7 +279,9 @@
       "subscribeCta": "Abònman {price}/mwa"
     },
     "manifest": {
-      "previewLabel": "Apèsi"
+      "previewLabel": "Apèsi",
+      "chaptersCount": "{count} pati",
+      "partLabel": "Pati {n} · {title}"
     },
     "teacher": {
       "eyebrow": "Anseyan an",
@@ -693,7 +696,11 @@
     "certIssuedToast": "Bravo! Ou fini tout kou a — sètifika w disponib.",
     "viewCertificate": "Gade sètifika a",
     "buyForAccess": "Achte pou w gen aksè",
-    "previewNotice": "W ap gade yon apèsi gratis. Achte fòmasyon an pou w gen aksè a tout leson yo."
+    "previewNotice": "W ap gade yon apèsi gratis. Achte fòmasyon an pou w gen aksè a tout leson yo.",
+    "partLabel": "Pati {n} · {title}",
+    "partAndLesson": "Pati {part} · Leson {n}",
+    "notesTitle": "Nòt anseyan an",
+    "resourcesTitle": "Resous"
   },
   "auth": {
     "signInTitle": "Konekte",

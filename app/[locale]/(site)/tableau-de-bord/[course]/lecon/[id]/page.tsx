@@ -12,17 +12,79 @@ import { Link } from '@/i18n/routing';
 import { Container } from '@/components/ui/Section';
 import { buttonClasses } from '@/components/ui/Button';
 import { isPreviewLesson, type Course } from '@/data/courses';
-import { getCourseBySlug } from '@/lib/courses/source';
+import type { CourseChapterView, CurriculumLesson } from '@/data/courseDetails';
+import { getCourseBySlug, getCourseDetail } from '@/lib/courses/source';
 import { courseTitle, lessonTitle } from '@/lib/courseFields';
 import { cn } from '@/lib/cn';
 import { clerkEnabled } from '@/lib/clerk';
 import { hasCourseAccess, getCourseProgress } from '@/lib/learner/access';
 import { MarkLessonDoneButton } from '@/components/dashboard/MarkLessonDoneButton';
 import { LessonPlayer as LessonVideoPlayer } from '@/components/learn/LessonPlayer';
+import { ResourceLinks } from '@/components/courses/ResourceLinks';
 
 // Reads per-request Clerk identity + live DB access/progress — never cache
 // across users, and never prerendered (course/lesson access is per-learner).
 export const dynamic = 'force-dynamic';
+
+/**
+ * One rail row — extracted so both the pre-K3 flat list and the K3 grouped-
+ * by-chapter list render an IDENTICAL row (same classes/behavior), only the
+ * wrapping structure differs.
+ */
+function LessonRailRow({
+  slug,
+  idx,
+  title,
+  n,
+  access,
+  completed,
+}: {
+  slug: string;
+  idx: number;
+  title: string;
+  n: number;
+  access: boolean;
+  completed: Set<number>;
+}) {
+  const isCurrent = idx === n;
+  const done = completed.has(idx);
+  // Locked = neither a purchased/subscribed access nor a free preview —
+  // clicking it would just redirect to the sales page (real gate, not demo).
+  const locked = !access && !isPreviewLesson(idx);
+  return (
+    <li>
+      <Link
+        href={`/tableau-de-bord/${slug}/lecon/${idx}`}
+        className={cn(
+          'flex items-center gap-3 px-4 py-3.5 transition-colors',
+          isCurrent ? 'bg-ochre/10' : 'hover:bg-ink/[0.03]',
+        )}
+      >
+        <span
+          className={cn(
+            'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 font-mono text-[11px] transition-colors',
+            done && '-rotate-6 border-teal bg-teal text-paper-light',
+            isCurrent && !done && 'border-ochre bg-ochre text-[#1b1207]',
+            !done && !isCurrent && 'border-ink/20 text-ink/50',
+          )}
+        >
+          {done ? <IconCheck size={14} /> : idx}
+        </span>
+        <span
+          className={cn(
+            'flex-1 text-sm',
+            isCurrent ? 'font-semibold text-ink' : 'text-graphite/80',
+          )}
+        >
+          {title}
+        </span>
+        {locked && !isCurrent && (
+          <IconLock size={14} className="shrink-0 text-ink/25" />
+        )}
+      </Link>
+    </li>
+  );
+}
 
 function LessonRailList({
   course,
@@ -31,6 +93,9 @@ function LessonRailList({
   locale,
   access,
   completed,
+  chapters,
+  ungrouped,
+  t,
 }: {
   course: Course;
   slug: string;
@@ -38,51 +103,69 @@ function LessonRailList({
   locale: string;
   access: boolean;
   completed: Set<number>;
+  /** Task K3 — curriculum grouping (empty for the 9 flat courses + the no-DB
+   *  static fallback, in which case the rail renders EXACTLY as before). */
+  chapters: CourseChapterView[];
+  ungrouped: CurriculumLesson[];
+  t: Awaited<ReturnType<typeof getTranslations>>;
 }) {
+  if (chapters.length === 0) {
+    // Zero chapters — the pre-K3 flat rail, byte-identical to before.
+    return (
+      <ol className="divide-y divide-ink/10">
+        {course.lessons.map((l, i) => (
+          <LessonRailRow
+            key={i}
+            slug={slug}
+            idx={i + 1}
+            title={lessonTitle(l, locale)}
+            n={n}
+            access={access}
+            completed={completed}
+          />
+        ))}
+      </ol>
+    );
+  }
+
   return (
-    <ol className="divide-y divide-ink/10">
-      {course.lessons.map((l, i) => {
-        const idx = i + 1;
-        const isCurrent = idx === n;
-        const done = completed.has(idx);
-        // Locked = neither a purchased/subscribed access nor a free preview —
-        // clicking it would just redirect to the sales page (real gate, not demo).
-        const locked = !access && !isPreviewLesson(idx);
-        return (
-          <li key={i}>
-            <Link
-              href={`/tableau-de-bord/${slug}/lecon/${idx}`}
-              className={cn(
-                'flex items-center gap-3 px-4 py-3.5 transition-colors',
-                isCurrent ? 'bg-ochre/10' : 'hover:bg-ink/[0.03]',
-              )}
-            >
-              <span
-                className={cn(
-                  'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 font-mono text-[11px] transition-colors',
-                  done && '-rotate-6 border-teal bg-teal text-paper-light',
-                  isCurrent && !done && 'border-ochre bg-ochre text-[#1b1207]',
-                  !done && !isCurrent && 'border-ink/20 text-ink/50',
-                )}
-              >
-                {done ? <IconCheck size={14} /> : idx}
-              </span>
-              <span
-                className={cn(
-                  'flex-1 text-sm',
-                  isCurrent ? 'font-semibold text-ink' : 'text-graphite/80',
-                )}
-              >
-                {lessonTitle(l, locale)}
-              </span>
-              {locked && !isCurrent && (
-                <IconLock size={14} className="shrink-0 text-ink/25" />
-              )}
-            </Link>
-          </li>
-        );
-      })}
-    </ol>
+    <div>
+      {chapters.map((c, ci) => (
+        <div key={c.id} className="border-b border-ink/10 last:border-b-0">
+          <p className="bg-paper px-4 py-2 font-mono text-[10px] uppercase tracking-wide text-ink/45">
+            {t('partLabel', { n: ci + 1, title: locale === 'ht' ? c.title_ht : c.title_fr })}
+          </p>
+          <ol className="divide-y divide-ink/10">
+            {c.lessons.map((l) => (
+              <LessonRailRow
+                key={l.id}
+                slug={slug}
+                idx={l.index}
+                title={lessonTitle(l, locale)}
+                n={n}
+                access={access}
+                completed={completed}
+              />
+            ))}
+          </ol>
+        </div>
+      ))}
+      {ungrouped.length > 0 && (
+        <ol className="divide-y divide-ink/10">
+          {ungrouped.map((l) => (
+            <LessonRailRow
+              key={l.id}
+              slug={slug}
+              idx={l.index}
+              title={lessonTitle(l, locale)}
+              n={n}
+              access={access}
+              completed={completed}
+            />
+          ))}
+        </ol>
+      )}
+    </div>
   );
 }
 
@@ -114,6 +197,35 @@ export default async function LessonPlayer({
   const t = await getTranslations('lesson');
   const current = course.lessons[n - 1];
 
+  // Task K3 — curriculum grouping (chapters/notes/resources), read alongside
+  // the flat `course` above (same pattern the sales page already uses: two
+  // independent DB reads, gated + never-throw). `chapters`/`ungrouped` are
+  // `[]` with no DB or zero authored chapters — the rail/label branches below
+  // then render EXACTLY as before this task. `curriculumFlat` reconstructs
+  // the SAME global order as `course.lessons` (both sorted ascending by the
+  // same `lessons.index` column over the same rows), so array POSITION
+  // `n - 1` lines up with `course.lessons[n - 1]` — matching how `current`
+  // above is already resolved.
+  const detail = await getCourseDetail(slug);
+  const chapters = detail?.chapters ?? [];
+  const ungrouped = detail?.ungroupedLessons ?? [];
+  const curriculumFlat = [...chapters.flatMap((c) => c.lessons), ...ungrouped].sort(
+    (a, b) => a.index - b.index,
+  );
+  const currentCurriculum = curriculumFlat[n - 1];
+
+  let partContext: { part: number; lessonInPart: number } | null = null;
+  if (currentCurriculum) {
+    const chapterIdx = chapters.findIndex((c) => c.lessons.some((l) => l.id === currentCurriculum.id));
+    if (chapterIdx !== -1) {
+      const lessonInPart = chapters[chapterIdx].lessons.findIndex((l) => l.id === currentCurriculum.id) + 1;
+      partContext = { part: chapterIdx + 1, lessonInPart };
+    }
+  }
+
+  const notes = currentCurriculum ? (locale === 'ht' ? currentCurriculum.notes_ht : currentCurriculum.notes_fr) : '';
+  const lessonResources = currentCurriculum?.resources ?? [];
+
   return (
     <Container className="py-10">
       <Link
@@ -143,6 +255,9 @@ export default async function LessonPlayer({
             locale={locale}
             access={access}
             completed={completed}
+            chapters={chapters}
+            ungrouped={ungrouped}
+            t={t}
           />
         </div>
       </details>
@@ -157,7 +272,9 @@ export default async function LessonPlayer({
           />
 
           <p className="mt-5 font-mono text-xs uppercase tracking-wide text-teal">
-            {t('lessonOf', { n, total })}
+            {partContext
+              ? t('partAndLesson', { part: partContext.part, n: partContext.lessonInPart })
+              : t('lessonOf', { n, total })}
           </p>
           <h1 className="mt-2 font-display text-3xl font-black leading-tight text-ink">
             {lessonTitle(current, locale)}
@@ -209,6 +326,33 @@ export default async function LessonPlayer({
               </Link>
             ) : null}
           </div>
+
+          {/* Task K3 — teacher notes + resources, under the player. Sourced
+              from the same lesson the learner is already gated into above
+              (access OR free preview) — no separate gate needed. Absent with
+              no DB / no chapters+notes/resources authored (currentCurriculum
+              undefined ⇒ notes = '' and lessonResources = []). */}
+          {notes && (
+            <div className="mt-8">
+              <h2 className="font-mono text-xs uppercase tracking-[0.16em] text-ink/50">
+                {t('notesTitle')}
+              </h2>
+              <p className="mt-3 whitespace-pre-line text-[15px] leading-relaxed text-graphite">
+                {notes}
+              </p>
+            </div>
+          )}
+
+          {lessonResources.length > 0 && (
+            <div className="mt-8">
+              <h2 className="font-mono text-xs uppercase tracking-[0.16em] text-ink/50">
+                {t('resourcesTitle')}
+              </h2>
+              <div className="mt-3">
+                <ResourceLinks resources={lessonResources} locale={locale} />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Lesson list — desktop rail */}
@@ -224,6 +368,9 @@ export default async function LessonPlayer({
               locale={locale}
               access={access}
               completed={completed}
+              chapters={chapters}
+              ungrouped={ungrouped}
+              t={t}
             />
           </div>
         </aside>
