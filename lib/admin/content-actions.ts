@@ -28,7 +28,14 @@ import type { CoursePatch, LessonPatch, NewCourseInput, ChapterPatch } from '@/l
 import type { AdminActor } from '@/lib/admin/data/types';
 import { createBunnyVideo, bunnyUploadConfigured, type BunnyUploadResult } from '@/lib/bunny/upload';
 
-export type ContentResult = { ok: boolean; message?: string; slug?: string; count?: number };
+export type ContentResult = {
+  ok: boolean;
+  message?: string;
+  slug?: string;
+  count?: number;
+  /** Set by `addLessonAction` only (Task K2) — see `lib/courses/write.ts`'s `CourseWriteResult`. */
+  lessonId?: string;
+};
 
 async function requireEditor(): Promise<AdminActor> {
   const { userId } = await auth();

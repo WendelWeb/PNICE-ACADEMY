@@ -525,6 +525,7 @@
       "submittedAt": "Soumis le {date}",
       "reviewNoteLabel": "Note de l'équipe",
       "pendingReviewNote": "En cours de validation par notre équipe.",
+      "readinessMissing": "{count, plural, one {1 point à compléter} other {# points à compléter}}",
       "col": {
         "price": "Prix",
         "sales": "Ventes",
@@ -1815,6 +1816,8 @@
         "q": "Question",
         "a": "Réponse",
         "addFaq": "+ Question",
+        "resourcesLabel": "Liens en description",
+        "resourcesHelp": "Ces liens/fichiers apparaissent sous la description du cours sur la page de vente.",
         "save": "Enregistrer",
         "saved": "Enregistré ✓",
         "saving": "Enregistrement…",
@@ -1822,7 +1825,7 @@
         "error": "Erreur"
       },
       "lessons": {
-        "title": "Leçons",
+        "title": "Plan du cours",
         "empty": "Aucune leçon.",
         "add": "Ajouter une leçon",
         "titleHt": "Titre (ht)",
@@ -1843,7 +1846,25 @@
         "uploadError": "Erreur pendant l'envoi",
         "uploadNotConfigured": "Upload automatique non configuré — colle l'ID Bunny manuellement",
         "uploadCancel": "Annuler l'envoi",
-        "uploadRetry": "Réessayer"
+        "uploadRetry": "Réessayer",
+        "addChapter": "Ajouter un chapitre",
+        "chapterTitleHt": "Titre du chapitre (ht)",
+        "chapterTitleFr": "Titre du chapitre (fr)",
+        "chapterSummaryHt": "Résumé (ht, optionnel)",
+        "chapterSummaryFr": "Résumé (fr, optionnel)",
+        "addLessonInChapter": "Ajouter une leçon ici",
+        "collapseChapter": "Réduire le chapitre",
+        "expandChapter": "Développer le chapitre",
+        "deleteChapterAria": "Supprimer le chapitre",
+        "deleteChapterConfirm": "Le chapitre sera supprimé — les leçons ne seront pas supprimées, elles passeront hors chapitre.",
+        "deleteChapterYes": "Oui, supprimer le chapitre",
+        "deleteChapterNo": "Annuler",
+        "ungrouped": "Hors chapitre",
+        "moveTo": "Déplacer vers…",
+        "notesToggle": "Notes & ressources",
+        "notesTitle": "Notes pour l'élève",
+        "notesHt": "Notes (ht)",
+        "notesFr": "Notes (fr)"
       },
       "images": {
         "title": "Images",
@@ -1879,6 +1900,7 @@
         "inReview": "En attente de validation par un administrateur — ni l'enseignant ni le CMS ne peuvent le publier tant que la revue n'est pas terminée.",
         "rejectedNote": "Ce cours a été rejeté. L'enseignant doit le corriger et le soumettre à nouveau depuis son studio ; il ne peut pas être publié directement.",
         "reviewNoteLabel": "Note de l'équipe",
+        "readinessMissing": "{count, plural, one {1 point à compléter} other {# points à compléter}}",
         "cancel": "Annuler",
         "error": "Erreur."
       },
@@ -1890,6 +1912,66 @@
         "lessons": "Programme",
         "requirements": "Prérequis",
         "previewLesson": "Gratuit"
+      },
+      "resources": {
+        "title": "Ressources",
+        "empty": "Aucune ressource.",
+        "add": "Ajouter une ressource",
+        "labelHt": "Titre du lien (ht)",
+        "labelFr": "Titre du lien (fr)",
+        "kindLink": "Lien",
+        "kindFile": "Fichier",
+        "urlPlaceholder": "https://…",
+        "remove": "Retirer",
+        "urlInvalid": "URL invalide — utilise http:// ou https://",
+        "errors": {
+          "resource_label_ht_required": "Le titre (ht) est requis pour chaque ressource.",
+          "resource_label_fr_required": "Le titre (fr) est requis pour chaque ressource.",
+          "resource_label_ht_too_long": "Le titre (ht) est trop long (120 caractères max).",
+          "resource_label_fr_too_long": "Le titre (fr) est trop long (120 caractères max).",
+          "resource_kind_invalid": "Type de ressource invalide.",
+          "resource_url_invalid": "Une URL n'est pas valide — utilise http:// ou https://.",
+          "generic": "Erreur."
+        }
+      },
+      "readiness": {
+        "title": "Préparation du cours",
+        "complete": "Tout est prêt ✓",
+        "missingCount": "{count, plural, one {1 point à compléter} other {# points à compléter}}",
+        "items": {
+          "hasLesson": {
+            "label": "Au moins une leçon",
+            "location": "Plan du cours"
+          },
+          "allLessonsHaveVideo": {
+            "label": "Chaque leçon a une vidéo",
+            "location": "Plan du cours"
+          },
+          "allLessonsTitled": {
+            "label": "Chaque leçon a un titre en Kreyòl ET en français",
+            "location": "Plan du cours"
+          },
+          "allChaptersTitled": {
+            "label": "Chaque chapitre a un titre en Kreyòl ET en français",
+            "location": "Plan du cours"
+          },
+          "pricePositive": {
+            "label": "Le prix du cours est supérieur à 0 $",
+            "location": "Général & prix"
+          },
+          "promiseFilled": {
+            "label": "La promesse du cours est remplie dans les deux langues",
+            "location": "Page de vente"
+          },
+          "hasPreviewLesson": {
+            "label": "Au moins une leçon en aperçu gratuit",
+            "location": "Plan du cours"
+          },
+          "mainImageSet": {
+            "label": "Une image principale est définie",
+            "location": "Images"
+          }
+        }
       }
     },
     "testimonials": {

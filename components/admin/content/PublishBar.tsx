@@ -37,6 +37,7 @@ export function PublishBar({
   hasUnpublishedChanges,
   reviewNote,
   canModerate,
+  readinessMissing = 0,
 }: {
   slug: string;
   code: string;
@@ -52,6 +53,9 @@ export function PublishBar({
    * just fail server-side anyway.
    */
   canModerate: boolean;
+  /** Task K2 — count of unmet `CourseReadiness` items. A WARNING only: never
+   *  disables the Publish button, just labels what's still worth finishing. */
+  readinessMissing?: number;
 }) {
   const t = useTranslations('admin.cms.publish');
   const router = useRouter();
@@ -122,10 +126,15 @@ export function PublishBar({
       {canModerate && (
         <div className="mt-3 flex flex-wrap gap-2">
           {status === 'draft' && (
-            <button type="button" disabled={pending} onClick={() => run(() => publishCourseAction(slug), t('published'))} className={cn(buttonClasses('primary', 'md'), 'text-xs')}>
-              {pending ? <IconLoader2 size={15} className="animate-spin" /> : <IconWorldUpload size={15} />}
-              {t('publish')}
-            </button>
+            <>
+              <button type="button" disabled={pending} onClick={() => run(() => publishCourseAction(slug), t('published'))} className={cn(buttonClasses('primary', 'md'), 'text-xs')}>
+                {pending ? <IconLoader2 size={15} className="animate-spin" /> : <IconWorldUpload size={15} />}
+                {t('publish')}
+              </button>
+              {readinessMissing > 0 && (
+                <span className="self-center font-mono text-[11px] text-ochre">{t('readinessMissing', { count: readinessMissing })}</span>
+              )}
+            </>
           )}
           {status === 'published' && (
             <button type="button" disabled={pending} onClick={() => setConfirmUnpub(true)} className={cn('flex items-center gap-1.5 rounded border border-ochre/40 px-4 py-2.5 text-xs font-semibold text-ochre hover:bg-ochre/10')}>

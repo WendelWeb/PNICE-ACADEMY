@@ -55,7 +55,14 @@ import { createBunnyVideo, bunnyUploadConfigured, type BunnyUploadResult } from 
 
 const T = schema;
 
-export type StudioResult = { ok: boolean; message?: string; slug?: string; count?: number };
+export type StudioResult = {
+  ok: boolean;
+  message?: string;
+  slug?: string;
+  count?: number;
+  /** Set by `addMyLessonAction` only (Task K2) — see `lib/courses/write.ts`'s `CourseWriteResult`. */
+  lessonId?: string;
+};
 export type WithdrawalResult = { ok: boolean; message?: string };
 
 function dbRequired(): StudioResult {

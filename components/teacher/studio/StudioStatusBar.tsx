@@ -33,10 +33,15 @@ export function StudioStatusBar({
   slug,
   status,
   reviewNote,
+  readinessMissing = 0,
 }: {
   slug: string;
   status: DbCourseStatus;
   reviewNote: string | null;
+  /** Task K2 — count of unmet `CourseReadiness` items, computed by the page
+   *  via `lib/courses/readiness.ts`. A WARNING only: never disables the
+   *  submit button, just labels what's still worth finishing. */
+  readinessMissing?: number;
 }) {
   const t = useTranslations('teach.studio');
   const router = useRouter();
@@ -77,17 +82,22 @@ export function StudioStatusBar({
         </p>
       )}
 
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         {(status === 'draft' || status === 'rejected') && (
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => run(() => submitMyCourseForReviewAction(slug))}
-            className={cn(buttonClasses('primary', 'md'), 'text-xs')}
-          >
-            {pending ? <IconLoader2 size={15} className="animate-spin" /> : <IconSend size={15} />}
-            {t('submitCta')}
-          </button>
+          <>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => run(() => submitMyCourseForReviewAction(slug))}
+              className={cn(buttonClasses('primary', 'md'), 'text-xs')}
+            >
+              {pending ? <IconLoader2 size={15} className="animate-spin" /> : <IconSend size={15} />}
+              {t('submitCta')}
+            </button>
+            {readinessMissing > 0 && (
+              <span className="font-mono text-[11px] text-ochre">{t('readinessMissing', { count: readinessMissing })}</span>
+            )}
+          </>
         )}
         {status === 'published' && (
           <button

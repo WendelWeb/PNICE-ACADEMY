@@ -60,7 +60,16 @@ export type DbChapterRow = typeof T.courseChapters.$inferSelect;
  *  (narrowed to the binary the pre-C3 CMS UI understood). */
 export type DbCourseStatus = DbCourseRow['status'];
 
-export type CourseWriteResult = { ok: boolean; message?: string; slug?: string; count?: number };
+export type CourseWriteResult = {
+  ok: boolean;
+  message?: string;
+  slug?: string;
+  count?: number;
+  /** The created row's id (Task K2 — `addLesson` only): lets a caller that
+   *  just added a lesson immediately place it into a chapter via a second
+   *  `moveLessonToChapter` call, without a separate lookup. */
+  lessonId?: string;
+};
 
 function dbRequired(): CourseWriteResult {
   return { ok: false, message: 'db_required' };
@@ -90,10 +99,34 @@ export type AdminLesson = {
   durationSeconds: number;
   isPreview: boolean;
   sortOrder: number;
+  /** Task K2 (plan de cours complet) — which chapter this lesson belongs to,
+   *  `null` = "hors chapitre" (ungrouped). Mirrors `lessons.chapter_id`. */
+  chapterId: string | null;
+  /** Long-form teacher notes shown under the video (Task K2) — distinct from desc_ht/fr. */
+  notes_ht: string;
+  notes_fr: string;
+  /** Links/downloads attached to the lesson (Task K2) — validated on write, see `validateResources`. */
+  resources: CourseResource[];
 };
 
 export type AdminFaq = { id: string; q_ht: string; q_fr: string; a_ht: string; a_fr: string };
 export type AdminImage = { id: string; url: string; alt: string };
+
+/**
+ * A course's part/module (Task K2 — plan de cours complet), the CMS-facing
+ * shape of a `course_chapters` row. `sortOrder` mirrors `AdminLesson`'s field
+ * of the same name (both are just the row's `index` column, pre-sorted by
+ * `mapRowToAdminCourse` — exposed so the plan editor can enable/disable its
+ * up/down buttons without re-deriving order from array position alone).
+ */
+export type AdminChapter = {
+  id: string;
+  title_ht: string;
+  title_fr: string;
+  summary_ht: string;
+  summary_fr: string;
+  sortOrder: number;
+};
 
 export type AdminCourse = {
   code: string;
@@ -133,6 +166,12 @@ export type AdminCourse = {
   requirements_fr: string[];
   faq: AdminFaq[];
   lessons: AdminLesson[];
+  /** A course's parts/modules (Task K2), ordered by `sortOrder` — `[]` for
+   *  every course until a teacher/admin adds one (the flat, pre-K2 shape). */
+  chapters: AdminChapter[];
+  /** Course-level links/downloads (Task K2), rendered in the sales-page
+   *  description block ("lien en description"). Mirrors `courses.resources`. */
+  resources: CourseResource[];
   mainImage: string | null;
   secondaryImages: AdminImage[];
 };
@@ -171,10 +210,25 @@ export function toAdminStatus(status: DbCourseStatus): AdminCourseStatus {
   return status;
 }
 
-function mapRowToAdminCourse(row: DbCourseRow, lessonRows: DbLessonRow[]): AdminCourse {
+function mapRowToAdminCourse(
+  row: DbCourseRow,
+  lessonRows: DbLessonRow[],
+  chapterRows: DbChapterRow[] = [],
+): AdminCourse {
   const lessons = lessonRows
     .filter((l) => l.courseSlug === row.slug)
     .sort((a, b) => a.index - b.index);
+
+  const chapters: AdminChapter[] = [...chapterRows]
+    .sort((a, b) => a.index - b.index)
+    .map((c) => ({
+      id: c.id,
+      title_ht: c.titleHt,
+      title_fr: c.titleFr,
+      summary_ht: c.summaryHt ?? '',
+      summary_fr: c.summaryFr ?? '',
+      sortOrder: c.index,
+    }));
 
   const faqHt = row.faqHt ?? [];
   const faqFr = row.faqFr ?? [];
@@ -228,8 +282,14 @@ function mapRowToAdminCourse(row: DbCourseRow, lessonRows: DbLessonRow[]): Admin
         durationSeconds: l.durationSeconds ?? 0,
         isPreview: l.isPreview,
         sortOrder: l.index,
+        chapterId: l.chapterId ?? null,
+        notes_ht: l.notesHt ?? '',
+        notes_fr: l.notesFr ?? '',
+        resources: l.resources ?? [],
       }),
     ),
+    chapters,
+    resources: row.resources ?? [],
     mainImage: row.images?.main ?? null,
     secondaryImages: secondary.map((s, i): AdminImage => ({ id: String(i), url: s.url, alt: s.alt ?? '' })),
   };
@@ -274,8 +334,11 @@ export async function getAdminCourse(slug: string): Promise<AdminCourse | null> 
   try {
     const [row] = await db.select().from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
     if (!row) return null;
-    const lessonRows = await db.select().from(T.lessons).where(eq(T.lessons.courseSlug, slug));
-    return mapRowToAdminCourse(row, lessonRows);
+    const [lessonRows, chapterRows] = await Promise.all([
+      db.select().from(T.lessons).where(eq(T.lessons.courseSlug, slug)),
+      db.select().from(T.courseChapters).where(eq(T.courseChapters.courseSlug, slug)),
+    ]);
+    return mapRowToAdminCourse(row, lessonRows, chapterRows);
   } catch (err) {
     console.error('[courses/write] getAdminCourse DB read failed, gracefully degrading:', err);
     return null;
@@ -652,10 +715,16 @@ export async function addLesson(slug: string, actor: AdminActor): Promise<Course
   const rows = await db.select({ index: T.lessons.index }).from(T.lessons).where(eq(T.lessons.courseSlug, slug));
   const nextIndex = rows.length ? Math.max(...rows.map((r) => r.index)) + 1 : 1;
 
-  await db.insert(T.lessons).values({ courseSlug: slug, index: nextIndex, titleHt: '', titleFr: '', isPreview: false });
+  const [inserted] = await db
+    .insert(T.lessons)
+    .values({ courseSlug: slug, index: nextIndex, titleHt: '', titleFr: '', isPreview: false })
+    .returning({ id: T.lessons.id });
   await markDirtyAndRevalidateIfPublished(slug);
   await recordAudit({ action: 'add_lesson', userId: actor.id, admin: actor, detail: slug });
-  return { ok: true };
+  // Task K2: the new lesson's id, so a caller (LessonsManager's per-chapter
+  // "add lesson" button) can immediately `moveLessonToChapter` it — `addLesson`
+  // itself takes no chapterId (see the plan's K2 note on this two-step shape).
+  return { ok: true, lessonId: inserted?.id };
 }
 
 export type LessonPatch = Partial<{

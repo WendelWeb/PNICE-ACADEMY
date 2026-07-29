@@ -525,6 +525,7 @@
       "submittedAt": "Soumèt {date}",
       "reviewNoteLabel": "Nòt ekip la",
       "pendingReviewNote": "Ekip nou an ap revize l kounye a.",
+      "readinessMissing": "{count, plural, one {1 pwen pou konplete} other {# pwen pou konplete}}",
       "col": {
         "price": "Pri",
         "sales": "Vant",
@@ -1815,6 +1816,8 @@
         "q": "Kesyon",
         "a": "Repons",
         "addFaq": "+ Kesyon",
+        "resourcesLabel": "Lyen nan deskripsyon an",
+        "resourcesHelp": "Lyen/fichye sa yo parèt anba deskripsyon kou a sou paj vant lan.",
         "save": "Anrejistre",
         "saved": "Anrejistre ✓",
         "saving": "Anrejistreman…",
@@ -1822,7 +1825,7 @@
         "error": "Erè"
       },
       "lessons": {
-        "title": "Leson",
+        "title": "Plan kou a",
         "empty": "Pa gen leson.",
         "add": "Ajoute yon leson",
         "titleHt": "Tit (ht)",
@@ -1843,7 +1846,25 @@
         "uploadError": "Erè pandan voye a",
         "uploadNotConfigured": "Upload otomatik pa konfigire — kole ID Bunny a alamen",
         "uploadCancel": "Anile voye a",
-        "uploadRetry": "Eseye ankò"
+        "uploadRetry": "Eseye ankò",
+        "addChapter": "Ajoute yon chapit",
+        "chapterTitleHt": "Tit chapit la (ht)",
+        "chapterTitleFr": "Tit chapit la (fr)",
+        "chapterSummaryHt": "Rezime (ht, opsyonèl)",
+        "chapterSummaryFr": "Rezime (fr, opsyonèl)",
+        "addLessonInChapter": "Ajoute yon leson isit",
+        "collapseChapter": "Fèmen chapit la",
+        "expandChapter": "Ouvri chapit la",
+        "deleteChapterAria": "Efase chapit la",
+        "deleteChapterConfirm": "Chapit la ap efase — leson yo p ap efase, yo ap pase san chapit.",
+        "deleteChapterYes": "Wi, efase chapit la",
+        "deleteChapterNo": "Anile",
+        "ungrouped": "San chapit",
+        "moveTo": "Deplase vè…",
+        "notesToggle": "Nòt & resous",
+        "notesTitle": "Nòt pou elèv la",
+        "notesHt": "Nòt (ht)",
+        "notesFr": "Nòt (fr)"
       },
       "images": {
         "title": "Imaj",
@@ -1879,6 +1900,7 @@
         "inReview": "L ap tann validasyon yon administratè — ni pwofesè a ni CMS la pa ka pibliye l toutotan revizyon an poko fini.",
         "rejectedNote": "Kou sa a rejte. Pwofesè a dwe korije l epi soumèt li ankò nan studio l ; li pa ka pibliye dirèkteman.",
         "reviewNoteLabel": "Nòt ekip la",
+        "readinessMissing": "{count, plural, one {1 pwen pou konplete} other {# pwen pou konplete}}",
         "cancel": "Anile",
         "error": "Erè."
       },
@@ -1890,6 +1912,66 @@
         "lessons": "Pwogram",
         "requirements": "Prerekwi",
         "previewLesson": "Gratis"
+      },
+      "resources": {
+        "title": "Resous",
+        "empty": "Pa gen resous.",
+        "add": "Ajoute yon resous",
+        "labelHt": "Tit lyen an (ht)",
+        "labelFr": "Tit lyen an (fr)",
+        "kindLink": "Lyen",
+        "kindFile": "Fichye",
+        "urlPlaceholder": "https://…",
+        "remove": "Retire",
+        "urlInvalid": "URL envalid — sèvi ak http:// oswa https://",
+        "errors": {
+          "resource_label_ht_required": "Tit (ht) obligatwa pou chak resous.",
+          "resource_label_fr_required": "Tit (fr) obligatwa pou chak resous.",
+          "resource_label_ht_too_long": "Tit (ht) twò long (120 karaktè maks).",
+          "resource_label_fr_too_long": "Tit (fr) twò long (120 karaktè maks).",
+          "resource_kind_invalid": "Kalite resous envalid.",
+          "resource_url_invalid": "Yon URL pa valab — sèvi ak http:// oswa https://.",
+          "generic": "Erè."
+        }
+      },
+      "readiness": {
+        "title": "Preparasyon kou a",
+        "complete": "Tout bagay pare ✓",
+        "missingCount": "{count, plural, one {1 pwen pou konplete} other {# pwen pou konplete}}",
+        "items": {
+          "hasLesson": {
+            "label": "Omwen yon leson",
+            "location": "Plan kou a"
+          },
+          "allLessonsHaveVideo": {
+            "label": "Chak leson gen yon videyo",
+            "location": "Plan kou a"
+          },
+          "allLessonsTitled": {
+            "label": "Chak leson gen tit nan Kreyòl AK Fransè",
+            "location": "Plan kou a"
+          },
+          "allChaptersTitled": {
+            "label": "Chak chapit gen tit nan Kreyòl AK Fransè",
+            "location": "Plan kou a"
+          },
+          "pricePositive": {
+            "label": "Pri kou a pi gran pase 0 $",
+            "location": "Jeneral & pri"
+          },
+          "promiseFilled": {
+            "label": "Pwomès kou a ranpli nan de lang yo",
+            "location": "Paj vant"
+          },
+          "hasPreviewLesson": {
+            "label": "Omwen yon leson an apèsi gratis",
+            "location": "Plan kou a"
+          },
+          "mainImageSet": {
+            "label": "Yon imaj prensipal chwazi",
+            "location": "Imaj"
+          }
+        }
       }
     },
     "testimonials": {
