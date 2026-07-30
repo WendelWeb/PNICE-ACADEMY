@@ -15,7 +15,8 @@
  * contact the platform already tracks).
  *
  * `platform_settings.daily_digest_enabled` (getSupportSettings, editable at
- * /admin/parametres) gates whether the email actually goes out — the
+ * /admin/plateforme — moved from /admin/parametres in Task A1) gates whether
+ * the email actually goes out — the
  * schedule itself only controls WHEN this route is invoked, not whether
  * it's allowed to send.
  *

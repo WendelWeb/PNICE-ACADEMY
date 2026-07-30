@@ -4,11 +4,14 @@ import { IconCurrencyDollar, IconAlertTriangle, IconArrowRight } from '@tabler/i
 import { resolveAdminRole } from '@/lib/admin/access';
 import { getPlatform } from '@/lib/admin/platform/store';
 import { getFxRate } from '@/lib/fx';
-import { getAuditLog } from '@/lib/admin/data';
+import { getAuditLog, getReferralCreditCents, getSupportSettings } from '@/lib/admin/data';
+import { hasCap } from '@/lib/admin/guard';
 import { fmtDateTime, fmtInt } from '@/lib/admin/format';
 import { Forbidden } from '@/components/admin/Forbidden';
 import { Link } from '@/i18n/routing';
 import { ProvidersPanel, SubscriptionPricePanel, MaintenancePanel } from '@/components/admin/platform/PlatformPanels';
+import { ReferralCreditPanel } from '@/components/admin/marketing/ReferralCreditPanel';
+import { DigestPanel } from '@/components/admin/health/DigestPanel';
 
 export const dynamic = 'force-dynamic';
 const DAY = 86_400_000;
@@ -33,6 +36,14 @@ export default async function PlatformPage({ params: { locale } }: { params: { l
   // timestamp; never edited ⇒ unknown provenance, treated as stale.
   const updatedAt = lastFx.rows[0]?.createdAt ?? null;
   const fxStale = !updatedAt || Date.now() - Date.parse(updatedAt) > 7 * DAY;
+
+  // Moved here from /admin/parametres (Task A1, 2026-07-30 admin restructure):
+  // these are business settings, not site content — same props/data loading
+  // as before, just relocated onto the platform-settings page.
+  const canEditReferral = await hasCap('users.act');
+  const referralCreditCents = await getReferralCreditCents();
+  const canEditDigest = await hasCap('support.act');
+  const digest = await getSupportSettings();
 
   return (
     <div className="mx-auto max-w-[1180px] space-y-4">
@@ -68,6 +79,9 @@ export default async function PlatformPage({ params: { locale } }: { params: { l
       </div>
 
       <MaintenancePanel enabled={platform.maintenance.enabled} messageHt={platform.maintenance.message_ht} messageFr={platform.maintenance.message_fr} />
+
+      <ReferralCreditPanel currentUsd={referralCreditCents / 100} canEdit={canEditReferral} />
+      <DigestPanel enabled={digest.dailyDigestEnabled} hour={digest.dailyDigestHour} canEdit={canEditDigest} />
     </div>
   );
 }

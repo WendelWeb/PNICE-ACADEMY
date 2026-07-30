@@ -27,13 +27,14 @@ import {
   IconUserCheck,
   IconCashBanknote,
   IconCurrencyDollar,
+  IconFileText,
   type Icon as TablerIcon,
 } from '@tabler/icons-react';
 import { Link, usePathname } from '@/i18n/routing';
 import { cn } from '@/lib/cn';
 import type { AdminRole } from '@/lib/admin/roles';
 import { can } from '@/lib/admin/permissions';
-import { ADMIN_NAV } from './nav';
+import { ADMIN_NAV_SECTIONS } from './nav';
 import { RoleBadge } from './ui';
 import { NotificationBell } from './support/NotificationBell';
 import { SupportNavBadge } from './support/SupportNavBadge';
@@ -58,6 +59,7 @@ const ICONS: Record<string, TablerIcon> = {
   settings: IconSettings,
   platform: IconAdjustments,
   taux: IconCurrencyDollar,
+  siteContent: IconFileText,
 };
 
 const focusRing =
@@ -78,8 +80,14 @@ export function AdminShell({
   const { user } = useUser();
   const [open, setOpen] = useState(false);
 
-  // Hide sections the role can't reach.
-  const nav = ADMIN_NAV.filter((i) => !i.cap || can(role, i.cap));
+  // Hide items the role can't reach, then hide a whole group header when the
+  // role can see none of its items (Task A1 — grouped nav, zero cap changes).
+  const sections = ADMIN_NAV_SECTIONS.map((s) => ({
+    ...s,
+    items: s.items.filter((i) => !i.cap || can(role, i.cap)),
+  })).filter((s) => s.items.length > 0);
+
+  const nav = sections.flatMap((s) => s.items);
 
   const activeKey =
     nav.find((i) => i.href && (pathname === i.href || pathname.startsWith(i.href + '/')))?.key ??
@@ -114,51 +122,58 @@ export function AdminShell({
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-4">
-          <ul className="space-y-0.5">
-            {nav.map((item) => {
-              const Icon = ICONS[item.icon] ?? IconLayoutDashboard;
-              const isActive = item.key === activeKey && item.enabled;
-              const label = t(`nav.${item.key}`);
+          {sections.map((section, sectionIndex) => (
+            <div key={section.key} className={cn(sectionIndex > 0 && 'mt-4')}>
+              <p className="px-3 pb-1 font-mono text-[10px] font-semibold uppercase tracking-wide text-ink/40">
+                {t(`nav.sections.${section.key}`)}
+              </p>
+              <ul className="space-y-0.5">
+                {section.items.map((item) => {
+                  const Icon = ICONS[item.icon] ?? IconLayoutDashboard;
+                  const isActive = item.key === activeKey && item.enabled;
+                  const label = t(`nav.${item.key}`);
 
-              if (!item.enabled) {
-                return (
-                  <li key={item.key}>
-                    <span
-                      className="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm text-ink/35"
-                      title={t('soon')}
-                    >
-                      <Icon size={18} className="shrink-0" />
-                      <span className="truncate">{label}</span>
-                      <span className="ml-auto rounded bg-ink/5 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide text-ink/35">
-                        {t('soon')}
-                      </span>
-                    </span>
-                  </li>
-                );
-              }
+                  if (!item.enabled) {
+                    return (
+                      <li key={item.key}>
+                        <span
+                          className="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm text-ink/35"
+                          title={t('soon')}
+                        >
+                          <Icon size={18} className="shrink-0" />
+                          <span className="truncate">{label}</span>
+                          <span className="ml-auto rounded bg-ink/5 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide text-ink/35">
+                            {t('soon')}
+                          </span>
+                        </span>
+                      </li>
+                    );
+                  }
 
-              return (
-                <li key={item.key}>
-                  <Link
-                    href={item.href!}
-                    onClick={() => setOpen(false)}
-                    aria-current={isActive ? 'page' : undefined}
-                    className={cn(
-                      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors motion-reduce:transition-none',
-                      focusRing,
-                      isActive
-                        ? 'bg-ochre/15 font-semibold text-ink'
-                        : 'text-ink/75 hover:bg-ink/[0.04] hover:text-ink',
-                    )}
-                  >
-                    <Icon size={18} className={cn('shrink-0', isActive && 'text-ochre')} />
-                    <span className="truncate">{label}</span>
-                    {item.key === 'support' && <SupportNavBadge />}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+                  return (
+                    <li key={item.key}>
+                      <Link
+                        href={item.href!}
+                        onClick={() => setOpen(false)}
+                        aria-current={isActive ? 'page' : undefined}
+                        className={cn(
+                          'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors motion-reduce:transition-none',
+                          focusRing,
+                          isActive
+                            ? 'bg-ochre/15 font-semibold text-ink'
+                            : 'text-ink/75 hover:bg-ink/[0.04] hover:text-ink',
+                        )}
+                      >
+                        <Icon size={18} className={cn('shrink-0', isActive && 'text-ochre')} />
+                        <span className="truncate">{label}</span>
+                        {item.key === 'support' && <SupportNavBadge />}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
         </nav>
 
         <div className="border-t border-ink/10 px-3 py-3">

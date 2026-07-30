@@ -1043,7 +1043,16 @@
       "audit": "Audit",
       "platform": "Plateforme",
       "taux": "Taux de change",
-      "health": "Santé système"
+      "health": "Santé système",
+      "siteContent": "Contenu du site",
+      "sections": {
+        "pilotage": "Pilotage",
+        "content": "Cours & contenu",
+        "teachers": "Enseignants",
+        "people": "Personnes",
+        "money": "Argent",
+        "platform": "Plateforme"
+      }
     },
     "roles": {
       "super-admin": "Super-admin",
@@ -2048,6 +2057,10 @@
         "emptyPublic": "Cette page n'a pas encore de contenu.",
         "lastUpdated": "Dernière mise à jour"
       }
+    },
+    "siteContent": {
+      "title": "Contenu du site",
+      "intro": "Textes du site, pages légales et compteur de places — le contenu vu par les visiteurs, pas un réglage business de la plateforme."
     },
     "marketing": {
       "subtitle": "Annonces par email à un segment d'utilisateurs.",

@@ -1043,7 +1043,16 @@
       "audit": "Odit",
       "platform": "Platefòm",
       "taux": "To chanj",
-      "health": "Sante sistèm"
+      "health": "Sante sistèm",
+      "siteContent": "Kontni sit la",
+      "sections": {
+        "pilotage": "Pilotaj",
+        "content": "Fòmasyon & kontni",
+        "teachers": "Pwofesè",
+        "people": "Moun",
+        "money": "Lajan",
+        "platform": "Platefòm"
+      }
     },
     "roles": {
       "super-admin": "Sipè-admin",
@@ -2048,6 +2057,10 @@
         "emptyPublic": "Paj sa a poko gen kontni.",
         "lastUpdated": "Dènye modifikasyon"
       }
+    },
+    "siteContent": {
+      "title": "Kontni sit la",
+      "intro": "Tèks sit la, paj legal ak kontè plas — kontni vizitè yo wè, se pa yon paramèt biznis platfòm nan."
     },
     "marketing": {
       "subtitle": "Anons pa imel bay yon segman itilizatè.",
