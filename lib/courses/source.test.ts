@@ -57,6 +57,7 @@ describe('mapDbCourseToCourse — DB row → Course shape', () => {
     publishedAt: null,
     hasUnpublishedChanges: false,
     resources: null,
+    bunnyCollectionId: null,
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-01T00:00:00Z'),
   };
@@ -215,6 +216,7 @@ describe('mapDbCourseToDetail — DB row → CourseDetail shape', () => {
     publishedAt: null,
     hasUnpublishedChanges: false,
     resources: null,
+    bunnyCollectionId: null,
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-01T00:00:00Z'),
   };

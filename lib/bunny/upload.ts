@@ -75,8 +75,18 @@ export function bunnyTusSignature(libraryId: string, apiKey: string, expire: num
  * upload the actual bytes straight to Bunny. Never throws: every failure
  * path (not configured, network error, timeout, bad response) resolves
  * `{ ok: false, message }`, mirroring checkBunnyStream's error shape.
+ *
+ * `collectionId` (automatic Bunny organization — owner asked "is it
+ * organized like Udemy, is it all automatic?"): when the caller (see
+ * lib/bunny/organize.ts's `planOrganizedUpload`) has ensured/reused a
+ * per-course Bunny Collection, its guid is included in the create-video body
+ * so the video lands in that collection immediately instead of the
+ * library's root — Bunny's documented "create video" payload accepts
+ * `collectionId` alongside `title`. Omitted (not sent) when `null`/
+ * `undefined`: organization is best-effort, so an upload must still succeed
+ * with a plain, uncollected video if collection creation failed upstream.
  */
-export async function createBunnyVideo(title: string): Promise<BunnyUploadResult> {
+export async function createBunnyVideo(title: string, collectionId?: string | null): Promise<BunnyUploadResult> {
   const key = process.env.BUNNY_STREAM_API_KEY?.trim();
   const libraryId = process.env.BUNNY_STREAM_LIBRARY_ID?.trim();
   if (!key || !libraryId) return { ok: false, message: 'not_configured' };
@@ -84,10 +94,13 @@ export async function createBunnyVideo(title: string): Promise<BunnyUploadResult
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), CREATE_VIDEO_TIMEOUT_MS);
   try {
+    const payload: { title: string; collectionId?: string } = { title: title.trim() || 'Sans titre' };
+    if (collectionId) payload.collectionId = collectionId;
+
     const res = await fetch(`https://video.bunnycdn.com/library/${libraryId}/videos`, {
       method: 'POST',
       headers: { AccessKey: key, 'content-type': 'application/json', accept: 'application/json' },
-      body: JSON.stringify({ title: title.trim() || 'Sans titre' }),
+      body: JSON.stringify(payload),
       signal: controller.signal,
     });
     if (!res.ok) {
@@ -105,6 +118,45 @@ export async function createBunnyVideo(title: string): Promise<BunnyUploadResult
   } catch (e) {
     const message = e instanceof Error ? (e.name === 'AbortError' ? 'Timeout (15s)' : e.message) : 'error';
     return { ok: false, message };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * Orphan cleanup (owner's other ask — deleting a lesson today leaves its
+ * video in Bunny forever: storage cost + dashboard clutter). Deletes one
+ * video object — `DELETE /library/{libraryId}/videos/{guid}` — from the
+ * configured library. BEST-EFFORT, mirroring `createBunnyVideo`'s contract
+ * but stricter: this NEVER throws AND never needs its result checked by the
+ * caller (`Promise<void>`) — every failure (not configured, blank guid,
+ * network error, timeout, non-OK response) is logged here and swallowed.
+ * Callers (lib/courses/write.ts's `deleteLesson`/`updateLesson`) call this
+ * AFTER their own DB write already succeeded — a failed Bunny delete must
+ * never undo or block the lesson mutation that triggered it.
+ */
+export async function deleteBunnyVideo(guid: string): Promise<void> {
+  const key = process.env.BUNNY_STREAM_API_KEY?.trim();
+  const libraryId = process.env.BUNNY_STREAM_LIBRARY_ID?.trim();
+  const id = guid?.trim();
+  if (!key || !libraryId || !id) return;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), CREATE_VIDEO_TIMEOUT_MS);
+  try {
+    const res = await fetch(`https://video.bunnycdn.com/library/${libraryId}/videos/${id}`, {
+      method: 'DELETE',
+      headers: { AccessKey: key, accept: 'application/json' },
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      console.error(
+        `[bunny/upload] deleteBunnyVideo(${id}) failed (non-fatal, video left in Bunny): HTTP ${res.status}${body ? ` — ${body.slice(0, 200)}` : ''}`,
+      );
+    }
+  } catch (e) {
+    console.error(`[bunny/upload] deleteBunnyVideo(${id}) failed (non-fatal, video left in Bunny):`, e);
   } finally {
     clearTimeout(timer);
   }

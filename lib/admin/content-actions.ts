@@ -27,6 +27,7 @@ import { getAdminCourse } from '@/lib/courses/write';
 import type { CoursePatch, LessonPatch, NewCourseInput, ChapterPatch } from '@/lib/courses/write';
 import type { AdminActor } from '@/lib/admin/data/types';
 import { createBunnyVideo, bunnyUploadConfigured, type BunnyUploadResult } from '@/lib/bunny/upload';
+import { planOrganizedUpload } from '@/lib/bunny/organize';
 
 export type ContentResult = {
   ok: boolean;
@@ -236,23 +237,28 @@ export async function validateBunnyVideoAction(videoId: string): Promise<Content
  * the video object in the owner's Bunny library and returns the TUS
  * upload-authorization payload for the BROWSER to use — see
  * lib/bunny/upload.ts's file header for why the API key itself never
- * appears in this return value. `slug`/`lessonId` aren't sent to Bunny (a
- * video object doesn't belong to a course there); they're accepted so the
- * caller's shape matches `updateLessonAction` and so a future audit trail
- * can log which lesson an upload was meant for.
+ * appears in this return value.
+ *
+ * AUTOMATIC ORGANIZATION (owner asked: "is it organized like Udemy, is it
+ * all automatic?"): `slug`/`lessonId` now resolve the real course/lesson/
+ * chapter via `planOrganizedUpload` (lib/bunny/organize.ts), which computes
+ * the AUTHORITATIVE structured title and ensures/reuses the course's Bunny
+ * Collection — mirrors lib/teacher/studio-actions.ts's
+ * `createMyVideoUploadAction` (same helper, admin has no ownership gate to
+ * run first here, `requireEditor` is the whole gate). The client-supplied
+ * `title` is used ONLY as a fallback when that resolution fails. Best-effort:
+ * any Bunny organization failure still lets the upload proceed.
  */
 export async function createVideoUploadAction(
-  // slug/lessonId aren't sent to Bunny (see doc comment above) — kept in the
-  // signature so this matches updateLessonAction's shape and every call
-  // site can pass the same three args regardless of which action runs.
-  _slug: string,
-  _lessonId: string,
+  slug: string,
+  lessonId: string,
   title: string,
 ): Promise<BunnyUploadResult> {
   try {
     await requireEditor();
     if (!bunnyUploadConfigured()) return { ok: false, message: 'not_configured' };
-    return await createBunnyVideo(title);
+    const plan = await planOrganizedUpload({ slug, lessonId, fallbackTitle: title });
+    return await createBunnyVideo(plan.title, plan.collectionId);
   } catch (e) {
     return { ok: false, message: e instanceof Error ? e.message : 'error' };
   }
