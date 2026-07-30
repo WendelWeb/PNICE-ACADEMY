@@ -47,6 +47,7 @@ import { recordAudit } from '@/lib/admin/data/real/users';
 import type { AdminActor } from '@/lib/admin/data/types';
 import { isValidHttpUrl } from '@/lib/teacher/apply-validation';
 import type { CourseResource } from '@/db/schema';
+import { deleteBunnyVideo, bunnyUploadConfigured } from '@/lib/bunny/upload';
 
 const T = schema;
 
@@ -174,6 +175,14 @@ export type AdminCourse = {
   resources: CourseResource[];
   mainImage: string | null;
   secondaryImages: AdminImage[];
+  /** Nullable — the course's owning teacher (`users.id`). Used to resolve a
+   *  display name for automatic Bunny collection naming (see
+   *  lib/bunny/organize.ts); `null` for an ownerless row. */
+  ownerUserId: string | null;
+  /** The Bunny Stream Collection guid grouping this course's videos
+   *  (automatic Bunny organization) — `null` until the first lesson video
+   *  upload for this course creates one. See lib/bunny/collections.ts. */
+  bunnyCollectionId: string | null;
 };
 
 export type AdminCourseListRow = {
@@ -292,6 +301,8 @@ function mapRowToAdminCourse(
     resources: row.resources ?? [],
     mainImage: row.images?.main ?? null,
     secondaryImages: secondary.map((s, i): AdminImage => ({ id: String(i), url: s.url, alt: s.alt ?? '' })),
+    ownerUserId: row.ownerUserId ?? null,
+    bunnyCollectionId: row.bunnyCollectionId ?? null,
   };
 }
 
@@ -595,6 +606,23 @@ export async function updateCourse(slug: string, patch: CoursePatch, actor: Admi
   return { ok: true };
 }
 
+/**
+ * Persists a Bunny Collection guid onto a course (automatic Bunny
+ * organization) — called by lib/bunny/organize.ts's `planOrganizedUpload`
+ * the FIRST time a video upload for this course creates one.
+ * Deliberately NOT audited/revalidated like the other course writes below:
+ * it's an internal, best-effort bookkeeping field the public site never
+ * reads, not an editorial change a teacher/admin made. Callers are expected
+ * to wrap this themselves (never let it fail the upload it's part of).
+ */
+export async function setCourseBunnyCollectionId(slug: string, collectionId: string): Promise<void> {
+  if (!dbConfigured()) return;
+  await db
+    .update(T.courses)
+    .set({ bunnyCollectionId: collectionId, updatedAt: new Date() })
+    .where(eq(T.courses.slug, slug));
+}
+
 export async function submitForReview(slug: string, actor: AdminActor): Promise<CourseWriteResult> {
   if (!dbConfigured()) return dbRequired();
   const [current] = await db.select({ status: T.courses.status }).from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
@@ -756,6 +784,27 @@ export async function updateLesson(
     if (err) return { ok: false, message: err };
   }
 
+  // Orphan cleanup (best-effort — see lib/bunny/upload.ts's `deleteBunnyVideo`
+  // doc comment): only read the lesson's CURRENT `bunnyVideoId` when the
+  // patch actually touches that field — every other edit (title, desc,
+  // resources, …) skips this extra read entirely. A REPLACEMENT (both the
+  // old and new ids non-empty AND different) is the only case that deletes
+  // the old video: a first-time set (no old id) or a plain no-op write
+  // (same id) must never touch Bunny, and clearing the id (new id blank) is
+  // a deliberate detach, not a "this video is gone" signal, so it's left
+  // alone here too — see the file the caller passes this through from.
+  let oldVideoIdToDelete: string | null = null;
+  if (patch.bunnyVideoId !== undefined && bunnyUploadConfigured()) {
+    const [before] = await db
+      .select({ bunnyVideoId: T.lessons.bunnyVideoId })
+      .from(T.lessons)
+      .where(and(eq(T.lessons.courseSlug, slug), eq(T.lessons.id, lessonId)))
+      .limit(1);
+    const oldId = before?.bunnyVideoId ?? null;
+    const newId = patch.bunnyVideoId || null;
+    if (oldId && newId && oldId !== newId) oldVideoIdToDelete = oldId;
+  }
+
   const set: Partial<typeof T.lessons.$inferInsert> = { updatedAt: new Date() };
   if (patch.title_ht !== undefined) set.titleHt = patch.title_ht;
   if (patch.title_fr !== undefined) set.titleFr = patch.title_fr;
@@ -777,6 +826,20 @@ export async function updateLesson(
 
   await markDirtyAndRevalidateIfPublished(slug);
   await recordAudit({ action: 'update_lesson', userId: actor.id, admin: actor, detail: `${slug}#${lessonId}` });
+
+  // Fired AFTER the write/audit succeed, and never allowed to affect this
+  // function's result — a replaced video is gone from Bunny for good the
+  // moment this lesson's edit is saved (documented in LessonPatch's
+  // `bunnyVideoId` field / VideoUpload's flow: uploading a new video for an
+  // already-recorded lesson calls updateLesson with the new guid).
+  if (oldVideoIdToDelete) {
+    try {
+      await deleteBunnyVideo(oldVideoIdToDelete);
+    } catch (e) {
+      console.error(`[courses/write] updateLesson bunny cleanup (replaced video) failed for ${slug}#${lessonId} (non-fatal):`, e);
+    }
+  }
+
   return { ok: true };
 }
 
@@ -785,11 +848,27 @@ export async function deleteLesson(slug: string, lessonId: string, actor: AdminA
   const res = await db
     .delete(T.lessons)
     .where(and(eq(T.lessons.courseSlug, slug), eq(T.lessons.id, lessonId)))
-    .returning({ id: T.lessons.id });
+    .returning({ id: T.lessons.id, bunnyVideoId: T.lessons.bunnyVideoId });
   if (res.length === 0) return { ok: false, message: 'not_found' };
 
   await markDirtyAndRevalidateIfPublished(slug);
   await recordAudit({ action: 'delete_lesson', userId: actor.id, admin: actor, detail: `${slug}#${lessonId}` });
+
+  // Orphan cleanup (best-effort — see lib/bunny/upload.ts's `deleteBunnyVideo`
+  // doc comment): a lesson's video has nowhere else to be referenced from
+  // once the row is gone, so without this it just sits in the Bunny library
+  // forever (storage cost + dashboard clutter). NEVER allowed to affect this
+  // function's result — the lesson row is already gone regardless of
+  // whether Bunny cleanup succeeds.
+  const oldVideoId = res[0]?.bunnyVideoId ?? null;
+  if (oldVideoId && bunnyUploadConfigured()) {
+    try {
+      await deleteBunnyVideo(oldVideoId);
+    } catch (e) {
+      console.error(`[courses/write] deleteLesson bunny cleanup failed for ${slug}#${lessonId} (non-fatal):`, e);
+    }
+  }
+
   return { ok: true };
 }
 

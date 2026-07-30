@@ -517,6 +517,15 @@ export const courses = pgTable('courses', {
   // in the sales-page description block ("lien en description"). Same shape
   // as lessons.resources below — see CourseResource's own doc comment.
   resources: jsonb('resources').$type<CourseResource[]>(),
+  // Automatic Bunny organization (owner asked: "is it organized like Udemy,
+  // is it all automatic?"): the Bunny Stream Collection GUID that groups
+  // every video uploaded for this course, so the Bunny dashboard mirrors the
+  // course catalog instead of one flat pile. Nullable — set the first time a
+  // lesson video is uploaded for this course (see lib/bunny/collections.ts's
+  // `ensureCourseCollection` + lib/bunny/organize.ts). Best-effort by design:
+  // a course can stay `null` forever (no Bunny keys configured, or the
+  // create/verify call failed) without blocking any upload.
+  bunnyCollectionId: text('bunny_collection_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });

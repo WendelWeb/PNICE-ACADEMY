@@ -52,6 +52,7 @@ import { validatePayoutSettings, type PayoutMethod } from './apply-validation';
 import { recordAudit } from '@/lib/admin/data/real/users';
 import type { AdminActor } from '@/lib/admin/data/types';
 import { createBunnyVideo, bunnyUploadConfigured, type BunnyUploadResult } from '@/lib/bunny/upload';
+import { planOrganizedUpload } from '@/lib/bunny/organize';
 
 const T = schema;
 
@@ -380,20 +381,29 @@ export async function validateMyBunnyVideoAction(videoId: string): Promise<Studi
  * course THEY own; only after that check passes do we touch Bunny at all.
  * Returns the TUS upload-authorization payload for the browser (guid,
  * libraryId, signature, expire, tusEndpoint) — never the API key; see
- * lib/bunny/upload.ts's file header. `lessonId` isn't sent to Bunny (a
- * video object doesn't belong to a course/lesson there) — it's accepted so
- * the call shape matches `updateMyLessonAction` for the client component.
+ * lib/bunny/upload.ts's file header.
+ *
+ * AUTOMATIC ORGANIZATION (owner asked: "is it organized like Udemy, is it
+ * all automatic?"): `lessonId` now resolves the real lesson + its chapter
+ * via `planOrganizedUpload` (lib/bunny/organize.ts), which computes the
+ * AUTHORITATIVE structured title ("PA-03 · Pati 2 · Leson 3 · ...") and
+ * ensures/reuses the course's Bunny Collection — the client-supplied `title`
+ * is used ONLY as a fallback if that resolution fails (lesson deleted mid-
+ * upload, DB hiccup), never as the primary source once a real lesson row is
+ * found. Organization is best-effort: any Bunny failure here still returns a
+ * `{ title, collectionId: null }` plan, so the upload always proceeds.
  */
 export async function createMyVideoUploadAction(
   slug: string,
-  _lessonId: string,
+  lessonId: string,
   title: string,
 ): Promise<BunnyUploadResult> {
   if (!dbConfigured()) return { ok: false, message: 'db_required' };
   try {
     await requireOwnedCourse(slug);
     if (!bunnyUploadConfigured()) return { ok: false, message: 'not_configured' };
-    return await createBunnyVideo(title);
+    const plan = await planOrganizedUpload({ slug, lessonId, fallbackTitle: title });
+    return await createBunnyVideo(plan.title, plan.collectionId);
   } catch (e) {
     return { ok: false, message: e instanceof Error ? e.message : 'error' };
   }

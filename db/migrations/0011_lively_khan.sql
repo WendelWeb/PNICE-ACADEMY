@@ -1,0 +1,1 @@
+ALTER TABLE "courses" ADD COLUMN "bunny_collection_id" text;
