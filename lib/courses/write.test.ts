@@ -20,6 +20,7 @@ import {
   computeAdjacentSwap,
   computeLessonSwap,
   repackChapterIndices,
+  shouldReplaceBunnyVideo,
   type DbCourseStatus,
 } from './write';
 import type { CourseResource } from '@/db/schema';
@@ -196,5 +197,41 @@ describe('computeLessonSwap — reorder neighbour must stay within the same chap
   it('returns null when the lesson id is not found', () => {
     const rows = [{ id: 'l1', chapterId: null }];
     expect(computeLessonSwap(rows, 'zzz', 'up')).toBeNull();
+  });
+});
+
+/**
+ * Unit tests for `shouldReplaceBunnyVideo` (bunny-organization branch CRITICAL
+ * fix): extracted from `updateLesson`'s previously-untested inline orphan-
+ * cleanup conditional. Must be true ONLY for a genuine replacement (both ids
+ * non-empty and different) — every other case (no-op same id, clearing to
+ * empty, first-time set) must be false, since none of those should ever
+ * trigger a `deleteBunnyVideo` call on the OLD id.
+ */
+describe('shouldReplaceBunnyVideo — orphan-cleanup gate (bunny-organization CRITICAL fix)', () => {
+  it('is false for a no-op write (same id)', () => {
+    expect(shouldReplaceBunnyVideo('guid-1', 'guid-1')).toBe(false);
+  });
+
+  it('is false when clearing the id to empty (deliberate detach, not a replacement)', () => {
+    expect(shouldReplaceBunnyVideo('guid-1', '')).toBe(false);
+    expect(shouldReplaceBunnyVideo('guid-1', null)).toBe(false);
+    expect(shouldReplaceBunnyVideo('guid-1', undefined)).toBe(false);
+  });
+
+  it('is false for a first-time set (no previous id)', () => {
+    expect(shouldReplaceBunnyVideo(null, 'guid-1')).toBe(false);
+    expect(shouldReplaceBunnyVideo(undefined, 'guid-1')).toBe(false);
+    expect(shouldReplaceBunnyVideo('', 'guid-1')).toBe(false);
+  });
+
+  it('is true for a genuine replacement (both non-empty and different)', () => {
+    expect(shouldReplaceBunnyVideo('guid-old', 'guid-new')).toBe(true);
+  });
+
+  it('is false when both old and new are empty/nullish', () => {
+    expect(shouldReplaceBunnyVideo(null, null)).toBe(false);
+    expect(shouldReplaceBunnyVideo(undefined, undefined)).toBe(false);
+    expect(shouldReplaceBunnyVideo('', '')).toBe(false);
   });
 });
