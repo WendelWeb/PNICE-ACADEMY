@@ -72,7 +72,10 @@ export function ResourcesEditor({
 
   return (
     <div>
-      <span className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-ink/55">{heading}</span>
+      {/* `label=""` (Task A2 — lesson plan editor's "Ressources" sub-block
+          already renders its own heading) deliberately skips this span
+          rather than rendering an empty, still-margined line. */}
+      {heading && <span className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-ink/55">{heading}</span>}
 
       {resources.length === 0 && <p className="font-mono text-[11px] text-graphite/50">{t('empty')}</p>}
 
