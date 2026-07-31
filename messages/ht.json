@@ -2637,6 +2637,27 @@
         "failed": "Echèk koneksyon",
         "lastCheck": "Dènye tchèk"
       },
+      "email": {
+        "title": "Tès anvwa imèl",
+        "send": "Voye yon imèl tès",
+        "noKey": "Pa konfigire — RESEND_API_KEY manke.",
+        "notLive": "Kle a la men anvwa dezaktive (done mock).",
+        "ready": "Pare pou voye",
+        "from": "Moun k ap voye a (from)",
+        "fromWarning": "RESEND_FROM pa defini — adrès pa default la ap aksepte sèlman si domèn sa a verifye nan Resend.",
+        "selfNote": "Tès la toujou voye nan pwòp adrès ou (jamè nan yon lòt destinatè).",
+        "sent": "Imèl voye",
+        "to": "Destinatè",
+        "resendId": "ID Resend",
+        "skipped": "Anvwa sote",
+        "failed": "Echèk anvwa a",
+        "reason": {
+          "no_key": "Pa gen kle Resend konfigire (RESEND_API_KEY manke sou sèvè a).",
+          "not_live": "Anvwa a pa aktif — mete ADMIN_DATA_SOURCE=real (oswa EMAIL_LIVE=true) pou voye vrèman.",
+          "unauthorized": "Aksyon sa a pa otorize pou wòl sa a.",
+          "no_email": "Pa kapab jwenn adrès imèl Clerk ou."
+        }
+      },
       "errors": {
         "title": "Erè aplikasyon",
         "note": "Erè gwoupe (menm mesaj + wout). Sous reyèl pou branche (log Vercel / handler global).",

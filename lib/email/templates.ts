@@ -104,6 +104,29 @@ export function buildCartReminderHtml(input: {
   return { subject, html };
 }
 
+/** Admin "send a test email" button (admin/sante — health page). Pure/
+ *  testable; confirms the Resend wiring (key + verified `from` domain) end to
+ *  end by sending to the acting admin's own address. */
+export function buildTestEmailHtml(input: { locale: 'fr' | 'ht'; adminName?: string | null }): { subject: string; html: string } {
+  const fr = input.locale === 'fr';
+  const hello = input.adminName
+    ? (fr ? `Bonjour ${escapeHtml(input.adminName)},` : `Bonjou ${escapeHtml(input.adminName)},`)
+    : (fr ? 'Bonjour,' : 'Bonjou,');
+  const subject = fr ? 'Test — PNICE Academy' : 'Tès — PNICE Academy';
+  const body = fr
+    ? "Ceci est un email de test envoyé depuis la page Santé système de l'administration. S'il est bien arrivé dans ta boîte de réception, l'envoi via Resend fonctionne correctement."
+    : 'Sa se yon imèl tès ki voye soti nan paj Sante sistèm nan (administrasyon an). Si li rive byen nan bwat resepsyon w, sa vle di anvwa Resend la ap mache byen.';
+  const html = `
+  <div style="font-family:Georgia,serif;background:#EDE6D6;padding:32px">
+    <div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid rgba(16,32,74,.15);border-radius:12px;padding:28px">
+      <h1 style="font-size:20px;color:#10204A;margin:0 0 16px">PNICE Academy</h1>
+      <p style="color:#2B2B28">${hello}</p>
+      <p style="color:#2B2B28">${body}</p>
+    </div>
+  </div>`;
+  return { subject, html };
+}
+
 /** Admin daily-digest email (Task L5 — app/api/cron/daily-digest). Pure/
  *  testable; the cron route supplies today's already-computed counts. */
 export function buildDailyDigestHtml(input: {

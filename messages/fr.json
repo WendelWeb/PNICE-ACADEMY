@@ -2637,6 +2637,27 @@
         "failed": "Échec de connexion",
         "lastCheck": "Dernier check"
       },
+      "email": {
+        "title": "Test d'envoi d'email",
+        "send": "Envoyer un email de test",
+        "noKey": "Non configuré — RESEND_API_KEY manquant.",
+        "notLive": "Clé présente mais envoi désactivé (données mock).",
+        "ready": "Prêt à envoyer",
+        "from": "Expéditeur (from)",
+        "fromWarning": "RESEND_FROM n'est pas défini — l'expéditeur par défaut ne sera accepté que si ce domaine est vérifié dans Resend.",
+        "selfNote": "Le test est toujours envoyé à ta propre adresse (jamais à un destinataire externe).",
+        "sent": "Email envoyé",
+        "to": "Destinataire",
+        "resendId": "ID Resend",
+        "skipped": "Envoi ignoré",
+        "failed": "Échec de l'envoi",
+        "reason": {
+          "no_key": "Aucune clé Resend configurée (RESEND_API_KEY manquant sur le serveur).",
+          "not_live": "L'envoi n'est pas actif — définis ADMIN_DATA_SOURCE=real (ou EMAIL_LIVE=true) pour envoyer réellement.",
+          "unauthorized": "Action non autorisée pour ce rôle.",
+          "no_email": "Impossible de trouver ton adresse email Clerk."
+        }
+      },
       "errors": {
         "title": "Erreurs applicatives",
         "note": "Erreurs groupées (mêmes message + route). Source réelle à brancher (logs Vercel / handler global).",
