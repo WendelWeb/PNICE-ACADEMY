@@ -1,17 +1,17 @@
 'use server';
 
 /**
- * Site-content server actions (Phase C Lot 2): testimonials, places, texts,
- * legal, announcements. Content actions gated on `courses.edit`; the
- * announcement blast on `users.act`. `submitReviewAction` is PUBLIC (token-gated)
- * — it's called from the public testimonial form.
+ * Site-content server actions (Phase C Lot 2): testimonials, texts, legal,
+ * announcements. Content actions gated on `courses.edit`; the announcement
+ * blast on `users.act`. `submitReviewAction` is PUBLIC (token-gated) — it's
+ * called from the public testimonial form.
  */
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { resolveAdminRole } from '@/lib/admin/access';
 import { can, type Capability } from '@/lib/admin/permissions';
 import { recordAudit, getUsers, type AdminActor } from '@/lib/admin/data';
 import * as site from '@/lib/admin/site/ops';
-import type { SiteTestimonial, PlacesConfig, LegalSlug } from '@/lib/admin/site/store';
+import type { SiteTestimonial, LegalSlug } from '@/lib/admin/site/store';
 
 export type SiteResult = { ok: boolean; message?: string; token?: string; count?: number };
 
@@ -98,17 +98,6 @@ export async function submitReviewAction(
     if (!quote.trim()) return { ok: false, message: 'empty' };
     const r = site.submitReview(token, quote.trim(), lang, photo);
     return { ok: r.ok, message: r.reason };
-  } catch (e) {
-    return fail(e);
-  }
-}
-
-/* -------------------------------- places --------------------------------- */
-export async function setPlacesAction(patch: Partial<PlacesConfig>): Promise<SiteResult> {
-  try {
-    await requireCap('courses.edit');
-    site.setPlaces(patch);
-    return { ok: true };
   } catch (e) {
     return fail(e);
   }

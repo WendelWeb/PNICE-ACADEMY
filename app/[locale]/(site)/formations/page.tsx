@@ -60,7 +60,7 @@ export default async function FormationsPage({
             <h1 className="mt-3 font-display text-4xl font-black leading-tight text-ink md:text-5xl">
               {t('title')}
             </h1>
-            <p className="mt-3 max-w-xl text-graphite">{t('subtitle')}</p>
+            <p className="mt-3 max-w-xl text-graphite">{t('subtitle', { count: courses.length })}</p>
           </div>
           <Sceau size="md" print rotate={-6} className="shrink-0">
             <span className="font-display text-3xl font-black leading-none">
