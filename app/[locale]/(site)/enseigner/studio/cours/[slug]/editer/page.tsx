@@ -9,12 +9,13 @@ import { dbConfigured } from '@/lib/courses/source';
 import { resolveUserId } from '@/lib/learner/access';
 import { isApprovedTeacher } from '@/lib/teacher/profile';
 import { getMyCourse, getMyCourses } from '@/lib/teacher/studio';
-import { computeCourseReadiness, countMissingReadiness } from '@/lib/courses/readiness';
+import { computeCourseReadiness } from '@/lib/courses/readiness';
 import { CourseEditor } from '@/components/admin/content/CourseEditor';
 import { LessonsManager, type LessonActions } from '@/components/admin/content/LessonsManager';
 import { ImagesManager, type ImageActions } from '@/components/admin/content/ImagesManager';
+import { CourseResourcesPanel } from '@/components/admin/content/CourseResourcesPanel';
 import { StudioStatusBar } from '@/components/teacher/studio/StudioStatusBar';
-import { CourseReadiness } from '@/components/content/CourseReadiness';
+import { EditorTabs, type EditorTabKey } from '@/components/content/EditorTabs';
 import {
   updateMyCourseAction,
   addMyLessonAction,
@@ -72,13 +73,18 @@ const imageActions: ImageActions = {
  * owned by this teacher) and every studio-actions.ts mutation (write-side,
  * re-checked on every save regardless of what this page rendered).
  */
+const TAB_KEYS: EditorTabKey[] = ['infos', 'plan', 'medias', 'ressources'];
+
 export default async function EditMyCoursePage({
   params: { locale, slug },
+  searchParams,
 }: {
   params: { locale: 'ht' | 'fr'; slug: string };
+  searchParams: { tab?: string };
 }) {
   setRequestLocale(locale);
   const t = await getTranslations('teach.studio');
+  const tTabs = await getTranslations('admin.cms.tabs');
 
   if (!clerkEnabled) redirect(`/${locale}/enseigner`);
   const { userId: clerkId } = await auth();
@@ -101,16 +107,23 @@ export default async function EditMyCoursePage({
   const myCourses = await getMyCourses(userId);
   const salesCount = myCourses.find((c) => c.slug === slug)?.salesCount ?? 0;
 
-  // Task K2 — the readiness checklist, computed once and shared by
-  // CourseReadiness (the list) and StudioStatusBar (the "N point(s) à
-  // compléter" badge next to the submit button).
+  // Task K2 — the readiness checklist, shared by StudioStatusBar's expandable
+  // "N point(s) à compléter" disclosure (Task A2 folded the old standalone
+  // CourseReadiness section into that sticky bar).
   const readinessItems = computeCourseReadiness(course);
-  const readinessMissing = countMissingReadiness(readinessItems);
+
+  // Task A2 — tabs instead of one giant scroll: `?tab=` is server-read here
+  // (shareable URL, no lost state on refresh) — see EditorTabs.tsx.
+  const activeTab: EditorTabKey = TAB_KEYS.includes(searchParams.tab as EditorTabKey)
+    ? (searchParams.tab as EditorTabKey)
+    : 'infos';
+  const basePath = `/enseigner/studio/cours/${slug}/editer`;
+  const isDraft = course.rawStatus === 'draft' || course.rawStatus === 'rejected';
 
   return (
     <Section>
       <Container className="max-w-[1180px]">
-        <div className="space-y-4">
+        <div className="space-y-4 pb-2">
           <Link href="/enseigner/studio" className="inline-flex items-center gap-1 font-mono text-[11px] text-ink/55 hover:text-ink">
             <IconArrowLeft size={14} /> {t('backToStudio')}
           </Link>
@@ -121,22 +134,42 @@ export default async function EditMyCoursePage({
             </h1>
           </div>
 
-          <CourseReadiness items={readinessItems} />
+          <EditorTabs
+            basePath={basePath}
+            active={activeTab}
+            tabs={[
+              { key: 'infos', label: tTabs('infos') },
+              { key: 'plan', label: tTabs('plan') },
+              { key: 'medias', label: tTabs('medias') },
+              { key: 'ressources', label: tTabs('ressources') },
+            ]}
+          />
+
+          {activeTab === 'infos' && (
+            <CourseEditor course={course} salesCount={salesCount} priciest={null} updateAction={updateMyCourseAction} />
+          )}
+          {activeTab === 'plan' && (
+            <LessonsManager
+              slug={course.slug}
+              lessons={course.lessons}
+              chapters={course.chapters}
+              isDraft={isDraft}
+              actions={lessonActions}
+            />
+          )}
+          {activeTab === 'medias' && (
+            <ImagesManager slug={course.slug} mainImage={course.mainImage} secondary={course.secondaryImages} actions={imageActions} />
+          )}
+          {activeTab === 'ressources' && (
+            <CourseResourcesPanel slug={course.slug} resources={course.resources} updateAction={updateMyCourseAction} />
+          )}
+
           <StudioStatusBar
             slug={course.slug}
             status={course.rawStatus}
             reviewNote={course.reviewNote}
-            readinessMissing={readinessMissing}
+            readinessItems={readinessItems}
           />
-          <CourseEditor course={course} salesCount={salesCount} priciest={null} updateAction={updateMyCourseAction} />
-          <LessonsManager
-            slug={course.slug}
-            lessons={course.lessons}
-            chapters={course.chapters}
-            isDraft={course.rawStatus === 'draft' || course.rawStatus === 'rejected'}
-            actions={lessonActions}
-          />
-          <ImagesManager slug={course.slug} mainImage={course.mainImage} secondary={course.secondaryImages} actions={imageActions} />
         </div>
       </Container>
     </Section>

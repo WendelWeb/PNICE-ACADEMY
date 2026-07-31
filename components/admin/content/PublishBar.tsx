@@ -11,6 +11,8 @@ import {
   IconExternalLink,
   IconAlertTriangle,
   IconX,
+  IconChevronDown,
+  IconChevronRight,
 } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
 import { buttonClasses } from '@/components/ui/Button';
@@ -21,6 +23,8 @@ import {
   deleteCourseAction,
 } from '@/lib/admin/content-actions';
 import type { AdminCourseStatus } from '@/lib/courses/write';
+import { countMissingReadiness, type ReadinessItem } from '@/lib/courses/readiness';
+import { CourseReadiness } from '@/components/content/CourseReadiness';
 
 const statusTone: Record<AdminCourseStatus, string> = {
   draft: 'bg-ink/8 text-ink/60',
@@ -37,7 +41,7 @@ export function PublishBar({
   hasUnpublishedChanges,
   reviewNote,
   canModerate,
-  readinessMissing = 0,
+  readinessItems,
 }: {
   slug: string;
   code: string;
@@ -53,17 +57,23 @@ export function PublishBar({
    * just fail server-side anyway.
    */
   canModerate: boolean;
-  /** Task K2 — count of unmet `CourseReadiness` items. A WARNING only: never
-   *  disables the Publish button, just labels what's still worth finishing. */
-  readinessMissing?: number;
+  /** Task K2's checklist — Task A2 folds `CourseReadiness`'s standalone
+   *  section into this bar as an expandable disclosure (click the counter)
+   *  instead of a separate always-open block above it. A WARNING only:
+   *  never disables the Publish button, just labels what's still worth
+   *  finishing. */
+  readinessItems: ReadinessItem[];
 }) {
   const t = useTranslations('admin.cms.publish');
+  const tr = useTranslations('admin.cms.readiness');
   const router = useRouter();
   const [pending, start] = useTransition();
   const [confirmUnpub, setConfirmUnpub] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
   const [delCode, setDelCode] = useState('');
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [showChecklist, setShowChecklist] = useState(false);
+  const readinessMissing = countMissingReadiness(readinessItems);
 
   const run = (fn: () => Promise<{ ok: boolean; message?: string; count?: number }>, okText?: string) =>
     start(async () => {
@@ -88,7 +98,7 @@ export function PublishBar({
     });
 
   return (
-    <section className="rounded-xl border border-ink/12 bg-paper-light p-4">
+    <section className="sticky bottom-2 z-20 rounded-xl border border-ink/15 bg-paper-light/95 p-4 shadow-[0_-6px_24px_-16px_rgba(16,32,74,0.35)] backdrop-blur">
       <div className="flex flex-wrap items-center gap-2">
         <span className={cn('rounded px-2 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wide', statusTone[status])}>
           {t(`status.${status}`)}
@@ -97,10 +107,29 @@ export function PublishBar({
           <span className="rounded bg-ochre/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-ochre">{t('unpublishedChanges')}</span>
         )}
 
+        <button
+          type="button"
+          onClick={() => setShowChecklist((v) => !v)}
+          aria-expanded={showChecklist}
+          className={cn(
+            'inline-flex items-center gap-1 rounded font-mono text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ochre focus-visible:ring-offset-1 focus-visible:ring-offset-paper-light',
+            readinessMissing === 0 ? 'text-teal' : 'text-ochre',
+          )}
+        >
+          {showChecklist ? <IconChevronDown size={12} /> : <IconChevronRight size={12} />}
+          {readinessMissing === 0 ? tr('complete') : tr('missingCount', { count: readinessMissing })}
+        </button>
+
         <Link href={`/admin/cours/${slug}/apercu`} className="ml-auto inline-flex items-center gap-1 font-mono text-[11px] text-ink/60 hover:text-ink">
           <IconExternalLink size={13} /> {t('preview')}
         </Link>
       </div>
+
+      {showChecklist && (
+        <div className="mt-3">
+          <CourseReadiness items={readinessItems} />
+        </div>
+      )}
 
       {status === 'pending_review' && (
         <p className="mt-3 font-mono text-[11px] text-ink/50">{t('inReview')}</p>
@@ -126,15 +155,10 @@ export function PublishBar({
       {canModerate && (
         <div className="mt-3 flex flex-wrap gap-2">
           {status === 'draft' && (
-            <>
-              <button type="button" disabled={pending} onClick={() => run(() => publishCourseAction(slug), t('published'))} className={cn(buttonClasses('primary', 'md'), 'text-xs')}>
-                {pending ? <IconLoader2 size={15} className="animate-spin" /> : <IconWorldUpload size={15} />}
-                {t('publish')}
-              </button>
-              {readinessMissing > 0 && (
-                <span className="self-center font-mono text-[11px] text-ochre">{t('readinessMissing', { count: readinessMissing })}</span>
-              )}
-            </>
+            <button type="button" disabled={pending} onClick={() => run(() => publishCourseAction(slug), t('published'))} className={cn(buttonClasses('primary', 'md'), 'text-xs')}>
+              {pending ? <IconLoader2 size={15} className="animate-spin" /> : <IconWorldUpload size={15} />}
+              {t('publish')}
+            </button>
           )}
           {status === 'published' && (
             <button type="button" disabled={pending} onClick={() => setConfirmUnpub(true)} className={cn('flex items-center gap-1.5 rounded border border-ochre/40 px-4 py-2.5 text-xs font-semibold text-ochre hover:bg-ochre/10')}>

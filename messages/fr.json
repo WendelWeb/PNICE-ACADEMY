@@ -528,7 +528,6 @@
       "submittedAt": "Soumis le {date}",
       "reviewNoteLabel": "Note de l'équipe",
       "pendingReviewNote": "En cours de validation par notre équipe.",
-      "readinessMissing": "{count, plural, one {1 point à compléter} other {# points à compléter}}",
       "col": {
         "price": "Prix",
         "sales": "Ventes",
@@ -1043,7 +1042,16 @@
       "audit": "Audit",
       "platform": "Plateforme",
       "taux": "Taux de change",
-      "health": "Santé système"
+      "health": "Santé système",
+      "siteContent": "Contenu du site",
+      "sections": {
+        "pilotage": "Pilotage",
+        "content": "Cours & contenu",
+        "teachers": "Enseignants",
+        "people": "Personnes",
+        "money": "Argent",
+        "platform": "Plateforme"
+      }
     },
     "roles": {
       "super-admin": "Super-admin",
@@ -1765,6 +1773,12 @@
       }
     },
     "cms": {
+      "tabs": {
+        "infos": "Infos",
+        "plan": "Plan du cours",
+        "medias": "Médias",
+        "ressources": "Ressources"
+      },
       "list": {
         "new": "Nouveau cours",
         "edit": "Éditer",
@@ -1835,10 +1849,12 @@
         "title": "Plan du cours",
         "empty": "Aucune leçon.",
         "add": "Ajouter une leçon",
+        "untitledLesson": "(sans titre)",
         "titleHt": "Titre (ht)",
         "titleFr": "Titre (fr)",
         "descHt": "Description (ht)",
         "descFr": "Description (fr)",
+        "duration": "Durée",
         "bunnyId": "ID vidéo Bunny",
         "validate": "Valider",
         "bunnyOk": "✓ vidéo trouvée",
@@ -1846,14 +1862,34 @@
         "bunnyMock": "non vérifié (Bunny non configuré)",
         "preview": "Aperçu gratuit",
         "noVideoWarn": "Aucune vidéo liée",
-        "uploadChooseFile": "Choisir une vidéo",
+        "chipVideoOk": "Vidéo",
+        "chipVideoMissing": "Pas de vidéo",
+        "moveUp": "Monter",
+        "moveDown": "Descendre",
+        "expandLesson": "Développer la leçon",
+        "collapseLesson": "Réduire la leçon",
+        "sectionTitles": "Titres",
+        "sectionDescription": "Description",
+        "sectionVideo": "Vidéo",
+        "sectionResources": "Ressources",
+        "deleteLesson": "Supprimer la leçon",
+        "deleteLessonConfirm": "Tu vas supprimer cette leçon définitivement. Cette action est irréversible.",
+        "deleteLessonYes": "Oui, supprimer",
+        "deleteLessonNo": "Annuler",
+        "uploadDropHint": "Glisse ta vidéo ici ou clique pour choisir",
+        "uploadFormats": "Formats acceptés : MP4, MOV, WebM",
         "uploadPreparing": "Préparation…",
         "uploadUploading": "Envoi… {percent}%",
-        "uploadUploaded": "Vidéo envoyée ✓",
+        "uploadReady": "✓ vidéo prête",
+        "uploadExistingId": "ID vidéo",
+        "uploadReplace": "Remplacer la vidéo",
         "uploadError": "Erreur pendant l'envoi",
         "uploadNotConfigured": "Upload automatique non configuré — colle l'ID Bunny manuellement",
+        "uploadUnsupportedFormat": "Ce format n'est pas accepté — choisis un fichier vidéo (MP4, MOV, WebM).",
+        "uploadTooLarge": "Le fichier est trop volumineux pour être envoyé.",
         "uploadCancel": "Annuler l'envoi",
         "uploadRetry": "Réessayer",
+        "uploadAdvanced": "Avancé (ID vidéo manuel)",
         "addChapter": "Ajouter un chapitre",
         "chapterTitleHt": "Titre du chapitre (ht)",
         "chapterTitleFr": "Titre du chapitre (fr)",
@@ -1907,7 +1943,6 @@
         "inReview": "En attente de validation par un administrateur — ni l'enseignant ni le CMS ne peuvent le publier tant que la revue n'est pas terminée.",
         "rejectedNote": "Ce cours a été rejeté. L'enseignant doit le corriger et le soumettre à nouveau depuis son studio ; il ne peut pas être publié directement.",
         "reviewNoteLabel": "Note de l'équipe",
-        "readinessMissing": "{count, plural, one {1 point à compléter} other {# points à compléter}}",
         "cancel": "Annuler",
         "error": "Erreur."
       },
@@ -2048,6 +2083,10 @@
         "emptyPublic": "Cette page n'a pas encore de contenu.",
         "lastUpdated": "Dernière mise à jour"
       }
+    },
+    "siteContent": {
+      "title": "Contenu du site",
+      "intro": "Textes du site, pages légales et compteur de places — le contenu vu par les visiteurs, pas un réglage business de la plateforme."
     },
     "marketing": {
       "subtitle": "Annonces par email à un segment d'utilisateurs.",

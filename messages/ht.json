@@ -528,7 +528,6 @@
       "submittedAt": "Soumèt {date}",
       "reviewNoteLabel": "Nòt ekip la",
       "pendingReviewNote": "Ekip nou an ap revize l kounye a.",
-      "readinessMissing": "{count, plural, one {1 pwen pou konplete} other {# pwen pou konplete}}",
       "col": {
         "price": "Pri",
         "sales": "Vant",
@@ -1043,7 +1042,16 @@
       "audit": "Odit",
       "platform": "Platefòm",
       "taux": "To chanj",
-      "health": "Sante sistèm"
+      "health": "Sante sistèm",
+      "siteContent": "Kontni sit la",
+      "sections": {
+        "pilotage": "Pilotaj",
+        "content": "Fòmasyon & kontni",
+        "teachers": "Pwofesè",
+        "people": "Moun",
+        "money": "Lajan",
+        "platform": "Platefòm"
+      }
     },
     "roles": {
       "super-admin": "Sipè-admin",
@@ -1765,6 +1773,12 @@
       }
     },
     "cms": {
+      "tabs": {
+        "infos": "Enfòmasyon",
+        "plan": "Plan kou a",
+        "medias": "Medya",
+        "ressources": "Resous"
+      },
       "list": {
         "new": "Nouvo kou",
         "edit": "Modifye",
@@ -1835,10 +1849,12 @@
         "title": "Plan kou a",
         "empty": "Pa gen leson.",
         "add": "Ajoute yon leson",
+        "untitledLesson": "(san tit)",
         "titleHt": "Tit (ht)",
         "titleFr": "Tit (fr)",
         "descHt": "Deskripsyon (ht)",
         "descFr": "Deskripsyon (fr)",
+        "duration": "Dire",
         "bunnyId": "ID videyo Bunny",
         "validate": "Valide",
         "bunnyOk": "✓ videyo jwenn",
@@ -1846,14 +1862,34 @@
         "bunnyMock": "pa verifye (Bunny pa konfigire)",
         "preview": "Apèsi gratis",
         "noVideoWarn": "Pa gen videyo lye",
-        "uploadChooseFile": "Chwazi yon videyo",
+        "chipVideoOk": "Videyo",
+        "chipVideoMissing": "Pa gen videyo",
+        "moveUp": "Monte",
+        "moveDown": "Desann",
+        "expandLesson": "Ouvri leson an",
+        "collapseLesson": "Fèmen leson an",
+        "sectionTitles": "Tit",
+        "sectionDescription": "Deskripsyon",
+        "sectionVideo": "Videyo",
+        "sectionResources": "Resous",
+        "deleteLesson": "Efase leson an",
+        "deleteLessonConfirm": "W ap efase leson sa a nèt. Aksyon sa a pa ka anile.",
+        "deleteLessonYes": "Wi, efase l",
+        "deleteLessonNo": "Anile",
+        "uploadDropHint": "Trennen videyo a isit la oswa klike pou chwazi l",
+        "uploadFormats": "Fòma aksepte : MP4, MOV, WebM",
         "uploadPreparing": "Preparasyon…",
         "uploadUploading": "Ap voye… {percent}%",
-        "uploadUploaded": "Videyo voye ✓",
+        "uploadReady": "✓ videyo pare",
+        "uploadExistingId": "ID videyo",
+        "uploadReplace": "Ranplase videyo a",
         "uploadError": "Erè pandan voye a",
         "uploadNotConfigured": "Upload otomatik pa konfigire — kole ID Bunny a alamen",
+        "uploadUnsupportedFormat": "Fòma sa a pa aksepte — chwazi yon fichye videyo (MP4, MOV, WebM).",
+        "uploadTooLarge": "Fichye a twò gwo pou voye.",
         "uploadCancel": "Anile voye a",
         "uploadRetry": "Eseye ankò",
+        "uploadAdvanced": "Avanse (ID videyo alamen)",
         "addChapter": "Ajoute yon chapit",
         "chapterTitleHt": "Tit chapit la (ht)",
         "chapterTitleFr": "Tit chapit la (fr)",
@@ -1907,7 +1943,6 @@
         "inReview": "L ap tann validasyon yon administratè — ni pwofesè a ni CMS la pa ka pibliye l toutotan revizyon an poko fini.",
         "rejectedNote": "Kou sa a rejte. Pwofesè a dwe korije l epi soumèt li ankò nan studio l ; li pa ka pibliye dirèkteman.",
         "reviewNoteLabel": "Nòt ekip la",
-        "readinessMissing": "{count, plural, one {1 pwen pou konplete} other {# pwen pou konplete}}",
         "cancel": "Anile",
         "error": "Erè."
       },
@@ -2048,6 +2083,10 @@
         "emptyPublic": "Paj sa a poko gen kontni.",
         "lastUpdated": "Dènye modifikasyon"
       }
+    },
+    "siteContent": {
+      "title": "Kontni sit la",
+      "intro": "Tèks sit la, paj legal ak kontè plas — kontni vizitè yo wè, se pa yon paramèt biznis platfòm nan."
     },
     "marketing": {
       "subtitle": "Anons pa imel bay yon segman itilizatè.",
