@@ -109,7 +109,7 @@ export async function GET(req: Request): Promise<Response> {
           ? `${origin}/${locale}/checkout?course=${encodeURIComponent(session.courseSlug)}`
           : `${origin}/${locale}/checkout`;
 
-      const { subject, html } = buildCartReminderHtml({
+      const { subject, html, text } = buildCartReminderHtml({
         locale,
         name: user.name,
         itemName,
@@ -117,7 +117,7 @@ export async function GET(req: Request): Promise<Response> {
         resumeUrl,
         rateHtg,
       });
-      const result = await sendEmail({ to: user.email, subject, html });
+      const result = await sendEmail({ to: user.email, subject, html, text });
       if (result.sent) remindersSent++;
     }
 

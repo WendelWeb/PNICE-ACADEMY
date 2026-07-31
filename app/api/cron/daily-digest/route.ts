@@ -85,8 +85,8 @@ export async function GET(req: Request): Promise<Response> {
       return Response.json({ ...summary, sent: false, skipped: true, reason: 'no_recipient' });
     }
 
-    const { subject, html } = buildDailyDigestHtml({ locale: 'fr', dateIso: new Date().toISOString(), ...summary });
-    const result = await sendEmail({ to: recipient, subject, html });
+    const { subject, html, text } = buildDailyDigestHtml({ locale: 'fr', dateIso: new Date().toISOString(), ...summary });
+    const result = await sendEmail({ to: recipient, subject, html, text });
 
     return Response.json({ ...summary, sent: result.sent, skipped: result.skipped });
   } catch (e) {

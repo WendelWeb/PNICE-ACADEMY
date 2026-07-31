@@ -244,8 +244,13 @@ export async function sendTestEmailAction(locale: 'fr' | 'ht'): Promise<TestEmai
   }
 
   try {
-    const { subject, html } = buildTestEmailHtml({ locale, adminName: cu?.firstName ?? null });
-    const r = await sendEmail({ to, subject, html, from });
+    const { subject, html, text } = buildTestEmailHtml({
+      locale,
+      adminName: cu?.firstName ?? null,
+      from,
+      dateIso: new Date().toISOString(),
+    });
+    const r = await sendEmail({ to, subject, html, text, from });
     if (!r.sent) return { ok: false, sent: false, skipped: r.skipped, to, from, error: r.error };
     return { ok: true, sent: true, skipped: false, to, from, id: r.id };
   } catch (e) {
