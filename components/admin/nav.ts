@@ -1,7 +1,7 @@
 /**
  * Admin sidebar sections. `enabled: false` sections are shown (disabled) but
  * built in later lots. `cap`, when set, hides the item from roles that lack the
- * capability. Labels resolve via `admin.nav.<key>`; icons via the AdminShell map.
+ * capability. Labels resolve via `admin.nav.<key>`; icons via `ADMIN_NAV_ICONS`.
  *
  * Task A1 (2026-07-30 admin restructure): the sidebar used to be one flat list
  * of 20 items — grouped here into sections so "platform steering" and "daily
@@ -10,8 +10,40 @@
  * grouping is new, plus one new item (`siteContent`, /admin/contenu) that
  * replaces the old `settings` item (/admin/parametres, now a redirect — see
  * that page). Section labels resolve via `admin.nav.sections.<key>`.
+ *
+ * Task A2 (admin spaces hub): the owner asked for obvious ACCESS BUTTONS into
+ * each space, not just a sidebar (AdminShell) and a KPI-only dashboard
+ * (SpacesHub, app/[locale]/admin/page.tsx). Both need the exact same
+ * role-filtered view of these sections, so the filtering logic (`visibleSections`)
+ * and the icon map (`ADMIN_NAV_ICONS`) live HERE, single-sourced, instead of
+ * being duplicated in AdminShell — the sidebar and the hub literally cannot
+ * drift apart because they call the same function.
  */
-import type { Capability } from '@/lib/admin/permissions';
+import {
+  IconLayoutDashboard,
+  IconUsers,
+  IconBook,
+  IconRefresh,
+  IconCreditCard,
+  IconChartLine,
+  IconStar,
+  IconSpeakerphone,
+  IconLifebuoy,
+  IconShieldLock,
+  IconSettings,
+  IconActivity,
+  IconCertificate,
+  IconHistory,
+  IconAdjustments,
+  IconHeartbeat,
+  IconUserCheck,
+  IconCashBanknote,
+  IconCurrencyDollar,
+  IconFileText,
+  type Icon as TablerIcon,
+} from '@tabler/icons-react';
+import type { AdminRole } from '@/lib/admin/roles';
+import { can, type Capability } from '@/lib/admin/permissions';
 
 export type AdminNavItem = {
   key: string;
@@ -25,12 +57,15 @@ export type AdminNavItem = {
 
 export type AdminNavSection = {
   key: string;
+  /** Icon key for the section itself (used by the header switcher + hub cards). */
+  icon: string;
   items: AdminNavItem[];
 };
 
 export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
   {
     key: 'pilotage',
+    icon: 'overview',
     items: [
       { key: 'overview', href: '/admin', icon: 'overview', enabled: true, cap: 'overview.read' },
       { key: 'analytics', href: '/admin/analytics', icon: 'progress', enabled: true, cap: 'transactions.read' },
@@ -38,6 +73,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
   },
   {
     key: 'content',
+    icon: 'courses',
     items: [
       { key: 'courses', href: '/admin/cours', icon: 'courses', enabled: true, cap: 'courses.read' },
       { key: 'engagement', href: '/admin/engagement', icon: 'engagement', enabled: true, cap: 'courses.read' },
@@ -50,6 +86,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
   },
   {
     key: 'teachers',
+    icon: 'teachers',
     items: [
       { key: 'teachers', href: '/admin/enseignants', icon: 'teachers', enabled: true, cap: 'teachers.review' },
       { key: 'payouts', href: '/admin/retraits', icon: 'payouts', enabled: true, cap: 'payouts.process' },
@@ -57,6 +94,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
   },
   {
     key: 'people',
+    icon: 'users',
     items: [
       { key: 'users', href: '/admin/utilisateurs', icon: 'users', enabled: true, cap: 'users.read' },
       { key: 'support', href: '/admin/support', icon: 'support', enabled: true, cap: 'support.read' },
@@ -64,6 +102,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
   },
   {
     key: 'money',
+    icon: 'payments',
     items: [
       { key: 'payments', href: '/admin/transactions', icon: 'payments', enabled: true, cap: 'transactions.read' },
       { key: 'subscriptions', href: '/admin/abonnements', icon: 'subscriptions', enabled: true, cap: 'transactions.read' },
@@ -72,6 +111,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
   },
   {
     key: 'platform',
+    icon: 'platform',
     items: [
       // The business-settings half of the old /admin/parametres now lives
       // here (ReferralCreditPanel, DigestPanel) alongside the panels that
@@ -92,3 +132,46 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
 
 /** Flat view, in case anything needs the plain list (e.g. active-item lookup). */
 export const ADMIN_NAV: AdminNavItem[] = ADMIN_NAV_SECTIONS.flatMap((s) => s.items);
+
+/** Icon key → component. Shared by AdminShell (sidebar + header switcher) and SpacesHub. */
+export const ADMIN_NAV_ICONS: Record<string, TablerIcon> = {
+  overview: IconLayoutDashboard,
+  users: IconUsers,
+  teachers: IconUserCheck,
+  payouts: IconCashBanknote,
+  courses: IconBook,
+  subscriptions: IconRefresh,
+  payments: IconCreditCard,
+  progress: IconChartLine,
+  engagement: IconActivity,
+  certificates: IconCertificate,
+  testimonials: IconStar,
+  marketing: IconSpeakerphone,
+  support: IconLifebuoy,
+  health: IconHeartbeat,
+  roles: IconShieldLock,
+  audit: IconHistory,
+  settings: IconSettings,
+  platform: IconAdjustments,
+  taux: IconCurrencyDollar,
+  siteContent: IconFileText,
+};
+
+/**
+ * Sections filtered to what `role` can reach: hide items lacking the cap, then
+ * drop a whole section once none of its items remain. This is THE single
+ * source of truth for "what can this role reach" in the admin nav — AdminShell
+ * (sidebar + header switcher) and SpacesHub (dashboard access cards) both call
+ * this instead of re-deriving the filter, so they cannot drift apart.
+ */
+export function visibleSections(role: AdminRole): AdminNavSection[] {
+  return ADMIN_NAV_SECTIONS.map((s) => ({
+    ...s,
+    items: s.items.filter((i) => !i.cap || can(role, i.cap)),
+  })).filter((s) => s.items.length > 0);
+}
+
+/** First enabled, linkable item in a (already role-filtered) section, if any. */
+export function firstReachableHref(section: AdminNavSection): string | undefined {
+  return section.items.find((i) => i.enabled && i.href)?.href;
+}

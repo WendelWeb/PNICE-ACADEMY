@@ -1053,6 +1053,26 @@
         "platform": "Plateforme"
       }
     },
+    "hub": {
+      "title": "Espaces d'administration",
+      "intro": "Accède directement à chaque espace de l'administration.",
+      "headerTrigger": "Espaces",
+      "content": {
+        "desc": "Formations, chapitres, leçons, certificats et contenu du site."
+      },
+      "teachers": {
+        "desc": "Profils enseignants, candidatures à revoir et retraits à traiter."
+      },
+      "people": {
+        "desc": "Utilisateurs, segments et demandes de support."
+      },
+      "money": {
+        "desc": "Paiements, abonnements et campagnes marketing."
+      },
+      "platform": {
+        "desc": "Réglages globaux, taux de change, rôles admin, audit et santé système."
+      }
+    },
     "roles": {
       "super-admin": "Super-admin",
       "admin": "Admin",

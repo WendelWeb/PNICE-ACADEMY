@@ -3,6 +3,7 @@ import { getKpiOverview } from '@/lib/admin/data';
 import { getFxRate } from '@/lib/fx';
 import { fmtInt, fmtUsdCents, fmtHtgFromCents, fmtPct } from '@/lib/admin/format';
 import { KpiGroup, KpiCard, KpiSplitCard, MockNote } from '@/components/admin/ui';
+import { SpacesHub } from '@/components/admin/SpacesHub';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +27,8 @@ export default async function AdminOverviewPage({
 
   return (
     <div className="mx-auto max-w-[1180px]">
+      <SpacesHub />
+
       <p className="text-sm text-graphite/70">{t('subtitle')}</p>
       <MockNote>{t('note.mock')}</MockNote>
 

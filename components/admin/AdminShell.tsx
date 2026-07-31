@@ -4,63 +4,20 @@ import { useState } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useTranslations } from 'next-intl';
 import {
-  IconLayoutDashboard,
-  IconUsers,
-  IconBook,
-  IconRefresh,
-  IconCreditCard,
-  IconChartLine,
-  IconStar,
-  IconSpeakerphone,
-  IconLifebuoy,
-  IconShieldLock,
-  IconSettings,
-  IconActivity,
-  IconCertificate,
-  IconHistory,
-  IconAdjustments,
-  IconHeartbeat,
   IconMenu2,
   IconX,
   IconExternalLink,
   IconTool,
-  IconUserCheck,
-  IconCashBanknote,
-  IconCurrencyDollar,
-  IconFileText,
-  type Icon as TablerIcon,
+  IconLayoutGrid,
 } from '@tabler/icons-react';
 import { Link, usePathname } from '@/i18n/routing';
 import { cn } from '@/lib/cn';
 import type { AdminRole } from '@/lib/admin/roles';
 import { can } from '@/lib/admin/permissions';
-import { ADMIN_NAV_SECTIONS } from './nav';
+import { visibleSections, firstReachableHref, ADMIN_NAV_ICONS } from './nav';
 import { RoleBadge } from './ui';
 import { NotificationBell } from './support/NotificationBell';
 import { SupportNavBadge } from './support/SupportNavBadge';
-
-const ICONS: Record<string, TablerIcon> = {
-  overview: IconLayoutDashboard,
-  users: IconUsers,
-  teachers: IconUserCheck,
-  payouts: IconCashBanknote,
-  courses: IconBook,
-  subscriptions: IconRefresh,
-  payments: IconCreditCard,
-  progress: IconChartLine,
-  engagement: IconActivity,
-  certificates: IconCertificate,
-  testimonials: IconStar,
-  marketing: IconSpeakerphone,
-  support: IconLifebuoy,
-  health: IconHeartbeat,
-  roles: IconShieldLock,
-  audit: IconHistory,
-  settings: IconSettings,
-  platform: IconAdjustments,
-  taux: IconCurrencyDollar,
-  siteContent: IconFileText,
-};
 
 const focusRing =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ochre focus-visible:ring-offset-1 focus-visible:ring-offset-paper-light';
@@ -79,13 +36,13 @@ export function AdminShell({
   const pathname = usePathname();
   const { user } = useUser();
   const [open, setOpen] = useState(false);
+  const [spacesOpen, setSpacesOpen] = useState(false);
 
   // Hide items the role can't reach, then hide a whole group header when the
   // role can see none of its items (Task A1 — grouped nav, zero cap changes).
-  const sections = ADMIN_NAV_SECTIONS.map((s) => ({
-    ...s,
-    items: s.items.filter((i) => !i.cap || can(role, i.cap)),
-  })).filter((s) => s.items.length > 0);
+  // Shared with SpacesHub via nav.ts's `visibleSections` so the sidebar and
+  // the dashboard access cards can never disagree about what a role can reach.
+  const sections = visibleSections(role);
 
   const nav = sections.flatMap((s) => s.items);
 
@@ -129,7 +86,7 @@ export function AdminShell({
               </p>
               <ul className="space-y-0.5">
                 {section.items.map((item) => {
-                  const Icon = ICONS[item.icon] ?? IconLayoutDashboard;
+                  const Icon = ADMIN_NAV_ICONS[item.icon] ?? ADMIN_NAV_ICONS.overview;
                   const isActive = item.key === activeKey && item.enabled;
                   const label = t(`nav.${item.key}`);
 
@@ -223,6 +180,62 @@ export function AdminShell({
           </h1>
 
           <div className="ml-auto flex items-center gap-3">
+            {/* Task A2 — "Espaces" switcher: reach any admin section's first
+                page from anywhere, not just the dashboard hub. Reuses the same
+                role-filtered `sections` the sidebar renders, so it never shows
+                a space the sidebar wouldn't. */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setSpacesOpen((v) => !v)}
+                aria-haspopup="menu"
+                aria-expanded={spacesOpen}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-lg border border-ink/12 px-2.5 py-1.5 text-xs font-medium text-ink/70 transition-colors motion-reduce:transition-none hover:border-ochre/40 hover:text-ink',
+                  focusRing,
+                )}
+              >
+                <IconLayoutGrid size={16} className="shrink-0" />
+                <span className="hidden sm:inline">{t('hub.headerTrigger')}</span>
+              </button>
+              {spacesOpen && (
+                <>
+                  <button
+                    type="button"
+                    aria-hidden
+                    tabIndex={-1}
+                    onClick={() => setSpacesOpen(false)}
+                    className="fixed inset-0 z-30"
+                  />
+                  <div
+                    role="menu"
+                    aria-label={t('hub.headerTrigger')}
+                    className="absolute right-0 z-40 mt-2 w-64 rounded-xl border border-ink/12 bg-paper-light p-1.5 shadow-lg"
+                  >
+                    {sections.map((section) => {
+                      const href = firstReachableHref(section);
+                      if (!href) return null;
+                      const SectionIcon = ADMIN_NAV_ICONS[section.icon] ?? ADMIN_NAV_ICONS.overview;
+                      return (
+                        <Link
+                          key={section.key}
+                          href={href}
+                          role="menuitem"
+                          onClick={() => setSpacesOpen(false)}
+                          className={cn(
+                            'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-ink/75 transition-colors motion-reduce:transition-none hover:bg-ink/[0.04] hover:text-ink',
+                            focusRing,
+                          )}
+                        >
+                          <SectionIcon size={16} className="shrink-0 text-ink/45" />
+                          <span className="truncate">{t(`nav.sections.${section.key}`)}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
             {can(role, 'support.read') && <NotificationBell />}
             <RoleBadge role={role} label={t(`roles.${role}`)} />
             <span className="hidden text-right sm:block">
