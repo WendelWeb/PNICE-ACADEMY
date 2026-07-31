@@ -7,7 +7,7 @@
  * is for an AUTHENTICATED LEARNER (not an admin) — it just files a ticket.
  * Every admin action writes an audit_log entry inside the data layer.
  */
-import { auth, clerkClient } from '@clerk/nextjs/server';
+import { auth, clerkClient, currentUser } from '@clerk/nextjs/server';
 import { resolveAdminRole } from '@/lib/admin/access';
 import { can, type Capability } from '@/lib/admin/permissions';
 import {
@@ -33,7 +33,8 @@ import {
   type NotificationFeed,
 } from '@/lib/admin/data';
 import { checkBunnyStream, type BunnyStatus } from '@/lib/admin/health/bunny';
-import { sendEmail } from '@/lib/email/resend';
+import { sendEmail, emailLive, DEFAULT_FROM } from '@/lib/email/resend';
+import { buildTestEmailHtml } from '@/lib/email/templates';
 
 export type SupResult = { ok: boolean; message?: string; id?: string };
 
@@ -197,6 +198,61 @@ export async function recheckBunnyAction(): Promise<BunnyStatus | null> {
     return null;
   }
 }
+/** Rich diagnostic result for the admin health "send test email" button —
+ *  richer than `SupResult` on purpose: the owner needs to see WHY a send was
+ *  skipped (no key vs. not live vs. no resolvable email) and the exact
+ *  `from`/`to` used, since a misconfigured `RESEND_FROM` (unverified sender
+ *  domain) fails at Resend, not locally. */
+export type TestEmailResult = {
+  ok: boolean;
+  sent: boolean;
+  skipped: boolean;
+  reason?: 'no_key' | 'not_live' | 'unauthorized' | 'no_email';
+  to?: string;
+  from?: string;
+  id?: string;
+  error?: string;
+};
+
+/**
+ * Sends a small bilingual test email to confirm the Resend wiring actually
+ * works end to end (key valid + `from` domain verified). The recipient is
+ * ALWAYS the acting admin's own Clerk email — never client-supplied — so this
+ * can never be used to spam an arbitrary address.
+ */
+export async function sendTestEmailAction(locale: 'fr' | 'ht'): Promise<TestEmailResult> {
+  const from = process.env.RESEND_FROM ?? DEFAULT_FROM;
+  try {
+    await requireCap('support.read');
+  } catch {
+    return { ok: false, sent: false, skipped: true, reason: 'unauthorized', from };
+  }
+
+  if (!process.env.RESEND_API_KEY) {
+    return { ok: false, sent: false, skipped: true, reason: 'no_key', from };
+  }
+  if (!emailLive()) {
+    return { ok: false, sent: false, skipped: true, reason: 'not_live', from };
+  }
+
+  const cu = await currentUser();
+  const to = cu
+    ? cu.emailAddresses.find((e) => e.id === cu.primaryEmailAddressId)?.emailAddress ?? cu.emailAddresses[0]?.emailAddress
+    : undefined;
+  if (!to) {
+    return { ok: false, sent: false, skipped: true, reason: 'no_email', from };
+  }
+
+  try {
+    const { subject, html } = buildTestEmailHtml({ locale, adminName: cu?.firstName ?? null });
+    const r = await sendEmail({ to, subject, html, from });
+    if (!r.sent) return { ok: false, sent: false, skipped: r.skipped, to, from, error: r.error };
+    return { ok: true, sent: true, skipped: false, to, from, id: r.id };
+  } catch (e) {
+    return { ok: false, sent: false, skipped: false, to, from, error: e instanceof Error ? e.message : 'error' };
+  }
+}
+
 export async function setDigestAction(enabled: boolean, hour: number): Promise<SupResult> {
   try {
     const actor = await requireCap('support.act');

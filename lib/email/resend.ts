@@ -31,15 +31,24 @@ type SendEmailInput = {
  * Live only with a key AND real recipients. In mock mode the learner emails are
  * fabricated (…@gmail.com), so we must NEVER actually send to them — sending is
  * gated on the real data source (or an explicit EMAIL_LIVE=true override for
- * testing to a known address).
+ * testing to a known address). Exported (not just `emailConfigured`) so callers
+ * that need to distinguish "no key" from "key but not live" — e.g. the admin
+ * health test-email diagnostics — can do so without re-deriving the same env
+ * logic.
  */
-function emailLive(): boolean {
+export function emailLive(): boolean {
   return process.env.ADMIN_DATA_SOURCE === 'real' || process.env.EMAIL_LIVE === 'true';
 }
 
 export function emailConfigured(): boolean {
   return !!process.env.RESEND_API_KEY && emailLive();
 }
+
+/** Fallback sender when `RESEND_FROM` is unset. Exported so the admin health
+ *  test-email card can show the admin exactly which address will be used
+ *  (this default domain is almost certainly NOT verified in a fresh Resend
+ *  account — the UI warns when this is the effective sender). */
+export const DEFAULT_FROM = 'PNICE Academy <no-reply@pnice.academy>';
 
 export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
   const key = process.env.RESEND_API_KEY;
@@ -53,7 +62,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
     console.info(`[email:skipped-mock] "${input.subject}" (set ADMIN_DATA_SOURCE=real or EMAIL_LIVE=true to send)`);
     return { sent: false, skipped: true };
   }
-  const from = input.from ?? process.env.RESEND_FROM ?? 'PNICE Academy <no-reply@pnice.academy>';
+  const from = input.from ?? process.env.RESEND_FROM ?? DEFAULT_FROM;
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',

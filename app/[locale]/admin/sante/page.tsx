@@ -17,6 +17,8 @@ import { Forbidden } from '@/components/admin/Forbidden';
 import { WebhookFilters } from '@/components/admin/health/WebhookFilters';
 import { ReplayButton } from '@/components/admin/health/ReplayButton';
 import { BunnyStatusCard } from '@/components/admin/health/BunnyStatusCard';
+import { EmailTestCard } from '@/components/admin/health/EmailTestCard';
+import { emailLive, DEFAULT_FROM } from '@/lib/email/resend';
 import { WebhookStatusBadge } from '@/components/admin/support/ui';
 import { fmtDateTime, fmtInt } from '@/lib/admin/format';
 import { cn } from '@/lib/cn';
@@ -49,6 +51,14 @@ export default async function SantePage({
 
   const status = getIntegrationStatus();
   const ready = isLaunchReady(status);
+
+  // Env booleans + the `from` string only — the API key itself never leaves the server.
+  const emailInitial = {
+    hasKey: !!process.env.RESEND_API_KEY,
+    live: emailLive(),
+    from: process.env.RESEND_FROM ?? DEFAULT_FROM,
+    fromIsCustom: !!process.env.RESEND_FROM,
+  };
 
   return (
     <div className="mx-auto max-w-[1180px] space-y-5">
@@ -89,6 +99,7 @@ export default async function SantePage({
       </section>
 
       <BunnyStatusCard initial={bunny} />
+      <EmailTestCard initial={emailInitial} />
 
       {/* Webhooks */}
       <section className="space-y-3">
