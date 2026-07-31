@@ -14,7 +14,7 @@
  * rather than `real/users.ts`'s assume-DB-is-live shape) because these run
  * from a brand-new admin page that must degrade gracefully pre-migration.
  */
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { db, schema } from '@/db';
 import { dbConfigured } from '@/lib/courses/source';
 import { recordAudit } from '@/lib/admin/data/real/users';
@@ -99,6 +99,53 @@ export async function countTeacherProfilesByStatus(): Promise<Record<TeacherProf
   } catch (err) {
     console.error('[teacher/admin] countTeacherProfilesByStatus DB read failed, falling back to zero:', err);
     return zero;
+  }
+}
+
+/**
+ * Batch-resolves a set of courses' `owner_user_id`s → a display label for
+ * the `/admin/cours` oversight list (feat/separate-authoring — that page no
+ * longer authors courses, so it needs to make plain WHOSE course each row
+ * is). Prefers `teacher_profiles.display_name`, falls back to `users.name`,
+ * then `users.email` — an id with none of those (or `null`/unmatched) is
+ * simply absent from the returned map; the caller renders "—" itself.
+ * GATED + FALLBACK: no DATABASE_URL, an empty input, or a failed query ⇒ an
+ * empty map, never throws.
+ */
+export async function getOwnerDisplayNames(userIds: (string | null)[]): Promise<Map<string, string>> {
+  const ids = [...new Set(userIds.filter((id): id is string => Boolean(id)))];
+  if (!dbConfigured() || ids.length === 0) return new Map();
+  try {
+    const [profiles, users] = await Promise.all([
+      db
+        .select({ userId: T.teacherProfiles.userId, displayName: T.teacherProfiles.displayName })
+        .from(T.teacherProfiles)
+        .where(inArray(T.teacherProfiles.userId, ids)),
+      db.select({ id: T.users.id, name: T.users.name, email: T.users.email }).from(T.users).where(inArray(T.users.id, ids)),
+    ]);
+    const displayNameByUser = new Map(
+      profiles.filter((p) => p.displayName).map((p) => [p.userId, p.displayName as string]),
+    );
+    const userById = new Map(users.map((u) => [u.id, u]));
+
+    const result = new Map<string, string>();
+    for (const id of ids) {
+      const displayName = displayNameByUser.get(id);
+      if (displayName) {
+        result.set(id, displayName);
+        continue;
+      }
+      const user = userById.get(id);
+      if (user?.name) {
+        result.set(id, user.name);
+      } else if (user?.email) {
+        result.set(id, user.email);
+      }
+    }
+    return result;
+  } catch (err) {
+    console.error('[teacher/admin] getOwnerDisplayNames DB read failed, falling back to {}:', err);
+    return new Map();
   }
 }
 

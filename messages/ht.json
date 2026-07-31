@@ -1410,11 +1410,14 @@
       "fxMovedNote": "Jere nan To chanj"
     },
     "courses": {
-      "subtitle": "Estatistik vant ak konpletay pa fòmasyon.",
+      "subtitle": "Estatistik vant ak konpletay pa fòmasyon — estati, moun ki responsab li, fil validasyon. Modifye kontni an fèt nan estidyo pwofesè a.",
       "published": "Pibliye",
       "draft": "Bouyon",
+      "myStudio": "Estidyo fòmasyon mwen an",
+      "editInStudio": "Modifye nan estidyo m",
       "col": {
         "course": "Fòmasyon",
+        "owner": "Pwofesè",
         "price": "Pri",
         "enrollments": "Enskripsyon",
         "revenue": "Revni",
@@ -1800,7 +1803,7 @@
         "ressources": "Resous"
       },
       "list": {
-        "new": "Nouvo kou",
+        "view": "Gade",
         "edit": "Modifye",
         "actions": "Aksyon",
         "pendingChanges": "chanjman"
@@ -1818,19 +1821,6 @@
         "confirm": "Konfime",
         "done": "Fèt.",
         "error": "Gen yon erè ki fèt."
-      },
-      "create": {
-        "title": "Kreye yon kou",
-        "back": "Tounen nan kou yo",
-        "help": "Kou a kreye an bouyon ; w ap konplete rès la nan editè a.",
-        "code": "Kòd",
-        "titleHt": "Tit (Kreyòl)",
-        "titleFr": "Tit (Français)",
-        "price": "Pri ($)",
-        "draftNote": "Kreye an bouyon — pa parèt sou sit piblik la jiska piblikasyon.",
-        "submit": "Kreye an bouyon",
-        "titleRequired": "Yon tit obligatwa.",
-        "error": "Erè."
       },
       "editor": {
         "back": "Tounen nan kou yo",
