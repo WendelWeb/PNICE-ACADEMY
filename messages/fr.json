@@ -1410,11 +1410,14 @@
       "fxMovedNote": "Géré dans Taux de change"
     },
     "courses": {
-      "subtitle": "Statistiques de vente et de complétion par formation.",
+      "subtitle": "Statistiques de vente et de complétion par formation — statut, propriétaire, file de validation. L'édition du contenu se fait dans le studio de l'enseignant.",
       "published": "Publié",
       "draft": "Brouillon",
+      "myStudio": "Mon studio de formation",
+      "editInStudio": "Modifier dans mon studio",
       "col": {
         "course": "Formation",
+        "owner": "Enseignant",
         "price": "Prix",
         "enrollments": "Inscriptions",
         "revenue": "Revenu",
@@ -1800,7 +1803,7 @@
         "ressources": "Ressources"
       },
       "list": {
-        "new": "Nouveau cours",
+        "view": "Voir",
         "edit": "Éditer",
         "actions": "Actions",
         "pendingChanges": "modifs"
@@ -1818,19 +1821,6 @@
         "confirm": "Confirmer",
         "done": "Fait.",
         "error": "Une erreur est survenue."
-      },
-      "create": {
-        "title": "Créer un cours",
-        "back": "Retour aux cours",
-        "help": "Le cours est créé en brouillon ; tu compléteras le reste dans l'éditeur.",
-        "code": "Code",
-        "titleHt": "Titre (Kreyòl)",
-        "titleFr": "Titre (Français)",
-        "price": "Prix ($)",
-        "draftNote": "Créé en brouillon — invisible sur le site public jusqu’à publication.",
-        "submit": "Créer en brouillon",
-        "titleRequired": "Un titre est requis.",
-        "error": "Erreur."
       },
       "editor": {
         "back": "Retour aux cours",

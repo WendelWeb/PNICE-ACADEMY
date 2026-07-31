@@ -202,6 +202,12 @@ export type AdminCourseListRow = {
   rawStatus: DbCourseRow['status'];
   reviewNote: string | null;
   submittedAt: string | null;
+  /** Nullable — the course's owning teacher (`users.id`), Task
+   *  feat/separate-authoring: `/admin/cours` resolves this to a display name
+   *  (lib/teacher/admin.ts's `getOwnerDisplayNames`) so the oversight list
+   *  shows whose course it is, now that authoring itself lives in the
+   *  teacher studio, not the platform admin. */
+  ownerUserId: string | null;
 };
 
 /**
@@ -331,6 +337,7 @@ export async function getAdminCourses(): Promise<AdminCourseListRow[]> {
       rawStatus: r.status,
       reviewNote: r.reviewNote ?? null,
       submittedAt: r.submittedAt ? r.submittedAt.toISOString() : null,
+      ownerUserId: r.ownerUserId ?? null,
     }));
   } catch (err) {
     console.error('[courses/write] getAdminCourses DB read failed, gracefully degrading:', err);

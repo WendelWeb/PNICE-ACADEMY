@@ -1,15 +1,21 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
+import { auth } from '@clerk/nextjs/server';
 import {
   IconChevronUp,
   IconChevronDown,
   IconSelector,
   IconCircleCheck,
   IconCircleDot,
-  IconPlus,
+  IconEye,
   IconPencil,
+  IconSchool,
 } from '@tabler/icons-react';
 import { getCourseSales } from '@/lib/admin/data';
 import { getAdminCourses } from '@/lib/courses/write';
+import { dbConfigured } from '@/lib/courses/source';
+import { resolveUserId } from '@/lib/learner/access';
+import { isApprovedTeacher } from '@/lib/teacher/profile';
+import { getOwnerDisplayNames } from '@/lib/teacher/admin';
 import { fmtUsdCents, fmtInt, fmtPct, fmtDate } from '@/lib/admin/format';
 import { paramsOf, mergeParams, type RawSearchParams } from '@/lib/admin/users-query';
 import { hasCap } from '@/lib/admin/guard';
@@ -23,6 +29,19 @@ export const dynamic = 'force-dynamic';
 type SortKey = 'enrollments' | 'revenue' | 'completion';
 const BASE = '/admin/cours';
 
+/**
+ * `/admin/cours` — the platform admin's course OVERSIGHT list
+ * (feat/separate-authoring). Per the owner's own point ("j'ai demandé deux
+ * espaces admin différents — un pour gérer l'entreprise et un pour gérer MES
+ * formations comme prof"), this page no longer authors courses (no "Nouveau
+ * cours", no authoring "Éditer" link) — that's the teacher studio's job now,
+ * even for the owner (teacher #1), exactly like any other teacher (the
+ * marketplace's "uniforme — aucun cas spécial" principle). This page keeps
+ * only what's genuinely oversight: status/sales stats across every teacher,
+ * the "À valider" review queue (approve/reject), a read-only preview link,
+ * and — for a course the signed-in admin personally owns — a fast path
+ * ("Modifier dans mon studio") into their OWN studio editor.
+ */
 export default async function CoursesPage({
   params: { locale },
   searchParams,
@@ -36,11 +55,20 @@ export default async function CoursesPage({
   const t = await getTranslations('admin.courses');
   const tc = await getTranslations('admin.cms.list');
   const tr = await getTranslations('admin.cms.review');
-  const canEdit = await hasCap('courses.edit');
   const canReview = await hasCap('teachers.review');
 
   // Merge every DB course (incl. drafts) with sales stats.
-  const [sales, adminCourses] = await Promise.all([getCourseSales(), getAdminCourses()]);
+  const [sales, adminCourses, { userId: clerkId }] = await Promise.all([
+    getCourseSales(),
+    getAdminCourses(),
+    auth(),
+  ]);
+  // Who's asking: resolves the signed-in admin's own `users.id` so a course
+  // they personally own (teacher #1 or any admin who's ALSO an approved
+  // teacher) gets a fast path into their own studio, never someone else's.
+  const signedInUserId = clerkId && dbConfigured() ? await resolveUserId(clerkId) : null;
+  const canUseStudio = signedInUserId ? await isApprovedTeacher(signedInUserId) : false;
+
   const salesBySlug = new Map(sales.map((s) => [s.slug, s]));
   const rows = adminCourses.map((c) => {
     const s = salesBySlug.get(c.slug);
@@ -49,12 +77,18 @@ export default async function CoursesPage({
       priceCents: c.priceCents, status: c.status, dirty: c.hasUnpublishedChanges,
       lessonsCount: c.lessonsCount,
       rawStatus: c.rawStatus, reviewNote: c.reviewNote, submittedAt: c.submittedAt,
+      ownerUserId: c.ownerUserId,
       enrollments: s?.enrollments ?? 0,
       revenueCents: s?.revenueCents ?? 0,
       completions: s?.completions ?? 0,
       completionRatePct: s?.completionRatePct ?? 0,
     };
   });
+  // Batch-resolved once for every row (teacher display name, or "—" — see
+  // lib/teacher/admin.ts's getOwnerDisplayNames) so it's obvious whose
+  // course each row is, across every teacher on the platform.
+  const ownerNames = await getOwnerDisplayNames(rows.map((r) => r.ownerUserId));
+  const ownerLabel = (ownerUserId: string | null) => (ownerUserId && ownerNames.get(ownerUserId)) || '—';
 
   const params = paramsOf(searchParams);
   const tab = canReview && params.get('tab') === 'review' ? 'review' : 'all';
@@ -84,13 +118,29 @@ export default async function CoursesPage({
     );
   }
 
+  function ViewAction({ slug }: { slug: string }) {
+    return (
+      <Link href={`${BASE}/${slug}/apercu`} className="inline-flex items-center gap-1 font-mono text-[11px] text-ink/60 hover:text-ink">
+        <IconEye size={12} /> {tc('view')}
+      </Link>
+    );
+  }
+
+  function EditInStudioAction({ slug }: { slug: string }) {
+    return (
+      <Link href={`/enseigner/studio/cours/${slug}/editer`} className="inline-flex items-center gap-1 font-mono text-[11px] text-ochre hover:underline">
+        <IconPencil size={12} /> {t('editInStudio')}
+      </Link>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-[1180px] space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-graphite/70">{t('subtitle')}</p>
-        {canEdit && (
-          <Link href="/admin/cours/nouveau" className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 font-mono text-[11px] font-medium text-paper-light hover:bg-ink/90">
-            <IconPlus size={14} /> {tc('new')}
+        {canUseStudio && (
+          <Link href="/enseigner/studio" className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 font-mono text-[11px] font-medium text-paper-light hover:bg-ink/90">
+            <IconSchool size={14} /> {t('myStudio')}
           </Link>
         )}
       </div>
@@ -125,10 +175,11 @@ export default async function CoursesPage({
           </div>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-ink/12">
-            <table className="w-full min-w-[780px] border-collapse text-sm">
+            <table className="w-full min-w-[900px] border-collapse text-sm">
               <thead className="bg-paper-light">
                 <tr className="border-b border-ink/12 text-left font-mono text-[10px] uppercase tracking-wide text-ink/55">
                   <th className="px-3 py-2">{t('col.course')}</th>
+                  <th className="px-3 py-2">{t('col.owner')}</th>
                   <th className="px-3 py-2 text-right">{t('col.price')}</th>
                   <th className="px-3 py-2">{tr('submittedAt')}</th>
                   <th className="px-3 py-2 text-right">{tc('actions')}</th>
@@ -143,10 +194,14 @@ export default async function CoursesPage({
                         <span className="font-mono text-[10px] uppercase text-ink/40">{c.code}</span>
                       </Link>
                     </td>
+                    <td className="px-3 py-2.5 text-[12px] text-ink/70">{ownerLabel(c.ownerUserId)}</td>
                     <td className="px-3 py-2.5 text-right font-mono text-[13px] text-ink/75 tabular-nums">{fmtUsdCents(c.priceCents)}</td>
                     <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[11px] text-ink/60">{fmtDate(c.submittedAt, locale)}</td>
                     <td className="px-3 py-2.5 text-right">
-                      <CourseReviewActions slug={c.slug} />
+                      <div className="flex flex-col items-end gap-1.5">
+                        <ViewAction slug={c.slug} />
+                        <CourseReviewActions slug={c.slug} />
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -156,17 +211,18 @@ export default async function CoursesPage({
         )
       ) : (
         <div className="overflow-x-auto rounded-xl border border-ink/12">
-          <table className="w-full min-w-[880px] border-collapse text-sm">
+          <table className="w-full min-w-[980px] border-collapse text-sm">
             <thead className="bg-paper-light">
               <tr className="border-b border-ink/12 text-left">
                 <th className="px-3 py-2 font-mono text-[10px] uppercase tracking-wide text-ink/55">{t('col.course')}</th>
+                <th className="px-3 py-2 font-mono text-[10px] uppercase tracking-wide text-ink/55">{t('col.owner')}</th>
                 <th className="px-3 py-2 text-right font-mono text-[10px] uppercase tracking-wide text-ink/55">{t('col.price')}</th>
                 <SortHeader col="enrollments" label={t('col.enrollments')} />
                 <SortHeader col="revenue" label={t('col.revenue')} />
                 <SortHeader col="completion" label={t('col.completionRate')} />
                 <th className="px-3 py-2 text-right font-mono text-[10px] uppercase tracking-wide text-ink/55">{t('col.lessons')}</th>
                 <th className="px-3 py-2 text-center font-mono text-[10px] uppercase tracking-wide text-ink/55">{t('col.status')}</th>
-                {canEdit && <th className="px-3 py-2 text-right font-mono text-[10px] uppercase tracking-wide text-ink/55">{tc('actions')}</th>}
+                <th className="px-3 py-2 text-right font-mono text-[10px] uppercase tracking-wide text-ink/55">{tc('actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -178,6 +234,7 @@ export default async function CoursesPage({
                       <span className="font-mono text-[10px] uppercase text-ink/40">{c.code}</span>
                     </Link>
                   </td>
+                  <td className="px-3 py-2.5 text-[12px] text-ink/70">{ownerLabel(c.ownerUserId)}</td>
                   <td className="px-3 py-2.5 text-right font-mono text-[13px] text-ink/75 tabular-nums">{fmtUsdCents(c.priceCents)}</td>
                   <td className="px-3 py-2.5 text-right font-mono text-sm text-ink tabular-nums">{fmtInt(c.enrollments)}</td>
                   <td className="px-3 py-2.5 text-right font-mono text-sm font-medium text-ink tabular-nums">{fmtUsdCents(c.revenueCents)}</td>
@@ -195,13 +252,14 @@ export default async function CoursesPage({
                       {c.dirty && <span className="rounded bg-ochre/15 px-1 font-mono text-[8px] uppercase text-ochre">{tc('pendingChanges')}</span>}
                     </span>
                   </td>
-                  {canEdit && (
-                    <td className="px-3 py-2.5 text-right">
-                      <Link href={`/admin/cours/${c.slug}/editer`} className="inline-flex items-center gap-1 font-mono text-[11px] text-ochre hover:underline">
-                        <IconPencil size={12} /> {tc('edit')}
-                      </Link>
-                    </td>
-                  )}
+                  <td className="px-3 py-2.5 text-right">
+                    <div className="flex items-center justify-end gap-2.5">
+                      <ViewAction slug={c.slug} />
+                      {canUseStudio && signedInUserId && c.ownerUserId === signedInUserId && (
+                        <EditInStudioAction slug={c.slug} />
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
