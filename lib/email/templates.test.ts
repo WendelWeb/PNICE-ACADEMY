@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildReceiptHtml, buildCartReminderHtml, buildDailyDigestHtml } from '@/lib/email/templates';
+import { buildReceiptHtml, buildCartReminderHtml, buildDailyDigestHtml, buildTestEmailHtml } from '@/lib/email/templates';
 
 describe('buildReceiptHtml', () => {
   const base = { name: 'Jean', itemName: 'Zouti finansye dijital', amountCents: 900, dateIso: '2026-07-22T12:00:00Z', ref: 'pi_123' };
@@ -62,8 +62,12 @@ describe('buildCartReminderHtml', () => {
   it('includes a resume link only when provided', () => {
     const withLink = buildCartReminderHtml({ ...base, locale: 'fr', resumeUrl: 'https://pnice.academy/fr/checkout?course=x' });
     expect(withLink.html).toContain('href="https://pnice.academy/fr/checkout?course=x"');
+    // Intent: no CTA BUTTON renders without a resumeUrl. (The layout's footer
+    // always carries a link to the site, so "no anchor at all" is no longer
+    // the right assertion — the absence of the CTA label is.)
     const withoutLink = buildCartReminderHtml({ ...base, locale: 'fr' });
-    expect(withoutLink.html).not.toContain('<a href=');
+    expect(withoutLink.html).not.toContain('Reprendre mon achat');
+    expect(withoutLink.text).not.toContain('Reprendre mon achat');
   });
 
   it('escapes HTML in name and itemName', () => {
@@ -102,5 +106,71 @@ describe('buildDailyDigestHtml', () => {
   it('flags open tickets / failed webhooks visually when nonzero', () => {
     const { html } = buildDailyDigestHtml({ ...base, locale: 'fr', failedWebhooks: 2 });
     expect(html).toContain('#B23A2E');
+  });
+
+  it('CTA links to /admin', () => {
+    const { html } = buildDailyDigestHtml({ ...base, locale: 'fr' });
+    expect(html).toContain('/fr/admin');
+  });
+});
+
+describe('buildTestEmailHtml', () => {
+  it('builds a French test email with subject and body', () => {
+    const { subject, html } = buildTestEmailHtml({ locale: 'fr' });
+    expect(subject).toContain('Test');
+    expect(html).toContain('Resend');
+  });
+
+  it('builds a Kreyòl test email', () => {
+    const { subject, html } = buildTestEmailHtml({ locale: 'ht' });
+    expect(subject).toContain('Tès');
+    expect(html).toContain('Resend');
+  });
+
+  it('includes a diagnostic block with the effective sender and a date', () => {
+    const { html } = buildTestEmailHtml({
+      locale: 'fr',
+      from: 'PNICE Academy <no-reply@pnice.academy>',
+      dateIso: '2026-07-30T12:00:00Z',
+    });
+    expect(html).toContain('no-reply@pnice.academy');
+  });
+
+  it('escapes an admin name', () => {
+    const { html } = buildTestEmailHtml({ locale: 'fr', adminName: '<b>x</b>' });
+    expect(html).not.toContain('<b>x</b>');
+    expect(html).toContain('&lt;b&gt;x&lt;/b&gt;');
+  });
+});
+
+describe('plain-text alternative (deliverability)', () => {
+  it('every builder returns non-empty text without leftover HTML tags', () => {
+    const receipt = buildReceiptHtml({ locale: 'fr', name: 'Jean', itemName: 'Zouti finansye dijital', amountCents: 900, dateIso: '2026-07-22T12:00:00Z', ref: 'pi_123' });
+    const cart = buildCartReminderHtml({ locale: 'fr', name: 'Jean', itemName: 'Kòmès sou entènèt', amountCents: 4900, resumeUrl: 'https://pnice.academy/fr/checkout?course=x' });
+    const test = buildTestEmailHtml({ locale: 'fr' });
+    const digest = buildDailyDigestHtml({
+      locale: 'fr',
+      dateIso: '2026-07-24T08:00:00Z',
+      signupsToday: 3,
+      enrollmentsToday: 2,
+      revenueTodayCents: 15800,
+      openTickets: 1,
+      failedWebhooks: 0,
+    });
+
+    // Detects actual leftover markup (tags with attributes/children, e.g.
+    // `<p style=…>` or `</table>`) without false-positiving on the RFC
+    // "Name <email>" sender format the test builder's diagnostic block
+    // legitimately includes (e.g. "PNICE Academy <no-reply@pnice.academy>").
+    const HTML_TAG = /<\/?(p|div|table|tr|td|span|strong|a|h1|html|body|br)\b[^>]*>/i;
+    for (const { text } of [receipt, cart, test, digest]) {
+      expect(text.length).toBeGreaterThan(0);
+      expect(text).not.toMatch(HTML_TAG);
+    }
+
+    expect(receipt.text).toContain('Zouti finansye dijital');
+    expect(receipt.text).toContain('$9.00');
+    expect(cart.text).toContain('https://pnice.academy/fr/checkout?course=x');
+    expect(digest.text).toContain('$158.00');
   });
 });

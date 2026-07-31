@@ -311,6 +311,7 @@ async function fulfillCheckoutCompleted(a: CheckoutCompleted): Promise<'processe
       to: a.customerEmail ?? user.email,
       subject: receipt.subject,
       html: receipt.html,
+      text: receipt.text,
       ...(attachments ? { attachments } : {}),
     });
   } catch (err) {

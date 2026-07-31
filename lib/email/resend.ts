@@ -19,6 +19,10 @@ type SendEmailInput = {
   to: string | string[];
   subject: string;
   html: string;
+  /** Plain-text alternative (deliverability + accessibility). Optional so
+   *  callers that don't have one yet keep compiling unchanged; every
+   *  lib/email/templates.ts builder now provides one. */
+  text?: string;
   /** Defaults to RESEND_FROM, then a sensible PNICE Academy sender. */
   from?: string;
   replyTo?: string;
@@ -72,6 +76,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
         to: input.to,
         subject: input.subject,
         html: input.html,
+        ...(input.text ? { text: input.text } : {}),
         ...(input.replyTo ? { reply_to: input.replyTo } : {}),
         ...(input.attachments && input.attachments.length > 0
           ? { attachments: input.attachments }
