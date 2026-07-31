@@ -1053,6 +1053,26 @@
         "platform": "Platefòm"
       }
     },
+    "hub": {
+      "title": "Espas administrasyon yo",
+      "intro": "Antre dirèkteman nan chak espas administrasyon an.",
+      "headerTrigger": "Espas",
+      "content": {
+        "desc": "Fòmasyon, chapit, leson, sètifika ak kontni sit la."
+      },
+      "teachers": {
+        "desc": "Pwofil pwofesè, kandidati pou revize ak retrè pou trete."
+      },
+      "people": {
+        "desc": "Itilizatè, segman ak demann sipò."
+      },
+      "money": {
+        "desc": "Peman, abònman ak kanpay maketing."
+      },
+      "platform": {
+        "desc": "Paramèt jeneral, to chanj, wòl admin, odit ak sante sistèm nan."
+      }
+    },
     "roles": {
       "super-admin": "Sipè-admin",
       "admin": "Admin",
