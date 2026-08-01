@@ -23,6 +23,7 @@ import {
   shouldReplaceBunnyVideo,
   mirrorBilingualFields,
   COURSE_BILINGUAL_PAIR_COLUMNS,
+  LESSON_BILINGUAL_PAIR_COLUMNS,
   type DbCourseStatus,
 } from './write';
 import type { CourseResource } from '@/db/schema';
@@ -330,5 +331,90 @@ describe('mirrorBilingualFields — THE ONE PLACE monolingual courses mirror ht/
     expect(out.status).toBe('draft');
     expect(out.bilingual).toBe(false);
     expect(out.primaryLocale).toBe('ht');
+  });
+});
+
+/**
+ * Unit tests for `mirrorBilingualFields` fed `LESSON_BILINGUAL_PAIR_COLUMNS`
+ * (Task: lesson-language — the sibling of the course-level suite above, same
+ * function, different column-pair list). `updateLesson` funnels its `set`
+ * object through exactly this call when the parent course is monolingual —
+ * see lib/courses/write.ts's doc comment on `resolveLessonMirrorContext`.
+ * Pure function, no DB touched.
+ */
+describe('mirrorBilingualFields(LESSON_BILINGUAL_PAIR_COLUMNS) — lesson title/desc/notes mirror the same way course fields do (Task: lesson-language)', () => {
+  it('covers exactly the three lesson pairs: title, desc, notes', () => {
+    expect(LESSON_BILINGUAL_PAIR_COLUMNS).toEqual([
+      ['titleHt', 'titleFr'],
+      ['descHt', 'descFr'],
+      ['notesHt', 'notesFr'],
+    ]);
+  });
+
+  it('is a no-op for a bilingual course, regardless of primaryLocale — a bilingual course\'s lesson save is untouched', () => {
+    const values = { titleHt: 'Tit kreyòl', titleFr: 'Titre français', descHt: 'D ht', descFr: 'D fr', notesHt: 'N ht', notesFr: 'N fr' };
+    expect(mirrorBilingualFields(values, true, 'ht', LESSON_BILINGUAL_PAIR_COLUMNS)).toEqual(values);
+    expect(mirrorBilingualFields(values, true, 'fr', LESSON_BILINGUAL_PAIR_COLUMNS)).toEqual(values);
+  });
+
+  it('mirrors all three pairs FROM the ht side when primaryLocale is ht (monolingual course)', () => {
+    const out = mirrorBilingualFields(
+      {
+        titleHt: 'Tit leson', titleFr: 'stale title',
+        descHt: 'Deskripsyon leson', descFr: 'stale desc',
+        notesHt: 'Nòt pou elèv', notesFr: 'stale notes',
+      },
+      false,
+      'ht',
+      LESSON_BILINGUAL_PAIR_COLUMNS,
+    );
+    expect(out.titleFr).toBe('Tit leson');
+    expect(out.descFr).toBe('Deskripsyon leson');
+    expect(out.notesFr).toBe('Nòt pou elèv');
+    // Primary side itself is left as-is (not blanked, not altered).
+    expect(out.titleHt).toBe('Tit leson');
+    expect(out.descHt).toBe('Deskripsyon leson');
+    expect(out.notesHt).toBe('Nòt pou elèv');
+  });
+
+  it('mirrors all three pairs FROM the fr side when primaryLocale is fr (monolingual course)', () => {
+    const out = mirrorBilingualFields(
+      {
+        titleHt: 'stale title', titleFr: 'Titre de la leçon',
+        descHt: 'stale desc', descFr: 'Description de la leçon',
+        notesHt: 'stale notes', notesFr: "Notes pour l'élève",
+      },
+      false,
+      'fr',
+      LESSON_BILINGUAL_PAIR_COLUMNS,
+    );
+    expect(out.titleHt).toBe('Titre de la leçon');
+    expect(out.descHt).toBe('Description de la leçon');
+    expect(out.notesHt).toBe("Notes pour l'élève");
+  });
+
+  it('only mirrors a lesson pair actually present in the patch\'s `set` object — a video-only save touches nothing', () => {
+    const out = mirrorBilingualFields<Record<string, unknown>>(
+      { bunnyVideoId: 'guid-123', updatedAt: new Date('2026-08-01') },
+      false,
+      'ht',
+      LESSON_BILINGUAL_PAIR_COLUMNS,
+    );
+    expect(out).not.toHaveProperty('titleHt');
+    expect(out).not.toHaveProperty('descHt');
+    expect(out).not.toHaveProperty('notesHt');
+    expect(out.bunnyVideoId).toBe('guid-123');
+  });
+
+  it('mirrors only the pair present when a save touches just one of the three (e.g. notes only)', () => {
+    const out = mirrorBilingualFields<Record<string, unknown>>(
+      { notesHt: 'Nouvo nòt', notesFr: 'stale' },
+      false,
+      'ht',
+      LESSON_BILINGUAL_PAIR_COLUMNS,
+    );
+    expect(out.notesFr).toBe('Nouvo nòt');
+    expect(out).not.toHaveProperty('titleHt');
+    expect(out).not.toHaveProperty('descHt');
   });
 });

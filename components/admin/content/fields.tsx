@@ -9,8 +9,14 @@ const focusRing =
 export const inputCls =
   'w-full rounded-lg border border-ink/15 bg-paper px-2.5 py-1.5 text-sm text-ink ' + focusRing;
 
-/** Shown next to a field's label when only one locale's input is rendered (mono course, see `mono` prop below). */
-const MONO_LOCALE_NAME: Record<'ht' | 'fr', string> = { ht: 'Kreyòl', fr: 'Français' };
+/**
+ * Shown next to a field's label when only one locale's input is rendered
+ * (mono course, see `mono` prop below). Exported (Task: lesson-language) so
+ * `components/admin/content/plan/LessonEditPanel.tsx` renders the exact same
+ * "· Kreyòl"/"· Français" hint for a monolingual course's lesson fields,
+ * instead of a second hardcoded copy of this two-entry map.
+ */
+export const MONO_LOCALE_NAME: Record<'ht' | 'fr', string> = { ht: 'Kreyòl', fr: 'Français' };
 
 /**
  * A bilingual field: ht + fr side by side (stacked on mobile) — OR, when

@@ -47,6 +47,11 @@ export type PlanCommonProps = {
   onAct: (fn: () => Promise<{ ok: boolean }>) => void;
   actions: LessonActions;
   chapters: AdminChapter[];
+  /** The parent course's optional-translation setting (Task: lesson-language)
+   *  — plain data, not part of the `actions` DI contract above. See
+   *  `LessonEditPanel`'s doc comment for how `mono` mode renders. */
+  bilingual: boolean;
+  primaryLocale: 'ht' | 'fr';
   /** Accordion (Task A2 #4): only one lesson panel open at a time, lifted to
    *  `PlanEditor` so it stays true across chapters + the ungrouped bucket. */
   expandedId: string | null;

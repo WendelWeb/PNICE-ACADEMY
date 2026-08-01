@@ -154,6 +154,8 @@ export default async function EditMyCoursePage({
               lessons={course.lessons}
               chapters={course.chapters}
               isDraft={isDraft}
+              bilingual={course.bilingual}
+              primaryLocale={course.primary_locale}
               actions={lessonActions}
             />
           )}

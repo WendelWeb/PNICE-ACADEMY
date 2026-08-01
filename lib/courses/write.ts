@@ -518,31 +518,40 @@ export const COURSE_BILINGUAL_PAIR_COLUMNS: readonly (readonly [string, string])
 
 /**
  * THE ONE PLACE (Task: course-language — see db/schema.ts's `courses.
- * bilingual` doc comment for the full design): when a course is monolingual
+ * bilingual` doc comment for the full design; extended by Task:
+ * lesson-language to also mirror a LESSON's title/desc/notes pairs, via
+ * `LESSON_BILINGUAL_PAIR_COLUMNS` below — same invariant, same function,
+ * just a different column-pair list): when a course is monolingual
  * (`bilingual === false`), every ht/fr column pair above must carry
  * byte-identical content, so every existing reader (public pages, cards,
  * emails, Bunny titles, seed, ManifestList…) keeps working untouched and a
  * visitor browsing in the "other" locale still sees the course instead of
- * blanks. `createCourse` and `updateCourse` are the ONLY two functions that
- * write these columns — both funnel their insert-values/`set` object through
- * this, right before the DB call, so no caller/field can forget to mirror.
+ * blanks. `createCourse` and `updateCourse` funnel their insert-values/`set`
+ * object through this for `COURSE_BILINGUAL_PAIR_COLUMNS`; `updateLesson`
+ * does the same for `LESSON_BILINGUAL_PAIR_COLUMNS` — every write to either
+ * table goes through THIS function, right before the DB call, so no
+ * caller/field can forget to mirror.
  *
  * Copies FROM the `primaryLocale` side TO the other side, and ONLY for a
  * pair actually present in `values` this call (`undefined` means "not being
  * written right now" — leaves it alone, since it was already mirrored by a
  * previous save under the same invariant). A no-op when `bilingual` is true.
- * Generic + structural (works on both `createCourse`'s full insert-values
- * object and `updateCourse`'s partial `set` object) so it's usable — and
- * unit-testable — without a DB connection.
+ * Generic + structural (works on `createCourse`'s full insert-values object,
+ * `updateCourse`'s partial `set` object, and `updateLesson`'s partial `set`
+ * object) so it's usable — and unit-testable — without a DB connection.
+ *
+ * `pairColumns` defaults to `COURSE_BILINGUAL_PAIR_COLUMNS` (every existing
+ * call site is unchanged); pass `LESSON_BILINGUAL_PAIR_COLUMNS` for a lesson.
  */
 export function mirrorBilingualFields<T extends Record<string, unknown>>(
   values: T,
   bilingual: boolean,
   primaryLocale: 'ht' | 'fr',
+  pairColumns: readonly (readonly [string, string])[] = COURSE_BILINGUAL_PAIR_COLUMNS,
 ): T {
   if (bilingual) return values;
   const out: Record<string, unknown> = { ...values };
-  for (const [htKey, frKey] of COURSE_BILINGUAL_PAIR_COLUMNS) {
+  for (const [htKey, frKey] of pairColumns) {
     const primaryKey = primaryLocale === 'ht' ? htKey : frKey;
     const otherKey = primaryLocale === 'ht' ? frKey : htKey;
     if (out[primaryKey] !== undefined) out[otherKey] = out[primaryKey];
@@ -900,6 +909,53 @@ export type LessonPatch = Partial<{
 }>;
 
 /**
+ * Every `lessons` ht/fr column pair (Task: lesson-language — the sibling of
+ * `COURSE_BILINGUAL_PAIR_COLUMNS`, same shape, one level down): "title, desc,
+ * notes". Fed to `mirrorBilingualFields` by `updateLesson` below, exactly
+ * like the course-level list is fed by `updateCourse` — a course that opted
+ * into "kreyòl only" (or "français only") must not still force a teacher to
+ * fill in the OTHER language on every single lesson.
+ */
+export const LESSON_BILINGUAL_PAIR_COLUMNS: readonly (readonly [string, string])[] = [
+  ['titleHt', 'titleFr'],
+  ['descHt', 'descFr'],
+  ['notesHt', 'notesFr'],
+];
+
+/**
+ * Resolves the PARENT COURSE's `bilingual`/`primaryLocale` for
+ * `updateLesson`'s mirroring below — resolved server-side from the `courses`
+ * row, NEVER trusted from the client (a stale/tampered client flag could
+ * otherwise mirror the wrong side, or mirror when the course is actually
+ * bilingual).
+ *
+ * NEVER THROWS — mirrors lib/courses/source.ts's `selectCourseRowBySlug`
+ * migration-resilience pattern: if the course row is missing, OR the
+ * `bilingual`/`primary_locale` columns don't exist yet on this DB (this
+ * migration hasn't been pushed — the query itself fails), this DEFAULTS TO
+ * BILINGUAL. Bilingual is the safe "do nothing" default `mirrorBilingualFields`
+ * already understands — it never hides a field or overwrites one locale's
+ * real content with a guess.
+ */
+async function resolveLessonMirrorContext(slug: string): Promise<{ bilingual: boolean; primaryLocale: 'ht' | 'fr' }> {
+  try {
+    const [row] = await db
+      .select({ bilingual: T.courses.bilingual, primaryLocale: T.courses.primaryLocale })
+      .from(T.courses)
+      .where(eq(T.courses.slug, slug))
+      .limit(1);
+    if (!row) return { bilingual: true, primaryLocale: 'ht' };
+    return { bilingual: row.bilingual ?? true, primaryLocale: row.primaryLocale ?? 'ht' };
+  } catch (err) {
+    console.warn(
+      `[courses/write] resolveLessonMirrorContext fell back to bilingual defaults for "${slug}" (missing primary_locale/bilingual column? run \`npm run db:push\`):`,
+      err,
+    );
+    return { bilingual: true, primaryLocale: 'ht' };
+  }
+}
+
+/**
  * Pure decision for `updateLesson`'s orphan-cleanup gate, extracted for unit
  * testing (previously an inline, untested conditional — see
  * lib/courses/write.test.ts). A REPLACEMENT (both ids non-empty AND
@@ -990,9 +1046,29 @@ export async function updateLesson(
   if (patch.notes_fr !== undefined) set.notesFr = patch.notes_fr;
   if (patch.resources !== undefined) set.resources = patch.resources.map(normalizeResource);
 
+  // Lesson-level optional translation (Task: lesson-language) — when the
+  // PARENT COURSE is monolingual, mirror this save's primary-locale value
+  // into both columns for title/desc/notes, the SAME `mirrorBilingualFields`
+  // helper `updateCourse` uses for course fields (see its doc comment) —
+  // just fed `LESSON_BILINGUAL_PAIR_COLUMNS` instead. Only paid for when the
+  // patch actually touches one of the three mirrored pairs, so a plain
+  // video/duration/preview/resources-only save skips the extra course read.
+  const touchesLessonMirror =
+    patch.title_ht !== undefined ||
+    patch.title_fr !== undefined ||
+    patch.desc_ht !== undefined ||
+    patch.desc_fr !== undefined ||
+    patch.notes_ht !== undefined ||
+    patch.notes_fr !== undefined;
+  let mirroredSet = set;
+  if (touchesLessonMirror) {
+    const { bilingual, primaryLocale } = await resolveLessonMirrorContext(slug);
+    mirroredSet = mirrorBilingualFields(set, bilingual, primaryLocale, LESSON_BILINGUAL_PAIR_COLUMNS);
+  }
+
   const res = await db
     .update(T.lessons)
-    .set(set)
+    .set(mirroredSet)
     .where(and(eq(T.lessons.courseSlug, slug), eq(T.lessons.id, lessonId)))
     .returning({ id: T.lessons.id });
   if (res.length === 0) return { ok: false, message: 'not_found' };
