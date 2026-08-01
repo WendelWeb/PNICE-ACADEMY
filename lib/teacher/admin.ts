@@ -152,22 +152,71 @@ export async function getOwnerDisplayNames(userIds: (string | null)[]): Promise<
 /* ------------------------------- mutations -------------------------------- */
 
 /**
+ * Pure kebab-case ASCII slug from a teacher's display name (Task: DB-backed
+ * teacher slugs) — mirrors `lib/courses/write.ts`'s private `slugify` exactly
+ * (same normalize/strip-diacritics/collapse-punctuation/trim/cap-length
+ * rules), kept as its own exported copy here rather than a shared import so
+ * this module's slug logic doesn't reach into the courses write module for
+ * an unrelated concern. Exported for unit testing without a DB.
+ */
+export function slugifyTeacherName(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '') // strip diacritics (accents) after NFD decomposition
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60);
+}
+
+/**
+ * Resolves a fresh, unique `teacher_profiles.slug` from a display name:
+ * kebab-case the name (falling back to a generic base if the name is empty
+ * or has no ASCII-slugifiable characters), then dedupe against every
+ * existing slug with a numeric suffix — same check-then-insert shape as
+ * `lib/courses/write.ts`'s `createCourse` slug dedupe (acceptable here for
+ * the same reason: a low-traffic, single-admin-triggered write, with the
+ * column's own UNIQUE constraint as a backstop regardless).
+ */
+async function generateUniqueTeacherSlug(displayName: string | null): Promise<string> {
+  const base = slugifyTeacherName(displayName?.trim() ?? '') || 'anseyan';
+  const existing = new Set(
+    (await db.select({ slug: T.teacherProfiles.slug }).from(T.teacherProfiles))
+      .map((r) => r.slug)
+      .filter((s): s is string => Boolean(s)),
+  );
+  if (!existing.has(base)) return base;
+  let i = 2;
+  while (existing.has(`${base}-${i}`)) i++;
+  return `${base}-${i}`;
+}
+
+/**
  * Approve a pending teacher profile: status → 'approved', records the
- * reviewing admin, and grants the platform's default video quota (Task
+ * reviewing admin, grants the platform's default video quota (Task
  * C3-T3 — `platform_settings.default_video_quota_minutes`, frozen onto the
  * profile the same way a course's commission is frozen at sale time, so a
  * later platform-default change doesn't retroactively shrink/grow an
- * already-approved teacher's quota). Requires `current.status === 'pending' || 'rejected'`.
+ * already-approved teacher's quota), and — Task: DB-backed teacher slugs —
+ * generates a public `/prof/[slug]` slug if the profile doesn't already have
+ * one. Requires `current.status === 'pending' || 'rejected'`. A profile being
+ * RE-approved (rejected → approved) keeps whatever slug it already has —
+ * this never regenerates or overwrites an existing slug.
  */
 export async function approveTeacherProfile(p: { userId: string; admin: AdminActor }): Promise<TeacherAdminResult> {
   if (!dbConfigured()) return dbRequired();
-  const [current] = await db.select({ status: T.teacherProfiles.status }).from(T.teacherProfiles).where(eq(T.teacherProfiles.userId, p.userId)).limit(1);
+  const [current] = await db
+    .select({ status: T.teacherProfiles.status, slug: T.teacherProfiles.slug, displayName: T.teacherProfiles.displayName })
+    .from(T.teacherProfiles)
+    .where(eq(T.teacherProfiles.userId, p.userId))
+    .limit(1);
   if (!current) return { ok: false, message: 'not_found' };
   if (current.status !== 'pending' && current.status !== 'rejected') return { ok: false, message: 'invalid_status' };
   const quota = await getDefaultVideoQuotaMinutes();
+  const slug = current.slug ?? (await generateUniqueTeacherSlug(current.displayName));
   await db
     .update(T.teacherProfiles)
-    .set({ status: 'approved', reviewedBy: p.admin.id, videoQuotaMinutes: quota, updatedAt: new Date() })
+    .set({ status: 'approved', reviewedBy: p.admin.id, videoQuotaMinutes: quota, slug, updatedAt: new Date() })
     .where(eq(T.teacherProfiles.userId, p.userId));
   await recordAudit({ action: 'approve_teacher', userId: p.userId, admin: p.admin });
   return { ok: true };

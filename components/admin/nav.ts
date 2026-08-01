@@ -40,6 +40,7 @@ import {
   IconCashBanknote,
   IconCurrencyDollar,
   IconFileText,
+  IconChalkboard,
   type Icon as TablerIcon,
 } from '@tabler/icons-react';
 import type { AdminRole } from '@/lib/admin/roles';
@@ -82,6 +83,13 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
       // NEW (Task A1) — moved out of /admin/parametres, which was a mix of
       // "site content" and "business settings". This is the site-content half.
       { key: 'siteContent', href: '/admin/contenu', icon: 'siteContent', enabled: true, cap: 'courses.edit' },
+      // NEW (Task: studio access everywhere) — owner ask: "je ne vois pas
+      // comment accéder au studio prof". No new capability: visible to any
+      // admin who can already see this section (same `cap` as the other
+      // content items) — the studio ITSELF still gates on approved-teacher
+      // status (lib/teacher/profile.ts's `isApprovedTeacher`), same as
+      // /enseigner/studio always has.
+      { key: 'myStudio', href: '/enseigner/studio', icon: 'myStudio', enabled: true, cap: 'courses.read' },
     ],
   },
   {
@@ -155,6 +163,7 @@ export const ADMIN_NAV_ICONS: Record<string, TablerIcon> = {
   platform: IconAdjustments,
   taux: IconCurrencyDollar,
   siteContent: IconFileText,
+  myStudio: IconChalkboard,
 };
 
 /**

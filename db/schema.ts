@@ -653,6 +653,14 @@ export const teacherProfiles = pgTable('teacher_profiles', {
     .notNull()
     .unique()
     .references(() => users.id, { onDelete: 'cascade' }),
+  // Public /prof/[slug] URL segment (Task: DB-backed teacher slugs). Nullable
+  // — a brand-new pending/rejected profile has none; generated (kebab-case
+  // ASCII from display_name, deduped with a numeric suffix) the moment a
+  // profile is APPROVED (lib/teacher/admin.ts's `approveTeacherProfile`), so
+  // a 2nd+ real teacher gets a working public page with zero code change.
+  // Unique so Postgres itself backstops the dedupe logic; multiple NULLs
+  // (pending applicants) are allowed, same convention as `users.referral_code`.
+  slug: text('slug').unique(),
   displayName: text('display_name'),
   bioHt: text('bio_ht'),
   bioFr: text('bio_fr'),

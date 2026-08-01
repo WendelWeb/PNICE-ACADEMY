@@ -21,14 +21,19 @@
  * SUM(net_cents) — jamais dénormalisé."
  */
 import { eq } from 'drizzle-orm';
+import { auth } from '@clerk/nextjs/server';
 import { db, schema } from '@/db';
 import { dbConfigured } from '@/lib/courses/source';
+import { clerkEnabled } from '@/lib/clerk';
+import { resolveUserId } from '@/lib/learner/access';
 
 const T = schema;
 
 export type TeacherProfile = {
   id: string;
   userId: string;
+  /** Public /prof/[slug] URL segment — null until approval generates one (see lib/teacher/admin.ts). */
+  slug: string | null;
   displayName: string | null;
   bioHt: string | null;
   bioFr: string | null;
@@ -91,6 +96,7 @@ export function mapDbTeacherProfile(row: DbTeacherProfileRow): TeacherProfile {
   return {
     id: row.id,
     userId: row.userId,
+    slug: row.slug ?? null,
     displayName: row.displayName ?? null,
     bioHt: row.bioHt ?? null,
     bioFr: row.bioFr ?? null,
@@ -177,6 +183,34 @@ export async function getTeacherProfile(userId: string): Promise<TeacherProfile 
 export async function isApprovedTeacher(userId: string): Promise<boolean> {
   const profile = await getTeacherProfile(userId);
   return profile?.status === 'approved';
+}
+
+/**
+ * Resolves the CURRENTLY SIGNED-IN Clerk session (if any) to whether that
+ * user has an APPROVED `teacher_profiles` row — the single check both the
+ * public nav (components/layout/Nav.tsx's `StudioLink`) and the /kont
+ * account page need to decide whether to surface a "studio" entry point
+ * (Task: studio access everywhere — before this, the studio had no link
+ * anywhere outside /enseigner and /admin/cours). Centralised here so the two
+ * call sites can't drift on the gating logic.
+ *
+ * GATED + NEVER-THROW: Clerk disabled, no DATABASE_URL, signed out, no
+ * matching `users` row, or a failed query ⇒ `false`, never throws — callers
+ * are server components rendered on every request, so this must never crash
+ * the page around it.
+ */
+export async function currentUserIsApprovedTeacher(): Promise<boolean> {
+  if (!clerkEnabled || !dbConfigured()) return false;
+  try {
+    const { userId: clerkId } = await auth();
+    if (!clerkId) return false;
+    const userId = await resolveUserId(clerkId);
+    if (!userId) return false;
+    return await isApprovedTeacher(userId);
+  } catch (err) {
+    console.error('[teacher/profile] currentUserIsApprovedTeacher failed, falling back to false:', err);
+    return false;
+  }
 }
 
 /**

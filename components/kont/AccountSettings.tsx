@@ -33,7 +33,7 @@ function initialTabFrom(requested: string | null): TabId {
   return (TABS as readonly string[]).includes(requested ?? '') ? (requested as TabId) : 'profile';
 }
 
-export function AccountSettings() {
+export function AccountSettings({ isApprovedTeacher = false }: { isApprovedTeacher?: boolean }) {
   const t = useTranslations('kont');
   const { isLoaded, user } = useUser();
   const searchParams = useSearchParams();
@@ -112,18 +112,21 @@ export function AccountSettings() {
             </button>
           ))}
 
-          {/* Not a tab (no content pane here) — a real navigation link to
-              /enseigner (Task C3-T2), visually distinguished with a divider
-              and an ochre arrow so it reads as "leaves this panel". */}
+          {/* Not a tab (no content pane here) — a real navigation link,
+              visually distinguished with a divider and an ochre arrow so it
+              reads as "leaves this panel" (Task C3-T2). An APPROVED teacher
+              (Task: studio access everywhere) gets a link straight to their
+              studio instead of the "become a teacher" pitch, which no longer
+              applies to them. */}
           <Link
-            href="/enseigner"
+            href={isApprovedTeacher ? '/enseigner/studio' : '/enseigner'}
             className="group ml-1 flex shrink-0 items-center gap-2 whitespace-nowrap rounded-t-md border-b-2 border-transparent px-3.5 py-2.5 text-left text-sm text-ink/65 transition-colors hover:bg-ink/[0.05] hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ochre lg:mt-2 lg:-ml-px lg:rounded-l-none lg:rounded-r-md lg:border-b-0 lg:border-l-2 lg:border-l-ink/10 lg:py-2"
           >
             <IconArrowRight
               size={13}
               className="shrink-0 text-ochre transition-transform group-hover:translate-x-0.5"
             />
-            {t('teachEntry')}
+            {isApprovedTeacher ? t('myStudio') : t('teachEntry')}
           </Link>
         </nav>
 

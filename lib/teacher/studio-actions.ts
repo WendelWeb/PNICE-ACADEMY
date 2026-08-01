@@ -48,7 +48,7 @@ import { resolveUserId } from '@/lib/learner/access';
 import * as writeOps from '@/lib/courses/write';
 import type { CoursePatch, LessonPatch, NewCourseInput, ChapterPatch } from '@/lib/courses/write';
 import { getTeacherProfile, isApprovedTeacher, getTeacherBalanceCents, getPayoutThresholdCents, getWithdrawals } from './profile';
-import { validatePayoutSettings, type PayoutMethod } from './apply-validation';
+import { validatePayoutSettings, validatePlanPrice, type PayoutMethod } from './apply-validation';
 import { recordAudit } from '@/lib/admin/data/real/users';
 import type { AdminActor } from '@/lib/admin/data/types';
 import { createBunnyVideo, bunnyUploadConfigured, type BunnyUploadResult } from '@/lib/bunny/upload';
@@ -521,6 +521,79 @@ export async function updateMyPayoutSettingsAction(
       .where(eq(T.teacherProfiles.userId, userId));
 
     await recordAudit({ action: 'update_payout_settings', userId, admin: actor, detail: payoutMethod });
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/* --------------------------------- plan ----------------------------------- */
+
+/**
+ * Task: per-teacher plan pricing. Before this, only SQL could change a
+ * teacher's own monthly subscription price (gap flagged since C3) — this is
+ * the studio's "Mon abonnement" write path. `requireApprovedTeacher()` FIRST
+ * (same gate every other studio action uses), then upsert the CURRENT
+ * teacher's OWN `teacher_plans` row — create one if they don't have one yet,
+ * otherwise update theirs. OWNER-SCOPED (the one property every other choice
+ * here is subordinate to, mirrors `updateMyPayoutSettingsAction`'s header):
+ * `userId` is resolved from the SIGNED-IN session, never a caller-supplied
+ * id, and the update's `where` is scoped to BOTH the existing row's own id
+ * AND that same `userId` — a teacher can never reach another owner's plan
+ * row, whether by upsert or update.
+ *
+ * `titleHt`/`titleFr`/`includesAll` are optional: omitted on first save, a
+ * new plan is created with no custom title (the studio panel falls back to
+ * displaying the platform's generic "Abonnement mensuel" copy) and
+ * `includesAll = true` (today's only supported shape — a course-scoped
+ * subset plan is unused, see `teacher_plans.course_slugs`'s doc comment).
+ */
+export async function updateMyPlanAction(input: {
+  priceCentsMonthly: number;
+  titleHt?: string;
+  titleFr?: string;
+  includesAll?: boolean;
+}): Promise<StudioResult> {
+  if (!dbConfigured()) return dbRequired();
+  try {
+    const { userId, actor } = await requireApprovedTeacher();
+
+    const error = validatePlanPrice(input.priceCentsMonthly);
+    if (error) return { ok: false, message: error };
+
+    const [existing] = await db
+      .select({ id: T.teacherPlans.id })
+      .from(T.teacherPlans)
+      .where(eq(T.teacherPlans.ownerUserId, userId))
+      .limit(1);
+
+    if (existing) {
+      // Partial update: title/includesAll are only overwritten when the
+      // caller explicitly passes them — the studio's price-only form
+      // (today's only caller) must never silently wipe an already-set title.
+      await db
+        .update(T.teacherPlans)
+        .set({
+          priceCentsMonthly: input.priceCentsMonthly,
+          ...(input.titleHt !== undefined ? { titleHt: input.titleHt.trim() || null } : {}),
+          ...(input.titleFr !== undefined ? { titleFr: input.titleFr.trim() || null } : {}),
+          ...(input.includesAll !== undefined ? { includesAll: input.includesAll } : {}),
+          status: 'active',
+          updatedAt: new Date(),
+        })
+        .where(and(eq(T.teacherPlans.id, existing.id), eq(T.teacherPlans.ownerUserId, userId)));
+    } else {
+      await db.insert(T.teacherPlans).values({
+        ownerUserId: userId,
+        titleHt: input.titleHt?.trim() || null,
+        titleFr: input.titleFr?.trim() || null,
+        priceCentsMonthly: input.priceCentsMonthly,
+        includesAll: input.includesAll ?? true,
+        status: 'active',
+      });
+    }
+
+    await recordAudit({ action: 'update_my_plan', userId, admin: actor, detail: String(input.priceCentsMonthly) });
     return { ok: true };
   } catch (e) {
     return fail(e);

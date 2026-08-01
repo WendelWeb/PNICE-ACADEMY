@@ -51,6 +51,7 @@ describe('mapDbTeacherProfile — DB row → TeacherProfile shape', () => {
   const fakeRow = {
     id: 'tp-1',
     userId: 'user-1',
+    slug: 'pwofese-jan',
     displayName: 'Pwofesè Jan',
     bioHt: 'Bio ht',
     bioFr: 'Bio fr',
@@ -71,6 +72,7 @@ describe('mapDbTeacherProfile — DB row → TeacherProfile shape', () => {
     expect(mapped).toEqual({
       id: 'tp-1',
       userId: 'user-1',
+      slug: 'pwofese-jan',
       displayName: 'Pwofesè Jan',
       bioHt: 'Bio ht',
       bioFr: 'Bio fr',

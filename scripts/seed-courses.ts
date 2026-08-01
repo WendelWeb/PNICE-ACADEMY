@@ -241,6 +241,10 @@ async function main() {
   }
   const teacherProfileRow = {
     userId: owner.id,
+    // Task: DB-backed teacher slugs — teacher #1's public /prof/pnice-academy
+    // URL, now resolved DB-first (lib/teacher/public.ts) instead of only via
+    // the static data/teachers.ts registry.
+    slug: 'pnice-academy',
     displayName: teacherOne.displayName,
     bioHt: teacherOne.bio_ht,
     bioFr: teacherOne.bio_fr,
@@ -269,7 +273,7 @@ async function main() {
   // writes), and lets the dry-run preview accurately say created vs. already
   // exists instead of always claiming "will insert".
   const [existingProfile] = await db
-    .select({ id: T.teacherProfiles.id, status: T.teacherProfiles.status })
+    .select({ id: T.teacherProfiles.id, status: T.teacherProfiles.status, slug: T.teacherProfiles.slug })
     .from(T.teacherProfiles)
     .where(eq(T.teacherProfiles.userId, owner.id))
     .limit(1);
@@ -294,7 +298,11 @@ async function main() {
       `  teacher_plans: "${teacherPlanRow.titleHt}" / "${teacherPlanRow.titleFr}" — $${(teacherPlanRow.priceCentsMonthly / 100).toFixed(2)}/mo — owner=${teacherPlanRow.ownerUserId}`,
     );
     console.log(
-      `  teacher_profiles: "${teacherProfileRow.displayName}" — status=${teacherProfileRow.status} — quota=${teacherProfileRow.videoQuotaMinutes}min — payout=${teacherProfileRow.payoutMethod ?? '(non configuré)'} — ${existingProfile ? `existe déjà (status actuel=${existingProfile.status}, INCHANGÉ)` : 'sera créé'}`,
+      `  teacher_profiles: "${teacherProfileRow.displayName}" — status=${teacherProfileRow.status} — quota=${teacherProfileRow.videoQuotaMinutes}min — payout=${teacherProfileRow.payoutMethod ?? '(non configuré)'} — slug=${teacherProfileRow.slug} — ${
+        existingProfile
+          ? `existe déjà (status actuel=${existingProfile.status}, INCHANGÉ${existingProfile.slug ? '' : ' — slug sera renseigné'})`
+          : 'sera créé'
+      }`,
     );
     console.log('\nRelance sans --dry-run pour écrire réellement.');
     return;
@@ -336,6 +344,16 @@ async function main() {
   // reset to these seed defaults on rerun.
   if (!existingProfile) {
     await db.insert(T.teacherProfiles).values(teacherProfileRow);
+  } else if (!existingProfile.slug) {
+    // Task: DB-backed teacher slugs — backfill ONLY the slug column on a
+    // pre-existing profile row created before this column existed. Scoped to
+    // exactly that one field, never touching any other live value (status,
+    // payout info, etc.) — same "never revert real changes" rule as the
+    // insert-only guard above, just for a single additive column.
+    await db
+      .update(T.teacherProfiles)
+      .set({ slug: 'pnice-academy', updatedAt: now })
+      .where(eq(T.teacherProfiles.id, existingProfile.id));
   }
 
   console.log(

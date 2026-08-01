@@ -6,7 +6,7 @@
  * read here runs its `dbConfigured() === false` fallback path.
  */
 import { describe, it, expect } from 'vitest';
-import { getMyCourses, getMyCourse, getMyStudioSummary } from './studio';
+import { getMyCourses, getMyCourse, getMyStudioSummary, getMyPlan } from './studio';
 
 describe('lib/teacher/studio.ts — gated reads, no DATABASE_URL', () => {
   it('getMyCourses falls back to [] with no DB', async () => {
@@ -25,5 +25,9 @@ describe('lib/teacher/studio.ts — gated reads, no DATABASE_URL', () => {
       ledger: [],
       videoQuotaMinutes: null,
     });
+  });
+
+  it('getMyPlan falls back to null with no DB', async () => {
+    expect(await getMyPlan('user-1')).toBeNull();
   });
 });

@@ -508,6 +508,7 @@
     },
     "studio": {
       "eyebrow": "Ton studio",
+      "navBadge": "Studio",
       "greeting": "Bienvenue dans ton studio",
       "greetingNamed": "Bienvenue, {name}",
       "untitled": "(sans titre)",
@@ -590,6 +591,22 @@
           "payout_method_invalid": "Moyen de paiement invalide.",
           "payout_destination_required": "Indique où tu veux recevoir ton argent.",
           "payout_destination_too_long": "Les détails de ton compte ne doivent pas dépasser 200 caractères.",
+          "forbidden": "Action non autorisée.",
+          "db_required": "Le système n'est pas encore actif. Réessaie plus tard.",
+          "generic": "Une erreur est survenue."
+        }
+      },
+      "plan": {
+        "title": "Mon abonnement",
+        "explain": "Tes élèves paient ce montant chaque mois pour accéder à toutes tes formations.",
+        "priceLabel": "Prix mensuel",
+        "current": "Actuellement : {usd} $ / mois (~{htg} HTG)",
+        "editCta": "Modifier",
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "success": "Prix de l'abonnement mis à jour.",
+        "error": {
+          "invalid_price": "Indique un prix valide (entre {min} $ et {max} $).",
           "forbidden": "Action non autorisée.",
           "db_required": "Le système n'est pas encore actif. Réessaie plus tard.",
           "generic": "Une erreur est survenue."
@@ -710,6 +727,7 @@
     "title": "Mon compte",
     "loading": "Chargement de tes informations…",
     "teachEntry": "Devenir enseignant",
+    "myStudio": "Mon studio",
     "tabs": {
       "profile": "Profil",
       "security": "Sécurité",
@@ -1039,6 +1057,7 @@
       "taux": "Taux de change",
       "health": "Santé système",
       "siteContent": "Contenu du site",
+      "myStudio": "Mon studio de formation",
       "sections": {
         "pilotage": "Pilotage",
         "content": "Cours & contenu",
@@ -2463,11 +2482,8 @@
       },
       "subprice": {
         "title": "Prix de l'abonnement",
-        "warn": "Modifier le prix ne change pas les abonnements existants — seulement les nouvelles souscriptions.",
-        "price": "Prix mensuel",
-        "month": "mois",
-        "save": "Enregistrer",
-        "saved": "Enregistré ✓"
+        "note": "Chaque enseignant fixe désormais le prix de son propre abonnement mensuel depuis son studio.",
+        "cta": "Aller au studio enseignant"
       },
       "maintenance": {
         "title": "Mode maintenance",

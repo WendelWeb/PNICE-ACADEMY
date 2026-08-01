@@ -112,6 +112,47 @@ export async function getMyCourse(userId: string, slug: string): Promise<AdminCo
   }
 }
 
+export type MyPlanRow = {
+  priceCentsMonthly: number;
+  titleHt: string | null;
+  titleFr: string | null;
+  includesAll: boolean;
+};
+
+/**
+ * The signed-in teacher's OWN `teacher_plans` row (Task: per-teacher plan
+ * pricing) — the studio's "Mon abonnement" panel reads this to show the
+ * CURRENT price (falling back to the platform default when `null`, i.e. the
+ * teacher hasn't set their own plan yet). GATED + FALLBACK: no DATABASE_URL,
+ * no row (or one with no price set), or a failed query ⇒ `null`, never
+ * throws.
+ */
+export async function getMyPlan(userId: string): Promise<MyPlanRow | null> {
+  if (!dbConfigured()) return null;
+  try {
+    const [row] = await db
+      .select({
+        priceCentsMonthly: T.teacherPlans.priceCentsMonthly,
+        titleHt: T.teacherPlans.titleHt,
+        titleFr: T.teacherPlans.titleFr,
+        includesAll: T.teacherPlans.includesAll,
+      })
+      .from(T.teacherPlans)
+      .where(eq(T.teacherPlans.ownerUserId, userId))
+      .limit(1);
+    if (!row || typeof row.priceCentsMonthly !== 'number') return null;
+    return {
+      priceCentsMonthly: row.priceCentsMonthly,
+      titleHt: row.titleHt ?? null,
+      titleFr: row.titleFr ?? null,
+      includesAll: row.includesAll,
+    };
+  } catch (err) {
+    console.error('[teacher/studio] getMyPlan DB read failed, falling back to null:', err);
+    return null;
+  }
+}
+
 export type StudioSummary = {
   balanceCents: number;
   /** Amount of the currently pending withdrawal request, if any. */
