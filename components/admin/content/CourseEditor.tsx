@@ -53,6 +53,8 @@ export function CourseEditor({
   const projectedRevenue = newPriceCents * salesCount;
   const overMax = priciest && newPriceCents > priciest.priceCents && course.code !== priciest.code;
 
+  const mono = c.bilingual ? undefined : c.primary_locale;
+
   const onSave = () =>
     start(async () => {
       setSave('saving');
@@ -70,6 +72,12 @@ export function CourseEditor({
         deliverables_ht: c.deliverables_ht, deliverables_fr: c.deliverables_fr,
         requirements_ht: c.requirements_ht, requirements_fr: c.requirements_fr,
         faq: c.faq,
+        // Optional course translation (Task: course-language) — the server
+        // (`writeOps.updateCourse` → `mirrorBilingualFields`) is what
+        // actually mirrors the ht/fr pairs above into a single value when
+        // `bilingual` is false; this just carries the current toggle state.
+        bilingual: c.bilingual,
+        primaryLocale: c.primary_locale,
         // Course-level links/downloads ("liens en description") moved to
         // their own "Ressources" tab (Task A2) — see CourseResourcesPanel.
       });
@@ -93,10 +101,48 @@ export function CourseEditor({
               </select>
             </Field>
           </div>
-          <BilingualText label={t('title')} ht={c.title_ht} fr={c.title_fr} onHt={(v) => set('title_ht', v)} onFr={(v) => set('title_fr', v)} />
-          <BilingualText label={t('tagline')} ht={c.tagline_ht} fr={c.tagline_fr} onHt={(v) => set('tagline_ht', v)} onFr={(v) => set('tagline_fr', v)} />
-          <BilingualText label={t('audience')} area ht={c.audience_ht} fr={c.audience_fr} onHt={(v) => set('audience_ht', v)} onFr={(v) => set('audience_fr', v)} />
-          <PairedList label={t('learn')} ht={c.learn_ht} fr={c.learn_fr} onChange={(ht, fr) => { set('learn_ht', ht); set('learn_fr', fr); }} />
+
+          {/* Optional course translation toggle (Task: course-language) —
+              switching to bilingual keeps existing text and reveals the
+              second field; switching to monolingual just hides it, never
+              deletes data (see mirrorBilingualFields's doc comment). */}
+          <div className="rounded-lg bg-paper p-3">
+            <span className="mb-1.5 block font-mono text-[10px] uppercase tracking-wide text-ink/55">{t('translationTitle')}</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => set('bilingual', true)}
+                className={cn(buttonClasses(c.bilingual ? 'primary' : 'ghost', 'sm'), 'text-[11px]')}
+              >
+                {t('translationYes')}
+              </button>
+              <button
+                type="button"
+                onClick={() => set('bilingual', false)}
+                className={cn(buttonClasses(!c.bilingual ? 'primary' : 'ghost', 'sm'), 'text-[11px]')}
+              >
+                {t('translationNo')}
+              </button>
+              {!c.bilingual && (
+                <select
+                  value={c.primary_locale}
+                  onChange={(e) => set('primary_locale', e.target.value as 'ht' | 'fr')}
+                  className={cn(inputCls, 'w-auto cursor-pointer')}
+                >
+                  <option value="ht">Kreyòl</option>
+                  <option value="fr">Français</option>
+                </select>
+              )}
+            </div>
+            <p className="mt-1.5 text-[11px] leading-snug text-graphite/60">
+              {c.bilingual ? t('translationHelpYes') : t('translationHelpNo')}
+            </p>
+          </div>
+
+          <BilingualText label={t('title')} mono={mono} ht={c.title_ht} fr={c.title_fr} onHt={(v) => set('title_ht', v)} onFr={(v) => set('title_fr', v)} />
+          <BilingualText label={t('tagline')} mono={mono} ht={c.tagline_ht} fr={c.tagline_fr} onHt={(v) => set('tagline_ht', v)} onFr={(v) => set('tagline_fr', v)} />
+          <BilingualText label={t('audience')} area mono={mono} ht={c.audience_ht} fr={c.audience_fr} onHt={(v) => set('audience_ht', v)} onFr={(v) => set('audience_fr', v)} />
+          <PairedList label={t('learn')} mono={mono} ht={c.learn_ht} fr={c.learn_fr} onChange={(ht, fr) => { set('learn_ht', ht); set('learn_fr', fr); }} />
 
           {/* Price + impact (task 3) */}
           <Field label={t('price')}>
@@ -120,12 +166,12 @@ export function CourseEditor({
       <section className="rounded-xl border border-ink/12 bg-paper-light p-4">
         <h2 className="font-mono text-[11px] uppercase tracking-wide text-ink/55">{t('salesPage')}</h2>
         <div className="mt-3 space-y-3">
-          <BilingualText label={t('level')} ht={c.level_ht} fr={c.level_fr} onHt={(v) => set('level_ht', v)} onFr={(v) => set('level_fr', v)} />
-          <BilingualText label={t('promise')} area ht={c.promise_ht} fr={c.promise_fr} onHt={(v) => set('promise_ht', v)} onFr={(v) => set('promise_fr', v)} />
-          <BilingualText label={t('problem')} area ht={c.problem_ht} fr={c.problem_fr} onHt={(v) => set('problem_ht', v)} onFr={(v) => set('problem_fr', v)} />
-          <PairedList label={t('deliverables')} ht={c.deliverables_ht} fr={c.deliverables_fr} onChange={(ht, fr) => { set('deliverables_ht', ht); set('deliverables_fr', fr); }} />
-          <PairedList label={t('requirements')} ht={c.requirements_ht} fr={c.requirements_fr} onChange={(ht, fr) => { set('requirements_ht', ht); set('requirements_fr', fr); }} />
-          <FaqEditor faq={c.faq as FaqItem[]} onChange={(f) => set('faq', f)} />
+          <BilingualText label={t('level')} mono={mono} ht={c.level_ht} fr={c.level_fr} onHt={(v) => set('level_ht', v)} onFr={(v) => set('level_fr', v)} />
+          <BilingualText label={t('promise')} area mono={mono} ht={c.promise_ht} fr={c.promise_fr} onHt={(v) => set('promise_ht', v)} onFr={(v) => set('promise_fr', v)} />
+          <BilingualText label={t('problem')} area mono={mono} ht={c.problem_ht} fr={c.problem_fr} onHt={(v) => set('problem_ht', v)} onFr={(v) => set('problem_fr', v)} />
+          <PairedList label={t('deliverables')} mono={mono} ht={c.deliverables_ht} fr={c.deliverables_fr} onChange={(ht, fr) => { set('deliverables_ht', ht); set('deliverables_fr', fr); }} />
+          <PairedList label={t('requirements')} mono={mono} ht={c.requirements_ht} fr={c.requirements_fr} onChange={(ht, fr) => { set('requirements_ht', ht); set('requirements_fr', fr); }} />
+          <FaqEditor faq={c.faq as FaqItem[]} mono={mono} onChange={(f) => set('faq', f)} />
         </div>
       </section>
 

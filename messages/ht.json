@@ -224,6 +224,10 @@
       "lajan": "Lajan",
       "lavi-pratik": "Lavi pratik"
     },
+    "languageBadge": {
+      "ht": "Kreyòl sèlman",
+      "fr": "Fransè sèlman"
+    },
     "toolbar": {
       "searchLabel": "Chèche nan katalòg la",
       "searchPlaceholder": "Chèche yon fòmasyon...",
@@ -626,8 +630,15 @@
         "title": "Kreye yon fòmasyon",
         "back": "Tounen nan estidyo",
         "help": "Fòmasyon an kreye an bwouyon ; w ap konplete rès la nan editè a anvan ou soumèt li.",
+        "languageQuestion": "Èske fòmasyon an ap bileng (kreyòl + franse) ?",
+        "languageQuestionHelp": "Si ou chwazi \"Non\", w ap ranpli kontni an yon sèl fwa, nan lang ou chwazi a — ou ka aktive tradiksyon an pita nan editè a san ou pa pèdi anyen.",
+        "bilingualYes": "Wi, tou de lang",
+        "bilingualNo": "Non, yon sèl lang",
+        "primaryLocaleHt": "Kreyòl",
+        "primaryLocaleFr": "Franse",
         "titleHt": "Tit (Kreyòl)",
         "titleFr": "Tit (Franse)",
+        "titleSingle": "Tit",
         "price": "Pri ($)",
         "draftNote": "Kreye an bwouyon — se sèl ou ki wè l jiskaske ekip nou an valide l.",
         "submit": "Kreye an bwouyon",
@@ -1843,6 +1854,11 @@
         "code": "Kòd",
         "slug": "Slug",
         "icon": "Ikòn",
+        "translationTitle": "Tradiksyon",
+        "translationYes": "Bileng (Kreyòl + Franse)",
+        "translationNo": "Yon sèl lang",
+        "translationHelpYes": "Chak jaden parèt de fwa — yon vèsyon kreyòl, yon vèsyon franse.",
+        "translationHelpNo": "Yon sèl jaden parèt pou chak seksyon. Kontni an kopye otomatikman nan tou de lang lè w anrejistre, pou elèv k ap gade nan lòt lang lan toujou wè fòmasyon an.",
         "title": "Tit",
         "tagline": "Akwòch",
         "audience": "Piblik",

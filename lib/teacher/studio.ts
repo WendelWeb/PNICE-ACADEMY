@@ -16,7 +16,7 @@
  */
 import { eq } from 'drizzle-orm';
 import { db, schema } from '@/db';
-import { dbConfigured } from '@/lib/courses/source';
+import { dbConfigured, selectCourseRowsByOwner } from '@/lib/courses/source';
 import { getAdminCourse, type AdminCourse, type DbCourseStatus } from '@/lib/courses/write';
 import {
   getTeacherLedger,
@@ -54,7 +54,7 @@ export async function getMyCourses(userId: string): Promise<MyCourseRow[]> {
   if (!dbConfigured()) return [];
   try {
     const [courseRows, lessonRows, paymentRows] = await Promise.all([
-      db.select().from(T.courses).where(eq(T.courses.ownerUserId, userId)),
+      selectCourseRowsByOwner(userId),
       db.select({ courseSlug: T.lessons.courseSlug }).from(T.lessons),
       db
         .select({ courseSlug: T.payments.courseSlug, amountCents: T.payments.amountCents, status: T.payments.status })

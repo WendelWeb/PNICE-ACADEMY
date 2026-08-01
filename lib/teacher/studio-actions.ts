@@ -157,19 +157,39 @@ async function reenterReviewIfWasPublished(slug: string, ownerUserId: string, wa
 
 /* -------------------------------- course ------------------------------- */
 
+/**
+ * Optional course translation (Task: course-language, owner's ask: "quand
+ * un prof veut enregistrer une nouvelle formation on doit lui demander s'il
+ * veut la traduction"): the studio's "nouveau cours" form asks this UP
+ * FRONT — `bilingual: true` (the default, unchanged behaviour) collects
+ * title_ht/title_fr like before; `bilingual: false` collects ONE title in
+ * `primaryLocale` and `writeOps.createCourse` mirrors it into both columns
+ * (see `mirrorBilingualFields`). Validated here (not just at the TS-type
+ * level) since this is a 'use server' entry point reachable with tampered
+ * form data.
+ */
 export async function createMyCourseAction(
-  input: Pick<NewCourseInput, 'title_ht' | 'title_fr' | 'priceCents'>,
+  input: Pick<NewCourseInput, 'title_ht' | 'title_fr' | 'priceCents' | 'bilingual' | 'primaryLocale'>,
 ): Promise<StudioResult> {
   if (!dbConfigured()) return dbRequired();
   try {
     const { userId, actor } = await requireApprovedTeacher();
     if (!input.title_ht?.trim() && !input.title_fr?.trim()) return { ok: false, message: 'title_required' };
+    if (input.primaryLocale !== undefined && input.primaryLocale !== 'ht' && input.primaryLocale !== 'fr') {
+      return { ok: false, message: 'invalid_primary_locale' };
+    }
     // Owned by the signed-in teacher, not the site owner `createCourse`
     // would otherwise resolve — see the file header note on
     // `ownerUserIdOverride`. Code/slug are auto-generated (no admin-style
     // manual code field in the studio).
     return await writeOps.createCourse(
-      { title_ht: input.title_ht, title_fr: input.title_fr, priceCents: input.priceCents },
+      {
+        title_ht: input.title_ht,
+        title_fr: input.title_fr,
+        priceCents: input.priceCents,
+        bilingual: input.bilingual,
+        primaryLocale: input.primaryLocale,
+      },
       actor,
       userId,
     );

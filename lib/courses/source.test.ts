@@ -27,6 +27,8 @@ describe('mapDbCourseToCourse — DB row → Course shape', () => {
     code: 'PA-TEST',
     icon: 'rocket',
     category: 'dijital' as const,
+    primaryLocale: 'ht' as const,
+    bilingual: true,
     titleHt: 'Tit an kreyòl',
     titleFr: 'Titre en français',
     taglineHt: 'Tagline kreyòl',
@@ -141,6 +143,8 @@ describe('mapDbCourseToCourse — DB row → Course shape', () => {
         { title_ht: 'Leson 1 kreyòl', title_fr: 'Leçon 1 français', bunnyVideoId: 'bunny-abc123' },
         { title_ht: 'Leson 2 kreyòl', title_fr: 'Leçon 2 français', bunnyVideoId: undefined },
       ],
+      bilingual: true,
+      primary_locale: 'ht',
     });
   });
 
@@ -186,6 +190,8 @@ describe('mapDbCourseToDetail — DB row → CourseDetail shape', () => {
     code: 'PA-01', // matches a real static entry — round-trip should be identical
     icon: 'rocket',
     category: 'dijital' as const,
+    primaryLocale: 'ht' as const,
+    bilingual: true,
     titleHt: 'Tit',
     titleFr: 'Titre',
     taglineHt: 'Tagline ht',

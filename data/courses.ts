@@ -52,6 +52,18 @@ export type Course = {
   audience_ht: string;
   audience_fr: string;
   lessons: Lesson[];
+  /**
+   * Optional course translation (Task: course-language). OPTIONAL here
+   * (unlike the DB's NOT NULL columns) so the 9 static catalog entries below
+   * don't need to be touched — `undefined` means "bilingual, ht-primary",
+   * identical to the DB defaults. Use `lib/courseFields.ts`'s
+   * `courseIsBilingual`/`coursePrimaryLocale` helpers instead of reading
+   * these directly, so that default is never re-implemented at a call site.
+   * Set (never undefined) by `lib/courses/source.ts`'s `mapDbCourseToCourse`
+   * for every DB-backed course.
+   */
+  bilingual?: boolean;
+  primary_locale?: 'ht' | 'fr';
 };
 
 export const courses: Course[] = [
