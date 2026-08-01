@@ -171,8 +171,41 @@ export async function getTeacherProfile(userId: string): Promise<TeacherProfile 
       .limit(1);
     return row ? mapDbTeacherProfile(row) : null;
   } catch (err) {
-    console.error('[teacher/profile] getTeacherProfile DB read failed, falling back to null:', err);
-    return null;
+    // The live DB can legitimately lag the code by one migration (the owner
+    // applies them with `db:push`). Drizzle's `select()` names EVERY schema
+    // column, so a not-yet-applied column makes the whole read fail — and
+    // returning null here would lock an approved teacher out of their own
+    // studio (the gate would read "not a teacher"). Retry once with only the
+    // columns that predate the newest migration so the gate keeps working.
+    try {
+      const [row] = await db
+        .select({
+          id: T.teacherProfiles.id,
+          userId: T.teacherProfiles.userId,
+          displayName: T.teacherProfiles.displayName,
+          bioHt: T.teacherProfiles.bioHt,
+          bioFr: T.teacherProfiles.bioFr,
+          photoUrl: T.teacherProfiles.photoUrl,
+          status: T.teacherProfiles.status,
+          payoutMethod: T.teacherProfiles.payoutMethod,
+          payoutDestination: T.teacherProfiles.payoutDestination,
+          videoQuotaMinutes: T.teacherProfiles.videoQuotaMinutes,
+          termsAcceptedAt: T.teacherProfiles.termsAcceptedAt,
+          reviewNote: T.teacherProfiles.reviewNote,
+          reviewedBy: T.teacherProfiles.reviewedBy,
+          createdAt: T.teacherProfiles.createdAt,
+          updatedAt: T.teacherProfiles.updatedAt,
+        })
+        .from(T.teacherProfiles)
+        .where(eq(T.teacherProfiles.userId, userId))
+        .limit(1);
+      if (!row) return null;
+      console.warn('[teacher/profile] read fell back to pre-migration columns — run `npm run db:push`.');
+      return mapDbTeacherProfile({ ...row, slug: null });
+    } catch {
+      console.error('[teacher/profile] getTeacherProfile DB read failed, falling back to null:', err);
+      return null;
+    }
   }
 }
 
