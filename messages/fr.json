@@ -110,7 +110,7 @@
     },
     "manifest": {
       "eyebrow": "Le manifeste",
-      "title": "9 formations, chacune une compétence que tu peux vendre",
+      "title": "{count} formations, chacune une compétence que tu peux vendre",
       "subtitle": "Chaque ligne est une compétence embarquée à ton nom. Prends-les une par une, ou débloque-les toutes avec l'abonnement de l'enseignant.",
       "teacherLine": "Enseignant : {name}"
     },
@@ -172,11 +172,6 @@
       "exampleTag": "Exemple",
       "note": "Exemples de structure — à remplacer par de vrais témoignages avant le lancement."
     },
-    "seats": {
-      "text": "Places limitées pour cette cohorte",
-      "left": "places restantes",
-      "note": "Exemple — un vrai compteur sera mis avant le lancement."
-    },
     "faq": {
       "eyebrow": "Questions",
       "title": "Questions fréquentes",
@@ -220,7 +215,7 @@
   "catalog": {
     "eyebrow": "Catalogue · {count, plural, one {1 formation} other {# formations}}",
     "title": "Toutes les formations",
-    "subtitle": "9 compétences concrètes, chacune entre les mains d'un enseignant. Prends-les une par une, ou débloque toutes les formations d'un enseignant avec son abonnement.",
+    "subtitle": "{count} compétences concrètes, chacune entre les mains d'un enseignant. Prends-les une par une, ou débloque toutes les formations d'un enseignant avec son abonnement.",
     "teacherLine": "Enseignant : {name}",
     "categories": {
       "all": "Tous",
@@ -2060,17 +2055,7 @@
       }
     },
     "settings": {
-      "subtitle": "Compteur de places, textes du site, pages légales.",
-      "places": {
-        "title": "Compteur de places",
-        "note": "Outil marketing — garde une valeur plausible et cohérente avec la réalité.",
-        "total": "Total / cohorte",
-        "taken": "Déjà prises",
-        "enabled": "Affiché sur l'accueil",
-        "preview": "{left} / {total} places restantes",
-        "save": "Enregistrer",
-        "saved": "Enregistré ✓"
-      },
+      "subtitle": "Textes du site, pages légales.",
       "texts": {
         "title": "Textes du site (ht/fr)",
         "note": "Édite les textes ; ils priment sur les fichiers JSON (fallback). Créer/supprimer une clé reste une opération de code.",
@@ -2096,7 +2081,7 @@
     },
     "siteContent": {
       "title": "Contenu du site",
-      "intro": "Textes du site, pages légales et compteur de places — le contenu vu par les visiteurs, pas un réglage business de la plateforme."
+      "intro": "Textes du site et pages légales — le contenu vu par les visiteurs, pas un réglage business de la plateforme."
     },
     "marketing": {
       "subtitle": "Annonces par email à un segment d'utilisateurs.",

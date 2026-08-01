@@ -1,6 +1,6 @@
 /**
  * EXEMPLE — À REMPLACER avant le lancement public.
- * Ces témoignages et ce compteur de places sont des PLACEHOLDERS de structure.
+ * Ces témoignages sont des PLACEHOLDERS de structure.
  * Ne jamais les présenter comme réels. L'UI affiche un marqueur « exemple ».
  */
 
@@ -49,6 +49,3 @@ export const testimonials: Testimonial[] = [
     isPlaceholder: true,
   },
 ];
-
-/** PLACEHOLDER — replace with a real seats counter before launch. */
-export const SEATS_LEFT_PLACEHOLDER = 12;

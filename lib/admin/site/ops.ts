@@ -9,7 +9,6 @@ import {
   EDITABLE_TEXT_KEYS,
   type SiteTestimonial,
   type TestimonialStatus,
-  type PlacesConfig,
   type LegalSlug,
   type ReviewToken,
 } from './store';
@@ -95,19 +94,6 @@ export function getHomeTestimonials(): SiteTestimonial[] {
  */
 export function getCourseTestimonial(courseSlug: string): SiteTestimonial | null {
   return listTestimonials({ status: 'published', course: courseSlug })[0] ?? null;
-}
-
-/* -------------------------------- places --------------------------------- */
-export function getPlaces(): PlacesConfig {
-  return getSite().places;
-}
-export function setPlaces(patch: Partial<PlacesConfig>): void {
-  Object.assign(getSite().places, patch);
-}
-/** Seats left for the home banner, or null if disabled. */
-export function getSeatsLeft(): number | null {
-  const p = getSite().places;
-  return p.enabled ? Math.max(0, p.total - p.taken) : null;
 }
 
 /* ----------------------------- text overrides ---------------------------- */

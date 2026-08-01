@@ -1,12 +1,16 @@
 /**
- * Site-content store (Phase C Lot 2): testimonials, seats counter, text
- * overrides, legal pages, and testimonial-request tokens. Mutable in-memory,
- * seeded from data/testimonials.ts. Replaced by the DB later.
+ * Site-content store (Phase C Lot 2): testimonials, text overrides, legal
+ * pages, and testimonial-request tokens. Mutable in-memory, seeded from
+ * data/testimonials.ts. Replaced by the DB later.
  *
  * Testimonials carry an explicit status — `placeholder` seed data can NEVER be
  * published (enforced in ops + UI) per the "never publish fake testimonials" rule.
+ *
+ * The seats/places scarcity counter that used to live here was removed
+ * (depersonalize P1) — single-cohort "places limitées" theatre doesn't fit a
+ * multi-teacher marketplace selling unlimited digital courses.
  */
-import { testimonials as seedTestimonials, SEATS_LEFT_PLACEHOLDER } from '@/data/testimonials';
+import { testimonials as seedTestimonials } from '@/data/testimonials';
 
 export type TestimonialStatus = 'placeholder' | 'real' | 'published';
 
@@ -21,8 +25,6 @@ export type SiteTestimonial = {
   status: TestimonialStatus;
   createdAt: string;
 };
-
-export type PlacesConfig = { total: number; taken: number; enabled: boolean };
 
 export type LegalSlug = 'cgu' | 'confidentialite' | 'remboursement';
 export type LegalVersion = { content_ht: string; content_fr: string; updatedAt: string; adminName: string };
@@ -40,14 +42,12 @@ export type ReviewToken = {
 /** Curated, editable translation keys (create/delete stays a code operation). */
 export const EDITABLE_TEXT_KEYS: { section: string; keys: string[] }[] = [
   { section: 'hero', keys: ['home.hero.title', 'home.hero.subtitle', 'home.hero.ctaPrimary', 'home.hero.ctaSecondary'] },
-  { section: 'seats', keys: ['home.seats.text', 'home.seats.left', 'home.seats.note'] },
   { section: 'nav', keys: ['nav.formations', 'nav.pricing', 'nav.login', 'nav.cta'] },
   { section: 'catalog', keys: ['home.testimonials.title', 'home.testimonials.eyebrow'] },
 ];
 
 type Store = {
   testimonials: SiteTestimonial[];
-  places: PlacesConfig;
   textOverrides: Record<string, { ht: string; fr: string }>;
   legal: LegalPage[];
   tokens: ReviewToken[];
@@ -88,7 +88,6 @@ export function getSite(): Store {
       status: 'placeholder' as const,
       createdAt: new Date().toISOString(),
     })),
-    places: { total: 40, taken: 40 - SEATS_LEFT_PLACEHOLDER, enabled: true },
     textOverrides: {},
     legal: [seedLegal('cgu'), seedLegal('confidentialite'), seedLegal('remboursement')],
     tokens: [],

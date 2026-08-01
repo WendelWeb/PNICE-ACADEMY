@@ -12,7 +12,6 @@ import { HowMarketplace } from '@/components/home/HowMarketplace';
 import { TeachTeaser } from '@/components/home/TeachTeaser';
 import { Founder } from '@/components/home/Founder';
 import { Testimonials } from '@/components/home/Testimonials';
-import { SeatsBanner } from '@/components/home/SeatsBanner';
 // `Pricing` (the old global "$79 unlocks the whole catalog" table) was
 // replaced by TeacherSpotlight ($79 as PNICE Academy's own pass) +
 // HowMarketplace (teacher-agnostic mechanics) per the marketplace pivot
@@ -21,8 +20,8 @@ import { SeatsBanner } from '@/components/home/SeatsBanner';
 import { Faq } from '@/components/home/Faq';
 import { FinalCta } from '@/components/home/FinalCta';
 
-// Dynamic so admin edits (testimonials, seats counter, site texts) reflect live
-// on the home page (Phase C Lot 2). Other public pages stay static (Option B).
+// Dynamic so admin edits (testimonials, site texts) reflect live on the home
+// page (Phase C Lot 2). Other public pages stay static (Option B).
 export const dynamic = 'force-dynamic';
 
 export default async function Home({
@@ -45,7 +44,7 @@ export default async function Home({
         <Container>
           <Eyebrow>{tm('eyebrow')}</Eyebrow>
           <h2 className="mt-3 max-w-2xl font-display text-3xl font-extrabold leading-tight text-ink md:text-4xl">
-            {tm('title')}
+            {tm('title', { count: courses.length })}
           </h2>
           <p className="mt-3 max-w-xl text-graphite">{tm('subtitle')}</p>
           <div className="mt-10">
@@ -64,7 +63,6 @@ export default async function Home({
       <TeachTeaser />
       <Founder />
       <Testimonials />
-      <SeatsBanner />
       <Faq />
       <FinalCta />
     </>

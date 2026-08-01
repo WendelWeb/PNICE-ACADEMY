@@ -110,7 +110,7 @@
     },
     "manifest": {
       "eyebrow": "Manifès la",
-      "title": "9 fòmasyon, chak se yon konpetans ou ka vann",
+      "title": "{count} fòmasyon, chak se yon konpetans ou ka vann",
       "subtitle": "Chak liy se yon konpetans ki anbake sou non ou. Pran yo youn pa youn, oswa jwenn tout ak abònman anseyan an.",
       "teacherLine": "Anseyan: {name}"
     },
@@ -172,11 +172,6 @@
       "exampleTag": "Egzanp",
       "note": "Egzanp estrikti — n ap ranplase yo ak vrè temwayaj anvan lansman an."
     },
-    "seats": {
-      "text": "Plas limite pou kòwòt sa a",
-      "left": "plas ki rete",
-      "note": "Egzanp — n ap mete yon vrè kontè anvan lansman an."
-    },
     "faq": {
       "eyebrow": "Kesyon",
       "title": "Kesyon moun konn poze",
@@ -220,7 +215,7 @@
   "catalog": {
     "eyebrow": "Katalòg · {count, plural, one {1 fòmasyon} other {# fòmasyon}}",
     "title": "Tout fòmasyon yo",
-    "subtitle": "9 konpetans konkrè, chak nan men yon anseyan. Pran yo youn pa youn, oswa jwenn tout fòmasyon yon anseyan ak abònman li.",
+    "subtitle": "{count} konpetans konkrè, chak nan men yon anseyan. Pran yo youn pa youn, oswa jwenn tout fòmasyon yon anseyan ak abònman li.",
     "teacherLine": "Anseyan: {name}",
     "categories": {
       "all": "Tout",
@@ -2060,17 +2055,7 @@
       }
     },
     "settings": {
-      "subtitle": "Kontè plas, tèks sit la, paj legal.",
-      "places": {
-        "title": "Kontè plas",
-        "note": "Zouti maketing — kenbe yon valè plozib epi koyeran ak reyalite a.",
-        "total": "Total / koòt",
-        "taken": "Deja pran",
-        "enabled": "Parèt sou akèy la",
-        "preview": "{left} / {total} plas ki rete",
-        "save": "Anrejistre",
-        "saved": "Anrejistre ✓"
-      },
+      "subtitle": "Tèks sit la, paj legal.",
       "texts": {
         "title": "Tèks sit la (ht/fr)",
         "note": "Modifye tèks yo ; yo gen priyorite sou fichye JSON yo (fallback). Kreye/efase yon kle rete yon operasyon kòd.",
@@ -2096,7 +2081,7 @@
     },
     "siteContent": {
       "title": "Kontni sit la",
-      "intro": "Tèks sit la, paj legal ak kontè plas — kontni vizitè yo wè, se pa yon paramèt biznis platfòm nan."
+      "intro": "Tèks sit la ak paj legal yo — kontni vizitè yo wè, se pa yon paramèt biznis platfòm nan."
     },
     "marketing": {
       "subtitle": "Anons pa imel bay yon segman itilizatè.",
