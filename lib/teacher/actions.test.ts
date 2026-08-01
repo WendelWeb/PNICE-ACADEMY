@@ -12,8 +12,11 @@ import { describe, it, expect, afterEach } from 'vitest';
 import {
   validateApplyInput,
   validatePayoutSettings,
+  validatePlanPrice,
   BIO_MIN_LENGTH,
   PAYOUT_DESTINATION_MAX_LENGTH,
+  PLAN_PRICE_MIN_CENTS,
+  PLAN_PRICE_MAX_CENTS,
   type ApplyAsTeacherInput,
   type PayoutMethod,
 } from './apply-validation';
@@ -128,6 +131,34 @@ describe('validatePayoutSettings — pure field validation (Task C3 fix, shared 
   it('agrees with validateApplyInput on the same payout inputs (no drift after extraction)', () => {
     const bad: ApplyAsTeacherInput = { ...validInput, payoutMethod: 'bitcoin' as PayoutMethod };
     expect(validateApplyInput(bad)).toBe(validatePayoutSettings(bad.payoutMethod, bad.payoutDestination));
+  });
+});
+
+describe('validatePlanPrice — pure field validation (Task: per-teacher plan pricing)', () => {
+  it('accepts a price within bounds', () => {
+    expect(validatePlanPrice(7900)).toBeNull();
+  });
+
+  it('accepts the min and max bounds exactly', () => {
+    expect(validatePlanPrice(PLAN_PRICE_MIN_CENTS)).toBeNull();
+    expect(validatePlanPrice(PLAN_PRICE_MAX_CENTS)).toBeNull();
+  });
+
+  it('rejects a price below the minimum', () => {
+    expect(validatePlanPrice(PLAN_PRICE_MIN_CENTS - 1)).toBe('invalid_price');
+  });
+
+  it('rejects a price above the maximum', () => {
+    expect(validatePlanPrice(PLAN_PRICE_MAX_CENTS + 1)).toBe('invalid_price');
+  });
+
+  it('rejects zero and negative amounts', () => {
+    expect(validatePlanPrice(0)).toBe('invalid_price');
+    expect(validatePlanPrice(-100)).toBe('invalid_price');
+  });
+
+  it('rejects a non-integer amount', () => {
+    expect(validatePlanPrice(79.5)).toBe('invalid_price');
   });
 });
 

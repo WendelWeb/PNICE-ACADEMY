@@ -3,11 +3,20 @@ import { SignedIn, SignedOut } from '@clerk/nextjs';
 import { Link } from '@/i18n/routing';
 import { AvatarLink } from '@/components/auth/AvatarLink';
 import { AdminLink } from '@/components/admin/AdminLink';
+import { StudioLink } from '@/components/teacher/StudioLink';
 import { clerkEnabled } from '@/lib/clerk';
+import { currentUserIsApprovedTeacher } from '@/lib/teacher/profile';
 import { NavClient } from '@/components/layout/NavClient';
 
 export async function Nav() {
   const t = await getTranslations('nav');
+
+  // Task: studio access everywhere — resolved server-side (DB truth, no
+  // Clerk metadata counterpart) and handed down to StudioLink as a plain
+  // prop; see that component's header for why this isn't a client-side DB
+  // call. Gated + never-throws (see currentUserIsApprovedTeacher) — this
+  // must never break the nav on every page it renders on.
+  const approvedTeacher = await currentUserIsApprovedTeacher();
 
   const links = [
     { href: '/formations' as const, label: t('formations') },
@@ -29,6 +38,7 @@ export async function Nav() {
         </Link>
       </SignedOut>
       <SignedIn>
+        <StudioLink isApprovedTeacher={approvedTeacher} />
         <AdminLink />
         <AvatarLink />
       </SignedIn>

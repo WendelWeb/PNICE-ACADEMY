@@ -109,18 +109,6 @@ export async function toggleProviderAction(provider: ProviderKey, enabled: boole
   }
 }
 
-export async function setSubscriptionPriceAction(usd: number): Promise<PlatformResult> {
-  try {
-    const { actor } = await requireSuperAdmin();
-    if (!Number.isFinite(usd) || usd <= 0) return { ok: false, message: 'invalid' };
-    getPlatform().subscriptionUsd = Math.round(usd);
-    await recordAudit({ action: 'set_sub_price', userId: actor.id, admin: actor, detail: String(usd) });
-    return { ok: true };
-  } catch (e) {
-    return fail(e);
-  }
-}
-
 export async function setMaintenanceAction(enabled: boolean, messageHt: string, messageFr: string): Promise<PlatformResult> {
   try {
     const { actor } = await requireSuperAdmin();

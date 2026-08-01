@@ -4,24 +4,23 @@
  * this module is the PUBLIC-FACING counterpart: one gated, never-throw
  * `getPublicTeacher(slug, locale)` that resolves everything the page needs.
  *
- * SLUG RESOLUTION (v1 — documented, a deliberate simplification): the
- * `teacher_profiles` table has no `slug` column — it's keyed by `user_id`.
- * `data/teachers.ts` is the only slug ↔ identity registry that exists today
- * (one row: teacher #1, the platform/founder account). This module reuses
- * that static registry as the slug lookup: `getTeacher(slug)` resolves WHO
- * the slug refers to (their `courseSlugs`), then `getTeacherOwnerUserId`
- * (lib/reviews/reviews.ts, already used this way since Task C3-T6) resolves
- * their DB `users.id` from any of those slugs' `courses.owner_user_id`. Once
- * we know the owner, EVERY live field (profile bio/photo/status, owned
- * course slugs, rating, student count, active teacher_plan) is read from the
- * real DB and overlaid on the static fallback — never the reverse. An
- * unknown slug (not in `data/teachers.ts`) → `null`, always (404) — v1 has no
- * other registry to consult.
+ * SLUG RESOLUTION (Task: DB-backed teacher slugs — supersedes the v1 note
+ * that used to live here): `data/teachers.ts` is still consulted FIRST — a
+ * slug it knows (teacher #1 today) takes the exact same code path as before
+ * this task, so teacher #1's page stays byte-identical even now that their
+ * `teacher_profiles.slug` ALSO carries 'pnice-academy' (see
+ * scripts/seed-courses.ts). Only when the static registry doesn't recognise
+ * the slug do we fall through to `teacher_profiles.slug` (approved rows
+ * only) — this is what lets a 2nd+ real teacher (approved via
+ * lib/teacher/admin.ts's `approveTeacherProfile`, which generates their
+ * slug) get a working public page with ZERO code change. Still unknown to
+ * both ⇒ `null`, always (404).
  *
- * FOLLOW-UP (once a second real teacher exists): add a real
- * `teacher_profiles.slug` column (migration) and resolve the slug against
- * that table directly instead of `data/teachers.ts`; keep the static file
- * only as historical seed content if still wanted.
+ * A DB-only teacher (no static registry entry) has no `initials`/
+ * `imageName`/`joinedYear`/`docNo` to draw on — those are synthesized
+ * (see `getPublicTeacherFromDbSlug`): initials from their display name,
+ * a generic branded placeholder image, and a doc number/joined-year derived
+ * from their profile's `created_at`.
  *
  * APPROVED-ONLY GATE: only a teacher with a LIVE `teacher_profiles` row whose
  * `status = 'approved'` gets a public page — pending/rejected/suspended →
@@ -43,7 +42,7 @@ import { db, schema } from '@/db';
 import { dbConfigured, getPublishedCourses } from '@/lib/courses/source';
 import type { Course } from '@/data/courses';
 import { getTeacher, teachers, teacherBio, teacherDocNo } from '@/data/teachers';
-import { getTeacherProfile, type TeacherProfile } from '@/lib/teacher/profile';
+import { getTeacherProfile, mapDbTeacherProfile, type TeacherProfile } from '@/lib/teacher/profile';
 import { getTeacherOwnerUserId, getTeacherRating, type RatingSummary } from '@/lib/reviews/reviews';
 import { isValidHttpUrl } from '@/lib/teacher/apply-validation';
 
@@ -118,6 +117,24 @@ export function resolvePublicIdentity(params: {
 }
 
 /**
+ * Pure: seal initials for a teacher with no `data/teachers.ts` registry
+ * entry (a DB-only teacher, Task: DB-backed teacher slugs) — up to the first
+ * two "words" of their display name, uppercased. Falls back to '??' for an
+ * empty/whitespace-only name (shouldn't happen for an approved profile,
+ * which requires a non-empty `display_name` at apply time, but never throws
+ * either way). Exported for unit testing.
+ */
+export function initialsFromName(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return '??';
+  const initials = words
+    .slice(0, 2)
+    .map((w) => w[0]!.toUpperCase())
+    .join('');
+  return initials || '??';
+}
+
+/**
  * Every `courses.slug` owned by `ownerUserId` (any status — the caller
  * intersects with `getPublishedCourses()` to keep only published ones).
  * GATED + FALLBACK: no DATABASE_URL or a failed query ⇒ `null` (the caller
@@ -181,15 +198,110 @@ async function hasActiveTeacherPlan(ownerUserId: string | null): Promise<boolean
 }
 
 /**
- * The full `/prof/[slug]` read (Task C3-T7). See the module header for the
- * slug-resolution + gating reasoning. GATED + NEVER-THROW: any DB read along
- * the way that fails degrades to its own documented fallback; the only ways
- * this returns `null` are an unknown slug or a resolved-but-not-approved
- * (and not teacher #1) profile — both of which the page turns into a 404.
+ * Every slug from an APPROVED `teacher_profiles` row (Task: DB-backed
+ * teacher slugs) — used by `/prof/[slug]`'s `generateStaticParams` to
+ * pre-render real teachers' pages alongside the static `data/teachers.ts`
+ * ones. GATED + FALLBACK: no DATABASE_URL or a failed query ⇒ `[]`, never
+ * throws — build-time pre-rendering simply falls back to the static list.
+ */
+export async function getApprovedTeacherSlugs(): Promise<string[]> {
+  if (!dbConfigured()) return [];
+  try {
+    const rows = await db
+      .select({ slug: T.teacherProfiles.slug })
+      .from(T.teacherProfiles)
+      .where(eq(T.teacherProfiles.status, 'approved'));
+    return rows.map((r) => r.slug).filter((s): s is string => Boolean(s));
+  } catch (err) {
+    console.error('[teacher/public] getApprovedTeacherSlugs DB read failed, falling back to []:', err);
+    return [];
+  }
+}
+
+/**
+ * DB-ONLY teacher resolution (Task: DB-backed teacher slugs) — reached only
+ * when `slug` isn't in the static `data/teachers.ts` registry (see
+ * `getPublicTeacher` below). Resolves an APPROVED `teacher_profiles` row by
+ * `slug` directly (no `data/teachers.ts` counterpart needed — this is
+ * exactly what lets a 2nd+ real teacher get a public page with zero code
+ * change), then builds the same `PublicTeacher` shape a static-registry
+ * teacher gets, synthesizing the fields that only exist in the static
+ * registry today (initials from the display name, a generic branded
+ * placeholder image, a doc number/joined-year derived from `created_at`).
+ * GATED + NEVER-THROW: no DATABASE_URL, no matching APPROVED row, or a
+ * failed query ⇒ `null` (404), matching every other path here.
+ */
+async function getPublicTeacherFromDbSlug(slug: string, locale: string): Promise<PublicTeacher | null> {
+  if (!dbConfigured()) return null;
+  try {
+    const [row] = await db
+      .select()
+      .from(T.teacherProfiles)
+      .where(and(eq(T.teacherProfiles.slug, slug), eq(T.teacherProfiles.status, 'approved')))
+      .limit(1);
+    if (!row) return null;
+    const profile = mapDbTeacherProfile(row);
+    const ownerUserId = profile.userId;
+
+    const [ownerSlugs, rating, hasPlan, publishedAll] = await Promise.all([
+      getOwnerCourseSlugs(ownerUserId),
+      getTeacherRating(ownerUserId),
+      hasActiveTeacherPlan(ownerUserId),
+      getPublishedCourses(),
+    ]);
+    const slugsForCourses = ownerSlugs ?? [];
+    const studentCount = await getDistinctStudentCount(slugsForCourses);
+
+    const bySlug = new Map(publishedAll.map((c) => [c.slug, c]));
+    const courses = slugsForCourses
+      .map((s) => bySlug.get(s))
+      .filter((c): c is Course => Boolean(c));
+
+    // An approved profile always has a non-empty display_name (required at
+    // apply time) — the 'Anseyan' ("teacher" in Kreyòl) fallback is defensive
+    // only, never expected to actually render.
+    const displayName = profile.displayName?.trim() || 'Anseyan';
+    const bio = (locale === 'ht' ? profile.bioHt : profile.bioFr)?.trim() || '';
+    const photoUrl = isSafePhotoUrl(profile.photoUrl) ? profile.photoUrl : null;
+    const joinedYear = new Date(profile.createdAt).getFullYear();
+
+    return {
+      slug,
+      displayName,
+      initials: initialsFromName(displayName),
+      // Generic branded placeholder — teacher #1 has a dedicated founder.*
+      // asset, but a DB-only teacher (no static registry entry) has none
+      // yet; reuses an existing on-brand illustration rather than a broken
+      // image path. Only shown when `photoUrl` is null (no live photo).
+      imageName: 'avatars/avatar-1',
+      bio,
+      photoUrl,
+      docNo: `ANS-${joinedYear}-${profile.id.slice(0, 3).toUpperCase()}`,
+      rating,
+      courseCount: courses.length,
+      studentCount,
+      courses,
+      joinedYear,
+      hasPlan,
+    };
+  } catch (err) {
+    console.error('[teacher/public] getPublicTeacherFromDbSlug DB read failed, falling back to null:', err);
+    return null;
+  }
+}
+
+/**
+ * The full `/prof/[slug]` read (Task C3-T7, extended by Task: DB-backed
+ * teacher slugs). See the module header for the slug-resolution + gating
+ * reasoning. GATED + NEVER-THROW: any DB read along the way that fails
+ * degrades to its own documented fallback; the only ways this returns
+ * `null` are an unknown slug (in both registries) or a resolved-but-not-
+ * approved (and not teacher #1) profile — both of which the page turns into
+ * a 404.
  */
 export async function getPublicTeacher(slug: string, locale: string): Promise<PublicTeacher | null> {
   const staticTeacher = getTeacher(slug);
-  if (!staticTeacher) return null;
+  if (!staticTeacher) return getPublicTeacherFromDbSlug(slug, locale);
 
   const isTeacherOne = staticTeacher.slug === teachers[0]?.slug;
 

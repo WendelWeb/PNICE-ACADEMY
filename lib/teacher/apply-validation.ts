@@ -88,6 +88,28 @@ export function validatePayoutSettings(
 }
 
 /**
+ * Task: per-teacher plan pricing. Bounds are deliberately generous, sane
+ * guardrails against fat-fingered input (a stray extra digit) rather than a
+ * real business rule — $1.00 to $1,000.00 per month. Documented here because
+ * both the studio's price form and `updateMyPlanAction`'s server-side
+ * re-check (lib/teacher/studio-actions.ts) share this exact constant, so a
+ * price the form would reject can never be written another way.
+ */
+export const PLAN_PRICE_MIN_CENTS = 100; // $1.00/mo
+export const PLAN_PRICE_MAX_CENTS = 100_000; // $1,000.00/mo
+
+/**
+ * Validates a teacher's own monthly plan price (USD cents). Returns the
+ * first failing field's error code, or `null` if acceptable — same contract
+ * as `validatePayoutSettings`.
+ */
+export function validatePlanPrice(priceCentsMonthly: number): string | null {
+  if (!Number.isInteger(priceCentsMonthly)) return 'invalid_price';
+  if (priceCentsMonthly < PLAN_PRICE_MIN_CENTS || priceCentsMonthly > PLAN_PRICE_MAX_CENTS) return 'invalid_price';
+  return null;
+}
+
+/**
  * Validate that a URL is http(s) and well-formed. Exported: also reused as
  * the RENDER-time protocol allowlist for a teacher's public `photo_url`
  * (`lib/teacher/public.ts`'s `isSafePhotoUrl`) — the same rule enforced here

@@ -14,6 +14,8 @@ import {
   isSafePhotoUrl,
   shouldShowPublicPage,
   resolvePublicIdentity,
+  initialsFromName,
+  getApprovedTeacherSlugs,
   getPublicTeacher,
 } from './public';
 import type { TeacherProfile } from './profile';
@@ -22,6 +24,7 @@ import { courses } from '@/data/courses';
 const approvedProfile: TeacherProfile = {
   id: 'tp-1',
   userId: 'user-1',
+  slug: 'pwofese-live',
   displayName: 'Pwofesè Live',
   bioHt: 'Bio kreyòl anba a.',
   bioFr: 'Bio française à jour.',
@@ -117,9 +120,35 @@ describe('resolvePublicIdentity — live profile overlays static fallback, never
   });
 });
 
+describe('initialsFromName — seal initials for a DB-only teacher (Task: DB-backed teacher slugs)', () => {
+  it('takes the first letter of up to two words, uppercased', () => {
+    expect(initialsFromName('Jean Pierre')).toBe('JP');
+  });
+
+  it('handles a single-word name', () => {
+    expect(initialsFromName('Ochre')).toBe('O');
+  });
+
+  it('ignores extra words past the first two', () => {
+    expect(initialsFromName('Jean Marie Pierre Louis')).toBe('JM');
+  });
+
+  it('falls back to "??" for an empty/whitespace-only name', () => {
+    expect(initialsFromName('')).toBe('??');
+    expect(initialsFromName('   ')).toBe('??');
+  });
+});
+
+describe('getApprovedTeacherSlugs — gated fallback, no DATABASE_URL', () => {
+  it('falls back to [] with no DB', async () => {
+    expect(await getApprovedTeacherSlugs()).toEqual([]);
+  });
+});
+
 describe('getPublicTeacher — gated fallback, no DATABASE_URL', () => {
-  it('unknown slug -> null (404)', async () => {
+  it('unknown slug -> null (404), including one only a live DB could resolve', async () => {
     expect(await getPublicTeacher('nope', 'ht')).toBeNull();
+    expect(await getPublicTeacher('some-db-only-teacher', 'ht')).toBeNull();
   });
 
   it('teacher #1 renders identically to today via the static fallback', async () => {

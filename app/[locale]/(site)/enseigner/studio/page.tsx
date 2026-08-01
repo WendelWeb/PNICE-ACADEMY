@@ -10,10 +10,13 @@ import { clerkEnabled } from '@/lib/clerk';
 import { dbConfigured } from '@/lib/courses/source';
 import { resolveUserId } from '@/lib/learner/access';
 import { isApprovedTeacher, getTeacherProfile } from '@/lib/teacher/profile';
-import { getMyCourses, getMyStudioSummary } from '@/lib/teacher/studio';
+import { getMyCourses, getMyStudioSummary, getMyPlan } from '@/lib/teacher/studio';
+import { getFxRate } from '@/lib/fx';
+import { SUBSCRIPTION_USD } from '@/data/pricing';
 import { CourseCard } from '@/components/teacher/studio/CourseCard';
 import { WithdrawalPanel } from '@/components/teacher/studio/WithdrawalPanel';
 import { PayoutSettingsForm } from '@/components/teacher/studio/PayoutSettingsForm';
+import { PlanPricingForm } from '@/components/teacher/studio/PlanPricingForm';
 
 // Per-request Clerk identity + live DB reads (balance, courses) — never
 // cache across teachers.
@@ -45,11 +48,19 @@ export default async function StudioPage({
   const approved = await isApprovedTeacher(userId);
   if (!approved) redirect(`/${locale}/enseigner`);
 
-  const [profile, courses, summary] = await Promise.all([
+  const [profile, courses, summary, myPlan, fxRateHtg] = await Promise.all([
     getTeacherProfile(userId),
     getMyCourses(userId),
     getMyStudioSummary(userId),
+    getMyPlan(userId),
+    getFxRate(),
   ]);
+  // No plan row yet (brand-new teacher) -> the platform's documented default
+  // (data/pricing.ts's SUBSCRIPTION_USD, mirroring platform_settings.
+  // subscription_usd_cents's seed value) is shown as the starting price,
+  // exactly what a first `updateMyPlanAction` call would otherwise leave
+  // unset.
+  const planPriceCentsMonthly = myPlan?.priceCentsMonthly ?? SUBSCRIPTION_USD * 100;
 
   return (
     <Section>
@@ -62,6 +73,10 @@ export default async function StudioPage({
         </Reveal>
 
         <Reveal delay={80} className="mt-8">
+          <PlanPricingForm priceCentsMonthly={planPriceCentsMonthly} fxRateHtg={fxRateHtg} />
+        </Reveal>
+
+        <Reveal delay={95} className="mt-4">
           <PayoutSettingsForm payoutMethod={profile?.payoutMethod ?? null} payoutDestination={profile?.payoutDestination ?? null} />
         </Reveal>
 

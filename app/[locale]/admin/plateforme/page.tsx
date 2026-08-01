@@ -1,6 +1,6 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { auth, clerkClient } from '@clerk/nextjs/server';
-import { IconCurrencyDollar, IconAlertTriangle, IconArrowRight } from '@tabler/icons-react';
+import { IconCurrencyDollar, IconAlertTriangle, IconArrowRight, IconReceipt2 } from '@tabler/icons-react';
 import { resolveAdminRole } from '@/lib/admin/access';
 import { getPlatform } from '@/lib/admin/platform/store';
 import { getFxRate } from '@/lib/fx';
@@ -9,7 +9,7 @@ import { hasCap } from '@/lib/admin/guard';
 import { fmtDateTime, fmtInt } from '@/lib/admin/format';
 import { Forbidden } from '@/components/admin/Forbidden';
 import { Link } from '@/i18n/routing';
-import { ProvidersPanel, SubscriptionPricePanel, MaintenancePanel } from '@/components/admin/platform/PlatformPanels';
+import { ProvidersPanel, MaintenancePanel } from '@/components/admin/platform/PlatformPanels';
 import { ReferralCreditPanel } from '@/components/admin/marketing/ReferralCreditPanel';
 import { DigestPanel } from '@/components/admin/health/DigestPanel';
 
@@ -50,7 +50,31 @@ export default async function PlatformPage({ params: { locale } }: { params: { l
       <p className="text-sm text-graphite/70">{t('subtitle')}</p>
 
       <ProvidersPanel providers={platform.providers} />
-      <SubscriptionPricePanel usd={platform.subscriptionUsd} />
+
+      {/* Task: per-teacher plan pricing (owner ask: "each teacher sets their
+          own price") — the global subscription-price editor that used to
+          live here (SubscriptionPricePanel) is retired: every teacher now
+          sets their own monthly plan price from their own studio
+          (lib/teacher/studio-actions.ts's `updateMyPlanAction`). This is a
+          read-only pointer there, kept on this page so an admin looking for
+          "where did the price setting go" finds an answer immediately.
+          `platform_settings.subscription_usd_cents` (and this store's
+          `subscriptionUsd` field) stay in place as the seed default for a
+          brand-new teacher plan — see data/pricing.ts's SUBSCRIPTION_USD and
+          lib/payments/products.ts's resolveProduct — just no longer editable
+          from an admin panel. */}
+      <section className="rounded-xl border border-ink/12 bg-paper-light p-4">
+        <h2 className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wide text-ink/55">
+          <IconReceipt2 size={13} /> {t('subprice.title')}
+        </h2>
+        <p className="mt-1.5 text-[11px] leading-snug text-graphite/70">{t('subprice.note')}</p>
+        <Link
+          href="/enseigner/studio"
+          className="mt-3 inline-flex items-center gap-1.5 font-mono text-[11px] text-ochre hover:underline"
+        >
+          {t('subprice.cta')} <IconArrowRight size={13} />
+        </Link>
+      </section>
 
       {/* FX — read-only here; editing moved to its own dedicated page
           (Task fix/fx-rate-unify, owner request: the edit form buried in

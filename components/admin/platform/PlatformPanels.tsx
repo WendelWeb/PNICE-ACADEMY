@@ -3,10 +3,10 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { IconCreditCard, IconReceipt2, IconTool, IconLoader2, IconAlertTriangle } from '@tabler/icons-react';
+import { IconCreditCard, IconTool, IconLoader2 } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
 import { buttonClasses } from '@/components/ui/Button';
-import { toggleProviderAction, setSubscriptionPriceAction, setMaintenanceAction } from '@/lib/admin/platform-actions';
+import { toggleProviderAction, setMaintenanceAction } from '@/lib/admin/platform-actions';
 import { PROVIDER_KEYS, type ProviderKey } from '@/lib/admin/platform/store';
 
 const inputCls = 'rounded-lg border border-ink/15 bg-paper px-2.5 py-1.5 text-sm text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ochre';
@@ -40,26 +40,6 @@ export function ProvidersPanel({ providers }: { providers: Record<ProviderKey, b
         ))}
       </ul>
       {err && <p className="mt-2 font-mono text-[11px] text-stampred">{err}</p>}
-    </section>
-  );
-}
-
-export function SubscriptionPricePanel({ usd }: { usd: number }) {
-  const t = useTranslations('admin.platform.subprice');
-  const router = useRouter();
-  const [pending, start] = useTransition();
-  const [val, setVal] = useState(String(usd));
-  const [saved, setSaved] = useState(false);
-
-  return (
-    <section className="rounded-xl border border-ink/12 bg-paper-light p-4">
-      <h2 className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wide text-ink/55"><IconReceipt2 size={13} /> {t('title')}</h2>
-      <p className="mt-1.5 flex items-start gap-1.5 text-[11px] leading-snug text-graphite/70"><IconAlertTriangle size={13} className="mt-0.5 shrink-0 text-ochre" /> {t('warn')}</p>
-      <div className="mt-3 flex items-end gap-2">
-        <label className="flex flex-col gap-1"><span className="font-mono text-[10px] uppercase text-ink/45">{t('price')}</span><span className="flex items-center gap-1 font-mono text-sm text-ink/55">$<input type="number" min="1" value={val} onChange={(e) => { setVal(e.target.value); setSaved(false); }} className={cn(inputCls, 'w-24')} />/{t('month')}</span></label>
-        <button type="button" disabled={pending} onClick={() => start(async () => { if ((await setSubscriptionPriceAction(Number(val))).ok) { setSaved(true); router.refresh(); } })} className={cn(buttonClasses('primary', 'md'), 'text-xs')}>{pending ? <IconLoader2 size={14} className="animate-spin" /> : null} {t('save')}</button>
-        {saved && <span className="pb-2 font-mono text-[11px] text-teal">{t('saved')}</span>}
-      </div>
     </section>
   );
 }

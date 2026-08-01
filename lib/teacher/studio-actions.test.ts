@@ -28,6 +28,7 @@ import {
   moveMySecondaryImageAction,
   requestWithdrawalAction,
   updateMyPayoutSettingsAction,
+  updateMyPlanAction,
 } from './studio-actions';
 
 describe('lib/teacher/studio-actions.ts — env gate (no DATABASE_URL, never reaches Clerk/db)', () => {
@@ -86,6 +87,14 @@ describe('lib/teacher/studio-actions.ts — env gate (no DATABASE_URL, never rea
   it('updateMyPayoutSettingsAction returns db_required', async () => {
     delete process.env.DATABASE_URL;
     expect(await updateMyPayoutSettingsAction('moncash', '+509 3712 3456')).toEqual({
+      ok: false,
+      message: 'db_required',
+    });
+  });
+
+  it('updateMyPlanAction returns db_required', async () => {
+    delete process.env.DATABASE_URL;
+    expect(await updateMyPlanAction({ priceCentsMonthly: 7900 })).toEqual({
       ok: false,
       message: 'db_required',
     });

@@ -508,6 +508,7 @@
     },
     "studio": {
       "eyebrow": "Estidyo w",
+      "navBadge": "Estidyo",
       "greeting": "Byenveni nan estidyo w",
       "greetingNamed": "Byenveni, {name}",
       "untitled": "(san tit)",
@@ -590,6 +591,22 @@
           "payout_method_invalid": "Mwayen peman envalid.",
           "payout_destination_required": "Antre kote ou vle resevwa lajan w.",
           "payout_destination_too_long": "Detay kont ou dwe pase 200 karaktè.",
+          "forbidden": "Aksyon pa otorize.",
+          "db_required": "Sistèm nan poko aktif. Tanpri eseye pita.",
+          "generic": "Yon erè rive."
+        }
+      },
+      "plan": {
+        "title": "Abònman mwen",
+        "explain": "Elèv ou yo peye montan sa a chak mwa pou yo jwenn aksè a tout fòmasyon ou yo.",
+        "priceLabel": "Pri chak mwa",
+        "current": "Kounye a : {usd} $ / mwa (~{htg} goud)",
+        "editCta": "Modifye",
+        "save": "Anrejistre",
+        "cancel": "Anile",
+        "success": "Pri abònman an mete ajou.",
+        "error": {
+          "invalid_price": "Antre yon pri valab (ant {min} $ ak {max} $).",
           "forbidden": "Aksyon pa otorize.",
           "db_required": "Sistèm nan poko aktif. Tanpri eseye pita.",
           "generic": "Yon erè rive."
@@ -710,6 +727,7 @@
     "title": "Mon kont",
     "loading": "N ap chaje enfòmasyon ou yo…",
     "teachEntry": "Vin anseyan",
+    "myStudio": "Estidyo mwen",
     "tabs": {
       "profile": "Pwofil",
       "security": "Sekirite",
@@ -1039,6 +1057,7 @@
       "taux": "To chanj",
       "health": "Sante sistèm",
       "siteContent": "Kontni sit la",
+      "myStudio": "Estidyo fòmasyon mwen",
       "sections": {
         "pilotage": "Pilotaj",
         "content": "Fòmasyon & kontni",
@@ -2463,11 +2482,8 @@
       },
       "subprice": {
         "title": "Pri abònman an",
-        "warn": "Modifye pri a pa chanje abònman ki egziste deja — sèlman nouvo abònman yo.",
-        "price": "Pri mansyèl",
-        "month": "mwa",
-        "save": "Anrejistre",
-        "saved": "Anrejistre ✓"
+        "note": "Chak anseyan kounye a fikse pwòp pri abònman chak mwa li nan studio pa li.",
+        "cta": "Ale nan studio anseyan an"
       },
       "maintenance": {
         "title": "Mòd antretyen",

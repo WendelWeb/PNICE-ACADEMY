@@ -19,13 +19,18 @@ import {
   subscriptionPerks_fr,
 } from '@/data/pricing';
 import { siteImageSrc } from '@/lib/courseImage';
-import { getPublicTeacher } from '@/lib/teacher/public';
+import { getPublicTeacher, getApprovedTeacherSlugs } from '@/lib/teacher/public';
 
-// Known teachers today (data/teachers.ts — teacher #1). See lib/teacher/public.ts
-// for the v1 slug-resolution note: a real teacher_profiles.slug column is the
-// follow-up once a second real teacher exists.
-export function generateStaticParams() {
-  return teachers.map((t) => ({ slug: t.slug }));
+// The static data/teachers.ts registry (teacher #1) PLUS every approved
+// teacher_profiles.slug from the DB (Task: DB-backed teacher slugs) — a 2nd+
+// real teacher is pre-rendered here with no code change. getApprovedTeacherSlugs
+// is gated + never throws (falls back to [] with no DATABASE_URL), so this
+// degrades to exactly today's static-only list pre-migration/no-DB.
+export async function generateStaticParams() {
+  const staticSlugs = teachers.map((t) => t.slug);
+  const dbSlugs = await getApprovedTeacherSlugs();
+  const extraSlugs = dbSlugs.filter((slug) => !staticSlugs.includes(slug));
+  return [...staticSlugs, ...extraSlugs].map((slug) => ({ slug }));
 }
 
 // DB-backed via getPublicTeacher() (Task C3-T7, gated + fallback) — revalidate
