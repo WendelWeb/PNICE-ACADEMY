@@ -25,6 +25,8 @@ export function LessonRow({
   onAct,
   actions,
   chapters,
+  bilingual,
+  primaryLocale,
   expandedId,
   onToggleExpand,
 }: {
@@ -36,6 +38,11 @@ export function LessonRow({
   onAct: (fn: () => Promise<{ ok: boolean }>) => void;
   actions: LessonActions;
   chapters: AdminChapter[];
+  /** The parent course's optional-translation setting (Task: lesson-language)
+   *  — plain data props threaded down to `LessonEditPanel`, see its doc
+   *  comment. Does NOT change the `actions` DI contract. */
+  bilingual: boolean;
+  primaryLocale: 'ht' | 'fr';
   expandedId: string | null;
   onToggleExpand: (lessonId: string) => void;
 }) {
@@ -96,7 +103,16 @@ export function LessonRow({
 
       {expanded && (
         <div className="border-t border-ink/10 px-2.5 pb-2.5">
-          <LessonEditPanel slug={slug} lesson={lesson} isDraft={isDraft} actions={actions} chapters={chapters} onAct={onAct} />
+          <LessonEditPanel
+            slug={slug}
+            lesson={lesson}
+            isDraft={isDraft}
+            actions={actions}
+            chapters={chapters}
+            bilingual={bilingual}
+            primaryLocale={primaryLocale}
+            onAct={onAct}
+          />
         </div>
       )}
     </li>

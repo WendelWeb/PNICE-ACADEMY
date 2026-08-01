@@ -24,6 +24,8 @@ export function ChapterGroup({
   isDraft,
   onAct,
   actions,
+  bilingual,
+  primaryLocale,
   expandedId,
   onToggleExpand,
 }: {
@@ -36,6 +38,10 @@ export function ChapterGroup({
   isDraft: boolean;
   onAct: (fn: () => Promise<{ ok: boolean }>) => void;
   actions: LessonActions;
+  /** The parent course's optional-translation setting (Task: lesson-language)
+   *  — threaded straight through to each `LessonRow`. */
+  bilingual: boolean;
+  primaryLocale: 'ht' | 'fr';
   expandedId: string | null;
   onToggleExpand: (lessonId: string) => void;
 }) {
@@ -148,6 +154,8 @@ export function ChapterGroup({
                   onAct={onAct}
                   actions={actions}
                   chapters={chapters}
+                  bilingual={bilingual}
+                  primaryLocale={primaryLocale}
                   expandedId={expandedId}
                   onToggleExpand={onToggleExpand}
                 />

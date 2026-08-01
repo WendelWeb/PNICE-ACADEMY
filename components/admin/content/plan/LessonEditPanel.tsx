@@ -9,7 +9,7 @@ import type { AdminLesson, AdminChapter, LessonPatch } from '@/lib/courses/write
 import type { CourseResource } from '@/db/schema';
 import { VideoUpload } from '@/components/content/VideoUpload';
 import { ResourcesEditor } from '@/components/content/ResourcesEditor';
-import { inputCls } from '../fields';
+import { inputCls, MONO_LOCALE_NAME } from '../fields';
 import { focusRing, secToMmss, mmssToSec, EditPanelSection } from './shared';
 import type { LessonActions } from './types';
 
@@ -21,6 +21,21 @@ import type { LessonActions } from './types';
  * Mounting fresh each time it opens is deliberate: every field's local state
  * re-initializes from the latest `lesson` prop, the same dirty-check-on-blur
  * commit pattern the pre-split `LessonsManager.tsx` used.
+ *
+ * `bilingual`/`primaryLocale` (Task: lesson-language) — the PARENT COURSE's
+ * optional-translation setting, threaded down from the editor page →
+ * `PlanEditor` → `ChapterGroup`/`LessonRow` → here as plain data props (the
+ * `actions` DI contract is untouched). When the course is monolingual
+ * (`bilingual === false`), the Titres/Description/Notes sections each render
+ * a SINGLE input for the course's `primaryLocale` — same `mono` convention
+ * `components/admin/content/CourseEditor.tsx`'s `BilingualText`/`PairedList`
+ * use, right down to reusing `MONO_LOCALE_NAME` for the "· Kreyòl"/
+ * "· Français" hint — instead of forcing a teacher who chose "kreyòl only"
+ * for the course to still fill in French on every lesson. The client only
+ * ever commits the PRIMARY locale's own field (e.g. `{ title_ht }`); the
+ * server (`lib/courses/write.ts`'s `updateLesson` → `mirrorBilingualFields`)
+ * is what actually copies it into the other column on save — this component
+ * never needs to know that, same division as the course-level fields.
  */
 export function LessonEditPanel({
   slug,
@@ -28,6 +43,8 @@ export function LessonEditPanel({
   isDraft,
   actions,
   chapters,
+  bilingual,
+  primaryLocale,
   onAct,
 }: {
   slug: string;
@@ -35,10 +52,13 @@ export function LessonEditPanel({
   isDraft: boolean;
   actions: LessonActions;
   chapters: AdminChapter[];
+  bilingual: boolean;
+  primaryLocale: 'ht' | 'fr';
   onAct: (fn: () => Promise<{ ok: boolean }>) => void;
 }) {
   const t = useTranslations('admin.cms.lessons');
   const router = useRouter();
+  const mono = bilingual ? undefined : primaryLocale;
   const [titleHt, setTitleHt] = useState(lesson.title_ht);
   const [titleFr, setTitleFr] = useState(lesson.title_fr);
   const [descHt, setDescHt] = useState(lesson.desc_ht);
@@ -53,6 +73,19 @@ export function LessonEditPanel({
 
   const noVideo = !lesson.bunnyVideoId;
   const commit = (patch: LessonPatch) => onAct(() => actions.updateLesson(slug, lesson.id, patch));
+
+  /** Section header (Task: lesson-language) — appends the "· Kreyòl"/
+   *  "· Français" hint next to a section's title when the course is
+   *  monolingual, matching CourseEditor's per-field label pattern at the
+   *  section level (this panel groups fields by section, not per-field). */
+  const sectionTitle = (label: string) =>
+    mono ? (
+      <>
+        {label} <span className="text-ink/40 normal-case">· {MONO_LOCALE_NAME[mono]}</span>
+      </>
+    ) : (
+      label
+    );
 
   /**
    * `resources` is an array field — there's no single input to "blur" the
@@ -75,7 +108,7 @@ export function LessonEditPanel({
   return (
     <div className="mt-2 space-y-2">
       <EditPanelSection
-        title={t('sectionTitles')}
+        title={sectionTitle(t('sectionTitles'))}
         extra={
           <label className="flex items-center gap-1.5 font-mono text-[10px] text-ink/55">
             {t('moveTo')}
@@ -92,17 +125,33 @@ export function LessonEditPanel({
           </label>
         }
       >
-        <div className="grid gap-1.5 sm:grid-cols-2">
-          <input value={titleHt} onChange={(e) => setTitleHt(e.target.value)} onBlur={() => titleHt !== lesson.title_ht && commit({ title_ht: titleHt })} placeholder={t('titleHt')} className={inputCls} />
-          <input value={titleFr} onChange={(e) => setTitleFr(e.target.value)} onBlur={() => titleFr !== lesson.title_fr && commit({ title_fr: titleFr })} placeholder={t('titleFr')} className={inputCls} />
-        </div>
+        {mono ? (
+          mono === 'ht' ? (
+            <input value={titleHt} onChange={(e) => setTitleHt(e.target.value)} onBlur={() => titleHt !== lesson.title_ht && commit({ title_ht: titleHt })} placeholder={t('titleHt')} className={inputCls} />
+          ) : (
+            <input value={titleFr} onChange={(e) => setTitleFr(e.target.value)} onBlur={() => titleFr !== lesson.title_fr && commit({ title_fr: titleFr })} placeholder={t('titleFr')} className={inputCls} />
+          )
+        ) : (
+          <div className="grid gap-1.5 sm:grid-cols-2">
+            <input value={titleHt} onChange={(e) => setTitleHt(e.target.value)} onBlur={() => titleHt !== lesson.title_ht && commit({ title_ht: titleHt })} placeholder={t('titleHt')} className={inputCls} />
+            <input value={titleFr} onChange={(e) => setTitleFr(e.target.value)} onBlur={() => titleFr !== lesson.title_fr && commit({ title_fr: titleFr })} placeholder={t('titleFr')} className={inputCls} />
+          </div>
+        )}
       </EditPanelSection>
 
-      <EditPanelSection title={t('sectionDescription')}>
-        <div className="grid gap-1.5 sm:grid-cols-2">
-          <textarea value={descHt} onChange={(e) => setDescHt(e.target.value)} onBlur={() => descHt !== lesson.desc_ht && commit({ desc_ht: descHt })} placeholder={t('descHt')} className={cn(inputCls, 'min-h-[44px] resize-y')} />
-          <textarea value={descFr} onChange={(e) => setDescFr(e.target.value)} onBlur={() => descFr !== lesson.desc_fr && commit({ desc_fr: descFr })} placeholder={t('descFr')} className={cn(inputCls, 'min-h-[44px] resize-y')} />
-        </div>
+      <EditPanelSection title={sectionTitle(t('sectionDescription'))}>
+        {mono ? (
+          mono === 'ht' ? (
+            <textarea value={descHt} onChange={(e) => setDescHt(e.target.value)} onBlur={() => descHt !== lesson.desc_ht && commit({ desc_ht: descHt })} placeholder={t('descHt')} className={cn(inputCls, 'min-h-[44px] resize-y')} />
+          ) : (
+            <textarea value={descFr} onChange={(e) => setDescFr(e.target.value)} onBlur={() => descFr !== lesson.desc_fr && commit({ desc_fr: descFr })} placeholder={t('descFr')} className={cn(inputCls, 'min-h-[44px] resize-y')} />
+          )
+        ) : (
+          <div className="grid gap-1.5 sm:grid-cols-2">
+            <textarea value={descHt} onChange={(e) => setDescHt(e.target.value)} onBlur={() => descHt !== lesson.desc_ht && commit({ desc_ht: descHt })} placeholder={t('descHt')} className={cn(inputCls, 'min-h-[44px] resize-y')} />
+            <textarea value={descFr} onChange={(e) => setDescFr(e.target.value)} onBlur={() => descFr !== lesson.desc_fr && commit({ desc_fr: descFr })} placeholder={t('descFr')} className={cn(inputCls, 'min-h-[44px] resize-y')} />
+          </div>
+        )}
       </EditPanelSection>
 
       <EditPanelSection title={t('sectionVideo')}>
@@ -129,11 +178,19 @@ export function LessonEditPanel({
         )}
       </EditPanelSection>
 
-      <EditPanelSection title={t('notesTitle')}>
-        <div className="grid gap-1.5 sm:grid-cols-2">
-          <textarea value={notesHt} onChange={(e) => setNotesHt(e.target.value)} onBlur={() => notesHt !== lesson.notes_ht && commit({ notes_ht: notesHt })} placeholder={t('notesHt')} className={cn(inputCls, 'min-h-[60px] resize-y')} />
-          <textarea value={notesFr} onChange={(e) => setNotesFr(e.target.value)} onBlur={() => notesFr !== lesson.notes_fr && commit({ notes_fr: notesFr })} placeholder={t('notesFr')} className={cn(inputCls, 'min-h-[60px] resize-y')} />
-        </div>
+      <EditPanelSection title={sectionTitle(t('notesTitle'))}>
+        {mono ? (
+          mono === 'ht' ? (
+            <textarea value={notesHt} onChange={(e) => setNotesHt(e.target.value)} onBlur={() => notesHt !== lesson.notes_ht && commit({ notes_ht: notesHt })} placeholder={t('notesHt')} className={cn(inputCls, 'min-h-[60px] resize-y')} />
+          ) : (
+            <textarea value={notesFr} onChange={(e) => setNotesFr(e.target.value)} onBlur={() => notesFr !== lesson.notes_fr && commit({ notes_fr: notesFr })} placeholder={t('notesFr')} className={cn(inputCls, 'min-h-[60px] resize-y')} />
+          )
+        ) : (
+          <div className="grid gap-1.5 sm:grid-cols-2">
+            <textarea value={notesHt} onChange={(e) => setNotesHt(e.target.value)} onBlur={() => notesHt !== lesson.notes_ht && commit({ notes_ht: notesHt })} placeholder={t('notesHt')} className={cn(inputCls, 'min-h-[60px] resize-y')} />
+            <textarea value={notesFr} onChange={(e) => setNotesFr(e.target.value)} onBlur={() => notesFr !== lesson.notes_fr && commit({ notes_fr: notesFr })} placeholder={t('notesFr')} className={cn(inputCls, 'min-h-[60px] resize-y')} />
+          </div>
+        )}
       </EditPanelSection>
 
       <EditPanelSection

@@ -69,6 +69,8 @@ export function PlanEditor({
   lessons,
   chapters = [],
   isDraft,
+  bilingual = true,
+  primaryLocale = 'ht',
   actions = defaultLessonActions,
 }: {
   slug: string;
@@ -76,6 +78,17 @@ export function PlanEditor({
   /** A course's parts/modules (Task K2) — `[]` for every flat, pre-K2 course. */
   chapters?: AdminChapter[];
   isDraft: boolean;
+  /**
+   * The course's optional-translation setting (Task: lesson-language) —
+   * threaded down to `LessonEditPanel` so a monolingual course's lessons show
+   * ONE title/desc/notes input instead of forced ht+fr pairs (see that
+   * component's doc comment). Defaults to `true`/`'ht'` (a fully bilingual
+   * course, same behaviour as every course before this task) so a call site
+   * that hasn't been updated yet still renders the pre-existing paired UI —
+   * plain data props, NOT part of the `actions` DI contract below.
+   */
+  bilingual?: boolean;
+  primaryLocale?: 'ht' | 'fr';
   /** Injected by the teacher studio (Task C3-T4 / K2); defaults to the admin
    *  CMS actions so every existing `/admin/cours/[slug]/editer` call site is
    *  unchanged. */
@@ -122,6 +135,8 @@ export function PlanEditor({
               isDraft={isDraft}
               onAct={act}
               actions={actions}
+              bilingual={bilingual}
+              primaryLocale={primaryLocale}
               expandedId={expandedId}
               onToggleExpand={toggleExpand}
             />
@@ -146,6 +161,8 @@ export function PlanEditor({
                     onAct={act}
                     actions={actions}
                     chapters={chaptersSorted}
+                    bilingual={bilingual}
+                    primaryLocale={primaryLocale}
                     expandedId={expandedId}
                     onToggleExpand={toggleExpand}
                   />
