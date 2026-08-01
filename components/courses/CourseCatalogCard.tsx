@@ -5,7 +5,7 @@ import { IconCheck } from '@tabler/icons-react';
 import { Link } from '@/i18n/routing';
 import { Sceau } from '@/components/ui/Sceau';
 import { Price, PriceSecondary } from '@/components/ui/Price';
-import { courseTitle, courseTagline, courseLearn } from '@/lib/courseFields';
+import { courseTitle, courseTagline, courseLearn, courseIsBilingual, coursePrimaryLocale } from '@/lib/courseFields';
 import { categoryTone } from '@/lib/courseCategory';
 import { cn } from '@/lib/cn';
 import { getCourseTeacher } from '@/data/teachers';
@@ -29,6 +29,11 @@ export function CourseCatalogCard({ course }: { course: Course }) {
   const tCourse = useTranslations('course');
   const learn = courseLearn(course, locale).slice(0, 3);
   const teacher = getCourseTeacher(course.slug);
+  // Honesty in the UI (Task: course-language): a monolingual course must say
+  // so before a learner clicks through expecting the ht/fr pair every other
+  // course has.
+  const bilingual = courseIsBilingual(course);
+  const primary = coursePrimaryLocale(course);
 
   return (
     <div className="card-hover group flex h-full flex-col rounded-xl border border-ink/12 bg-paper-light outline-none transition-colors hover:border-ink/35">
@@ -64,6 +69,11 @@ export function CourseCatalogCard({ course }: { course: Course }) {
         <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-graphite/75">
           {courseTagline(course, locale)}
         </p>
+        {!bilingual && (
+          <span className="mt-2 inline-flex w-fit items-center rounded-full border border-ink/12 bg-ink/[0.04] px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-ink/55">
+            {t(`languageBadge.${primary}`)}
+          </span>
+        )}
 
         <ul className="mt-4 space-y-1.5">
           {learn.map((point, i) => (

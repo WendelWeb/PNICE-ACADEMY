@@ -41,7 +41,7 @@
 import { asc, eq, and, ne } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { db, schema } from '@/db';
-import { dbConfigured } from './source';
+import { dbConfigured, selectCourseRows, selectCourseRowBySlug } from './source';
 import { bootstrapEmails } from '@/lib/admin/access';
 import { recordAudit } from '@/lib/admin/data/real/users';
 import type { AdminActor } from '@/lib/admin/data/types';
@@ -133,6 +133,16 @@ export type AdminCourse = {
   code: string;
   slug: string;
   icon: string;
+  /**
+   * Optional course translation (Task: course-language). `bilingual=false`
+   * means the editor shows a SINGLE input per ht/fr field group (the
+   * `primary_locale` one) instead of the pair, and every save mirrors that
+   * single value into both DB columns (`mirrorBilingualFields`, the ONE
+   * place this is enforced) — see db/schema.ts's `courses.bilingual` doc
+   * comment for the full design.
+   */
+  bilingual: boolean;
+  primary_locale: 'ht' | 'fr';
   title_ht: string;
   title_fr: string;
   tagline_ht: string;
@@ -261,6 +271,8 @@ function mapRowToAdminCourse(
     code: row.code ?? row.slug,
     slug: row.slug,
     icon: row.icon ?? 'book',
+    bilingual: row.bilingual ?? true,
+    primary_locale: row.primaryLocale ?? 'ht',
     title_ht: row.titleHt ?? '',
     title_fr: row.titleFr ?? '',
     tagline_ht: row.taglineHt ?? '',
@@ -320,7 +332,7 @@ export async function getAdminCourses(): Promise<AdminCourseListRow[]> {
 
   try {
     const [courseRows, lessonRows] = await Promise.all([
-      db.select().from(T.courses),
+      selectCourseRows(),
       db.select({ courseSlug: T.lessons.courseSlug }).from(T.lessons),
     ]);
     const lessonCounts = new Map<string, number>();
@@ -350,7 +362,7 @@ export async function getAdminCourse(slug: string): Promise<AdminCourse | null> 
   if (!dbConfigured()) return null;
 
   try {
-    const [row] = await db.select().from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
+    const row = await selectCourseRowBySlug(slug);
     if (!row) return null;
     const [lessonRows, chapterRows] = await Promise.all([
       db.select().from(T.lessons).where(eq(T.lessons.courseSlug, slug)),
@@ -484,6 +496,65 @@ async function markDirtyAndRevalidateIfPublished(slug: string): Promise<void> {
 
 /* -------------------------------- course ----------------------------------- */
 
+/**
+ * Every `courses` ht/fr column pair (Task: course-language) — the owner's
+ * own list: "title_ht/title_fr, tagline, audience, learn, level, promise,
+ * problem, deliverables, prereq, faq". Shared by `mirrorBilingualFields`
+ * below; exported so it can be unit-tested against the exact list this
+ * module writes with, without re-deriving it.
+ */
+export const COURSE_BILINGUAL_PAIR_COLUMNS: readonly (readonly [string, string])[] = [
+  ['titleHt', 'titleFr'],
+  ['taglineHt', 'taglineFr'],
+  ['audienceHt', 'audienceFr'],
+  ['learnHt', 'learnFr'],
+  ['levelHt', 'levelFr'],
+  ['promiseHt', 'promiseFr'],
+  ['problemHt', 'problemFr'],
+  ['deliverablesHt', 'deliverablesFr'],
+  ['prereqHt', 'prereqFr'],
+  ['faqHt', 'faqFr'],
+];
+
+/**
+ * THE ONE PLACE (Task: course-language — see db/schema.ts's `courses.
+ * bilingual` doc comment for the full design): when a course is monolingual
+ * (`bilingual === false`), every ht/fr column pair above must carry
+ * byte-identical content, so every existing reader (public pages, cards,
+ * emails, Bunny titles, seed, ManifestList…) keeps working untouched and a
+ * visitor browsing in the "other" locale still sees the course instead of
+ * blanks. `createCourse` and `updateCourse` are the ONLY two functions that
+ * write these columns — both funnel their insert-values/`set` object through
+ * this, right before the DB call, so no caller/field can forget to mirror.
+ *
+ * Copies FROM the `primaryLocale` side TO the other side, and ONLY for a
+ * pair actually present in `values` this call (`undefined` means "not being
+ * written right now" — leaves it alone, since it was already mirrored by a
+ * previous save under the same invariant). A no-op when `bilingual` is true.
+ * Generic + structural (works on both `createCourse`'s full insert-values
+ * object and `updateCourse`'s partial `set` object) so it's usable — and
+ * unit-testable — without a DB connection.
+ */
+export function mirrorBilingualFields<T extends Record<string, unknown>>(
+  values: T,
+  bilingual: boolean,
+  primaryLocale: 'ht' | 'fr',
+): T {
+  if (bilingual) return values;
+  const out: Record<string, unknown> = { ...values };
+  for (const [htKey, frKey] of COURSE_BILINGUAL_PAIR_COLUMNS) {
+    const primaryKey = primaryLocale === 'ht' ? htKey : frKey;
+    const otherKey = primaryLocale === 'ht' ? frKey : htKey;
+    if (out[primaryKey] !== undefined) out[otherKey] = out[primaryKey];
+  }
+  return out as T;
+}
+
+/** `primaryLocale` must be 'ht' or 'fr' — guards a studio/CMS call site that bypasses the TS type (raw form data, tampered request). */
+function isValidLocale(v: unknown): v is 'ht' | 'fr' {
+  return v === 'ht' || v === 'fr';
+}
+
 export type NewCourseInput = {
   code?: string;
   slug?: string;
@@ -491,6 +562,15 @@ export type NewCourseInput = {
   title_fr: string;
   icon?: string;
   priceCents?: number;
+  /**
+   * Optional course translation (Task: course-language). Both optional —
+   * every existing call site (admin CMS's `createCourseAction`) that omits
+   * them creates a bilingual, ht-primary course exactly like before this
+   * task. `bilingual: false` requires a real `primaryLocale` (validated,
+   * defaults to 'ht' if omitted) — see `mirrorBilingualFields`.
+   */
+  bilingual?: boolean;
+  primaryLocale?: 'ht' | 'fr';
 };
 
 /**
@@ -508,6 +588,12 @@ export async function createCourse(
 ): Promise<CourseWriteResult> {
   if (!dbConfigured()) return dbRequired();
 
+  const bilingual = input.bilingual ?? true;
+  if (input.primaryLocale !== undefined && !isValidLocale(input.primaryLocale)) {
+    return { ok: false, message: 'invalid_primary_locale' };
+  }
+  const primaryLocale: 'ht' | 'fr' = input.primaryLocale ?? 'ht';
+
   const code = input.code?.trim() || (await getNextCourseCode());
   let slug = input.slug?.trim() || slugify(input.title_fr || input.title_ht) || `course-${Date.now()}`;
 
@@ -523,18 +609,32 @@ export async function createCourse(
 
   const ownerUserId = ownerUserIdOverride !== undefined ? ownerUserIdOverride : await resolveOwnerUserId();
 
-  await db.insert(T.courses).values({
-    ownerUserId: ownerUserId ?? null,
-    slug,
-    code,
-    icon: input.icon || 'book',
-    titleHt: input.title_ht,
-    titleFr: input.title_fr,
-    priceCents: input.priceCents ?? 0,
-    currency: 'USD',
-    status: 'draft',
-    hasUnpublishedChanges: false,
-  });
+  // Monolingual creation (Task: course-language): the studio's "nouveau
+  // cours" form collects only ONE title when `bilingual` is false — the
+  // caller (createMyCourseAction) fills the non-primary `title_ht`/
+  // `title_fr` with a placeholder (or leaves it equal), and
+  // `mirrorBilingualFields` below overwrites it with the primary value
+  // regardless, so the row is correct either way.
+  const values = mirrorBilingualFields(
+    {
+      ownerUserId: ownerUserId ?? null,
+      slug,
+      code,
+      icon: input.icon || 'book',
+      titleHt: input.title_ht,
+      titleFr: input.title_fr,
+      priceCents: input.priceCents ?? 0,
+      currency: 'USD',
+      status: 'draft' as const,
+      hasUnpublishedChanges: false,
+      bilingual,
+      primaryLocale,
+    },
+    bilingual,
+    primaryLocale,
+  );
+
+  await db.insert(T.courses).values(values);
 
   await recordAudit({ action: 'create_course', userId: actor.id, admin: actor, detail: slug });
   return { ok: true, slug };
@@ -565,16 +665,26 @@ export type CoursePatch = Partial<{
   level_fr: string;
   /** Course-level links/downloads (Task K1) — validated, see `validateResources`. */
   resources: CourseResource[];
+  /** Optional course translation (Task: course-language) — see `NewCourseInput`'s doc comment + `mirrorBilingualFields`. */
+  bilingual: boolean;
+  primaryLocale: 'ht' | 'fr';
 }>;
 
 export async function updateCourse(slug: string, patch: CoursePatch, actor: AdminActor): Promise<CourseWriteResult> {
   if (!dbConfigured()) return dbRequired();
-  const [current] = await db.select({ status: T.courses.status }).from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
+  const [current] = await db
+    .select({ status: T.courses.status, bilingual: T.courses.bilingual, primaryLocale: T.courses.primaryLocale })
+    .from(T.courses)
+    .where(eq(T.courses.slug, slug))
+    .limit(1);
   if (!current) return { ok: false, message: 'not_found' };
 
   if (patch.resources !== undefined) {
     const err = validateResources(patch.resources);
     if (err) return { ok: false, message: err };
+  }
+  if (patch.primaryLocale !== undefined && !isValidLocale(patch.primaryLocale)) {
+    return { ok: false, message: 'invalid_primary_locale' };
   }
 
   const set: Partial<typeof T.courses.$inferInsert> = { updatedAt: new Date() };
@@ -603,11 +713,22 @@ export async function updateCourse(slug: string, patch: CoursePatch, actor: Admi
     set.faqFr = patch.faq.map((f) => ({ q: f.q_fr, a: f.a_fr }));
   }
   if (patch.resources !== undefined) set.resources = patch.resources.map(normalizeResource);
+  if (patch.bilingual !== undefined) set.bilingual = patch.bilingual;
+  if (patch.primaryLocale !== undefined) set.primaryLocale = patch.primaryLocale;
 
   const wasPublished = current.status === 'published';
   if (wasPublished) set.hasUnpublishedChanges = true;
 
-  await db.update(T.courses).set(set).where(eq(T.courses.slug, slug));
+  // THE ONE PLACE (Task: course-language) — see `mirrorBilingualFields`'s own
+  // doc comment. Uses the (possibly just-toggled-by-this-patch) bilingual/
+  // primaryLocale, falling back to the row's CURRENT value for whichever one
+  // this patch doesn't touch — a save that doesn't touch the toggle must
+  // mirror (or not) using the course's existing setting, not silently reset it.
+  const bilingual = patch.bilingual !== undefined ? patch.bilingual : current.bilingual;
+  const primaryLocale = patch.primaryLocale !== undefined ? patch.primaryLocale : current.primaryLocale;
+  const mirroredSet = mirrorBilingualFields(set, bilingual, primaryLocale);
+
+  await db.update(T.courses).set(mirroredSet).where(eq(T.courses.slug, slug));
   await recordAudit({ action: 'update_course', userId: actor.id, admin: actor, detail: slug });
   if (wasPublished) revalidateCoursePaths(slug);
   return { ok: true };

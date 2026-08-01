@@ -17,15 +17,27 @@ const inputCls = 'w-full rounded-lg border border-ink/15 bg-paper px-3 py-2 text
  * createCourse`'s existing `getNextCourseCode()`/`slugify()` logic), and the
  * new course is owned by the SIGNED-IN teacher, always created as
  * `status: 'draft'` (never directly publishable — see submitMyCourseForReviewAction).
+ *
+ * Optional course translation (Task: course-language, owner's ask): asks the
+ * bilingual question UP FRONT, before any title field — `bilingual: true`
+ * (default) shows the existing ht+fr title pair; `bilingual: false` shows a
+ * SINGLE title input in whichever locale the teacher picks, and the server
+ * (`writeOps.createCourse` → `mirrorBilingualFields`) copies that one value
+ * into both DB columns so every reader still works.
  */
 export function CreateMyCourseForm() {
   const t = useTranslations('teach.studio.create');
   const router = useRouter();
   const [pending, start] = useTransition();
+  const [bilingual, setBilingual] = useState(true);
+  const [primaryLocale, setPrimaryLocale] = useState<'ht' | 'fr'>('ht');
   const [titleHt, setTitleHt] = useState('');
   const [titleFr, setTitleFr] = useState('');
+  const [titleSingle, setTitleSingle] = useState('');
   const [price, setPrice] = useState('');
   const [err, setErr] = useState<string | null>(null);
+
+  const canSubmit = bilingual ? Boolean(titleHt || titleFr) : Boolean(titleSingle.trim());
 
   return (
     <form
@@ -33,11 +45,20 @@ export function CreateMyCourseForm() {
         e.preventDefault();
         start(async () => {
           setErr(null);
-          const res = await createMyCourseAction({
-            title_ht: titleHt.trim(),
-            title_fr: titleFr.trim(),
-            priceCents: Math.round((Number(price) || 0) * 100),
-          });
+          const res = await createMyCourseAction(
+            bilingual
+              ? { title_ht: titleHt.trim(), title_fr: titleFr.trim(), priceCents: Math.round((Number(price) || 0) * 100), bilingual: true }
+              : {
+                  // The non-primary title is sent empty — the server mirrors
+                  // the primary value into both columns regardless (see this
+                  // component's own doc comment).
+                  title_ht: primaryLocale === 'ht' ? titleSingle.trim() : '',
+                  title_fr: primaryLocale === 'fr' ? titleSingle.trim() : '',
+                  priceCents: Math.round((Number(price) || 0) * 100),
+                  bilingual: false,
+                  primaryLocale,
+                },
+          );
           if (res.ok && res.slug) router.push(`/enseigner/studio/cours/${res.slug}/editer`);
           else setErr(res.message === 'title_required' ? t('titleRequired') : t('error'));
         });
@@ -45,16 +66,60 @@ export function CreateMyCourseForm() {
       className="max-w-2xl space-y-4 rounded-xl border border-ink/12 bg-paper-light p-5"
     >
       <p className="text-[11px] leading-snug text-graphite/60">{t('help')}</p>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block">
-          <span className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-ink/55">{t('titleHt')}</span>
-          <input value={titleHt} onChange={(e) => setTitleHt(e.target.value)} className={inputCls} />
-        </label>
-        <label className="block">
-          <span className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-ink/55">{t('titleFr')}</span>
-          <input value={titleFr} onChange={(e) => setTitleFr(e.target.value)} className={inputCls} />
-        </label>
+
+      {/* Optional course translation question (owner's ask) — asked BEFORE
+          any title field, so the right shape of input shows immediately. */}
+      <div className="rounded-lg bg-paper p-3">
+        <span className="mb-1.5 block font-mono text-[10px] uppercase tracking-wide text-ink/55">{t('languageQuestion')}</span>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setBilingual(true)}
+            className={cn(buttonClasses(bilingual ? 'primary' : 'ghost', 'sm'), 'text-[11px]')}
+          >
+            {t('bilingualYes')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setBilingual(false)}
+            className={cn(buttonClasses(!bilingual ? 'primary' : 'ghost', 'sm'), 'text-[11px]')}
+          >
+            {t('bilingualNo')}
+          </button>
+          {!bilingual && (
+            <select
+              value={primaryLocale}
+              onChange={(e) => setPrimaryLocale(e.target.value as 'ht' | 'fr')}
+              className={cn(inputCls, 'w-auto cursor-pointer')}
+            >
+              <option value="ht">{t('primaryLocaleHt')}</option>
+              <option value="fr">{t('primaryLocaleFr')}</option>
+            </select>
+          )}
+        </div>
+        <p className="mt-1.5 text-[11px] leading-snug text-graphite/60">{t('languageQuestionHelp')}</p>
       </div>
+
+      {bilingual ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block">
+            <span className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-ink/55">{t('titleHt')}</span>
+            <input value={titleHt} onChange={(e) => setTitleHt(e.target.value)} className={inputCls} />
+          </label>
+          <label className="block">
+            <span className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-ink/55">{t('titleFr')}</span>
+            <input value={titleFr} onChange={(e) => setTitleFr(e.target.value)} className={inputCls} />
+          </label>
+        </div>
+      ) : (
+        <label className="block">
+          <span className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-ink/55">
+            {t('titleSingle')} <span className="text-ink/40">· {primaryLocale === 'ht' ? t('primaryLocaleHt') : t('primaryLocaleFr')}</span>
+          </span>
+          <input value={titleSingle} onChange={(e) => setTitleSingle(e.target.value)} className={inputCls} />
+        </label>
+      )}
+
       <label className="block">
         <span className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-ink/55">{t('price')}</span>
         <span className="flex items-center gap-1 font-mono text-sm text-ink/55">
@@ -63,7 +128,7 @@ export function CreateMyCourseForm() {
       </label>
       <p className="font-mono text-[10px] text-ink/45">{t('draftNote')}</p>
       {err && <p className="font-mono text-[11px] text-stampred">{err}</p>}
-      <button type="submit" disabled={pending || (!titleHt && !titleFr)} className={cn(buttonClasses('primary', 'md'), 'text-xs')}>
+      <button type="submit" disabled={pending || !canSubmit} className={cn(buttonClasses('primary', 'md'), 'text-xs')}>
         {pending ? <IconLoader2 size={15} className="animate-spin" /> : <IconPlus size={15} />}
         {t('submit')}
       </button>

@@ -92,6 +92,13 @@
       "when": 1785604102336,
       "tag": "0012_freezing_vengeance",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1785622755634,
+      "tag": "0013_course_language_optional_translation",
+      "breakpoints": true
     }
   ]
 }

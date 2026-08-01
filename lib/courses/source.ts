@@ -80,7 +80,113 @@ export function mapDbCourseToCourse(row: DbCourseRow, lessonRows: DbLessonRow[])
     audience_ht: row.audienceHt ?? '',
     audience_fr: row.audienceFr ?? '',
     lessons,
+    // Optional course translation (Task: course-language) — see Course's own
+    // doc comment. `row.bilingual`/`row.primaryLocale` are NOT NULL in the
+    // schema, but `withLegacyCourseDefaults` below can hand this mapper a
+    // pre-migration row where they were never selected — `?? true`/`?? 'ht'`
+    // covers that (and is a no-op once the column always has a real value).
+    bilingual: row.bilingual ?? true,
+    primary_locale: row.primaryLocale ?? 'ht',
   };
+}
+
+/**
+ * Every `courses` column that predates the `primary_locale`/`bilingual`
+ * migration (Task: course-language) — Drizzle's `db.select()` (no columns
+ * given) names EVERY schema column, so on a live DB that hasn't had
+ * `npm run db:push` run yet for THIS migration, that whole query fails
+ * outright. `selectCourseRows`/`selectCourseRowBySlug`/
+ * `selectCourseRowsByOwner` below retry with just this list on failure —
+ * mirrors lib/teacher/profile.ts's `getTeacherProfile` retry pattern — so a
+ * teacher's real, DB-authored courses don't vanish (or the studio doesn't
+ * 500) for the window between deploying this code and running `db:push`.
+ */
+const LEGACY_COURSE_COLUMNS = {
+  id: T.courses.id,
+  ownerUserId: T.courses.ownerUserId,
+  slug: T.courses.slug,
+  code: T.courses.code,
+  icon: T.courses.icon,
+  category: T.courses.category,
+  titleHt: T.courses.titleHt,
+  titleFr: T.courses.titleFr,
+  taglineHt: T.courses.taglineHt,
+  taglineFr: T.courses.taglineFr,
+  audienceHt: T.courses.audienceHt,
+  audienceFr: T.courses.audienceFr,
+  learnHt: T.courses.learnHt,
+  learnFr: T.courses.learnFr,
+  levelHt: T.courses.levelHt,
+  levelFr: T.courses.levelFr,
+  promiseHt: T.courses.promiseHt,
+  promiseFr: T.courses.promiseFr,
+  problemHt: T.courses.problemHt,
+  problemFr: T.courses.problemFr,
+  deliverablesHt: T.courses.deliverablesHt,
+  deliverablesFr: T.courses.deliverablesFr,
+  prereqHt: T.courses.prereqHt,
+  prereqFr: T.courses.prereqFr,
+  faqHt: T.courses.faqHt,
+  faqFr: T.courses.faqFr,
+  priceCents: T.courses.priceCents,
+  currency: T.courses.currency,
+  images: T.courses.images,
+  status: T.courses.status,
+  reviewNote: T.courses.reviewNote,
+  submittedAt: T.courses.submittedAt,
+  reviewedBy: T.courses.reviewedBy,
+  publishedAt: T.courses.publishedAt,
+  hasUnpublishedChanges: T.courses.hasUnpublishedChanges,
+  resources: T.courses.resources,
+  bunnyCollectionId: T.courses.bunnyCollectionId,
+  createdAt: T.courses.createdAt,
+  updatedAt: T.courses.updatedAt,
+} as const;
+
+type LegacyCourseRow = { [K in keyof typeof LEGACY_COURSE_COLUMNS]: DbCourseRow[K] };
+
+/** Fills in the two columns `LEGACY_COURSE_COLUMNS` can't select, with the same defaults the DB migration itself uses. */
+function withLegacyCourseDefaults(row: LegacyCourseRow): DbCourseRow {
+  return { ...row, primaryLocale: 'ht', bilingual: true } as DbCourseRow;
+}
+
+/**
+ * Every `courses` row. Tries every column first; retries with
+ * `LEGACY_COURSE_COLUMNS` (see its doc comment) if that fails, and only
+ * rethrows if the retry ALSO fails — callers already catch that (falling
+ * back to static data / an empty list), same as before this task.
+ */
+export async function selectCourseRows(): Promise<DbCourseRow[]> {
+  try {
+    return await db.select().from(T.courses);
+  } catch (err) {
+    const rows = await db.select(LEGACY_COURSE_COLUMNS).from(T.courses);
+    console.warn('[courses/source] course read fell back to pre-migration columns (missing primary_locale/bilingual) — run `npm run db:push`.');
+    return rows.map(withLegacyCourseDefaults);
+  }
+}
+
+/** Same retry shape as `selectCourseRows`, scoped to one course by slug. */
+export async function selectCourseRowBySlug(slug: string): Promise<DbCourseRow | undefined> {
+  try {
+    const [row] = await db.select().from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
+    return row;
+  } catch (err) {
+    const [row] = await db.select(LEGACY_COURSE_COLUMNS).from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
+    console.warn('[courses/source] course read fell back to pre-migration columns (missing primary_locale/bilingual) — run `npm run db:push`.');
+    return row ? withLegacyCourseDefaults(row) : undefined;
+  }
+}
+
+/** Same retry shape as `selectCourseRows`, scoped to one owner's courses (the teacher studio's course list). */
+export async function selectCourseRowsByOwner(ownerUserId: string): Promise<DbCourseRow[]> {
+  try {
+    return await db.select().from(T.courses).where(eq(T.courses.ownerUserId, ownerUserId));
+  } catch (err) {
+    const rows = await db.select(LEGACY_COURSE_COLUMNS).from(T.courses).where(eq(T.courses.ownerUserId, ownerUserId));
+    console.warn('[courses/source] course read fell back to pre-migration columns (missing primary_locale/bilingual) — run `npm run db:push`.');
+    return rows.map(withLegacyCourseDefaults);
+  }
 }
 
 /**
@@ -93,7 +199,7 @@ async function readDbRows(): Promise<{ courseRows: DbCourseRow[]; lessonRows: Db
 
   try {
     const [courseRows, lessonRows] = await Promise.all([
-      db.select().from(T.courses),
+      selectCourseRows(),
       db.select().from(T.lessons),
     ]);
     if (courseRows.length === 0) return null;

@@ -18,6 +18,22 @@ export function lessonTitle(l: Lesson, locale: Loc): string {
   return locale === 'ht' ? l.title_ht : l.title_fr;
 }
 
+/**
+ * Optional course translation (Task: course-language). `bilingual` is
+ * OPTIONAL on `Course` (the 9 static catalog entries never set it) —
+ * `undefined` defaults to `true`, matching the DB column's own
+ * `NOT NULL DEFAULT true`. Always read through this instead of
+ * `course.bilingual` directly so that default is never re-implemented.
+ */
+export function courseIsBilingual(c: Pick<Course, 'bilingual'>): boolean {
+  return c.bilingual !== false;
+}
+
+/** Same reasoning as `courseIsBilingual` — defaults to 'ht', matching the DB column. */
+export function coursePrimaryLocale(c: Pick<Course, 'primary_locale'>): 'ht' | 'fr' {
+  return c.primary_locale ?? 'ht';
+}
+
 export function formatDuration(
   totalMinutes: number,
   hourShort: string,

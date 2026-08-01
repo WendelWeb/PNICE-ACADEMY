@@ -41,6 +41,8 @@ import {
   courseAudience,
   lessonTitle,
   formatDuration,
+  courseIsBilingual,
+  coursePrimaryLocale,
 } from '@/lib/courseFields';
 import { formatUsd } from '@/lib/money';
 import { Price, PriceSecondary } from '@/components/ui/Price';
@@ -97,6 +99,14 @@ export default async function CourseDetail({
 
   const totalMin = detail.lessonDetails.reduce((s, l) => s + l.minutes, 0);
   const duration = formatDuration(totalMin, t('hourShort'), t('minShort'));
+
+  // Honesty in the UI (Task: course-language) — a monolingual course gets a
+  // badge next to the category tag AND its quick-facts row says which single
+  // language it's in, instead of the always-"2 lang" claim every other
+  // course makes.
+  const bilingual = courseIsBilingual(course);
+  const coursePrimary = coursePrimaryLocale(course);
+  const languageBadgeLabel = tCatalog(`languageBadge.${coursePrimary}`);
 
   const faqItems = detail.faq.map((f) => ({
     q: locale === 'ht' ? f.q_ht : f.q_fr,
@@ -189,6 +199,11 @@ export default async function CourseDetail({
                     >
                       {tCatalog(`categories.${course.category}`)}
                     </span>
+                    {!bilingual && (
+                      <span className="rounded-full border border-ink/12 bg-ink/[0.04] px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide text-ink/55">
+                        {languageBadgeLabel}
+                      </span>
+                    )}
                     <span className="font-mono text-[11px] uppercase tracking-wide text-ink/45">
                       {t('levelLabel')}: {level} · {t('durationLabel')}: {duration}
                     </span>
@@ -255,7 +270,7 @@ export default async function CourseDetail({
                   {t('lessonsCount', { count: course.lessons.length })}
                 </li>
                 <li className="px-2 py-3 text-center md:py-4">
-                  {t('facts.languages')}
+                  {bilingual ? t('facts.languages') : languageBadgeLabel}
                 </li>
                 <li className="px-2 py-3 text-center md:py-4">
                   {t('facts.certificate')}

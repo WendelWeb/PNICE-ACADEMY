@@ -21,6 +21,8 @@ import {
   computeLessonSwap,
   repackChapterIndices,
   shouldReplaceBunnyVideo,
+  mirrorBilingualFields,
+  COURSE_BILINGUAL_PAIR_COLUMNS,
   type DbCourseStatus,
 } from './write';
 import type { CourseResource } from '@/db/schema';
@@ -233,5 +235,100 @@ describe('shouldReplaceBunnyVideo — orphan-cleanup gate (bunny-organization CR
     expect(shouldReplaceBunnyVideo(null, null)).toBe(false);
     expect(shouldReplaceBunnyVideo(undefined, undefined)).toBe(false);
     expect(shouldReplaceBunnyVideo('', '')).toBe(false);
+  });
+});
+
+/**
+ * Unit tests for `mirrorBilingualFields` (Task: course-language — optional
+ * course translation). THE ONE PLACE both `createCourse` and `updateCourse`
+ * funnel their DB insert-values/`set` object through when a course is
+ * monolingual (`bilingual === false`), so every ht/fr column pair — plain
+ * strings AND the jsonb string[]/faq arrays — ends up byte-identical on both
+ * sides. Pure function, no DB touched.
+ */
+describe('mirrorBilingualFields — THE ONE PLACE monolingual courses mirror ht/fr pairs (Task: course-language)', () => {
+  it('is a no-op when bilingual is true, regardless of primaryLocale', () => {
+    const values = { titleHt: 'Kreyòl', titleFr: undefined };
+    expect(mirrorBilingualFields(values, true, 'ht')).toEqual(values);
+    expect(mirrorBilingualFields(values, true, 'fr')).toEqual(values);
+  });
+
+  it('does not mutate the input object', () => {
+    const values = { titleHt: 'Kreyòl', titleFr: undefined };
+    const frozen = { ...values };
+    mirrorBilingualFields(values, false, 'ht');
+    expect(values).toEqual(frozen);
+  });
+
+  it('mirrors a plain string pair FROM the ht side when primaryLocale is ht', () => {
+    const out = mirrorBilingualFields({ titleHt: 'Tit kreyòl', titleFr: 'stale french value' }, false, 'ht');
+    expect(out.titleFr).toBe('Tit kreyòl');
+    expect(out.titleHt).toBe('Tit kreyòl');
+  });
+
+  it('mirrors a plain string pair FROM the fr side when primaryLocale is fr', () => {
+    const out = mirrorBilingualFields({ titleHt: 'stale kreyòl value', titleFr: 'Titre français' }, false, 'fr');
+    expect(out.titleHt).toBe('Titre français');
+    expect(out.titleFr).toBe('Titre français');
+  });
+
+  it('only mirrors a pair actually present in `values` this call — leaves untouched pairs alone', () => {
+    // A partial `updateCourse` patch that only touches `tagline`, not `title`.
+    const out = mirrorBilingualFields<Record<string, unknown>>({ taglineHt: 'Akwòch' }, false, 'ht');
+    expect(out.taglineFr).toBe('Akwòch');
+    expect(out).not.toHaveProperty('titleHt');
+    expect(out).not.toHaveProperty('titleFr');
+  });
+
+  it('does nothing to a pair where neither side is present', () => {
+    const out = mirrorBilingualFields({ priceCents: 1900 }, false, 'ht');
+    expect(out).toEqual({ priceCents: 1900 });
+  });
+
+  it('mirrors jsonb string[] array pairs (learn/deliverables/prereq) by full-array replacement', () => {
+    const out = mirrorBilingualFields(
+      { learnHt: ['A', 'B'], learnFr: ['stale', 'french', 'array'] },
+      false,
+      'ht',
+    );
+    expect(out.learnFr).toEqual(['A', 'B']);
+  });
+
+  it('mirrors the faq jsonb array pair (list of {q,a}) by full-array replacement', () => {
+    const faqHt = [{ q: 'Kesyon?', a: 'Repons.' }];
+    const out = mirrorBilingualFields({ faqHt, faqFr: [{ q: 'stale', a: 'stale' }] }, false, 'ht');
+    expect(out.faqFr).toEqual(faqHt);
+  });
+
+  it('covers every pair in COURSE_BILINGUAL_PAIR_COLUMNS — the owner\'s exact list (title, tagline, audience, learn, level, promise, problem, deliverables, prereq, faq)', () => {
+    expect(COURSE_BILINGUAL_PAIR_COLUMNS).toHaveLength(10);
+    for (const [htKey, frKey] of COURSE_BILINGUAL_PAIR_COLUMNS) {
+      const primaryValue = `primary-value-for-${htKey}`;
+      const out = mirrorBilingualFields({ [htKey]: primaryValue, [frKey]: 'stale' }, false, 'ht');
+      expect(out[frKey]).toBe(primaryValue);
+      expect(out[htKey]).toBe(primaryValue);
+    }
+  });
+
+  it('mirrors in the OTHER direction (fr → ht) for every pair when primaryLocale is fr', () => {
+    for (const [htKey, frKey] of COURSE_BILINGUAL_PAIR_COLUMNS) {
+      const primaryValue = `french-value-for-${frKey}`;
+      const out = mirrorBilingualFields({ [htKey]: 'stale', [frKey]: primaryValue }, false, 'fr');
+      expect(out[htKey]).toBe(primaryValue);
+      expect(out[frKey]).toBe(primaryValue);
+    }
+  });
+
+  it('preserves non-pair fields untouched (icon, priceCents, status, bilingual, primaryLocale itself)', () => {
+    const out = mirrorBilingualFields(
+      { titleHt: 'Tit', titleFr: 'stale', icon: 'book', priceCents: 900, status: 'draft', bilingual: false, primaryLocale: 'ht' },
+      false,
+      'ht',
+    );
+    expect(out.icon).toBe('book');
+    expect(out.priceCents).toBe(900);
+    expect(out.status).toBe('draft');
+    expect(out.bilingual).toBe(false);
+    expect(out.primaryLocale).toBe('ht');
   });
 });

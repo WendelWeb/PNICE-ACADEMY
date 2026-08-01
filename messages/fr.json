@@ -224,6 +224,10 @@
       "lajan": "Argent",
       "lavi-pratik": "Vie pratique"
     },
+    "languageBadge": {
+      "ht": "En créole uniquement",
+      "fr": "En français uniquement"
+    },
     "toolbar": {
       "searchLabel": "Rechercher dans le catalogue",
       "searchPlaceholder": "Cherche une formation...",
@@ -626,8 +630,15 @@
         "title": "Créer une formation",
         "back": "Retour au studio",
         "help": "La formation est créée en brouillon ; tu la compléteras dans l'éditeur avant de la soumettre.",
+        "languageQuestion": "Ta formation sera-t-elle bilingue (créole + français) ?",
+        "languageQuestionHelp": "Si tu choisis « Non », tu rempliras le contenu une seule fois, dans la langue choisie — tu pourras activer la traduction plus tard dans l'éditeur sans rien perdre.",
+        "bilingualYes": "Oui, les deux langues",
+        "bilingualNo": "Non, une seule langue",
+        "primaryLocaleHt": "Kreyòl",
+        "primaryLocaleFr": "Français",
         "titleHt": "Titre (Kreyòl)",
         "titleFr": "Titre (Français)",
+        "titleSingle": "Titre",
         "price": "Prix ($)",
         "draftNote": "Créée en brouillon — visible seulement par toi jusqu'à validation par notre équipe.",
         "submit": "Créer en brouillon",
@@ -1843,6 +1854,11 @@
         "code": "Code",
         "slug": "Slug",
         "icon": "Icône",
+        "translationTitle": "Traduction",
+        "translationYes": "Bilingue (Kreyòl + Français)",
+        "translationNo": "Une seule langue",
+        "translationHelpYes": "Chaque champ apparaît deux fois — une version créole, une version française.",
+        "translationHelpNo": "Un seul champ apparaît par section. Le contenu est copié automatiquement dans les deux langues à l'enregistrement, pour que les élèves qui naviguent dans l'autre langue voient toujours la formation.",
         "title": "Titre",
         "tagline": "Accroche",
         "audience": "Public",

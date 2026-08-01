@@ -469,6 +469,19 @@ export const courses = pgTable('courses', {
   // Tabler icon key, mapped in components/courses/CourseIcon.tsx.
   icon: text('icon'),
   category: text('category').$type<'biznis' | 'dijital' | 'lajan' | 'lavi-pratik'>(),
+  // Optional course translation (Task: course-language): a teacher can author
+  // a course in a SINGLE language instead of the mandatory ht+fr pair every
+  // text field below implies. `bilingual=false` means every ht/fr pair is
+  // MIRRORED (byte-identical in both columns) at write time — see
+  // lib/courses/write.ts's `mirrorBilingualFields`, the ONE place this is
+  // enforced — so every existing reader keeps working untouched and a
+  // visitor browsing in the "other" locale still sees the course instead of
+  // blanks. `primaryLocale` is which side is the source of truth to mirror
+  // FROM. Defaults (`bilingual=true`, `primaryLocale='ht'`) keep the 9
+  // existing courses — and every admin-CMS call site that doesn't pass these
+  // — unchanged.
+  primaryLocale: text('primary_locale').$type<'ht' | 'fr'>().default('ht').notNull(),
+  bilingual: boolean('bilingual').default(true).notNull(),
   titleHt: text('title_ht'),
   titleFr: text('title_fr'),
   taglineHt: text('tagline_ht'),
