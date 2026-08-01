@@ -172,9 +172,13 @@ export function VideoUpload({
         xhr.setRequestHeader('LibraryId', init.libraryId);
         xhr.setRequestHeader('Tus-Resumable', '1.0.0');
         xhr.setRequestHeader('Upload-Length', String(file.size));
+        // Bunny lets this metadata OVERWRITE the title set when the video was
+        // created, so we echo the server's authoritative structured title
+        // ("PA-03 · Pati 2 · <chapitre> · Leson 3 · <leçon>") — sending the raw
+        // file name here would leave every video named "IMG_1234.mp4".
         xhr.setRequestHeader(
           'Upload-Metadata',
-          `filetype ${toBase64Utf8(file.type || 'video/mp4')},title ${toBase64Utf8(file.name)}`,
+          `filetype ${toBase64Utf8(file.type || 'video/mp4')},title ${toBase64Utf8(init.title)}`,
         );
         xhr.setRequestHeader('Content-Type', 'application/offset+octet-stream');
 

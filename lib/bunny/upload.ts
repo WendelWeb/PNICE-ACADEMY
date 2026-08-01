@@ -39,6 +39,14 @@ export type BunnyUploadInit = {
   signature: string;
   expire: number;
   tusEndpoint: string;
+  /**
+   * The authoritative, server-computed video title (see lib/bunny/naming.ts).
+   * Returned so the browser can echo it in the TUS `Upload-Metadata` header:
+   * Bunny lets that metadata OVERWRITE the title set at creation time, so a
+   * client sending the raw file name there would clobber the structured
+   * "PA-03 · Pati 2 · … · Leson 3 · …" name. Not a secret.
+   */
+  title: string;
 };
 export type BunnyUploadFailure = { ok: false; message: string };
 export type BunnyUploadResult = BunnyUploadInit | BunnyUploadFailure;
@@ -94,7 +102,8 @@ export async function createBunnyVideo(title: string, collectionId?: string | nu
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), CREATE_VIDEO_TIMEOUT_MS);
   try {
-    const payload: { title: string; collectionId?: string } = { title: title.trim() || 'Sans titre' };
+    const cleanTitle = title.trim() || 'Sans titre';
+    const payload: { title: string; collectionId?: string } = { title: cleanTitle };
     if (collectionId) payload.collectionId = collectionId;
 
     const res = await fetch(`https://video.bunnycdn.com/library/${libraryId}/videos`, {
@@ -114,7 +123,17 @@ export async function createBunnyVideo(title: string, collectionId?: string | nu
     const expire = Math.floor(Date.now() / 1000) + EXPIRE_WINDOW_SECONDS;
     const signature = bunnyTusSignature(libraryId, key, expire, guid);
 
-    return { ok: true, guid, libraryId, signature, expire, tusEndpoint: BUNNY_TUS_ENDPOINT };
+    return {
+      ok: true,
+      guid,
+      libraryId,
+      signature,
+      expire,
+      tusEndpoint: BUNNY_TUS_ENDPOINT,
+      // Echoed back so the browser sends THIS in Upload-Metadata rather than
+      // the raw file name (which Bunny would otherwise use as the title).
+      title: cleanTitle,
+    };
   } catch (e) {
     const message = e instanceof Error ? (e.name === 'AbortError' ? 'Timeout (15s)' : e.message) : 'error';
     return { ok: false, message };
