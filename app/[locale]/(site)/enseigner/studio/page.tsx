@@ -72,26 +72,10 @@ export default async function StudioPage({
           </h1>
         </Reveal>
 
+        {/* Stage 1 — task-first: a teacher opens the studio to work on their
+            COURSES, so "Fòmasyon mwen yo" leads; the three finance panels
+            (plan price, payout method, balance) follow below. */}
         <Reveal delay={80} className="mt-8">
-          <PlanPricingForm priceCentsMonthly={planPriceCentsMonthly} fxRateHtg={fxRateHtg} />
-        </Reveal>
-
-        <Reveal delay={95} className="mt-4">
-          <PayoutSettingsForm payoutMethod={profile?.payoutMethod ?? null} payoutDestination={profile?.payoutDestination ?? null} />
-        </Reveal>
-
-        <Reveal delay={110} className="mt-4">
-          <WithdrawalPanel
-            balanceCents={summary.balanceCents}
-            thresholdCents={summary.thresholdCents}
-            pendingWithdrawalCents={summary.pendingWithdrawalCents}
-            videoQuotaMinutes={summary.videoQuotaMinutes}
-            ledger={summary.ledger}
-            locale={locale}
-          />
-        </Reveal>
-
-        <Reveal delay={140} className="mt-12">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-display text-2xl font-bold text-ink">{t('myCourses')}</h2>
             <Link href="/enseigner/studio/cours/nouveau" className={buttonClasses('primary', 'md')}>
@@ -110,6 +94,25 @@ export default async function StudioPage({
               ))}
             </div>
           )}
+        </Reveal>
+
+        <Reveal delay={110} className="mt-12">
+          <PlanPricingForm priceCentsMonthly={planPriceCentsMonthly} fxRateHtg={fxRateHtg} />
+        </Reveal>
+
+        <Reveal delay={125} className="mt-4">
+          <PayoutSettingsForm payoutMethod={profile?.payoutMethod ?? null} payoutDestination={profile?.payoutDestination ?? null} />
+        </Reveal>
+
+        <Reveal delay={140} className="mt-4">
+          <WithdrawalPanel
+            balanceCents={summary.balanceCents}
+            thresholdCents={summary.thresholdCents}
+            pendingWithdrawalCents={summary.pendingWithdrawalCents}
+            videoQuotaMinutes={summary.videoQuotaMinutes}
+            ledger={summary.ledger}
+            locale={locale}
+          />
         </Reveal>
       </Container>
     </Section>

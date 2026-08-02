@@ -8,14 +8,21 @@
  * `teach.studio.editor.steps.<key>.{title,intent}` and passes them in,
  * matching `ControlRail`'s own step labels.
  */
+import type { Icon as TablerIcon } from '@tabler/icons-react';
+
 export function EditorStepHeading({
   number,
   title,
   intent,
+  icon: Icon,
 }: {
   number: number;
   title: string;
   intent: string;
+  /** The step's shared icon (Stage 1 — `components/teacher/studio/steps.tsx`'s
+   *  `STEP_ICONS`) so the heading matches the rail and the mobile step bar.
+   *  Optional — omitted, the heading renders exactly as before. */
+  icon?: TablerIcon;
 }) {
   return (
     <div className="flex items-start gap-3">
@@ -26,7 +33,10 @@ export function EditorStepHeading({
         {String(number).padStart(2, '0')}
       </span>
       <div className="min-w-0 pt-1">
-        <h2 className="font-display text-xl font-bold leading-tight text-ink">{title}</h2>
+        <h2 className="flex items-center gap-2 font-display text-xl font-bold leading-tight text-ink">
+          {Icon && <Icon size={20} className="shrink-0 text-ochre" aria-hidden />}
+          <span className="min-w-0">{title}</span>
+        </h2>
         <p className="mt-0.5 text-[13px] leading-snug text-graphite/60">{intent}</p>
       </div>
     </div>

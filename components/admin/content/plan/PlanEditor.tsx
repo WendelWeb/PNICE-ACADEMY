@@ -117,7 +117,11 @@ export function PlanEditor({
    */
   useEffect(() => {
     function expandFor(anchorId: string | null) {
-      const id = anchorId?.match(/^lesson-(.+)$/)?.[1];
+      // `lesson-<id>` plus the Stage 1 sub-anchors `lesson-<id>-video` /
+      // `lesson-<id>-resources` (LessonEditPanel's sections) all expand the
+      // same row — strip the known suffix first (lesson ids are uuids, they
+      // can't themselves end in "-video"/"-resources").
+      const id = anchorId?.replace(/-(?:video|resources)$/, '').match(/^lesson-(.+)$/)?.[1];
       if (id && lessons.some((l) => l.id === id)) setExpandedId(id);
     }
     expandFor(typeof window !== 'undefined' ? window.location.hash.slice(1) : null);

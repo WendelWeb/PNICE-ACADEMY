@@ -16,6 +16,9 @@ import { CourseResourcesPanel } from '@/components/admin/content/CourseResources
 import { BordereauHeader } from '@/components/teacher/studio/BordereauHeader';
 import { ControlRail } from '@/components/teacher/studio/ControlRail';
 import { EditorStepHeading } from '@/components/teacher/studio/EditorStepHeading';
+import { MobileStepBar } from '@/components/teacher/studio/MobileStepBar';
+import { QuickActions } from '@/components/teacher/studio/QuickActions';
+import { STEP_ICONS } from '@/components/teacher/studio/steps';
 import {
   updateMyCourseAction,
   addMyLessonAction,
@@ -132,6 +135,15 @@ export default async function EditMyCoursePage({
   const isDraft = course.rawStatus === 'draft' || course.rawStatus === 'rejected';
   const title = (locale === 'ht' ? course.title_ht : course.title_fr || course.title_ht) || t('untitled');
 
+  // Stage 1 — "Ki sa w vle fè?" quick-action targets, resolved server-side:
+  // the video shortcut opens the first lesson still MISSING a video (falling
+  // back to the first lesson, then to the add-lesson button on an empty
+  // plan); the document shortcut opens the first lesson's resources section.
+  // Anchors are the Stage 1 sub-anchors LessonEditPanel renders.
+  const firstLessonNoVideo = course.lessons.find((l) => !l.bunnyVideoId) ?? course.lessons[0];
+  const quickVideoAnchor = firstLessonNoVideo ? `lesson-${firstLessonNoVideo.id}-video` : 'plan-add-lesson';
+  const quickResourcesAnchor = course.lessons[0] ? `lesson-${course.lessons[0].id}-resources` : 'plan-add-lesson';
+
   return (
     <Section>
       <Container className="max-w-[1180px]">
@@ -147,14 +159,27 @@ export default async function EditMyCoursePage({
             unpublishAction={unpublishMyCourseAction}
           />
 
+          {/* Stage 1 — the phone-first step bar, right under the sticky
+              header: the 4 steps always visible (<lg), navigating on the
+              same frozen ?tab= URLs the rail uses. */}
+          <MobileStepBar activeTab={activeTab} basePath={basePath} />
+
           <div className="grid gap-4 pt-2 lg:grid-cols-[280px_1fr] lg:items-start lg:gap-6">
             <ControlRail items={readinessItems} anchors={anchors} activeTab={activeTab} basePath={basePath} />
 
             <div className="min-w-0 space-y-4">
+              <QuickActions
+                basePath={basePath}
+                activeTab={activeTab}
+                videoAnchor={quickVideoAnchor}
+                resourcesAnchor={quickResourcesAnchor}
+              />
+
               <EditorStepHeading
                 number={activeStepNumber}
                 title={tEditor(`steps.${activeTab}.title`)}
                 intent={tEditor(`steps.${activeTab}.intent`)}
+                icon={STEP_ICONS[activeTab]}
               />
 
               {activeTab === 'infos' && (

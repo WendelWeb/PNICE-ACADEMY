@@ -1,9 +1,10 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import { IconChevronUp, IconChevronDown, IconChevronRight, IconVideo, IconVideoOff } from '@tabler/icons-react';
+import { IconChevronUp, IconChevronDown, IconChevronRight, IconVideo, IconPaperclip } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
 import type { AdminLesson, AdminChapter } from '@/lib/courses/write';
+import { jumpToAnchor } from '@/components/teacher/studio/jump';
 import { focusRing, iconBtn, secToMmss } from './shared';
 import { LessonEditPanel } from './LessonEditPanel';
 import type { LessonActions } from './types';
@@ -50,9 +51,20 @@ export function LessonRow({
   const locale = useLocale();
   const expanded = expandedId === lesson.id;
   const noVideo = !lesson.bunnyVideoId;
+  const docsCount = lesson.resources.length;
 
   const displayTitle =
     (locale === 'ht' ? lesson.title_ht : lesson.title_fr) || lesson.title_ht || lesson.title_fr || t('untitledLesson');
+
+  /** "Mete videyo a" (Stage 1 — task-first navigation): the old passive
+   *  "Pa gen videyo" chip stated a problem with no way to act on it. This
+   *  expands the row (the panel's fields mount on the next render) and lets
+   *  `jumpToAnchor`'s retry loop land on the `lesson-<id>-video` section the
+   *  instant it exists. */
+  function onAddVideo() {
+    if (!expanded) onToggleExpand(lesson.id);
+    jumpToAnchor(`lesson-${lesson.id}-video`);
+  }
 
   return (
     // `id` is the studio bon-de-contrôle rail's jump target for this
@@ -64,28 +76,30 @@ export function LessonRow({
     // `bg-paper` band, so a lesson reads as a card sitting inside its
     // chapter rather than another slab of the same material.
     <li id={`lesson-${lesson.id}`} className={cn('rounded-lg border bg-paper-light shadow-sm', noVideo && !isDraft ? 'border-stampred/40' : 'border-ink/10')}>
-      <div className="flex items-center gap-2 p-2.5">
+      <div
+        className={cn(
+          'flex items-center gap-2 p-2.5 transition-colors hover:bg-ink/[0.03] motion-reduce:transition-none',
+          expanded ? 'rounded-t-lg' : 'rounded-lg',
+        )}
+      >
         <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-ink/[0.06] font-mono text-[10px] text-ink/50">{index + 1}</span>
 
         <button
           type="button"
           onClick={() => onToggleExpand(lesson.id)}
           aria-expanded={expanded}
-          className={cn('flex min-w-0 flex-1 items-center gap-2 rounded text-left', focusRing)}
+          className={cn('flex min-w-0 flex-1 items-center gap-2 rounded py-1 text-left', focusRing)}
         >
           <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink">{displayTitle}</span>
 
           <span className="shrink-0 font-mono text-[10px] text-ink/45 tabular-nums">{secToMmss(lesson.durationSeconds)}</span>
 
-          <span
-            className={cn(
-              'inline-flex shrink-0 items-center gap-0.5 rounded px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide',
-              noVideo ? 'bg-stampred/10 text-stampred' : 'bg-teal/10 text-teal',
-            )}
-          >
-            {noVideo ? <IconVideoOff size={11} /> : <IconVideo size={11} />}
-            {noVideo ? t('chipVideoMissing') : t('chipVideoOk')}
-          </span>
+          {docsCount > 0 && (
+            <span className="inline-flex shrink-0 items-center gap-0.5 rounded bg-ink/[0.06] px-1.5 py-0.5 font-mono text-[9px] text-ink/50">
+              <IconPaperclip size={10} aria-hidden />
+              {t('docsChip', { count: docsCount })}
+            </span>
+          )}
 
           {lesson.isPreview && (
             <span className="shrink-0 rounded bg-ochre/15 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide text-ochre">
@@ -94,18 +108,40 @@ export function LessonRow({
           )}
         </button>
 
+        {/* Video status — a REAL action when the video is missing (Stage 1):
+            a bordered button that opens the row on its video section, not a
+            passive chip naming the gap. Sibling of the title button (never
+            nested — nested interactive elements are invalid). */}
+        {noVideo ? (
+          <button
+            type="button"
+            onClick={onAddVideo}
+            className={cn(
+              'inline-flex min-h-[34px] shrink-0 items-center gap-1 rounded-md border border-ochre/50 px-2 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-ochre hover:bg-ochre/10',
+              focusRing,
+            )}
+          >
+            <IconVideo size={12} aria-hidden /> {t('addVideoCta')}
+          </button>
+        ) : (
+          <span className="inline-flex shrink-0 items-center gap-0.5 rounded bg-teal/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide text-teal">
+            <IconVideo size={11} aria-hidden /> {t('chipVideoOk')}
+          </span>
+        )}
+
         <span className="flex shrink-0 items-center gap-0.5">
           <button type="button" onClick={() => onAct(() => actions.moveLesson(slug, lesson.id, 'up'))} disabled={index === 0} className={iconBtn} aria-label={t('moveUp')} title={t('moveUp')}><IconChevronUp size={12} /></button>
           <button type="button" onClick={() => onAct(() => actions.moveLesson(slug, lesson.id, 'down'))} disabled={index === total - 1} className={iconBtn} aria-label={t('moveDown')} title={t('moveDown')}><IconChevronDown size={12} /></button>
+          {/* Bigger, unmissable expand affordance (Stage 1). */}
           <button
             type="button"
             onClick={() => onToggleExpand(lesson.id)}
             aria-expanded={expanded}
             aria-label={expanded ? t('collapseLesson') : t('expandLesson')}
             title={expanded ? t('collapseLesson') : t('expandLesson')}
-            className={iconBtn}
+            className={cn('grid h-8 w-8 shrink-0 place-items-center rounded border border-ink/15 text-ink/60 hover:bg-ink/[0.06]', focusRing)}
           >
-            {expanded ? <IconChevronDown size={12} /> : <IconChevronRight size={12} />}
+            {expanded ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
           </button>
         </span>
       </div>

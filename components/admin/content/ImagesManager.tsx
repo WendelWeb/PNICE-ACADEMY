@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { IconPlus, IconTrash, IconChevronUp, IconChevronDown, IconLoader2, IconPhoto } from '@tabler/icons-react';
+import { IconPlus, IconTrash, IconChevronUp, IconChevronDown, IconLoader2, IconPhoto, IconArrowRight } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
 import {
   setMainImageAction,
@@ -55,11 +55,28 @@ export function ImagesManager({
   const [url, setUrl] = useState('');
   const [alt, setAlt] = useState('');
   const iconBtn = 'grid h-6 w-6 place-items-center rounded border border-ink/15 text-ink/55 hover:bg-ink/[0.04] disabled:opacity-30';
+  const focusRing =
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ochre focus-visible:ring-offset-1 focus-visible:ring-offset-paper-light';
 
   return (
     <section className="rounded-xl border border-ink/12 bg-paper-light p-4">
       <h2 className="font-mono text-[11px] uppercase tracking-wide text-ink/55">{t('title')}</h2>
       <p className="mt-1.5 text-[11px] leading-snug text-graphite/60">{t('note')}</p>
+      {/* "W ap chèche videyo leson yo?" (Stage 1 — task-first navigation):
+          this step used to be titled "Imaj", so video-seeking instinct landed
+          HERE and dead-ended on a dev note. One plain cross-link back to the
+          lessons-and-videos step (frozen `?tab=plan` contract, client-side
+          relative push — same pathname, only the query changes). */}
+      <p className="mt-1.5 flex flex-wrap items-center gap-1 text-[11px] leading-snug text-ink/55">
+        {t('videoCrossLink')}
+        <button
+          type="button"
+          onClick={() => router.push('?tab=plan')}
+          className={cn('inline-flex items-center gap-0.5 rounded font-medium text-teal underline decoration-teal/40 underline-offset-2 hover:decoration-teal', focusRing)}
+        >
+          {t('videoCrossLinkCta')} <IconArrowRight size={12} aria-hidden />
+        </button>
+      </p>
 
       {/* Main image — `id` is the studio bon-de-contrôle rail's jump target
           for `mainImageSet` (Task D1). */}

@@ -649,24 +649,36 @@
       },
       "editor": {
         "checklist": "Bordereau de contrôle",
+        "checklistMobile": "Ce qui reste à finir ({count})",
+        "stepsNav": "Les étapes",
         "optional": "Optionnel",
         "steps": {
           "infos": {
-            "title": "L'essentiel",
-            "intent": "Le nom du cours, son prix, et ce qui le rend spécial."
+            "title": "Infos du cours",
+            "short": "Infos",
+            "intent": "Écris le nom du cours, le prix, et ce qu'il enseigne — c'est ce que les visiteurs voient sur la page de vente."
           },
           "plan": {
-            "title": "Le plan",
-            "intent": "Les chapitres et les leçons — le cœur de la formation."
+            "title": "Leçons et vidéos",
+            "short": "Vidéos",
+            "intent": "Ajoute les leçons et mets une vidéo pour chacune — c'est ce que les élèves inscrits vont regarder."
           },
           "medias": {
-            "title": "Images",
-            "intent": "Les images qui habillent le cours sur la page de vente."
+            "title": "Photo du cours",
+            "short": "Photo",
+            "intent": "Choisis les photos qui représentent le cours — on les voit sur le catalogue et la page de vente."
           },
           "ressources": {
-            "title": "Ressources",
-            "intent": "Liens et fichiers supplémentaires pour les élèves (optionnel)."
+            "title": "Liens de la page de vente",
+            "short": "Page de vente",
+            "intent": "Ajoute des liens supplémentaires sur la page de vente — tous les visiteurs de la page les voient (optionnel)."
           }
+        },
+        "quick": {
+          "title": "Que veux-tu faire ?",
+          "video": "Mettre une vidéo",
+          "photo": "Changer la photo du cours",
+          "doc": "Donner un document aux élèves"
         }
       }
     }
@@ -1912,8 +1924,22 @@
         "q": "Question",
         "a": "Réponse",
         "addFaq": "+ Question",
-        "resourcesLabel": "Liens en description",
-        "resourcesHelp": "Ces liens/fichiers apparaissent sous la description du cours sur la page de vente.",
+        "resourcesLabel": "Liens de la page de vente",
+        "resourcesHelp": "Ces liens apparaissent sous la description du cours sur la page de vente. Tous les visiteurs de la page de vente les voient — ce n'est pas un espace privé pour les élèves.",
+        "resourcesCrossLink": "Pour donner un document aux élèves pour une leçon :",
+        "resourcesCrossLinkCta": "Leçons et vidéos",
+        "iconNames": {
+          "credit-card": "Paiement / carte",
+          "shopping-cart": "Vente / commerce",
+          "ship": "Shipping / transport",
+          "speakerphone": "Marketing / publicité",
+          "palette": "Design / couleurs",
+          "brand-whatsapp": "WhatsApp",
+          "device-mobile-code": "Téléphone / application",
+          "shield-lock": "Sécurité",
+          "player-play": "Vidéo",
+          "book": "Livre / formation"
+        },
         "save": "Enregistrer",
         "saved": "Enregistré ✓",
         "saving": "Enregistrement…",
@@ -1974,6 +2000,9 @@
         "noVideoWarn": "Aucune vidéo liée",
         "chipVideoOk": "Vidéo",
         "chipVideoMissing": "Pas de vidéo",
+        "addVideoCta": "Mettre la vidéo",
+        "docsChip": "{count, plural, one {1 document} other {# documents}}",
+        "moreDetails": "Plus de détails (optionnel)",
         "moveUp": "Monter",
         "moveDown": "Descendre",
         "expandLesson": "Développer la leçon",
@@ -2045,8 +2074,10 @@
         "uploadTakesTime": "Une vidéo peut prendre quelques minutes à s'envoyer — tu peux continuer à travailler pendant ce temps."
       },
       "images": {
-        "title": "Images",
-        "note": "Upload réel vers Bunny Storage + redimensionnement = à brancher. Pour l'instant, colle une URL d'image.",
+        "title": "Photos du cours",
+        "note": "Ces photos sont le visage du cours sur le catalogue et la page de vente — colle le lien de la photo dans la case puis appuie sur « Définir ».",
+        "videoCrossLink": "Tu cherches les vidéos des leçons ?",
+        "videoCrossLinkCta": "Leçons et vidéos",
         "main": "Image principale",
         "mainHint": "La première image que les gens voient pour ce cours, sur le catalogue et la page de vente.",
         "setMain": "Définir",

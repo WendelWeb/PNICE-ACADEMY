@@ -26,6 +26,7 @@ import { cn } from '@/lib/cn';
 import { buttonClasses } from '@/components/ui/Button';
 import { updateCourseAction } from '@/lib/admin/content-actions';
 import type { AdminCourse, CoursePatch } from '@/lib/courses/write';
+import { CourseIcon } from '@/components/courses/CourseIcon';
 import { Field, BilingualText, PairedList, FaqEditor, inputCls, type FaqItem } from './fields';
 
 type UpdateResult = { ok: boolean; message?: string };
@@ -110,15 +111,43 @@ export function CourseEditor({
       <section className="rounded-xl border border-ink/12 bg-paper-light p-4">
         <h2 className="font-mono text-[11px] uppercase tracking-wide text-ink/55">{t('general')}</h2>
         <div className="mt-3 space-y-3">
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Field icon={IconHash} label={t('code')} hint={t('hints.code')}><input value={c.code} disabled aria-label={t('code')} className={cn(inputCls, 'opacity-60')} /></Field>
             <Field icon={IconLink} label={t('slug')} hint={t('hints.slug')}><input value={c.slug} disabled aria-label={t('slug')} className={cn(inputCls, 'opacity-60')} /></Field>
-            <Field icon={IconCategory} label={t('icon')} hint={t('hints.icon')}>
-              <select value={c.icon} onChange={(e) => set('icon', e.target.value)} aria-label={t('icon')} className={cn(inputCls, 'cursor-pointer')}>
-                {ICON_KEYS.map((k) => <option key={k} value={k}>{k}</option>)}
-              </select>
-            </Field>
           </div>
+
+          {/* Icon picker (Stage 1 — task-first navigation): the old <select>
+              showed raw English keys ('credit-card') to kreyòl-speaking
+              teachers. Same stored keys, now rendered as the ACTUAL icons
+              (the very ones `CourseIcon` shows on the public catalogue) in a
+              native radio group — sr-only radios keep arrow-key navigation
+              and announce plain bilingual names, never the raw key. */}
+          <Field icon={IconCategory} label={t('icon')} hint={t('hints.icon')}>
+            <div role="radiogroup" aria-label={t('icon')} className="flex flex-wrap gap-1.5">
+              {ICON_KEYS.map((k) => (
+                <label key={k} className="cursor-pointer" title={t(`iconNames.${k}`)}>
+                  <input
+                    type="radio"
+                    name="course-icon"
+                    value={k}
+                    checked={c.icon === k}
+                    onChange={() => set('icon', k)}
+                    className="peer sr-only"
+                    aria-label={t(`iconNames.${k}`)}
+                  />
+                  <span
+                    className={cn(
+                      'grid h-11 w-11 place-items-center rounded-lg border border-ink/15 bg-paper text-ink/55 transition-colors hover:border-ink/35 motion-reduce:transition-none',
+                      'peer-checked:border-ochre peer-checked:bg-ochre/10 peer-checked:text-ochre peer-checked:ring-2 peer-checked:ring-ochre/60 peer-checked:ring-offset-1 peer-checked:ring-offset-paper-light',
+                      'peer-focus-visible:ring-2 peer-focus-visible:ring-ochre peer-focus-visible:ring-offset-1 peer-focus-visible:ring-offset-paper-light',
+                    )}
+                  >
+                    <CourseIcon name={k} size={20} />
+                  </span>
+                </label>
+              ))}
+            </div>
+          </Field>
 
           {/* Optional course translation toggle (Task: course-language) —
               switching to bilingual keeps existing text and reveals the

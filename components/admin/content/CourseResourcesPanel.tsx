@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { IconDeviceFloppy, IconLoader2, IconLink } from '@tabler/icons-react';
+import { IconDeviceFloppy, IconLoader2, IconLink, IconArrowRight } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
 import { buttonClasses } from '@/components/ui/Button';
 import { updateCourseAction } from '@/lib/admin/content-actions';
@@ -85,6 +85,20 @@ export function CourseResourcesPanel({
             serverError={err?.startsWith('resource_') ? err : null}
           />
         </div>
+        {/* Cross-link (Stage 1 — task-first navigation): "Resous" here used
+            to collide with the per-lesson resources — say plainly where a
+            STUDENT document belongs (frozen `?tab=plan` contract, relative
+            client-side push — same pathname, only the query changes). */}
+        <p className="mt-3 flex flex-wrap items-center gap-1 border-t border-ink/10 pt-2.5 text-[11px] leading-snug text-ink/55 sm:pl-8">
+          {t('resourcesCrossLink')}
+          <button
+            type="button"
+            onClick={() => router.push('?tab=plan')}
+            className="inline-flex items-center gap-0.5 rounded font-medium text-teal underline decoration-teal/40 underline-offset-2 hover:decoration-teal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ochre focus-visible:ring-offset-1 focus-visible:ring-offset-paper-light"
+          >
+            {t('resourcesCrossLinkCta')} <IconArrowRight size={12} aria-hidden />
+          </button>
+        </p>
       </section>
 
       <div className="flex items-center gap-3 rounded-xl border border-ink/12 bg-paper-light px-4 py-2.5">

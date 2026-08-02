@@ -14,6 +14,8 @@ import {
   IconNotes,
   IconLink,
   IconVideo,
+  IconChevronRight,
+  IconCircleCheck,
 } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
 import type { AdminLesson, AdminChapter, LessonPatch } from '@/lib/courses/write';
@@ -30,9 +32,14 @@ function hasText(v: string): boolean {
 
 /**
  * The EXPANDED lesson editing surface (Task A2 #4) — everything `LessonRow`
- * used to render inline, now grouped into labelled sub-blocks (Titres,
- * Description, Vidéo, Notes pour l'élève, Ressources) and only mounted while
- * that lesson's row is the one open (see `PlanEditor`'s accordion state).
+ * used to render inline, now grouped into labelled sub-blocks and only
+ * mounted while that lesson's row is the one open (see `PlanEditor`'s
+ * accordion state). Stage 1 (task-first navigation) fixed the ORDER around
+ * what teachers actually come for: ① Vidéo first, ② Titre (with the
+ * move-to-chapter select), ③ a collapsed "Plis detay (opsyonèl)" disclosure
+ * holding Description + Notes pour l'élève, ④ Ressources — same fields, same
+ * commit-on-blur contract as before, plus two stable sub-anchors
+ * (`lesson-<id>-video`, `lesson-<id>-resources`) for the quick actions.
  * Mounting fresh each time it opens is deliberate: every field's local state
  * re-initializes from the latest `lesson` prop, the same dirty-check-on-blur
  * commit pattern the pre-split `LessonsManager.tsx` used.
@@ -122,6 +129,38 @@ export function LessonEditPanel({
 
   return (
     <div className="mt-2 space-y-2">
+      {/* ① VIDEO FIRST (Stage 1 — task-first navigation): the video is why
+          most teachers open a lesson, so the dropzone leads instead of
+          sitting third under title/description noise. `id` is the Stage 1
+          sub-anchor the quick actions / LessonRow's "Mete videyo a" button
+          jump to. */}
+      <EditPanelSection id={`lesson-${lesson.id}-video`} title={t('sectionVideo')} icon={IconVideo} hint={t('hints.video')} filled={!noVideo}>
+        <VideoUpload
+          lessonTitle={titleHt || titleFr || lesson.title_ht || lesson.title_fr}
+          initialVideoId={lesson.bunnyVideoId}
+          createUpload={(title) => actions.createUpload(slug, lesson.id, title)}
+          validateBunnyVideo={(videoId) => actions.validateBunnyVideo(videoId)}
+          onUploaded={(guid) => commit({ bunnyVideoId: guid })}
+          onManualIdCommit={(guid) => commit({ bunnyVideoId: guid })}
+        />
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <label className="flex items-center gap-1.5 font-mono text-[10px] text-ink/55" title={t('hints.duration')}>
+            <IconClock size={12} className="text-ink/40" aria-hidden />
+            {t('duration')}
+            <input value={dur} onChange={(e) => setDur(e.target.value)} onBlur={() => commit({ durationSeconds: mmssToSec(dur) })} placeholder="mm:ss" aria-label={t('duration')} className={cn(inputCls, 'w-16 text-center')} />
+          </label>
+          <label className="flex items-center gap-1 font-mono text-[10px] text-ink/60" title={t('hints.preview')}>
+            <IconEye size={13} className="text-ink/40" aria-hidden />
+            <input type="checkbox" checked={lesson.isPreview} onChange={(e) => commit({ isPreview: e.target.checked })} className="h-3.5 w-3.5 accent-ochre" />
+            {t('preview')}
+          </label>
+        </div>
+        {noVideo && !isDraft && (
+          <p className="mt-1.5 flex items-center gap-1 font-mono text-[10px] text-stampred"><IconAlertTriangle size={11} /> {t('noVideoWarn')}</p>
+        )}
+      </EditPanelSection>
+
+      {/* ② Title (keeps the move-to-chapter select). */}
       <EditPanelSection
         title={sectionTitle(t('sectionTitles'))}
         icon={IconTag}
@@ -158,75 +197,67 @@ export function LessonEditPanel({
         )}
       </EditPanelSection>
 
-      <EditPanelSection
-        title={sectionTitle(t('sectionDescription'))}
-        icon={IconFileDescription}
-        hint={t('hints.lessonDesc')}
-        example={t('examples.lessonDesc')}
-        filled={mono ? hasText(mono === 'ht' ? descHt : descFr) : hasText(descHt) && hasText(descFr)}
-      >
-        {mono ? (
-          mono === 'ht' ? (
-            <textarea value={descHt} onChange={(e) => setDescHt(e.target.value)} onBlur={() => descHt !== lesson.desc_ht && commit({ desc_ht: descHt })} placeholder={t('descHt')} aria-label={t('descHt')} className={cn(inputCls, 'min-h-[44px] resize-y')} />
-          ) : (
-            <textarea value={descFr} onChange={(e) => setDescFr(e.target.value)} onBlur={() => descFr !== lesson.desc_fr && commit({ desc_fr: descFr })} placeholder={t('descFr')} aria-label={t('descFr')} className={cn(inputCls, 'min-h-[44px] resize-y')} />
-          )
-        ) : (
-          <div className="grid gap-1.5 sm:grid-cols-2">
-            <textarea value={descHt} onChange={(e) => setDescHt(e.target.value)} onBlur={() => descHt !== lesson.desc_ht && commit({ desc_ht: descHt })} placeholder={t('descHt')} aria-label={t('descHt')} className={cn(inputCls, 'min-h-[44px] resize-y')} />
-            <textarea value={descFr} onChange={(e) => setDescFr(e.target.value)} onBlur={() => descFr !== lesson.desc_fr && commit({ desc_fr: descFr })} placeholder={t('descFr')} aria-label={t('descFr')} className={cn(inputCls, 'min-h-[44px] resize-y')} />
-          </div>
-        )}
-      </EditPanelSection>
+      {/* ③ "Plis detay (opsyonèl)" — description + student notes, collapsed
+          by default (native <details>, no JS) so the optional prose fields
+          stop burying the two things that matter (video, title). Same
+          fields, same commit-on-blur — only their visibility moved. */}
+      <details className="group rounded-lg border border-ink/10 bg-paper-light/70">
+        <summary className={cn('flex cursor-pointer list-none items-center gap-1.5 rounded-lg p-2.5 font-mono text-[10px] uppercase tracking-wide text-ink/55 hover:text-ink', focusRing)}>
+          <IconChevronRight size={12} className="shrink-0 transition-transform group-open:rotate-90 motion-reduce:transition-none" aria-hidden />
+          {t('moreDetails')}
+          {(mono ? hasText(mono === 'ht' ? descHt : descFr) || hasText(mono === 'ht' ? notesHt : notesFr) : (hasText(descHt) && hasText(descFr)) || (hasText(notesHt) && hasText(notesFr))) && (
+            <IconCircleCheck size={12} className="shrink-0 text-teal" aria-hidden />
+          )}
+        </summary>
+        <div className="space-y-2 px-2.5 pb-2.5">
+          <EditPanelSection
+            title={sectionTitle(t('sectionDescription'))}
+            icon={IconFileDescription}
+            hint={t('hints.lessonDesc')}
+            example={t('examples.lessonDesc')}
+            filled={mono ? hasText(mono === 'ht' ? descHt : descFr) : hasText(descHt) && hasText(descFr)}
+          >
+            {mono ? (
+              mono === 'ht' ? (
+                <textarea value={descHt} onChange={(e) => setDescHt(e.target.value)} onBlur={() => descHt !== lesson.desc_ht && commit({ desc_ht: descHt })} placeholder={t('descHt')} aria-label={t('descHt')} className={cn(inputCls, 'min-h-[44px] resize-y')} />
+              ) : (
+                <textarea value={descFr} onChange={(e) => setDescFr(e.target.value)} onBlur={() => descFr !== lesson.desc_fr && commit({ desc_fr: descFr })} placeholder={t('descFr')} aria-label={t('descFr')} className={cn(inputCls, 'min-h-[44px] resize-y')} />
+              )
+            ) : (
+              <div className="grid gap-1.5 sm:grid-cols-2">
+                <textarea value={descHt} onChange={(e) => setDescHt(e.target.value)} onBlur={() => descHt !== lesson.desc_ht && commit({ desc_ht: descHt })} placeholder={t('descHt')} aria-label={t('descHt')} className={cn(inputCls, 'min-h-[44px] resize-y')} />
+                <textarea value={descFr} onChange={(e) => setDescFr(e.target.value)} onBlur={() => descFr !== lesson.desc_fr && commit({ desc_fr: descFr })} placeholder={t('descFr')} aria-label={t('descFr')} className={cn(inputCls, 'min-h-[44px] resize-y')} />
+              </div>
+            )}
+          </EditPanelSection>
 
-      <EditPanelSection title={t('sectionVideo')} icon={IconVideo} hint={t('hints.video')} filled={!noVideo}>
-        <VideoUpload
-          lessonTitle={titleHt || titleFr || lesson.title_ht || lesson.title_fr}
-          initialVideoId={lesson.bunnyVideoId}
-          createUpload={(title) => actions.createUpload(slug, lesson.id, title)}
-          validateBunnyVideo={(videoId) => actions.validateBunnyVideo(videoId)}
-          onUploaded={(guid) => commit({ bunnyVideoId: guid })}
-          onManualIdCommit={(guid) => commit({ bunnyVideoId: guid })}
-        />
-        <div className="mt-2 flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-1.5 font-mono text-[10px] text-ink/55" title={t('hints.duration')}>
-            <IconClock size={12} className="text-ink/40" aria-hidden />
-            {t('duration')}
-            <input value={dur} onChange={(e) => setDur(e.target.value)} onBlur={() => commit({ durationSeconds: mmssToSec(dur) })} placeholder="mm:ss" aria-label={t('duration')} className={cn(inputCls, 'w-16 text-center')} />
-          </label>
-          <label className="flex items-center gap-1 font-mono text-[10px] text-ink/60" title={t('hints.preview')}>
-            <IconEye size={13} className="text-ink/40" aria-hidden />
-            <input type="checkbox" checked={lesson.isPreview} onChange={(e) => commit({ isPreview: e.target.checked })} className="h-3.5 w-3.5 accent-ochre" />
-            {t('preview')}
-          </label>
+          <EditPanelSection
+            title={sectionTitle(t('notesTitle'))}
+            icon={IconNotes}
+            hint={t('hints.notes')}
+            example={t('examples.notes')}
+            filled={mono ? hasText(mono === 'ht' ? notesHt : notesFr) : hasText(notesHt) && hasText(notesFr)}
+          >
+            {mono ? (
+              mono === 'ht' ? (
+                <textarea value={notesHt} onChange={(e) => setNotesHt(e.target.value)} onBlur={() => notesHt !== lesson.notes_ht && commit({ notes_ht: notesHt })} placeholder={t('notesHt')} aria-label={t('notesHt')} className={cn(inputCls, 'min-h-[60px] resize-y')} />
+              ) : (
+                <textarea value={notesFr} onChange={(e) => setNotesFr(e.target.value)} onBlur={() => notesFr !== lesson.notes_fr && commit({ notes_fr: notesFr })} placeholder={t('notesFr')} aria-label={t('notesFr')} className={cn(inputCls, 'min-h-[60px] resize-y')} />
+              )
+            ) : (
+              <div className="grid gap-1.5 sm:grid-cols-2">
+                <textarea value={notesHt} onChange={(e) => setNotesHt(e.target.value)} onBlur={() => notesHt !== lesson.notes_ht && commit({ notes_ht: notesHt })} placeholder={t('notesHt')} aria-label={t('notesHt')} className={cn(inputCls, 'min-h-[60px] resize-y')} />
+                <textarea value={notesFr} onChange={(e) => setNotesFr(e.target.value)} onBlur={() => notesFr !== lesson.notes_fr && commit({ notes_fr: notesFr })} placeholder={t('notesFr')} aria-label={t('notesFr')} className={cn(inputCls, 'min-h-[60px] resize-y')} />
+              </div>
+            )}
+          </EditPanelSection>
         </div>
-        {noVideo && !isDraft && (
-          <p className="mt-1.5 flex items-center gap-1 font-mono text-[10px] text-stampred"><IconAlertTriangle size={11} /> {t('noVideoWarn')}</p>
-        )}
-      </EditPanelSection>
+      </details>
 
+      {/* ④ Resources last — `id` is the Stage 1 sub-anchor the "Bay elèv yo
+          yon dokiman" quick action jumps to. */}
       <EditPanelSection
-        title={sectionTitle(t('notesTitle'))}
-        icon={IconNotes}
-        hint={t('hints.notes')}
-        example={t('examples.notes')}
-        filled={mono ? hasText(mono === 'ht' ? notesHt : notesFr) : hasText(notesHt) && hasText(notesFr)}
-      >
-        {mono ? (
-          mono === 'ht' ? (
-            <textarea value={notesHt} onChange={(e) => setNotesHt(e.target.value)} onBlur={() => notesHt !== lesson.notes_ht && commit({ notes_ht: notesHt })} placeholder={t('notesHt')} aria-label={t('notesHt')} className={cn(inputCls, 'min-h-[60px] resize-y')} />
-          ) : (
-            <textarea value={notesFr} onChange={(e) => setNotesFr(e.target.value)} onBlur={() => notesFr !== lesson.notes_fr && commit({ notes_fr: notesFr })} placeholder={t('notesFr')} aria-label={t('notesFr')} className={cn(inputCls, 'min-h-[60px] resize-y')} />
-          )
-        ) : (
-          <div className="grid gap-1.5 sm:grid-cols-2">
-            <textarea value={notesHt} onChange={(e) => setNotesHt(e.target.value)} onBlur={() => notesHt !== lesson.notes_ht && commit({ notes_ht: notesHt })} placeholder={t('notesHt')} aria-label={t('notesHt')} className={cn(inputCls, 'min-h-[60px] resize-y')} />
-            <textarea value={notesFr} onChange={(e) => setNotesFr(e.target.value)} onBlur={() => notesFr !== lesson.notes_fr && commit({ notes_fr: notesFr })} placeholder={t('notesFr')} aria-label={t('notesFr')} className={cn(inputCls, 'min-h-[60px] resize-y')} />
-          </div>
-        )}
-      </EditPanelSection>
-
-      <EditPanelSection
+        id={`lesson-${lesson.id}-resources`}
         title={
           <span className="inline-flex items-center gap-1.5">
             {t('sectionResources')} {rp && <IconLoader2 size={11} className="animate-spin text-ink/40" />}

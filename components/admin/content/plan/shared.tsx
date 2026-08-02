@@ -46,6 +46,7 @@ export function EditPanelSection({
   hint,
   example,
   filled,
+  id,
   children,
 }: {
   title: React.ReactNode;
@@ -56,11 +57,16 @@ export function EditPanelSection({
   hint?: string;
   example?: string;
   filled?: boolean;
+  /** Stable jump-target anchor (Stage 1 — `lesson-<id>-video` /
+   *  `lesson-<id>-resources`): placed on the section's own wrapper so
+   *  `jumpToAnchor` lands on the whole labelled block. Additive — omitted
+   *  everywhere a section isn't a jump target. */
+  id?: string;
   children: React.ReactNode;
 }) {
   const t = useTranslations('common');
   return (
-    <div className="rounded-lg border border-ink/10 bg-paper-light/70 p-2.5">
+    <div id={id} className="rounded-lg border border-ink/10 bg-paper-light/70 p-2.5">
       <div className="mb-1.5 flex flex-wrap items-start justify-between gap-1.5">
         <div className="flex items-start gap-1.5">
           {Icon && (

@@ -13,11 +13,13 @@
  * before that lesson's real inputs exist in the DOM. Polling via
  * `requestAnimationFrame` — rather than a fixed `setTimeout` — means it
  * resolves the instant the content is ready on a fast render and still
- * succeeds on a slow one, capped at ~40 frames (well under a second) so a
- * genuinely missing id gives up instead of polling forever.
+ * succeeds on a slow one, capped at ~90 frames (~1.5s at 60fps) so a
+ * genuinely missing id gives up instead of polling forever. (Raised from 40:
+ * on a slow connection the cross-step server render alone could eat the
+ * whole ~660ms budget and the jump silently gave up.)
  */
 
-const MAX_ATTEMPTS = 40;
+const MAX_ATTEMPTS = 90;
 
 /** Same dual check the CSS motion grammar uses (see globals.css's
  *  `.stamp`/`.reveal` reduced-motion rules): the OS-level media query OR the
@@ -35,19 +37,33 @@ function isEmptyValue(el: HTMLInputElement | HTMLTextAreaElement | HTMLSelectEle
   return el.value.trim() === '';
 }
 
+/** `offsetParent === null` is true for anything `display:none`d (a collapsed
+ *  `<details>` body, the `hidden` file input) — focusing those either does
+ *  nothing or scrolls to a blank spot. None of our jump targets are
+ *  `position: fixed` (the other case where offsetParent is null), so this
+ *  cheap check is safe here. */
+function isVisible(el: HTMLElement): boolean {
+  return el.offsetParent !== null;
+}
+
 /** Prefers an EMPTY input/textarea/select inside the container (that's the
  *  thing to actually fix); falls back to the first one, then to any other
  *  focusable element (e.g. a collapsed lesson row's expand button, when its
- *  fields aren't mounted yet), then to the container itself. */
+ *  fields aren't mounted yet), then to the container itself. Skips anything
+ *  invisible and every `input[type=file]` (the dropzone's hidden picker —
+ *  its value is always "" so it used to win the "first empty field" race
+ *  and swallow the focus). */
 function pickFocusTarget(container: HTMLElement): HTMLElement | null {
   const fields = Array.from(
     container.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>('input, textarea, select'),
-  ).filter((el) => !el.disabled);
+  ).filter(
+    (el) => !el.disabled && !(el instanceof HTMLInputElement && el.type === 'file') && isVisible(el),
+  );
   const empty = fields.find(isEmptyValue);
   if (empty) return empty;
   if (fields.length > 0) return fields[0];
 
-  const focusable = container.querySelector<HTMLElement>('button, a[href], [tabindex]');
+  const focusable = Array.from(container.querySelectorAll<HTMLElement>('button, a[href], [tabindex]')).find(isVisible);
   if (focusable) return focusable;
 
   return container.matches('[tabindex]') ? container : null;

@@ -649,24 +649,36 @@
       },
       "editor": {
         "checklist": "Bon de kontwòl",
+        "checklistMobile": "Sa ki rete pou fini ({count})",
+        "stepsNav": "Etap yo",
         "optional": "Opsyonèl",
         "steps": {
           "infos": {
-            "title": "Sa ki esansyèl la",
-            "intent": "Non kou a, pri li, ak sa ki fè l espesyal."
+            "title": "Enfòmasyon kou a",
+            "short": "Enfòmasyon",
+            "intent": "Ekri non kou a, pri a, ak sa l ap montre — se sa vizitè yo wè sou paj vant lan."
           },
           "plan": {
-            "title": "Plan an",
-            "intent": "Chapit ak leson yo — kè fòmasyon an."
+            "title": "Leson ak videyo yo",
+            "short": "Videyo yo",
+            "intent": "Ajoute leson yo epi mete yon videyo pou chak — se sa elèv ki enskri yo ap gade."
           },
           "medias": {
-            "title": "Imaj",
-            "intent": "Foto ki abiye kou a sou paj vant lan."
+            "title": "Foto kou a",
+            "short": "Foto",
+            "intent": "Chwazi foto k ap reprezante kou a — moun wè yo sou katalòg la ak paj vant lan."
           },
           "ressources": {
-            "title": "Resous",
-            "intent": "Lyen ak fichye siplemantè pou elèv yo (opsyonèl)."
+            "title": "Lyen paj vant lan",
+            "short": "Paj vant",
+            "intent": "Ajoute lyen siplemantè sou paj vant lan — tout moun k ap vizite paj la wè yo (opsyonèl)."
           }
+        },
+        "quick": {
+          "title": "Ki sa w vle fè ?",
+          "video": "Mete yon videyo",
+          "photo": "Chanje foto kou a",
+          "doc": "Bay elèv yo yon dokiman"
         }
       }
     }
@@ -1912,8 +1924,22 @@
         "q": "Kesyon",
         "a": "Repons",
         "addFaq": "+ Kesyon",
-        "resourcesLabel": "Lyen nan deskripsyon an",
-        "resourcesHelp": "Lyen/fichye sa yo parèt anba deskripsyon kou a sou paj vant lan.",
+        "resourcesLabel": "Lyen paj vant lan",
+        "resourcesHelp": "Lyen sa yo parèt anba deskripsyon kou a sou paj vant lan. Tout moun k ap vizite paj vant lan ap wè yo — se pa yon kote pou dokiman prive elèv yo.",
+        "resourcesCrossLink": "Pou bay elèv yo yon dokiman pou yon leson :",
+        "resourcesCrossLinkCta": "Leson ak videyo yo",
+        "iconNames": {
+          "credit-card": "Peman / kat",
+          "shopping-cart": "Lavant / komès",
+          "ship": "Shipping / transpò",
+          "speakerphone": "Maketing / piblisite",
+          "palette": "Design / koulè",
+          "brand-whatsapp": "WhatsApp",
+          "device-mobile-code": "Telefòn / aplikasyon",
+          "shield-lock": "Sekirite",
+          "player-play": "Videyo",
+          "book": "Liv / fòmasyon"
+        },
         "save": "Anrejistre",
         "saved": "Anrejistre ✓",
         "saving": "Anrejistreman…",
@@ -1974,6 +2000,9 @@
         "noVideoWarn": "Pa gen videyo lye",
         "chipVideoOk": "Videyo",
         "chipVideoMissing": "Pa gen videyo",
+        "addVideoCta": "Mete videyo a",
+        "docsChip": "{count, plural, one {1 dokiman} other {# dokiman}}",
+        "moreDetails": "Plis detay (opsyonèl)",
         "moveUp": "Monte",
         "moveDown": "Desann",
         "expandLesson": "Ouvri leson an",
@@ -2045,8 +2074,10 @@
         "uploadTakesTime": "Yon videyo ka pran kèk minit pou l monte — ou ka kontinye travay pandan l ap monte."
       },
       "images": {
-        "title": "Imaj",
-        "note": "Vrè upload nan Bunny Storage + redimansyònman = pou branche. Pou kounye a, kole yon URL imaj.",
+        "title": "Foto kou a",
+        "note": "Foto sa yo se figi kou a sou katalòg la ak paj vant lan — kole lyen foto a nan kaz la epi peze « Defini ».",
+        "videoCrossLink": "W ap chèche videyo leson yo ?",
+        "videoCrossLinkCta": "Leson ak videyo yo",
         "main": "Imaj prensipal",
         "mainHint": "Premye imaj moun wè pou kou sa a, sou katalòg la ak paj vant lan.",
         "setMain": "Defini",
