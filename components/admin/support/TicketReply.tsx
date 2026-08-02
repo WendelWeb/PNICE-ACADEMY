@@ -71,7 +71,7 @@ export function TicketReply({
           onClick={() =>
             start(async () => {
               setErr(null);
-              const r = await replyTicketAction(ticketId, body);
+              const r = await replyTicketAction(ticketId, body, locale);
               if (r.ok) { setBody(''); router.refresh(); }
               else setErr(r.message ?? 'error');
             })

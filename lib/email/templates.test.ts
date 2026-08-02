@@ -1,5 +1,49 @@
 import { describe, it, expect } from 'vitest';
-import { buildReceiptHtml, buildCartReminderHtml, buildDailyDigestHtml, buildTestEmailHtml } from '@/lib/email/templates';
+import {
+  buildReceiptHtml,
+  buildCartReminderHtml,
+  buildDailyDigestHtml,
+  buildTestEmailHtml,
+  buildSupportReplyHtml,
+} from '@/lib/email/templates';
+
+describe('buildSupportReplyHtml', () => {
+  const base = { name: 'Jean', ticketSubject: 'Pwoblèm ak aksè kou a', body: 'Bonjou,\nAksè w la aktive ankò.' };
+
+  it('quotes the original subject and keeps the admin reply', () => {
+    const { subject, html, text } = buildSupportReplyHtml({ ...base, locale: 'ht', ref: 'tkt_9' });
+    expect(subject).toBe('Re: Pwoblèm ak aksè kou a — PNICE Academy');
+    expect(html).toContain('Pwoblèm ak aksè kou a');
+    expect(html).toContain('Aksè w la aktive ankò.');
+    expect(html).toContain('tkt_9');
+    expect(text).toContain('Aksè w la aktive ankò.');
+  });
+
+  it('escapes the admin body before turning newlines into <br>', () => {
+    const { html } = buildSupportReplyHtml({
+      ...base,
+      locale: 'fr',
+      body: 'Regarde <script>alert(1)</script>\nligne 2 & fin',
+    });
+    expect(html).not.toContain('<script>');
+    expect(html).toContain('&lt;script&gt;');
+    expect(html).toContain('&amp; fin');
+    // The newline still becomes a real line break — escaping must not eat it.
+    expect(html).toContain('ligne 2');
+    expect(html).toMatch(/&lt;\/script&gt;<br>ligne 2/);
+  });
+
+  it('escapes a hostile ticket subject in the quoted block', () => {
+    const { html } = buildSupportReplyHtml({ ...base, locale: 'fr', ticketSubject: '<b>gras</b>' });
+    expect(html).toContain('&lt;b&gt;gras&lt;/b&gt;');
+  });
+
+  it('works without a name or a reference', () => {
+    const { html, text } = buildSupportReplyHtml({ ...base, locale: 'fr', name: null, ref: null });
+    expect(html).toContain('Bonjour,');
+    expect(text).not.toContain('Référence');
+  });
+});
 
 describe('buildReceiptHtml', () => {
   const base = { name: 'Jean', itemName: 'Zouti finansye dijital', amountCents: 900, dateIso: '2026-07-22T12:00:00Z', ref: 'pi_123' };
@@ -167,6 +211,16 @@ describe('plain-text alternative (deliverability)', () => {
       expect(text.length).toBeGreaterThan(0);
       expect(text).not.toMatch(HTML_TAG);
     }
+
+    const reply = buildSupportReplyHtml({
+      locale: 'fr',
+      name: 'Jean',
+      ticketSubject: 'Aksè kou a',
+      body: 'Bonjour,\nTon accès est réactivé.',
+      ref: 'tkt_1',
+    });
+    expect(reply.text.length).toBeGreaterThan(0);
+    expect(reply.text).not.toMatch(HTML_TAG);
 
     expect(receipt.text).toContain('Zouti finansye dijital');
     expect(receipt.text).toContain('$9.00');

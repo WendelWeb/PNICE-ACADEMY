@@ -34,7 +34,7 @@ import {
 } from '@/lib/admin/data';
 import { checkBunnyStream, type BunnyStatus } from '@/lib/admin/health/bunny';
 import { sendEmail, emailLive, DEFAULT_FROM } from '@/lib/email/resend';
-import { buildTestEmailHtml } from '@/lib/email/templates';
+import { buildTestEmailHtml, buildSupportReplyHtml } from '@/lib/email/templates';
 
 export type SupResult = { ok: boolean; message?: string; id?: string };
 
@@ -64,7 +64,15 @@ export async function assignTicketAction(ticketId: string, adminId: string | nul
   }
 }
 
-export async function replyTicketAction(ticketId: string, body: string): Promise<SupResult> {
+/**
+ * `locale` drives only the email's CHROME (greeting, headings, footer) — the
+ * reply body itself is whatever the admin typed. We use the admin console's
+ * current locale rather than the learner's because we don't store a learner
+ * language preference, and the admin wrote the reply while looking at that
+ * locale, so its chrome is the one that matches the body. Defaults to 'ht'
+ * (the platform default) so any caller that omits it still compiles.
+ */
+export async function replyTicketAction(ticketId: string, body: string, locale: 'fr' | 'ht' = 'ht'): Promise<SupResult> {
   try {
     const actor = await requireCap('support.act');
     const r = await replyTicket({ ticketId, body, actor });
@@ -73,11 +81,14 @@ export async function replyTicketAction(ticketId: string, body: string): Promise
       // no-op otherwise). Failure to email never fails the reply itself.
       const detail = await getTicketById(ticketId);
       if (detail?.ticket.userEmail && detail.ticket.userEmail !== '—') {
-        await sendEmail({
-          to: detail.ticket.userEmail,
-          subject: `Re: ${detail.ticket.subject} — PNICE Academy`,
-          html: `<p>${body.replace(/\n/g, '<br>')}</p><hr><p style="color:#888;font-size:12px">PNICE Academy · Support</p>`,
+        const { subject, html, text } = buildSupportReplyHtml({
+          locale,
+          name: detail.ticket.userName || null,
+          ticketSubject: detail.ticket.subject,
+          body,
+          ref: detail.ticket.id,
         });
+        await sendEmail({ to: detail.ticket.userEmail, subject, html, text });
       }
     }
     return r;

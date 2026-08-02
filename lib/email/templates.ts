@@ -243,6 +243,90 @@ export function buildTestEmailHtml(input: {
   return { subject, html, text };
 }
 
+/**
+ * Support-ticket reply sent to the learner when an admin answers their
+ * ticket (lib/admin/support-actions.ts's `replyTicketAction`). Pure/testable.
+ *
+ * The admin's `body` is free text typed into the admin console: it is
+ * ESCAPED before the newline→`<br>` conversion, so a message containing
+ * `<` or `&` renders literally instead of injecting markup into the email
+ * (the previous inline template interpolated it raw).
+ *
+ * The original ticket subject is quoted back in a bordered block so the
+ * learner recognises which of their questions this answers — a reply that
+ * arrives with no context is the classic support-email failure.
+ */
+export function buildSupportReplyHtml(input: {
+  locale: 'fr' | 'ht';
+  name: string | null;
+  /** The learner's original ticket subject, quoted back for context. */
+  ticketSubject: string;
+  /** The admin's reply, as typed (plain text, newline-separated). */
+  body: string;
+  /** Short ticket reference shown in the footer, e.g. the ticket id. */
+  ref?: string | null;
+}): { subject: string; html: string; text: string } {
+  const fr = input.locale === 'fr';
+  const helloHtml = helloLine(input.name, fr, escapeHtml);
+  const helloPlain = helloLine(input.name, fr, (s) => s);
+
+  const subject = `Re: ${input.ticketSubject} — PNICE Academy`;
+  const intro = fr
+    ? 'Voici notre réponse à ta demande :'
+    : 'Men repons nou pou demann ou an :';
+
+  // Escape FIRST, then turn newlines into <br> — never the reverse.
+  const bodyLines = escapeHtml(input.body).replace(/\r\n|\r|\n/g, '<br>');
+
+  const quotedLabel = fr ? 'Ta demande' : 'Demann ou an';
+  const dashboardUrl = `${SITE_URL}/${input.locale}/tableau-de-bord`;
+
+  const bodyHtml = `
+            <p style="margin:0 0 14px;">${helloHtml}</p>
+            <p style="margin:0 0 18px;">${intro}</p>
+            <div style="margin:0 0 20px;padding:14px 16px;border-left:3px solid ${COLORS.ochre};background-color:${COLORS.paperLight};font-size:15px;line-height:1.6;color:${COLORS.graphite};">${bodyLines}</div>
+            <p style="margin:0 0 6px;font-family:'Courier New',Courier,monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:${COLORS.muted};">${quotedLabel}</p>
+            <p style="margin:0;padding:10px 14px;border:1px solid ${COLORS.hairline};font-size:14px;color:${COLORS.muted};">${escapeHtml(input.ticketSubject)}</p>`;
+
+  const preheader = fr
+    ? `Réponse du support — ${input.ticketSubject}`
+    : `Repons sipò a — ${input.ticketSubject}`;
+
+  const footerNote = input.ref
+    ? fr
+      ? `Référence : ${input.ref} · Pour continuer cette conversation, réponds depuis ton espace.`
+      : `Referans : ${input.ref} · Pou kontinye konvèsasyon an, reponn depi espas ou.`
+    : fr
+      ? 'Pour continuer cette conversation, réponds depuis ton espace.'
+      : 'Pou kontinye konvèsasyon an, reponn depi espas ou.';
+
+  const html = emailLayout({
+    locale: input.locale,
+    preheader,
+    heading: fr ? 'Réponse du support' : 'Repons sipò a',
+    bodyHtml,
+    cta: { label: fr ? 'Ouvrir mon espace' : 'Louvri espas mwen', url: dashboardUrl },
+    footerNote,
+  });
+
+  const text = [
+    helloPlain,
+    '',
+    intro,
+    '',
+    input.body,
+    '',
+    `${quotedLabel}: ${input.ticketSubject}`,
+    '',
+    `${fr ? 'Mon espace' : 'Espas mwen'}: ${dashboardUrl}`,
+    input.ref ? `${fr ? 'Référence' : 'Referans'}: ${input.ref}` : '',
+  ]
+    .filter((l, i, a) => !(l === '' && a[i - 1] === ''))
+    .join('\n');
+
+  return { subject, html, text };
+}
+
 /** Admin daily-digest email (Task L5 — app/api/cron/daily-digest). Pure/
  *  testable; the cron route supplies today's already-computed counts. */
 export function buildDailyDigestHtml(input: {
