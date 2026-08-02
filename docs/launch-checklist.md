@@ -103,6 +103,27 @@ Clerk (URL publique), et le déploiement prod.
 
 ---
 
+## Étape 5b — Fichiers : images de cours + ressources (Bunny Storage)
+
+Le rail vidéo (Étape 5) utilise Bunny **Stream** ; les FICHIERS (photo de
+couverture d'un cours, PDF/ressources téléchargeables) passent par Bunny
+**Storage** — une zone à part, 3 valeurs à poser :
+
+1. https://dash.bunny.net → menu **Storage → Add Storage Zone** (nom ex.
+   `pnice-assets`, région par défaut) → le **nom** de la zone →
+   `BUNNY_STORAGE_ZONE_NAME`.
+2. Ouvre la zone → onglet **FTP & API Access** → copie le **Password** →
+   `BUNNY_STORAGE_API_KEY`.
+3. Menu **Pull Zones (CDN) → Add Pull Zone** → Origin Type **Storage Zone** →
+   choisis ta zone → l'URL publique affichée (ex. `https://pnice-assets.b-cdn.net`)
+   → `BUNNY_STORAGE_CDN_BASE`.
+4. Pose les 3 valeurs dans `.env.local` + Vercel. Sans elles, **rien ne casse** :
+   l'upload de fichiers répond simplement « non configuré » et le collage d'URL
+   reste disponible. (Si tu as choisi une région NON par défaut à l'étape 1,
+   pose aussi `BUNNY_STORAGE_HOST`, ex. `ny.storage.bunnycdn.com`.)
+
+---
+
 ## Étape 6 — Déployer (Vercel)
 
 1. Pousse le code : le remote existe (`WendelWeb/PNICE-ACADEMY`) mais tout est
