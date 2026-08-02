@@ -3,12 +3,30 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { IconDeviceFloppy, IconLoader2, IconAlertTriangle } from '@tabler/icons-react';
+import {
+  IconDeviceFloppy,
+  IconLoader2,
+  IconAlertTriangle,
+  IconHash,
+  IconLink,
+  IconCategory,
+  IconTag,
+  IconSparkles,
+  IconUsers,
+  IconListCheck,
+  IconCurrencyDollar,
+  IconStairsUp,
+  IconTarget,
+  IconAlertCircle,
+  IconPackage,
+  IconClipboardCheck,
+  IconHelpCircle,
+} from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
 import { buttonClasses } from '@/components/ui/Button';
 import { updateCourseAction } from '@/lib/admin/content-actions';
 import type { AdminCourse, CoursePatch } from '@/lib/courses/write';
-import { BilingualText, PairedList, FaqEditor, inputCls, type FaqItem } from './fields';
+import { Field, BilingualText, PairedList, FaqEditor, inputCls, type FaqItem } from './fields';
 
 type UpdateResult = { ok: boolean; message?: string };
 /** Same shape as `lib/admin/content-actions.ts`'s `updateCourseAction` — the
@@ -93,10 +111,10 @@ export function CourseEditor({
         <h2 className="font-mono text-[11px] uppercase tracking-wide text-ink/55">{t('general')}</h2>
         <div className="mt-3 space-y-3">
           <div className="grid gap-3 sm:grid-cols-3">
-            <Field label={t('code')}><input value={c.code} disabled className={cn(inputCls, 'opacity-60')} /></Field>
-            <Field label={t('slug')}><input value={c.slug} disabled className={cn(inputCls, 'opacity-60')} /></Field>
-            <Field label={t('icon')}>
-              <select value={c.icon} onChange={(e) => set('icon', e.target.value)} className={cn(inputCls, 'cursor-pointer')}>
+            <Field icon={IconHash} label={t('code')} hint={t('hints.code')}><input value={c.code} disabled aria-label={t('code')} className={cn(inputCls, 'opacity-60')} /></Field>
+            <Field icon={IconLink} label={t('slug')} hint={t('hints.slug')}><input value={c.slug} disabled aria-label={t('slug')} className={cn(inputCls, 'opacity-60')} /></Field>
+            <Field icon={IconCategory} label={t('icon')} hint={t('hints.icon')}>
+              <select value={c.icon} onChange={(e) => set('icon', e.target.value)} aria-label={t('icon')} className={cn(inputCls, 'cursor-pointer')}>
                 {ICON_KEYS.map((k) => <option key={k} value={k}>{k}</option>)}
               </select>
             </Field>
@@ -139,14 +157,15 @@ export function CourseEditor({
             </p>
           </div>
 
-          <BilingualText label={t('title')} mono={mono} ht={c.title_ht} fr={c.title_fr} onHt={(v) => set('title_ht', v)} onFr={(v) => set('title_fr', v)} />
-          <BilingualText label={t('tagline')} mono={mono} ht={c.tagline_ht} fr={c.tagline_fr} onHt={(v) => set('tagline_ht', v)} onFr={(v) => set('tagline_fr', v)} />
-          <BilingualText label={t('audience')} area mono={mono} ht={c.audience_ht} fr={c.audience_fr} onHt={(v) => set('audience_ht', v)} onFr={(v) => set('audience_fr', v)} />
-          <PairedList label={t('learn')} mono={mono} ht={c.learn_ht} fr={c.learn_fr} onChange={(ht, fr) => { set('learn_ht', ht); set('learn_fr', fr); }} />
+          <BilingualText icon={IconTag} label={t('title')} hint={t('hints.title')} example={t('examples.title')} mono={mono} ht={c.title_ht} fr={c.title_fr} onHt={(v) => set('title_ht', v)} onFr={(v) => set('title_fr', v)} />
+          <BilingualText icon={IconSparkles} label={t('tagline')} hint={t('hints.tagline')} example={t('examples.tagline')} mono={mono} ht={c.tagline_ht} fr={c.tagline_fr} onHt={(v) => set('tagline_ht', v)} onFr={(v) => set('tagline_fr', v)} />
+          <BilingualText icon={IconUsers} label={t('audience')} hint={t('hints.audience')} example={t('examples.audience')} area mono={mono} ht={c.audience_ht} fr={c.audience_fr} onHt={(v) => set('audience_ht', v)} onFr={(v) => set('audience_fr', v)} />
+          <PairedList icon={IconListCheck} label={t('learn')} hint={t('hints.learn')} example={t('examples.learn')} mono={mono} ht={c.learn_ht} fr={c.learn_fr} onChange={(ht, fr) => { set('learn_ht', ht); set('learn_fr', fr); }} />
 
-          {/* Price + impact (task 3) */}
-          <Field label={t('price')}>
-            <span className="flex items-center gap-1 font-mono text-sm text-ink/55">$<input type="number" min="0" value={priceDollars} onChange={(e) => { setPriceDollars(e.target.value); setSave('idle'); }} className={cn(inputCls, 'w-24')} /></span>
+          {/* Price + impact (task 3) — `id` is the studio bon-de-contrôle
+              rail's jump target for `pricePositive` (Task D1). */}
+          <Field icon={IconCurrencyDollar} label={t('price')} hint={t('hints.price')} example={t('examples.price')} filled={Number(priceDollars) > 0} id="field-price">
+            <span className="flex items-center gap-1 font-mono text-sm text-ink/55">$<input type="number" min="0" value={priceDollars} onChange={(e) => { setPriceDollars(e.target.value); setSave('idle'); }} aria-label={t('price')} className={cn(inputCls, 'w-24')} /></span>
           </Field>
           <div className="rounded-lg bg-paper p-3 text-xs">
             <p className="font-mono text-[10px] uppercase tracking-wide text-ink/45">{t('impact')}</p>
@@ -166,12 +185,12 @@ export function CourseEditor({
       <section className="rounded-xl border border-ink/12 bg-paper-light p-4">
         <h2 className="font-mono text-[11px] uppercase tracking-wide text-ink/55">{t('salesPage')}</h2>
         <div className="mt-3 space-y-3">
-          <BilingualText label={t('level')} mono={mono} ht={c.level_ht} fr={c.level_fr} onHt={(v) => set('level_ht', v)} onFr={(v) => set('level_fr', v)} />
-          <BilingualText label={t('promise')} area mono={mono} ht={c.promise_ht} fr={c.promise_fr} onHt={(v) => set('promise_ht', v)} onFr={(v) => set('promise_fr', v)} />
-          <BilingualText label={t('problem')} area mono={mono} ht={c.problem_ht} fr={c.problem_fr} onHt={(v) => set('problem_ht', v)} onFr={(v) => set('problem_fr', v)} />
-          <PairedList label={t('deliverables')} mono={mono} ht={c.deliverables_ht} fr={c.deliverables_fr} onChange={(ht, fr) => { set('deliverables_ht', ht); set('deliverables_fr', fr); }} />
-          <PairedList label={t('requirements')} mono={mono} ht={c.requirements_ht} fr={c.requirements_fr} onChange={(ht, fr) => { set('requirements_ht', ht); set('requirements_fr', fr); }} />
-          <FaqEditor faq={c.faq as FaqItem[]} mono={mono} onChange={(f) => set('faq', f)} />
+          <BilingualText icon={IconStairsUp} label={t('level')} hint={t('hints.level')} example={t('examples.level')} mono={mono} ht={c.level_ht} fr={c.level_fr} onHt={(v) => set('level_ht', v)} onFr={(v) => set('level_fr', v)} />
+          <BilingualText id="field-promise" icon={IconTarget} label={t('promise')} hint={t('hints.promise')} example={t('examples.promise')} area mono={mono} ht={c.promise_ht} fr={c.promise_fr} onHt={(v) => set('promise_ht', v)} onFr={(v) => set('promise_fr', v)} />
+          <BilingualText icon={IconAlertCircle} label={t('problem')} hint={t('hints.problem')} example={t('examples.problem')} area mono={mono} ht={c.problem_ht} fr={c.problem_fr} onHt={(v) => set('problem_ht', v)} onFr={(v) => set('problem_fr', v)} />
+          <PairedList icon={IconPackage} label={t('deliverables')} hint={t('hints.deliverables')} example={t('examples.deliverables')} mono={mono} ht={c.deliverables_ht} fr={c.deliverables_fr} onChange={(ht, fr) => { set('deliverables_ht', ht); set('deliverables_fr', fr); }} />
+          <PairedList icon={IconClipboardCheck} label={t('requirements')} hint={t('hints.requirements')} example={t('examples.requirements')} mono={mono} ht={c.requirements_ht} fr={c.requirements_fr} onChange={(ht, fr) => { set('requirements_ht', ht); set('requirements_fr', fr); }} />
+          <FaqEditor icon={IconHelpCircle} hint={t('hints.faq')} exampleQ={t('examples.faqQ')} exampleA={t('examples.faqA')} faq={c.faq as FaqItem[]} mono={mono} onChange={(f) => set('faq', f)} />
         </div>
       </section>
 
@@ -194,14 +213,5 @@ export function CourseEditor({
         </span>
       </div>
     </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-ink/55">{label}</span>
-      {children}
-    </label>
   );
 }

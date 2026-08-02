@@ -12,6 +12,16 @@ type StampProps = {
   /** Stagger delay in ms, applied to the transition itself. */
   delay?: number;
   className?: string;
+  /**
+   * Escape hatch for a THIRD trigger — a click, not a viewport entry or
+   * mount (e.g. the studio's publication seal button, Task D1). When
+   * provided, `Stamp` gives up its own viewport/`immediate` logic entirely
+   * and just mirrors this boolean — the caller owns the `false → true`
+   * transition (typically local `useState`, flipped in an `onClick`).
+   * Omitted (the default, every existing call site) keeps the original
+   * self-triggered behaviour unchanged.
+   */
+  stamped?: boolean;
 };
 
 /**
@@ -19,7 +29,8 @@ type StampProps = {
  * `Sceau`): scale 1.6 → 1, rotating into place, fading in — the signature
  * gesture reused across the hero manifest, the merci page and certificate
  * verification (PART A3/A4). Fires once, either on viewport entry
- * (IntersectionObserver, like `Reveal`) or immediately with `immediate`.
+ * (IntersectionObserver, like `Reveal`), immediately with `immediate`, or
+ * under full external control via the `stamped` prop (a click, Task D1).
  *
  * Reduced-motion users see the final, settled state instantly — this is
  * CSS-driven (see `.stamp` / `.stamp.is-stamped` in globals.css), the same
@@ -31,11 +42,15 @@ export function Stamp({
   immediate = false,
   delay = 0,
   className,
+  stamped: stampedProp,
 }: StampProps) {
   const ref = useRef<HTMLSpanElement>(null);
-  const [stamped, setStamped] = useState(false);
+  const [stampedState, setStamped] = useState(false);
+  const controlled = stampedProp !== undefined;
+  const stamped = controlled ? stampedProp : stampedState;
 
   useEffect(() => {
+    if (controlled) return; // the caller owns the trigger entirely — see `stamped` prop doc.
     if (immediate) {
       setStamped(true);
       return;
@@ -59,7 +74,7 @@ export function Stamp({
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [immediate]);
+  }, [immediate, controlled]);
 
   return (
     <span

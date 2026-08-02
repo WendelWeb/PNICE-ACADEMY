@@ -1,21 +1,21 @@
 import { notFound, redirect } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { auth } from '@clerk/nextjs/server';
-import { IconArrowLeft } from '@tabler/icons-react';
 import { Section, Container } from '@/components/ui/Section';
-import { Link } from '@/i18n/routing';
 import { clerkEnabled } from '@/lib/clerk';
 import { dbConfigured } from '@/lib/courses/source';
 import { resolveUserId } from '@/lib/learner/access';
 import { isApprovedTeacher } from '@/lib/teacher/profile';
 import { getMyCourse, getMyCourses } from '@/lib/teacher/studio';
-import { computeCourseReadiness } from '@/lib/courses/readiness';
+import { computeCourseReadiness, countMissingReadiness } from '@/lib/courses/readiness';
+import { computeReadinessAnchors, EDITOR_STEPS, type EditorStepKey } from '@/lib/courses/readiness-anchors';
 import { CourseEditor } from '@/components/admin/content/CourseEditor';
 import { LessonsManager, type LessonActions } from '@/components/admin/content/LessonsManager';
 import { ImagesManager, type ImageActions } from '@/components/admin/content/ImagesManager';
 import { CourseResourcesPanel } from '@/components/admin/content/CourseResourcesPanel';
-import { StudioStatusBar } from '@/components/teacher/studio/StudioStatusBar';
-import { EditorTabs, type EditorTabKey } from '@/components/content/EditorTabs';
+import { BordereauHeader } from '@/components/teacher/studio/BordereauHeader';
+import { ControlRail } from '@/components/teacher/studio/ControlRail';
+import { EditorStepHeading } from '@/components/teacher/studio/EditorStepHeading';
 import {
   updateMyCourseAction,
   addMyLessonAction,
@@ -33,6 +33,8 @@ import {
   addMySecondaryImageAction,
   removeMySecondaryImageAction,
   moveMySecondaryImageAction,
+  submitMyCourseForReviewAction,
+  unpublishMyCourseAction,
 } from '@/lib/teacher/studio-actions';
 
 export const dynamic = 'force-dynamic';
@@ -60,20 +62,24 @@ const imageActions: ImageActions = {
 
 /**
  * /enseigner/studio/cours/[slug]/editer — the teacher studio's course
- * editor (Task C3-T4). Reuses the EXACT SAME CMS components the admin
- * `/admin/cours/[slug]/editer` page renders (`CourseEditor`,
- * `LessonsManager`, `ImagesManager`), wired to the owner-scoped actions in
- * lib/teacher/studio-actions.ts instead of the admin's
- * lib/admin/content-actions.ts — see those two files' header comments for
- * the dependency-injection shape that makes this possible with zero changes
- * to the admin CMS's own behaviour.
+ * editor (Task C3-T4), rebuilt as "le bordereau" (Task D1 — the authoring
+ * masterpiece): a sticky `BordereauHeader` (code, title, status, the
+ * publish/submit action), a PERMANENT `ControlRail` checklist (the 8
+ * readiness items grouped under the 4 numbered steps, each unmet item
+ * clickable straight to the field), and the active step's content — still
+ * the EXACT SAME CMS components the admin CMS used to render
+ * (`CourseEditor`, `LessonsManager`, `ImagesManager`, `CourseResourcesPanel`)
+ * with their CURRENT props, wired to the owner-scoped actions in
+ * lib/teacher/studio-actions.ts — this task restructures the shell around
+ * them, not the fields themselves (see lib/courses/readiness-anchors.ts's
+ * doc comment for how a checklist click finds its way to a specific field).
  *
  * Ownership is checked TWICE, independently: `getMyCourse` (read-side,
  * below — returns `null`, triggering `notFound()`, for a slug that isn't
  * owned by this teacher) and every studio-actions.ts mutation (write-side,
  * re-checked on every save regardless of what this page rendered).
  */
-const TAB_KEYS: EditorTabKey[] = ['infos', 'plan', 'medias', 'ressources'];
+const TAB_KEYS: EditorStepKey[] = ['infos', 'plan', 'medias', 'ressources'];
 
 export default async function EditMyCoursePage({
   params: { locale, slug },
@@ -84,7 +90,7 @@ export default async function EditMyCoursePage({
 }) {
   setRequestLocale(locale);
   const t = await getTranslations('teach.studio');
-  const tTabs = await getTranslations('admin.cms.tabs');
+  const tEditor = await getTranslations('teach.studio.editor');
 
   if (!clerkEnabled) redirect(`/${locale}/enseigner`);
   const { userId: clerkId } = await auth();
@@ -107,71 +113,72 @@ export default async function EditMyCoursePage({
   const myCourses = await getMyCourses(userId);
   const salesCount = myCourses.find((c) => c.slug === slug)?.salesCount ?? 0;
 
-  // Task K2 — the readiness checklist, shared by StudioStatusBar's expandable
-  // "N point(s) à compléter" disclosure (Task A2 folded the old standalone
-  // CourseReadiness section into that sticky bar).
+  // Task K2 — the readiness checklist. Task D1 folds it into the permanent
+  // `ControlRail` (the old `StudioStatusBar`'s collapsible disclosure is
+  // gone) and adds `computeReadinessAnchors` so each unmet item knows
+  // exactly which step + field to jump to.
   const readinessItems = computeCourseReadiness(course);
+  const readinessMissing = countMissingReadiness(readinessItems);
+  const anchors = computeReadinessAnchors(course);
 
   // Task A2 — tabs instead of one giant scroll: `?tab=` is server-read here
-  // (shareable URL, no lost state on refresh) — see EditorTabs.tsx.
-  const activeTab: EditorTabKey = TAB_KEYS.includes(searchParams.tab as EditorTabKey)
-    ? (searchParams.tab as EditorTabKey)
+  // (shareable URL, no lost state on refresh) — see ControlRail.tsx. Task D1
+  // keeps this EXACT contract, just presents the 4 tab keys as ① → ④.
+  const activeTab: EditorStepKey = TAB_KEYS.includes(searchParams.tab as EditorStepKey)
+    ? (searchParams.tab as EditorStepKey)
     : 'infos';
+  const activeStepNumber = EDITOR_STEPS.find((s) => s.key === activeTab)?.number ?? 1;
   const basePath = `/enseigner/studio/cours/${slug}/editer`;
   const isDraft = course.rawStatus === 'draft' || course.rawStatus === 'rejected';
+  const title = (locale === 'ht' ? course.title_ht : course.title_fr || course.title_ht) || t('untitled');
 
   return (
     <Section>
       <Container className="max-w-[1180px]">
-        <div className="space-y-4 pb-2">
-          <Link href="/enseigner/studio" className="inline-flex items-center gap-1 font-mono text-[11px] text-ink/55 hover:text-ink">
-            <IconArrowLeft size={14} /> {t('backToStudio')}
-          </Link>
-          <div className="flex items-baseline gap-2">
-            <span className="font-mono text-[10px] uppercase text-ink/40">{course.code}</span>
-            <h1 className="font-display text-xl font-bold text-ink">
-              {(locale === 'ht' ? course.title_ht : course.title_fr || course.title_ht) || t('untitled')}
-            </h1>
-          </div>
-
-          <EditorTabs
-            basePath={basePath}
-            active={activeTab}
-            tabs={[
-              { key: 'infos', label: tTabs('infos') },
-              { key: 'plan', label: tTabs('plan') },
-              { key: 'medias', label: tTabs('medias') },
-              { key: 'ressources', label: tTabs('ressources') },
-            ]}
-          />
-
-          {activeTab === 'infos' && (
-            <CourseEditor course={course} salesCount={salesCount} priciest={null} updateAction={updateMyCourseAction} />
-          )}
-          {activeTab === 'plan' && (
-            <LessonsManager
-              slug={course.slug}
-              lessons={course.lessons}
-              chapters={course.chapters}
-              isDraft={isDraft}
-              bilingual={course.bilingual}
-              primaryLocale={course.primary_locale}
-              actions={lessonActions}
-            />
-          )}
-          {activeTab === 'medias' && (
-            <ImagesManager slug={course.slug} mainImage={course.mainImage} secondary={course.secondaryImages} actions={imageActions} />
-          )}
-          {activeTab === 'ressources' && (
-            <CourseResourcesPanel slug={course.slug} resources={course.resources} updateAction={updateMyCourseAction} />
-          )}
-
-          <StudioStatusBar
+        <div className="space-y-4 pb-10">
+          <BordereauHeader
             slug={course.slug}
+            code={course.code}
+            title={title}
             status={course.rawStatus}
             reviewNote={course.reviewNote}
-            readinessItems={readinessItems}
+            missing={readinessMissing}
+            submitAction={submitMyCourseForReviewAction}
+            unpublishAction={unpublishMyCourseAction}
           />
+
+          <div className="grid gap-4 pt-2 lg:grid-cols-[280px_1fr] lg:items-start lg:gap-6">
+            <ControlRail items={readinessItems} anchors={anchors} activeTab={activeTab} basePath={basePath} />
+
+            <div className="min-w-0 space-y-4">
+              <EditorStepHeading
+                number={activeStepNumber}
+                title={tEditor(`steps.${activeTab}.title`)}
+                intent={tEditor(`steps.${activeTab}.intent`)}
+              />
+
+              {activeTab === 'infos' && (
+                <CourseEditor course={course} salesCount={salesCount} priciest={null} updateAction={updateMyCourseAction} />
+              )}
+              {activeTab === 'plan' && (
+                <LessonsManager
+                  slug={course.slug}
+                  lessons={course.lessons}
+                  chapters={course.chapters}
+                  isDraft={isDraft}
+                  bilingual={course.bilingual}
+                  primaryLocale={course.primary_locale}
+                  actions={lessonActions}
+                />
+              )}
+              {activeTab === 'medias' && (
+                <ImagesManager slug={course.slug} mainImage={course.mainImage} secondary={course.secondaryImages} actions={imageActions} />
+              )}
+              {activeTab === 'ressources' && (
+                <CourseResourcesPanel slug={course.slug} resources={course.resources} updateAction={updateMyCourseAction} />
+              )}
+            </div>
+          </div>
         </div>
       </Container>
     </Section>

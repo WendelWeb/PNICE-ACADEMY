@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { IconDeviceFloppy, IconLoader2 } from '@tabler/icons-react';
+import { IconDeviceFloppy, IconLoader2, IconLink } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
 import { buttonClasses } from '@/components/ui/Button';
 import { updateCourseAction } from '@/lib/admin/content-actions';
@@ -65,16 +65,26 @@ export function CourseResourcesPanel({
   return (
     <div className="space-y-4">
       <section className="rounded-xl border border-ink/12 bg-paper-light p-4">
-        <ResourcesEditor
-          label={t('resourcesLabel')}
-          resources={list}
-          onChange={(r) => {
-            setList(r);
-            setSave('idle');
-          }}
-          serverError={err?.startsWith('resource_') ? err : null}
-        />
-        <p className="mt-1 text-[11px] leading-snug text-graphite/55">{t('resourcesHelp')}</p>
+        <div className="mb-2 flex items-start gap-2">
+          <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md bg-ink/[0.06] text-ink/50" aria-hidden>
+            <IconLink size={14} />
+          </span>
+          <div className="min-w-0">
+            <span className="font-mono text-[10px] uppercase tracking-wide text-ink/55">{t('resourcesLabel')}</span>
+            <p className="mt-0.5 text-[11px] leading-snug text-ink/60">{t('resourcesHelp')}</p>
+          </div>
+        </div>
+        <div className="sm:pl-8">
+          <ResourcesEditor
+            label=""
+            resources={list}
+            onChange={(r) => {
+              setList(r);
+              setSave('idle');
+            }}
+            serverError={err?.startsWith('resource_') ? err : null}
+          />
+        </div>
       </section>
 
       <div className="flex items-center gap-3 rounded-xl border border-ink/12 bg-paper-light px-4 py-2.5">

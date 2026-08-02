@@ -17,7 +17,8 @@
     "subscribe": "Pran abonman an",
     "seeAll": "Wè tout fòmasyon yo",
     "or": "oswa",
-    "demo": "Demo — pa aktif"
+    "demo": "Demo — pa aktif",
+    "example": "Egzanp"
   },
   "footer": {
     "tagline": "Konesans pratik ki fè lajan",
@@ -644,6 +645,28 @@
         "submit": "Kreye an bwouyon",
         "titleRequired": "Yon tit obligatwa.",
         "error": "Erè."
+      },
+      "editor": {
+        "checklist": "Bon de kontwòl",
+        "optional": "Opsyonèl",
+        "steps": {
+          "infos": {
+            "title": "Sa ki esansyèl la",
+            "intent": "Non kou a, pri li, ak sa ki fè l espesyal."
+          },
+          "plan": {
+            "title": "Plan an",
+            "intent": "Chapit ak leson yo — kè fòmasyon an."
+          },
+          "medias": {
+            "title": "Imaj",
+            "intent": "Foto ki abiye kou a sou paj vant lan."
+          },
+          "ressources": {
+            "title": "Resous",
+            "intent": "Lyen ak fichye siplemantè pou elèv yo (opsyonèl)."
+          }
+        }
       }
     }
   },
@@ -1883,7 +1906,42 @@
         "saved": "Anrejistre ✓",
         "saving": "Anrejistreman…",
         "unsaved": "Chanjman pa anrejistre",
-        "error": "Erè"
+        "error": "Erè",
+        "hints": {
+          "code": "Kòd sa a fèt otomatikman — ou pa ka chanje l.",
+          "slug": "Adrès entènèt kou a — li fèt otomatikman tou.",
+          "icon": "Ikòn ki reprezante kategori kou a nan katalòg la.",
+          "title": "Non fòmasyon an — sa elèv la wè an premye.",
+          "tagline": "Yon fraz kout ki eksplike sa kou a ap ba ou.",
+          "audience": "Ki moun kou sa a fèt pou.",
+          "learn": "Sa elèv la ap kapab fè apre kou a.",
+          "price": "Pri final elèv la peye pou kou sa a.",
+          "level": "Nivo eksperyans elèv la bezwen deja genyen.",
+          "promise": "Rezilta konkrè elèv la ap jwenn nan fen kou a.",
+          "problem": "Pwoblèm reyèl kou a ap rezoud pou elèv la.",
+          "deliverables": "Sa elèv la ap resevwa avèk kou a.",
+          "requirements": "Sa elèv la bezwen genyen deja anvan li kòmanse.",
+          "faq": "Kesyon elèv yo poze souvan sou kou a."
+        },
+        "examples": {
+          "title": "Biznis shipping Etazini-Ayiti",
+          "tagline": "Monte pwòp biznis ekspedisyon ou, soti nan zewo",
+          "audience": "Moun ki vle yon vrè biznis, pa yon sèvis yon sèl fwa.",
+          "learn": "Jwenn epi negosye ak yon depo nan Miami",
+          "price": "39",
+          "level": "Entèmedyè",
+          "promise": "W ap gen yon plan konplè pou louvri pwòp biznis shipping ou, ak premye kliyan ou yo.",
+          "problem": "Ou pa konn kijan pou kòmanse: ki depo, ki pri, ki dokiman.",
+          "deliverables": "Yon modèl pou kalkile pri pa pwa",
+          "requirements": "Yon ti bidjè pou kòmanse",
+          "faqQ": "Èske m bezwen anpil lajan pou kòmanse?",
+          "faqA": "Non, ou ka kòmanse piti epi grandi avèk premye kliyan yo."
+        },
+        "aria": {
+          "moveUp": "Monte",
+          "moveDown": "Desann",
+          "remove": "Retire"
+        }
       },
       "lessons": {
         "title": "Plan kou a",
@@ -1935,6 +1993,9 @@
         "chapterTitleFr": "Tit chapit la (fr)",
         "chapterSummaryHt": "Rezime (ht, opsyonèl)",
         "chapterSummaryFr": "Rezime (fr, opsyonèl)",
+        "chapterTitleLabel": "Tit chapit la",
+        "chapterSummaryLabel": "Rezime chapit la",
+        "chapterBadge": "Chapit {n}",
         "addLessonInChapter": "Ajoute yon leson isit",
         "collapseChapter": "Fèmen chapit la",
         "expandChapter": "Ouvri chapit la",
@@ -1947,17 +2008,44 @@
         "notesToggle": "Nòt & resous",
         "notesTitle": "Nòt pou elèv la",
         "notesHt": "Nòt (ht)",
-        "notesFr": "Nòt (fr)"
+        "notesFr": "Nòt (fr)",
+        "hints": {
+          "lessonTitle": "Non leson an — kout epi klè.",
+          "lessonDesc": "Kèk fraz ki eksplike sa leson an montre.",
+          "duration": "Konbyen tan videyo a dire (minit:segonn).",
+          "preview": "Si sa aktive, tout moun ka gade leson sa a gratis, menm san yo pa achte kou a.",
+          "notes": "Enfòmasyon siplemantè ou vle bay elèv la apre videyo a.",
+          "resources": "Lyen oswa fichye ki ede elèv la — yo ap parèt anba leson an, disponib pou elèv ki enskri a.",
+          "video": "Videyo prensipal leson an.",
+          "chapterTitle": "Non pati/chapit la.",
+          "chapterSummary": "Yon fraz kout ki rezime chapit la."
+        },
+        "examples": {
+          "lessonTitle": "Chwazi epi negosye ak yon depo nan Miami",
+          "lessonDesc": "Jwenn yon depo nan Miami epi negosye bon kondisyon.",
+          "notes": "Pratike sa nou aprann nan videyo a anvan ou pase nan pwochen leson an.",
+          "chapterTitle": "Pati 1 : Kòmanse biznis la",
+          "chapterSummary": "Yon apèsi rapid sou sa n ap kouvri nan pati sa a."
+        },
+        "emptyLessonsTitle": "Poko gen leson",
+        "emptyLessonsLine": "Ajoute premye leson w la pou kòmanse bati kou a.",
+        "emptyChaptersNote": "Ou ka gwoupe leson yo an chapit pou pi klè, tankou pati nan yon liv (opsyonèl).",
+        "uploadTakesTime": "Yon videyo ka pran kèk minit pou l monte — ou ka kontinye travay pandan l ap monte."
       },
       "images": {
         "title": "Imaj",
         "note": "Vrè upload nan Bunny Storage + redimansyònman = pou branche. Pou kounye a, kole yon URL imaj.",
         "main": "Imaj prensipal",
+        "mainHint": "Premye imaj moun wè pou kou sa a, sou katalòg la ak paj vant lan.",
         "setMain": "Defini",
         "secondary": "Imaj segondè (dyaporama)",
+        "secondaryHint": "Lòt imaj ki parèt nan dyaporama a sou paj vant lan.",
         "add": "Ajoute",
         "alt": "Tèks alt",
-        "urlPlaceholder": "https://… (URL imaj la)"
+        "urlPlaceholder": "https://… (URL imaj la)",
+        "moveUpAria": "Monte imaj la",
+        "moveDownAria": "Desann imaj la",
+        "removeAria": "Retire imaj la"
       },
       "publish": {
         "status": {
@@ -1997,13 +2085,16 @@
       },
       "resources": {
         "title": "Resous",
-        "empty": "Pa gen resous.",
+        "empty": "Poko gen resous. Yon lyen oswa yon fichye ki ede elèv la.",
         "add": "Ajoute yon resous",
         "labelHt": "Tit lyen an (ht)",
         "labelFr": "Tit lyen an (fr)",
         "kindLink": "Lyen",
         "kindFile": "Fichye",
         "urlPlaceholder": "https://…",
+        "urlPlaceholderLink": "https://drive.google.com/dosye-mwen",
+        "urlPlaceholderFile": "https://drive.google.com/fichye-pdf-mwen",
+        "studentNote": "Resous sa yo parèt bay elèv ki enskri nan kou a.",
         "remove": "Retire",
         "urlInvalid": "URL envalid — sèvi ak http:// oswa https://",
         "errors": {

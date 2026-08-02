@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { IconPlus, IconLoader2 } from '@tabler/icons-react';
+import { IconPlus, IconLoader2, IconBooks, IconInfoCircle } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
 import {
   addLessonAction,
@@ -101,6 +101,33 @@ export function PlanEditor({
   const act = (fn: () => Promise<{ ok: boolean }>) => start(async () => { if ((await fn()).ok) router.refresh(); });
   const toggleExpand = (lessonId: string) => setExpandedId((cur) => (cur === lessonId ? null : lessonId));
 
+  /**
+   * The studio bon-de-contrôle rail's jump-to-field (Task D1 — le
+   * bordereau): a checklist row for a per-lesson gap (missing video, missing
+   * title, no preview lesson yet) points at `#lesson-<id>` — but that
+   * lesson's actual fields only exist once its accordion row is expanded.
+   * Two triggers open it here: (1) arriving on THIS step already carrying
+   * the hash (a cross-step click navigated via `router.push(...#lesson-x)`,
+   * so this component mounts fresh with the hash already in the URL), and
+   * (2) a live `studio:jump-lesson` event (a same-step click — no
+   * navigation, so nothing remounts this component to re-read the hash).
+   * Either way this only ever sets local accordion state; the actual
+   * scroll+focus is `components/teacher/studio/jump.ts`'s job, called by
+   * the rail itself once the row (and, after this effect, its fields) exist.
+   */
+  useEffect(() => {
+    function expandFor(anchorId: string | null) {
+      const id = anchorId?.match(/^lesson-(.+)$/)?.[1];
+      if (id && lessons.some((l) => l.id === id)) setExpandedId(id);
+    }
+    expandFor(typeof window !== 'undefined' ? window.location.hash.slice(1) : null);
+    function onJump(e: Event) {
+      expandFor((e as CustomEvent<{ anchorId?: string }>).detail?.anchorId ?? null);
+    }
+    window.addEventListener('studio:jump-lesson', onJump);
+    return () => window.removeEventListener('studio:jump-lesson', onJump);
+  }, [lessons]);
+
   const chaptersSorted = [...chapters].sort((a, b) => a.sortOrder - b.sortOrder);
   const byChapter = new Map<string, AdminLesson[]>();
   for (const l of lessons) {
@@ -112,6 +139,28 @@ export function PlanEditor({
   const ungrouped = lessons.filter((l) => !l.chapterId);
   const isEmpty = chaptersSorted.length === 0 && lessons.length === 0;
 
+  // The single "Ajoute yon leson" control (Task D2 #2 — empty states become
+  // invitations): SAME id, SAME action wiring either way — only its home
+  // (inside the big invitation block vs the small action row below) and its
+  // styling change depending on `isEmpty`, so the D1 bon-de-contrôle anchor
+  // (`plan-add-lesson`, see readiness-anchors.ts) always resolves to exactly
+  // one focusable element.
+  const addLessonButton = (
+    <button
+      id="plan-add-lesson"
+      type="button"
+      onClick={() => act(() => actions.addLesson(slug))}
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded font-mono text-[11px] text-teal hover:underline',
+        focusRing,
+        isEmpty &&
+          'rounded-lg border border-teal/40 bg-teal/10 px-4 py-2.5 text-[12px] font-semibold no-underline hover:bg-teal/15 hover:no-underline',
+      )}
+    >
+      <IconPlus size={isEmpty ? 15 : 13} /> {t('add')}
+    </button>
+  );
+
   return (
     <section className="rounded-xl border border-ink/12 bg-paper-light p-4">
       <div className="flex items-center justify-between">
@@ -120,7 +169,14 @@ export function PlanEditor({
       </div>
 
       {isEmpty ? (
-        <p className="mt-3 font-mono text-xs text-graphite/55">{t('empty')}</p>
+        <div className="mt-3 flex flex-col items-center gap-2 rounded-xl border border-dashed border-ink/20 bg-paper px-4 py-8 text-center">
+          <span className="grid h-11 w-11 place-items-center rounded-full bg-ochre/10 text-ochre" aria-hidden>
+            <IconBooks size={22} />
+          </span>
+          <p className="font-display text-base font-bold leading-tight text-ink">{t('emptyLessonsTitle')}</p>
+          <p className="max-w-xs text-[12px] leading-snug text-graphite/60">{t('emptyLessonsLine')}</p>
+          {addLessonButton}
+        </div>
       ) : (
         <div className="mt-3 space-y-3">
           {chaptersSorted.map((chapter, i) => (
@@ -173,14 +229,13 @@ export function PlanEditor({
         </div>
       )}
 
-      <div className="mt-3 flex flex-wrap gap-4">
-        <button
-          type="button"
-          onClick={() => act(() => actions.addLesson(slug))}
-          className={cn('inline-flex items-center gap-1 font-mono text-[11px] text-teal hover:underline', focusRing)}
-        >
-          <IconPlus size={13} /> {t('add')}
-        </button>
+      <div className="mt-3 flex flex-wrap items-center gap-4">
+        {/* `id` (on `addLessonButton`, defined above) is the studio
+            bon-de-contrôle rail's jump target for `hasLesson` and every
+            per-lesson gap on a lesson-less course (Task D1) — hidden here
+            when `isEmpty` because the SAME button already lives in the
+            invitation block above. */}
+        {!isEmpty && addLessonButton}
         <button
           type="button"
           onClick={() => act(() => actions.createChapter(slug, { title_ht: '', title_fr: '' }))}
@@ -188,6 +243,13 @@ export function PlanEditor({
         >
           <IconPlus size={13} /> {t('addChapter')}
         </button>
+        {/* Chapters group lessons but stay optional (Task D2 #2 — "no
+            chapters" gets an explanation, not silence). */}
+        {chaptersSorted.length === 0 && (
+          <span className="flex items-center gap-1 font-mono text-[10px] leading-snug text-ink/45">
+            <IconInfoCircle size={12} className="shrink-0" aria-hidden /> {t('emptyChaptersNote')}
+          </span>
+        )}
       </div>
     </section>
   );
