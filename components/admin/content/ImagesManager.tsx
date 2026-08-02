@@ -61,8 +61,9 @@ export function ImagesManager({
       <h2 className="font-mono text-[11px] uppercase tracking-wide text-ink/55">{t('title')}</h2>
       <p className="mt-1.5 text-[11px] leading-snug text-graphite/60">{t('note')}</p>
 
-      {/* Main image */}
-      <div className="mt-3">
+      {/* Main image — `id` is the studio bon-de-contrôle rail's jump target
+          for `mainImageSet` (Task D1). */}
+      <div id="field-main-image" className="mt-3">
         <span className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-ink/55">{t('main')}</span>
         <div className="flex items-center gap-2">
           {main ? (

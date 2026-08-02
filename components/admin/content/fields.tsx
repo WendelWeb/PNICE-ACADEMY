@@ -36,6 +36,7 @@ export function BilingualText({
   area,
   placeholder,
   mono,
+  id,
 }: {
   label: string;
   ht: string;
@@ -45,13 +46,19 @@ export function BilingualText({
   area?: boolean;
   placeholder?: string;
   mono?: 'ht' | 'fr';
+  /** Anchor id for the studio's "bon de contrôle" rail (Task D1 — le
+   *  bordereau): a checklist row jumps here via `scrollIntoView` + focuses
+   *  the first empty input inside — see `components/teacher/studio/jump.ts`.
+   *  Omitted everywhere this isn't a jump target (the vast majority of
+   *  `BilingualText` call sites). */
+  id?: string;
 }) {
   const Field = area ? 'textarea' : 'input';
   if (mono) {
     const value = mono === 'ht' ? ht : fr;
     const onChange = mono === 'ht' ? onHt : onFr;
     return (
-      <label className="block">
+      <label id={id} className="block">
         <span className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-ink/55">
           {label} <span className="text-ink/40">· {MONO_LOCALE_NAME[mono]}</span>
         </span>
@@ -60,7 +67,7 @@ export function BilingualText({
     );
   }
   return (
-    <div>
+    <div id={id}>
       <span className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-ink/55">{label}</span>
       <div className="grid gap-2 sm:grid-cols-2">
         <label className="block">

@@ -144,8 +144,9 @@ export function CourseEditor({
           <BilingualText label={t('audience')} area mono={mono} ht={c.audience_ht} fr={c.audience_fr} onHt={(v) => set('audience_ht', v)} onFr={(v) => set('audience_fr', v)} />
           <PairedList label={t('learn')} mono={mono} ht={c.learn_ht} fr={c.learn_fr} onChange={(ht, fr) => { set('learn_ht', ht); set('learn_fr', fr); }} />
 
-          {/* Price + impact (task 3) */}
-          <Field label={t('price')}>
+          {/* Price + impact (task 3) — `id` is the studio bon-de-contrôle
+              rail's jump target for `pricePositive` (Task D1). */}
+          <Field label={t('price')} id="field-price">
             <span className="flex items-center gap-1 font-mono text-sm text-ink/55">$<input type="number" min="0" value={priceDollars} onChange={(e) => { setPriceDollars(e.target.value); setSave('idle'); }} className={cn(inputCls, 'w-24')} /></span>
           </Field>
           <div className="rounded-lg bg-paper p-3 text-xs">
@@ -167,7 +168,7 @@ export function CourseEditor({
         <h2 className="font-mono text-[11px] uppercase tracking-wide text-ink/55">{t('salesPage')}</h2>
         <div className="mt-3 space-y-3">
           <BilingualText label={t('level')} mono={mono} ht={c.level_ht} fr={c.level_fr} onHt={(v) => set('level_ht', v)} onFr={(v) => set('level_fr', v)} />
-          <BilingualText label={t('promise')} area mono={mono} ht={c.promise_ht} fr={c.promise_fr} onHt={(v) => set('promise_ht', v)} onFr={(v) => set('promise_fr', v)} />
+          <BilingualText id="field-promise" label={t('promise')} area mono={mono} ht={c.promise_ht} fr={c.promise_fr} onHt={(v) => set('promise_ht', v)} onFr={(v) => set('promise_fr', v)} />
           <BilingualText label={t('problem')} area mono={mono} ht={c.problem_ht} fr={c.problem_fr} onHt={(v) => set('problem_ht', v)} onFr={(v) => set('problem_fr', v)} />
           <PairedList label={t('deliverables')} mono={mono} ht={c.deliverables_ht} fr={c.deliverables_fr} onChange={(ht, fr) => { set('deliverables_ht', ht); set('deliverables_fr', fr); }} />
           <PairedList label={t('requirements')} mono={mono} ht={c.requirements_ht} fr={c.requirements_fr} onChange={(ht, fr) => { set('requirements_ht', ht); set('requirements_fr', fr); }} />
@@ -197,9 +198,9 @@ export function CourseEditor({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children, id }: { label: string; children: React.ReactNode; id?: string }) {
   return (
-    <label className="block">
+    <label id={id} className="block">
       <span className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-ink/55">{label}</span>
       {children}
     </label>

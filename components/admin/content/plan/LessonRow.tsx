@@ -55,7 +55,11 @@ export function LessonRow({
     (locale === 'ht' ? lesson.title_ht : lesson.title_fr) || lesson.title_ht || lesson.title_fr || t('untitledLesson');
 
   return (
-    <li className={cn('rounded-lg border bg-paper', noVideo && !isDraft ? 'border-stampred/40' : 'border-ink/10')}>
+    // `id` is the studio bon-de-contrôle rail's jump target for this
+    // lesson's readiness gaps (missing video/title, no preview lesson yet —
+    // Task D1); `PlanEditor`'s hash/`studio:jump-lesson` listener expands
+    // this row first so the jump lands on the real field, not just the row.
+    <li id={`lesson-${lesson.id}`} className={cn('rounded-lg border bg-paper', noVideo && !isDraft ? 'border-stampred/40' : 'border-ink/10')}>
       <div className="flex items-center gap-2 p-2.5">
         <span className="shrink-0 font-mono text-[10px] text-ink/40">{index + 1}</span>
 

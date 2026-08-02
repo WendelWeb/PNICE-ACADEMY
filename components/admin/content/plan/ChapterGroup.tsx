@@ -56,7 +56,11 @@ export function ChapterGroup({
   const commit = (patch: ChapterPatch) => onAct(() => actions.updateChapter(slug, chapter.id, patch));
 
   return (
-    <div className="rounded-lg border border-ink/15 bg-paper/70 p-3">
+    // `id` is the studio bon-de-contrôle rail's jump target for
+    // `allChaptersTitled` (Task D1) — chapters are expanded by default
+    // (`expanded` state above defaults to `true`), so its title inputs are
+    // always in the DOM, no accordion coordination needed.
+    <div id={`chapter-${chapter.id}`} className="rounded-lg border border-ink/15 bg-paper/70 p-3">
       <div className="flex items-start gap-2">
         <button
           type="button"

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { IconPlus, IconLoader2 } from '@tabler/icons-react';
@@ -101,6 +101,33 @@ export function PlanEditor({
   const act = (fn: () => Promise<{ ok: boolean }>) => start(async () => { if ((await fn()).ok) router.refresh(); });
   const toggleExpand = (lessonId: string) => setExpandedId((cur) => (cur === lessonId ? null : lessonId));
 
+  /**
+   * The studio bon-de-contrôle rail's jump-to-field (Task D1 — le
+   * bordereau): a checklist row for a per-lesson gap (missing video, missing
+   * title, no preview lesson yet) points at `#lesson-<id>` — but that
+   * lesson's actual fields only exist once its accordion row is expanded.
+   * Two triggers open it here: (1) arriving on THIS step already carrying
+   * the hash (a cross-step click navigated via `router.push(...#lesson-x)`,
+   * so this component mounts fresh with the hash already in the URL), and
+   * (2) a live `studio:jump-lesson` event (a same-step click — no
+   * navigation, so nothing remounts this component to re-read the hash).
+   * Either way this only ever sets local accordion state; the actual
+   * scroll+focus is `components/teacher/studio/jump.ts`'s job, called by
+   * the rail itself once the row (and, after this effect, its fields) exist.
+   */
+  useEffect(() => {
+    function expandFor(anchorId: string | null) {
+      const id = anchorId?.match(/^lesson-(.+)$/)?.[1];
+      if (id && lessons.some((l) => l.id === id)) setExpandedId(id);
+    }
+    expandFor(typeof window !== 'undefined' ? window.location.hash.slice(1) : null);
+    function onJump(e: Event) {
+      expandFor((e as CustomEvent<{ anchorId?: string }>).detail?.anchorId ?? null);
+    }
+    window.addEventListener('studio:jump-lesson', onJump);
+    return () => window.removeEventListener('studio:jump-lesson', onJump);
+  }, [lessons]);
+
   const chaptersSorted = [...chapters].sort((a, b) => a.sortOrder - b.sortOrder);
   const byChapter = new Map<string, AdminLesson[]>();
   for (const l of lessons) {
@@ -174,7 +201,11 @@ export function PlanEditor({
       )}
 
       <div className="mt-3 flex flex-wrap gap-4">
+        {/* `id` is the studio bon-de-contrôle rail's jump target for
+            `hasLesson` and every per-lesson gap on a lesson-less course
+            (Task D1). */}
         <button
+          id="plan-add-lesson"
           type="button"
           onClick={() => act(() => actions.addLesson(slug))}
           className={cn('inline-flex items-center gap-1 font-mono text-[11px] text-teal hover:underline', focusRing)}
