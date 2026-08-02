@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { IconPlus, IconTrash, IconAlertTriangle } from '@tabler/icons-react';
+import { IconPlus, IconTrash, IconAlertTriangle, IconLink, IconFile } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
 import { isValidHttpUrl } from '@/lib/teacher/apply-validation';
 import type { CourseResource } from '@/db/schema';
@@ -77,11 +77,16 @@ export function ResourcesEditor({
           rather than rendering an empty, still-margined line. */}
       {heading && <span className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-ink/55">{heading}</span>}
 
-      {resources.length === 0 && <p className="font-mono text-[11px] text-graphite/50">{t('empty')}</p>}
+      {resources.length === 0 && (
+        <p className="flex items-center gap-1.5 font-mono text-[11px] leading-snug text-graphite/50">
+          <IconLink size={13} className="shrink-0 text-ink/30" aria-hidden /> {t('empty')}
+        </p>
+      )}
 
       <ul className="space-y-1.5">
         {resources.map((r, i) => {
           const urlOk = r.url.trim() === '' || isValidHttpUrl(r.url);
+          const KindIcon = r.kind === 'file' ? IconFile : IconLink;
           return (
             <li key={i} className="space-y-1.5 rounded-lg border border-ink/10 bg-paper p-2">
               <div className="grid gap-1.5 sm:grid-cols-2">
@@ -89,19 +94,25 @@ export function ResourcesEditor({
                   value={r.label_ht}
                   onChange={(e) => setRow(i, { label_ht: e.target.value })}
                   placeholder={t('labelHt')}
+                  aria-label={t('labelHt')}
                   className={inputCls}
                 />
                 <input
                   value={r.label_fr}
                   onChange={(e) => setRow(i, { label_fr: e.target.value })}
                   placeholder={t('labelFr')}
+                  aria-label={t('labelFr')}
                   className={inputCls}
                 />
               </div>
               <div className="flex items-center gap-1.5">
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded border border-ink/10 bg-paper-light text-ink/45" aria-hidden>
+                  <KindIcon size={14} />
+                </span>
                 <select
                   value={r.kind}
                   onChange={(e) => setRow(i, { kind: e.target.value as CourseResource['kind'] })}
+                  aria-label={t('kindLink') + ' / ' + t('kindFile')}
                   className={cn(inputCls, 'w-28 shrink-0 cursor-pointer')}
                 >
                   <option value="link">{t('kindLink')}</option>
@@ -110,13 +121,15 @@ export function ResourcesEditor({
                 <input
                   value={r.url}
                   onChange={(e) => setRow(i, { url: e.target.value })}
-                  placeholder={t('urlPlaceholder')}
+                  placeholder={r.kind === 'file' ? t('urlPlaceholderFile') : t('urlPlaceholderLink')}
+                  aria-label="URL"
                   className={cn(inputCls, 'flex-1', !urlOk && 'border-stampred/60')}
                 />
                 <button
                   type="button"
                   onClick={() => remove(i)}
                   aria-label={t('remove')}
+                  title={t('remove')}
                   className={cn(
                     'grid h-7 w-7 shrink-0 place-items-center rounded border border-ink/15 text-stampred hover:bg-ink/[0.04]',
                     focusRing,
@@ -142,6 +155,10 @@ export function ResourcesEditor({
       >
         <IconPlus size={12} /> {t('add')}
       </button>
+
+      {resources.length > 0 && (
+        <p className="mt-1.5 text-[11px] leading-snug text-ink/45">{t('studentNote')}</p>
+      )}
 
       {errorText && (
         <p className="mt-1.5 flex items-center gap-1 font-mono text-[10px] text-stampred">

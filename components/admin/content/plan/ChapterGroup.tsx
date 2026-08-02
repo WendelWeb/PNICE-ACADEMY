@@ -2,13 +2,17 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { IconPlus, IconTrash, IconChevronUp, IconChevronDown, IconChevronRight, IconAlertTriangle } from '@tabler/icons-react';
+import { IconPlus, IconTrash, IconChevronUp, IconChevronDown, IconChevronRight, IconAlertTriangle, IconFolder, IconNotes } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
 import type { AdminChapter, AdminLesson, ChapterPatch } from '@/lib/courses/write';
-import { inputCls } from '../fields';
+import { Field, inputCls } from '../fields';
 import { focusRing, iconBtn } from './shared';
 import { LessonRow } from './LessonRow';
 import type { LessonActions } from './types';
+
+function hasText(v: string): boolean {
+  return v.trim() !== '';
+}
 
 /** A course chapter (part/module), its own lessons list, up/down/delete —
  *  unchanged behaviour from the pre-split `LessonsManager.tsx`, just moved
@@ -60,59 +64,84 @@ export function ChapterGroup({
     // `allChaptersTitled` (Task D1) — chapters are expanded by default
     // (`expanded` state above defaults to `true`), so its title inputs are
     // always in the DOM, no accordion coordination needed.
-    <div id={`chapter-${chapter.id}`} className="rounded-lg border border-ink/15 bg-paper/70 p-3">
+    //
+    // The "kraft band" (Task D2 #5): a chapter is a structural BAND —
+    // solid `bg-paper` (the brand's own kraft tone), a visible left accent
+    // border, and an eyebrow badge — visually distinct from `LessonRow`'s
+    // lighter `bg-paper-light` card floating inside it, so the
+    // chapter→lesson hierarchy reads at a glance, not just from indentation.
+    <div id={`chapter-${chapter.id}`} className="rounded-lg border border-ink/20 border-l-4 border-l-ink/30 bg-paper p-3">
+      <p className="mb-2 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wide text-ink/45">
+        <IconFolder size={13} aria-hidden /> {t('chapterBadge', { n: index + 1 })}
+      </p>
       <div className="flex items-start gap-2">
         <button
           type="button"
           onClick={() => setExpanded((e) => !e)}
+          aria-expanded={expanded}
           aria-label={expanded ? t('collapseChapter') : t('expandChapter')}
+          title={expanded ? t('collapseChapter') : t('expandChapter')}
           className={iconBtn}
         >
           {expanded ? <IconChevronDown size={13} /> : <IconChevronRight size={13} />}
         </button>
 
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <div className="grid gap-1.5 sm:grid-cols-2">
-            <input
-              value={titleHt}
-              onChange={(e) => setTitleHt(e.target.value)}
-              onBlur={() => titleHt !== chapter.title_ht && commit({ title_ht: titleHt })}
-              placeholder={t('chapterTitleHt')}
-              className={cn(inputCls, 'font-semibold')}
-            />
-            <input
-              value={titleFr}
-              onChange={(e) => setTitleFr(e.target.value)}
-              onBlur={() => titleFr !== chapter.title_fr && commit({ title_fr: titleFr })}
-              placeholder={t('chapterTitleFr')}
-              className={cn(inputCls, 'font-semibold')}
-            />
-          </div>
-          {expanded && (
+        <div className="min-w-0 flex-1 space-y-2">
+          <Field
+            icon={IconFolder}
+            label={t('chapterTitleLabel')}
+            hint={t('hints.chapterTitle')}
+            example={t('examples.chapterTitle')}
+            filled={hasText(titleHt) && hasText(titleFr)}
+          >
             <div className="grid gap-1.5 sm:grid-cols-2">
               <input
-                value={summaryHt}
-                onChange={(e) => setSummaryHt(e.target.value)}
-                onBlur={() => summaryHt !== chapter.summary_ht && commit({ summary_ht: summaryHt })}
-                placeholder={t('chapterSummaryHt')}
-                className={inputCls}
+                value={titleHt}
+                onChange={(e) => setTitleHt(e.target.value)}
+                onBlur={() => titleHt !== chapter.title_ht && commit({ title_ht: titleHt })}
+                placeholder={t('chapterTitleHt')}
+                aria-label={`${t('chapterTitleLabel')} · Kreyòl`}
+                className={cn(inputCls, 'font-semibold')}
               />
               <input
-                value={summaryFr}
-                onChange={(e) => setSummaryFr(e.target.value)}
-                onBlur={() => summaryFr !== chapter.summary_fr && commit({ summary_fr: summaryFr })}
-                placeholder={t('chapterSummaryFr')}
-                className={inputCls}
+                value={titleFr}
+                onChange={(e) => setTitleFr(e.target.value)}
+                onBlur={() => titleFr !== chapter.title_fr && commit({ title_fr: titleFr })}
+                placeholder={t('chapterTitleFr')}
+                aria-label={`${t('chapterTitleLabel')} · Français`}
+                className={cn(inputCls, 'font-semibold')}
               />
             </div>
+          </Field>
+          {expanded && (
+            <Field icon={IconNotes} label={t('chapterSummaryLabel')} hint={t('hints.chapterSummary')} example={t('examples.chapterSummary')}>
+              <div className="grid gap-1.5 sm:grid-cols-2">
+                <input
+                  value={summaryHt}
+                  onChange={(e) => setSummaryHt(e.target.value)}
+                  onBlur={() => summaryHt !== chapter.summary_ht && commit({ summary_ht: summaryHt })}
+                  placeholder={t('chapterSummaryHt')}
+                  aria-label={`${t('chapterSummaryLabel')} · Kreyòl`}
+                  className={inputCls}
+                />
+                <input
+                  value={summaryFr}
+                  onChange={(e) => setSummaryFr(e.target.value)}
+                  onBlur={() => summaryFr !== chapter.summary_fr && commit({ summary_fr: summaryFr })}
+                  placeholder={t('chapterSummaryFr')}
+                  aria-label={`${t('chapterSummaryLabel')} · Français`}
+                  className={inputCls}
+                />
+              </div>
+            </Field>
           )}
         </div>
 
         <span className="flex shrink-0 flex-col gap-0.5">
-          <button type="button" onClick={() => onAct(() => actions.reorderChapter(slug, chapter.id, 'up'))} disabled={index === 0} className={iconBtn}><IconChevronUp size={12} /></button>
-          <button type="button" onClick={() => onAct(() => actions.reorderChapter(slug, chapter.id, 'down'))} disabled={index === total - 1} className={iconBtn}><IconChevronDown size={12} /></button>
+          <button type="button" onClick={() => onAct(() => actions.reorderChapter(slug, chapter.id, 'up'))} disabled={index === 0} aria-label={t('moveUp')} title={t('moveUp')} className={iconBtn}><IconChevronUp size={12} /></button>
+          <button type="button" onClick={() => onAct(() => actions.reorderChapter(slug, chapter.id, 'down'))} disabled={index === total - 1} aria-label={t('moveDown')} title={t('moveDown')} className={iconBtn}><IconChevronDown size={12} /></button>
           {!confirmDelete && (
-            <button type="button" aria-label={t('deleteChapterAria')} onClick={() => setConfirmDelete(true)} className={cn(iconBtn, 'text-stampred')}><IconTrash size={12} /></button>
+            <button type="button" aria-label={t('deleteChapterAria')} title={t('deleteChapterAria')} onClick={() => setConfirmDelete(true)} className={cn(iconBtn, 'text-stampred')}><IconTrash size={12} /></button>
           )}
         </span>
       </div>

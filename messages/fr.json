@@ -17,7 +17,8 @@
     "subscribe": "Prendre l'abonnement",
     "seeAll": "Voir toutes les formations",
     "or": "ou",
-    "demo": "Démo — non actif"
+    "demo": "Démo — non actif",
+    "example": "Exemple"
   },
   "footer": {
     "tagline": "Des savoir-faire concrets qui rapportent",
@@ -644,6 +645,28 @@
         "submit": "Créer en brouillon",
         "titleRequired": "Un titre est requis.",
         "error": "Erreur."
+      },
+      "editor": {
+        "checklist": "Bordereau de contrôle",
+        "optional": "Optionnel",
+        "steps": {
+          "infos": {
+            "title": "L'essentiel",
+            "intent": "Le nom du cours, son prix, et ce qui le rend spécial."
+          },
+          "plan": {
+            "title": "Le plan",
+            "intent": "Les chapitres et les leçons — le cœur de la formation."
+          },
+          "medias": {
+            "title": "Images",
+            "intent": "Les images qui habillent le cours sur la page de vente."
+          },
+          "ressources": {
+            "title": "Ressources",
+            "intent": "Liens et fichiers supplémentaires pour les élèves (optionnel)."
+          }
+        }
       }
     }
   },
@@ -1883,7 +1906,42 @@
         "saved": "Enregistré ✓",
         "saving": "Enregistrement…",
         "unsaved": "Modifications non enregistrées",
-        "error": "Erreur"
+        "error": "Erreur",
+        "hints": {
+          "code": "Ce code est généré automatiquement — tu ne peux pas le modifier.",
+          "slug": "L'adresse web du cours — elle aussi générée automatiquement.",
+          "icon": "L'icône qui représente la catégorie du cours dans le catalogue.",
+          "title": "Le nom de la formation — la première chose que l'élève voit.",
+          "tagline": "Une phrase courte qui explique ce que le cours apporte.",
+          "audience": "À qui ce cours s'adresse.",
+          "learn": "Ce que l'élève saura faire après le cours.",
+          "price": "Le prix final que l'élève paie pour ce cours.",
+          "level": "Le niveau d'expérience déjà requis.",
+          "promise": "Le résultat concret que l'élève obtient à la fin.",
+          "problem": "Le vrai problème que le cours résout pour l'élève.",
+          "deliverables": "Ce que l'élève reçoit avec le cours.",
+          "requirements": "Ce que l'élève doit déjà avoir avant de commencer.",
+          "faq": "Les questions que les élèves posent souvent sur le cours."
+        },
+        "examples": {
+          "title": "Business shipping USA-Haïti",
+          "tagline": "Monte ton propre business d'expédition, à partir de zéro",
+          "audience": "Ceux qui veulent un vrai business, pas un service ponctuel.",
+          "learn": "Trouver et négocier avec un entrepôt à Miami",
+          "price": "39",
+          "level": "Intermédiaire",
+          "promise": "Tu auras un plan complet pour ouvrir ton propre business de shipping, avec tes premiers clients.",
+          "problem": "Tu ne sais pas comment démarrer : quel entrepôt, quels prix, quels documents.",
+          "deliverables": "Un modèle pour calculer le prix au poids",
+          "requirements": "Un petit budget de départ",
+          "faqQ": "Faut-il beaucoup d'argent pour démarrer ?",
+          "faqA": "Non, tu peux démarrer petit et grandir avec tes premiers clients."
+        },
+        "aria": {
+          "moveUp": "Monter",
+          "moveDown": "Descendre",
+          "remove": "Retirer"
+        }
       },
       "lessons": {
         "title": "Plan du cours",
@@ -1935,6 +1993,9 @@
         "chapterTitleFr": "Titre du chapitre (fr)",
         "chapterSummaryHt": "Résumé (ht, optionnel)",
         "chapterSummaryFr": "Résumé (fr, optionnel)",
+        "chapterTitleLabel": "Titre du chapitre",
+        "chapterSummaryLabel": "Résumé du chapitre",
+        "chapterBadge": "Chapitre {n}",
         "addLessonInChapter": "Ajouter une leçon ici",
         "collapseChapter": "Réduire le chapitre",
         "expandChapter": "Développer le chapitre",
@@ -1947,17 +2008,44 @@
         "notesToggle": "Notes & ressources",
         "notesTitle": "Notes pour l'élève",
         "notesHt": "Notes (ht)",
-        "notesFr": "Notes (fr)"
+        "notesFr": "Notes (fr)",
+        "hints": {
+          "lessonTitle": "Le nom de la leçon — court et clair.",
+          "lessonDesc": "Quelques phrases qui expliquent ce que montre la leçon.",
+          "duration": "La durée de la vidéo (minutes:secondes).",
+          "preview": "Si activé, tout le monde peut voir cette leçon gratuitement, même sans acheter le cours.",
+          "notes": "Informations supplémentaires à donner à l'élève après la vidéo.",
+          "resources": "Un lien ou un fichier qui aide l'élève — il apparaîtra sous la leçon, visible par l'élève inscrit.",
+          "video": "La vidéo principale de la leçon.",
+          "chapterTitle": "Le nom de la partie/chapitre.",
+          "chapterSummary": "Une phrase courte qui résume le chapitre."
+        },
+        "examples": {
+          "lessonTitle": "Choisir et négocier avec un entrepôt à Miami",
+          "lessonDesc": "Trouve un entrepôt à Miami et négocie de bonnes conditions.",
+          "notes": "Pratique ce qu'on a appris dans la vidéo avant de passer à la leçon suivante.",
+          "chapterTitle": "Partie 1 : Démarrer le business",
+          "chapterSummary": "Un aperçu rapide de ce qu'on va couvrir dans cette partie."
+        },
+        "emptyLessonsTitle": "Pas encore de leçon",
+        "emptyLessonsLine": "Ajoute ta première leçon pour commencer à bâtir le cours.",
+        "emptyChaptersNote": "Tu peux regrouper les leçons en chapitres pour plus de clarté, comme les parties d'un livre (optionnel).",
+        "uploadTakesTime": "Une vidéo peut prendre quelques minutes à s'envoyer — tu peux continuer à travailler pendant ce temps."
       },
       "images": {
         "title": "Images",
         "note": "Upload réel vers Bunny Storage + redimensionnement = à brancher. Pour l'instant, colle une URL d'image.",
         "main": "Image principale",
+        "mainHint": "La première image que les gens voient pour ce cours, sur le catalogue et la page de vente.",
         "setMain": "Définir",
         "secondary": "Images secondaires (diaporama)",
+        "secondaryHint": "D'autres images qui apparaissent dans le diaporama de la page de vente.",
         "add": "Ajouter",
         "alt": "Texte alt",
-        "urlPlaceholder": "https://… (URL de l’image)"
+        "urlPlaceholder": "https://… (URL de l’image)",
+        "moveUpAria": "Monter l'image",
+        "moveDownAria": "Descendre l'image",
+        "removeAria": "Retirer l'image"
       },
       "publish": {
         "status": {
@@ -1997,13 +2085,16 @@
       },
       "resources": {
         "title": "Ressources",
-        "empty": "Aucune ressource.",
+        "empty": "Pas encore de ressource. Un lien ou un fichier qui aide l'élève.",
         "add": "Ajouter une ressource",
         "labelHt": "Titre du lien (ht)",
         "labelFr": "Titre du lien (fr)",
         "kindLink": "Lien",
         "kindFile": "Fichier",
         "urlPlaceholder": "https://…",
+        "urlPlaceholderLink": "https://drive.google.com/mon-dossier",
+        "urlPlaceholderFile": "https://drive.google.com/mon-fichier-pdf",
+        "studentNote": "Ces ressources apparaissent à l'élève inscrit au cours.",
         "remove": "Retirer",
         "urlInvalid": "URL invalide — utilise http:// ou https://",
         "errors": {

@@ -59,9 +59,13 @@ export function LessonRow({
     // lesson's readiness gaps (missing video/title, no preview lesson yet —
     // Task D1); `PlanEditor`'s hash/`studio:jump-lesson` listener expands
     // this row first so the jump lands on the real field, not just the row.
-    <li id={`lesson-${lesson.id}`} className={cn('rounded-lg border bg-paper', noVideo && !isDraft ? 'border-stampred/40' : 'border-ink/10')}>
+    // The lesson CARD (Task D2 #5): lighter `bg-paper-light` + a soft shadow
+    // — deliberately lighter than `ChapterGroup`'s solid kraft-toned
+    // `bg-paper` band, so a lesson reads as a card sitting inside its
+    // chapter rather than another slab of the same material.
+    <li id={`lesson-${lesson.id}`} className={cn('rounded-lg border bg-paper-light shadow-sm', noVideo && !isDraft ? 'border-stampred/40' : 'border-ink/10')}>
       <div className="flex items-center gap-2 p-2.5">
-        <span className="shrink-0 font-mono text-[10px] text-ink/40">{index + 1}</span>
+        <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-ink/[0.06] font-mono text-[10px] text-ink/50">{index + 1}</span>
 
         <button
           type="button"
@@ -91,13 +95,14 @@ export function LessonRow({
         </button>
 
         <span className="flex shrink-0 items-center gap-0.5">
-          <button type="button" onClick={() => onAct(() => actions.moveLesson(slug, lesson.id, 'up'))} disabled={index === 0} className={iconBtn} aria-label={t('moveUp')}><IconChevronUp size={12} /></button>
-          <button type="button" onClick={() => onAct(() => actions.moveLesson(slug, lesson.id, 'down'))} disabled={index === total - 1} className={iconBtn} aria-label={t('moveDown')}><IconChevronDown size={12} /></button>
+          <button type="button" onClick={() => onAct(() => actions.moveLesson(slug, lesson.id, 'up'))} disabled={index === 0} className={iconBtn} aria-label={t('moveUp')} title={t('moveUp')}><IconChevronUp size={12} /></button>
+          <button type="button" onClick={() => onAct(() => actions.moveLesson(slug, lesson.id, 'down'))} disabled={index === total - 1} className={iconBtn} aria-label={t('moveDown')} title={t('moveDown')}><IconChevronDown size={12} /></button>
           <button
             type="button"
             onClick={() => onToggleExpand(lesson.id)}
             aria-expanded={expanded}
             aria-label={expanded ? t('collapseLesson') : t('expandLesson')}
+            title={expanded ? t('collapseLesson') : t('expandLesson')}
             className={iconBtn}
           >
             {expanded ? <IconChevronDown size={12} /> : <IconChevronRight size={12} />}

@@ -230,6 +230,7 @@ export function VideoUpload({
           role="button"
           tabIndex={0}
           onClick={openPicker}
+          aria-label={t('uploadDropHint')}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
@@ -248,14 +249,22 @@ export function VideoUpload({
             if (file) void handleFile(file);
           }}
           className={cn(
-            'flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors motion-reduce:transition-none',
+            // Task D2 #3 — the video dropzone is the scariest control for a
+            // beginner: bigger and calmer than a generic bordered box (more
+            // padding, a bigger icon, room for a reassuring line under the
+            // formats caption) so it reads as "a big, forgiving target",
+            // not a fussy little upload widget.
+            'flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed px-4 py-10 text-center transition-colors motion-reduce:transition-none',
             focusRing,
             dragOver ? 'border-ochre bg-ochre/10' : 'border-ink/20 bg-paper hover:border-ink/35 hover:bg-ink/[0.02]',
           )}
         >
-          <IconVideo size={22} className={dragOver ? 'text-ochre' : 'text-ink/35'} aria-hidden />
+          <span className={cn('grid h-12 w-12 place-items-center rounded-full', dragOver ? 'bg-ochre/15' : 'bg-ink/[0.05]')}>
+            <IconVideo size={26} className={dragOver ? 'text-ochre' : 'text-ink/35'} aria-hidden />
+          </span>
           <p className="text-sm font-medium leading-snug text-ink">{t('uploadDropHint')}</p>
           <p className="font-mono text-[9px] uppercase tracking-wide text-ink/40">{t('uploadFormats')}</p>
+          <p className="max-w-xs text-[11px] leading-snug text-ink/50">{t('uploadTakesTime')}</p>
         </div>
       )}
 
@@ -266,9 +275,9 @@ export function VideoUpload({
       )}
 
       {view.kind === 'uploading' && (
-        <div className="space-y-1.5 rounded-xl border border-ink/15 bg-paper px-4 py-3">
+        <div className="space-y-2 rounded-xl border border-ink/15 bg-paper px-4 py-4">
           <div className="flex items-center justify-between gap-2 font-mono text-[11px] text-ink/60">
-            <span>{t('uploadUploading', { percent: view.pct })}</span>
+            <span className="flex items-center gap-1.5"><IconLoader2 size={13} className="animate-spin text-ochre" aria-hidden /> {t('uploadUploading', { percent: view.pct })}</span>
             <button
               type="button"
               onClick={() => xhrRef.current?.abort()}
@@ -277,19 +286,23 @@ export function VideoUpload({
               <IconX size={12} /> {t('uploadCancel')}
             </button>
           </div>
-          <span className="block h-2 overflow-hidden rounded-full bg-ink/10">
+          <span className="block h-2.5 overflow-hidden rounded-full bg-ink/10" role="progressbar" aria-valuenow={view.pct} aria-valuemin={0} aria-valuemax={100}>
             <span
               className="block h-full bg-ochre transition-[width] duration-150 motion-reduce:transition-none"
               style={{ width: `${view.pct}%` }}
             />
           </span>
+          <p className="text-[11px] leading-snug text-ink/50">{t('uploadTakesTime')}</p>
         </div>
       )}
 
       {view.kind === 'ready' && (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-teal/30 bg-teal/5 px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-teal/30 bg-teal/5 px-4 py-3.5">
           <span className="flex min-w-0 items-center gap-1.5 font-mono text-[11px] text-teal">
-            <IconCheck size={14} className="shrink-0" aria-hidden /> {t('uploadReady')}
+            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-teal/15" aria-hidden>
+              <IconCheck size={14} />
+            </span>
+            {t('uploadReady')}
             {view.fileName ? (
               <span className="min-w-0 truncate text-ink/60">— {view.fileName}</span>
             ) : initialVideoId ? (
@@ -304,8 +317,10 @@ export function VideoUpload({
               setSession({ phase: 'idle' });
               setForceDropzone(true);
             }}
+            aria-label={t('uploadReplace')}
+            title={t('uploadReplace')}
             className={cn(
-              'shrink-0 rounded border border-ink/15 px-2 py-1 font-mono text-[10px] text-ink/60 hover:bg-ink/[0.04]',
+              'shrink-0 rounded border border-ink/15 px-2.5 py-1.5 font-mono text-[10px] text-ink/60 hover:bg-ink/[0.04]',
               focusRing,
             )}
           >
