@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { IconPlus, IconTrash, IconChevronUp, IconChevronDown, IconChevronRight, IconAlertTriangle, IconFolder, IconNotes } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
 import type { AdminChapter, AdminLesson, ChapterPatch } from '@/lib/courses/write';
-import { Field, inputCls } from '../fields';
+import { Field, inputCls, MONO_LOCALE_NAME } from '../fields';
 import { focusRing, iconBtn } from './shared';
 import { LessonRow } from './LessonRow';
 import type { LessonActions } from './types';
@@ -42,14 +42,25 @@ export function ChapterGroup({
   isDraft: boolean;
   onAct: (fn: () => Promise<{ ok: boolean }>) => void;
   actions: LessonActions;
-  /** The parent course's optional-translation setting (Task: lesson-language)
-   *  — threaded straight through to each `LessonRow`. */
+  /** The parent course's optional-translation setting (Task: lesson-language,
+   *  extended to the chapter's own title/summary by Task: chapter-language)
+   *  — used directly below (see `mono`) for THIS chapter's title/summary
+   *  fields, and also threaded straight through to each `LessonRow`. */
   bilingual: boolean;
   primaryLocale: 'ht' | 'fr';
   expandedId: string | null;
   onToggleExpand: (lessonId: string) => void;
 }) {
   const t = useTranslations('admin.cms.lessons');
+  // Task: chapter-language — same `mono` convention `LessonEditPanel` uses
+  // (`undefined` = bilingual, render both ht+fr; 'ht'/'fr' = monolingual,
+  // render ONE input for that locale only). A monolingual course must not
+  // force a teacher to fill in a chapter title/summary they can't read —
+  // `mirrorBilingualFields` (now fed `CHAPTER_BILINGUAL_PAIR_COLUMNS`, see
+  // lib/courses/write.ts's `updateChapter`) is what actually keeps the
+  // hidden column in sync on save; this component only ever commits the
+  // primary locale's own field, exactly like the lesson fields above it.
+  const mono = bilingual ? undefined : primaryLocale;
   const [titleHt, setTitleHt] = useState(chapter.title_ht);
   const [titleFr, setTitleFr] = useState(chapter.title_fr);
   const [summaryHt, setSummaryHt] = useState(chapter.summary_ht);
@@ -89,50 +100,115 @@ export function ChapterGroup({
         <div className="min-w-0 flex-1 space-y-2">
           <Field
             icon={IconFolder}
-            label={t('chapterTitleLabel')}
+            label={
+              mono ? (
+                <>
+                  {t('chapterTitleLabel')} <span className="text-ink/40">· {MONO_LOCALE_NAME[mono]}</span>
+                </>
+              ) : (
+                t('chapterTitleLabel')
+              )
+            }
             hint={t('hints.chapterTitle')}
             example={t('examples.chapterTitle')}
-            filled={hasText(titleHt) && hasText(titleFr)}
+            filled={mono ? hasText(mono === 'ht' ? titleHt : titleFr) : hasText(titleHt) && hasText(titleFr)}
           >
-            <div className="grid gap-1.5 sm:grid-cols-2">
-              <input
-                value={titleHt}
-                onChange={(e) => setTitleHt(e.target.value)}
-                onBlur={() => titleHt !== chapter.title_ht && commit({ title_ht: titleHt })}
-                placeholder={t('chapterTitleHt')}
-                aria-label={`${t('chapterTitleLabel')} · Kreyòl`}
-                className={cn(inputCls, 'font-semibold')}
-              />
-              <input
-                value={titleFr}
-                onChange={(e) => setTitleFr(e.target.value)}
-                onBlur={() => titleFr !== chapter.title_fr && commit({ title_fr: titleFr })}
-                placeholder={t('chapterTitleFr')}
-                aria-label={`${t('chapterTitleLabel')} · Français`}
-                className={cn(inputCls, 'font-semibold')}
-              />
-            </div>
-          </Field>
-          {expanded && (
-            <Field icon={IconNotes} label={t('chapterSummaryLabel')} hint={t('hints.chapterSummary')} example={t('examples.chapterSummary')}>
+            {mono ? (
+              mono === 'ht' ? (
+                <input
+                  value={titleHt}
+                  onChange={(e) => setTitleHt(e.target.value)}
+                  onBlur={() => titleHt !== chapter.title_ht && commit({ title_ht: titleHt })}
+                  placeholder={t('chapterTitleHt')}
+                  aria-label={`${t('chapterTitleLabel')} · Kreyòl`}
+                  className={cn(inputCls, 'font-semibold')}
+                />
+              ) : (
+                <input
+                  value={titleFr}
+                  onChange={(e) => setTitleFr(e.target.value)}
+                  onBlur={() => titleFr !== chapter.title_fr && commit({ title_fr: titleFr })}
+                  placeholder={t('chapterTitleFr')}
+                  aria-label={`${t('chapterTitleLabel')} · Français`}
+                  className={cn(inputCls, 'font-semibold')}
+                />
+              )
+            ) : (
               <div className="grid gap-1.5 sm:grid-cols-2">
                 <input
-                  value={summaryHt}
-                  onChange={(e) => setSummaryHt(e.target.value)}
-                  onBlur={() => summaryHt !== chapter.summary_ht && commit({ summary_ht: summaryHt })}
-                  placeholder={t('chapterSummaryHt')}
-                  aria-label={`${t('chapterSummaryLabel')} · Kreyòl`}
-                  className={inputCls}
+                  value={titleHt}
+                  onChange={(e) => setTitleHt(e.target.value)}
+                  onBlur={() => titleHt !== chapter.title_ht && commit({ title_ht: titleHt })}
+                  placeholder={t('chapterTitleHt')}
+                  aria-label={`${t('chapterTitleLabel')} · Kreyòl`}
+                  className={cn(inputCls, 'font-semibold')}
                 />
                 <input
-                  value={summaryFr}
-                  onChange={(e) => setSummaryFr(e.target.value)}
-                  onBlur={() => summaryFr !== chapter.summary_fr && commit({ summary_fr: summaryFr })}
-                  placeholder={t('chapterSummaryFr')}
-                  aria-label={`${t('chapterSummaryLabel')} · Français`}
-                  className={inputCls}
+                  value={titleFr}
+                  onChange={(e) => setTitleFr(e.target.value)}
+                  onBlur={() => titleFr !== chapter.title_fr && commit({ title_fr: titleFr })}
+                  placeholder={t('chapterTitleFr')}
+                  aria-label={`${t('chapterTitleLabel')} · Français`}
+                  className={cn(inputCls, 'font-semibold')}
                 />
               </div>
+            )}
+          </Field>
+          {expanded && (
+            <Field
+              icon={IconNotes}
+              label={
+                mono ? (
+                  <>
+                    {t('chapterSummaryLabel')} <span className="text-ink/40">· {MONO_LOCALE_NAME[mono]}</span>
+                  </>
+                ) : (
+                  t('chapterSummaryLabel')
+                )
+              }
+              hint={t('hints.chapterSummary')}
+              example={t('examples.chapterSummary')}
+            >
+              {mono ? (
+                mono === 'ht' ? (
+                  <input
+                    value={summaryHt}
+                    onChange={(e) => setSummaryHt(e.target.value)}
+                    onBlur={() => summaryHt !== chapter.summary_ht && commit({ summary_ht: summaryHt })}
+                    placeholder={t('chapterSummaryHt')}
+                    aria-label={`${t('chapterSummaryLabel')} · Kreyòl`}
+                    className={inputCls}
+                  />
+                ) : (
+                  <input
+                    value={summaryFr}
+                    onChange={(e) => setSummaryFr(e.target.value)}
+                    onBlur={() => summaryFr !== chapter.summary_fr && commit({ summary_fr: summaryFr })}
+                    placeholder={t('chapterSummaryFr')}
+                    aria-label={`${t('chapterSummaryLabel')} · Français`}
+                    className={inputCls}
+                  />
+                )
+              ) : (
+                <div className="grid gap-1.5 sm:grid-cols-2">
+                  <input
+                    value={summaryHt}
+                    onChange={(e) => setSummaryHt(e.target.value)}
+                    onBlur={() => summaryHt !== chapter.summary_ht && commit({ summary_ht: summaryHt })}
+                    placeholder={t('chapterSummaryHt')}
+                    aria-label={`${t('chapterSummaryLabel')} · Kreyòl`}
+                    className={inputCls}
+                  />
+                  <input
+                    value={summaryFr}
+                    onChange={(e) => setSummaryFr(e.target.value)}
+                    onBlur={() => summaryFr !== chapter.summary_fr && commit({ summary_fr: summaryFr })}
+                    placeholder={t('chapterSummaryFr')}
+                    aria-label={`${t('chapterSummaryLabel')} · Français`}
+                    className={inputCls}
+                  />
+                </div>
+              )}
             </Field>
           )}
         </div>

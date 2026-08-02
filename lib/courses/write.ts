@@ -924,10 +924,12 @@ export const LESSON_BILINGUAL_PAIR_COLUMNS: readonly (readonly [string, string])
 
 /**
  * Resolves the PARENT COURSE's `bilingual`/`primaryLocale` for
- * `updateLesson`'s mirroring below — resolved server-side from the `courses`
- * row, NEVER trusted from the client (a stale/tampered client flag could
- * otherwise mirror the wrong side, or mirror when the course is actually
- * bilingual).
+ * `updateLesson`'s mirroring below (and, since Task: chapter-language,
+ * `updateChapter`'s — same parent-course lookup, just fed a different
+ * column-pair list, see `CHAPTER_BILINGUAL_PAIR_COLUMNS`) — resolved
+ * server-side from the `courses` row, NEVER trusted from the client (a
+ * stale/tampered client flag could otherwise mirror the wrong side, or
+ * mirror when the course is actually bilingual).
  *
  * NEVER THROWS — mirrors lib/courses/source.ts's `selectCourseRowBySlug`
  * migration-resilience pattern: if the course row is missing, OR the
@@ -1231,6 +1233,19 @@ export type ChapterPatch = Partial<{
 }>;
 
 /**
+ * Every `course_chapters` ht/fr column pair (Task: chapter-language — the
+ * sibling of `LESSON_BILINGUAL_PAIR_COLUMNS`, same shape, same reasoning):
+ * "title, summary". Fed to `mirrorBilingualFields` by `updateChapter` below,
+ * so a monolingual course's chapter fields behave exactly like its course-
+ * and lesson-level fields — one input, one column written, the other column
+ * mirrored server-side so no reader ever sees an empty string.
+ */
+export const CHAPTER_BILINGUAL_PAIR_COLUMNS: readonly (readonly [string, string])[] = [
+  ['titleHt', 'titleFr'],
+  ['summaryHt', 'summaryFr'],
+];
+
+/**
  * Pure adjacent-swap index math shared by `reorderChapters` (and mirroring
  * `reorderLessons`'s identical shape above): given ids already sorted in
  * display order, the id to move, and a direction, returns the `[mover,
@@ -1296,9 +1311,27 @@ export async function updateChapter(
   if (patch.summary_ht !== undefined) set.summaryHt = patch.summary_ht;
   if (patch.summary_fr !== undefined) set.summaryFr = patch.summary_fr;
 
+  // Chapter-level optional translation (Task: chapter-language) — when the
+  // PARENT COURSE is monolingual, mirror this save's primary-locale value
+  // into both columns for title/summary, the SAME `mirrorBilingualFields`
+  // helper `updateLesson` uses (see its doc comment on
+  // `resolveLessonMirrorContext`) — just fed `CHAPTER_BILINGUAL_PAIR_COLUMNS`
+  // instead. Only paid for when the patch actually touches one of the two
+  // mirrored pairs.
+  const touchesChapterMirror =
+    patch.title_ht !== undefined ||
+    patch.title_fr !== undefined ||
+    patch.summary_ht !== undefined ||
+    patch.summary_fr !== undefined;
+  let mirroredSet = set;
+  if (touchesChapterMirror) {
+    const { bilingual, primaryLocale } = await resolveLessonMirrorContext(slug);
+    mirroredSet = mirrorBilingualFields(set, bilingual, primaryLocale, CHAPTER_BILINGUAL_PAIR_COLUMNS);
+  }
+
   const res = await db
     .update(T.courseChapters)
-    .set(set)
+    .set(mirroredSet)
     .where(and(eq(T.courseChapters.courseSlug, slug), eq(T.courseChapters.id, chapterId)))
     .returning({ id: T.courseChapters.id });
   if (res.length === 0) return { ok: false, message: 'not_found' };

@@ -24,6 +24,7 @@ import {
   mirrorBilingualFields,
   COURSE_BILINGUAL_PAIR_COLUMNS,
   LESSON_BILINGUAL_PAIR_COLUMNS,
+  CHAPTER_BILINGUAL_PAIR_COLUMNS,
   type DbCourseStatus,
 } from './write';
 import type { CourseResource } from '@/db/schema';
@@ -416,5 +417,77 @@ describe('mirrorBilingualFields(LESSON_BILINGUAL_PAIR_COLUMNS) — lesson title/
     expect(out.notesFr).toBe('Nouvo nòt');
     expect(out).not.toHaveProperty('titleHt');
     expect(out).not.toHaveProperty('descHt');
+  });
+});
+
+/**
+ * Unit tests for `mirrorBilingualFields` fed `CHAPTER_BILINGUAL_PAIR_COLUMNS`
+ * (Task: chapter-language — the sibling of the lesson-level suite above,
+ * same function, different column-pair list). `updateChapter` funnels its
+ * `set` object through exactly this call when the parent course is
+ * monolingual — see lib/courses/write.ts's doc comment on
+ * `resolveLessonMirrorContext`. Pure function, no DB touched.
+ */
+describe('mirrorBilingualFields(CHAPTER_BILINGUAL_PAIR_COLUMNS) — chapter title/summary mirror the same way course/lesson fields do (Task: chapter-language)', () => {
+  it('covers exactly the two chapter pairs: title, summary', () => {
+    expect(CHAPTER_BILINGUAL_PAIR_COLUMNS).toEqual([
+      ['titleHt', 'titleFr'],
+      ['summaryHt', 'summaryFr'],
+    ]);
+  });
+
+  it('is a no-op for a bilingual course, regardless of primaryLocale — a bilingual course\'s chapter save is untouched', () => {
+    const values = { titleHt: 'Chapit kreyòl', titleFr: 'Chapitre français', summaryHt: 'Rezime ht', summaryFr: 'Résumé fr' };
+    expect(mirrorBilingualFields(values, true, 'ht', CHAPTER_BILINGUAL_PAIR_COLUMNS)).toEqual(values);
+    expect(mirrorBilingualFields(values, true, 'fr', CHAPTER_BILINGUAL_PAIR_COLUMNS)).toEqual(values);
+  });
+
+  it('mirrors both pairs FROM the ht side when primaryLocale is ht (monolingual course)', () => {
+    const out = mirrorBilingualFields(
+      { titleHt: 'Tit chapit', titleFr: 'stale title', summaryHt: 'Rezime chapit', summaryFr: 'stale summary' },
+      false,
+      'ht',
+      CHAPTER_BILINGUAL_PAIR_COLUMNS,
+    );
+    expect(out.titleFr).toBe('Tit chapit');
+    expect(out.summaryFr).toBe('Rezime chapit');
+    // Primary side itself is left as-is (not blanked, not altered).
+    expect(out.titleHt).toBe('Tit chapit');
+    expect(out.summaryHt).toBe('Rezime chapit');
+  });
+
+  it('mirrors both pairs FROM the fr side when primaryLocale is fr (monolingual course)', () => {
+    const out = mirrorBilingualFields(
+      { titleHt: 'stale title', titleFr: 'Titre du chapitre', summaryHt: 'stale summary', summaryFr: 'Résumé du chapitre' },
+      false,
+      'fr',
+      CHAPTER_BILINGUAL_PAIR_COLUMNS,
+    );
+    expect(out.titleHt).toBe('Titre du chapitre');
+    expect(out.summaryHt).toBe('Résumé du chapitre');
+  });
+
+  it('only mirrors a chapter pair actually present in the patch\'s `set` object — a title-only save leaves summary untouched', () => {
+    const out = mirrorBilingualFields<Record<string, unknown>>(
+      { titleHt: 'Nouvo tit', titleFr: 'stale', updatedAt: new Date('2026-08-01') },
+      false,
+      'ht',
+      CHAPTER_BILINGUAL_PAIR_COLUMNS,
+    );
+    expect(out.titleFr).toBe('Nouvo tit');
+    expect(out).not.toHaveProperty('summaryHt');
+    expect(out).not.toHaveProperty('summaryFr');
+  });
+
+  it('mirrors only the pair present when a save touches just summary', () => {
+    const out = mirrorBilingualFields<Record<string, unknown>>(
+      { summaryHt: 'Nouvo rezime', summaryFr: 'stale' },
+      false,
+      'ht',
+      CHAPTER_BILINGUAL_PAIR_COLUMNS,
+    );
+    expect(out.summaryFr).toBe('Nouvo rezime');
+    expect(out).not.toHaveProperty('titleHt');
+    expect(out).not.toHaveProperty('titleFr');
   });
 });
