@@ -8,7 +8,12 @@ export type StripeAction =
       checkoutRowId: string | null; productType: 'course' | 'subscription';
       courseSlug: string | null; amountCents: number; currency: string;
       paymentIntentId: string | null; subscriptionId: string | null;
-      customerEmail: string | null }
+      customerEmail: string | null;
+      /** Task: per-teacher subscription checkout — the specific
+       *  `teacher_plans.id` charged (lib/payments/products.ts), when the
+       *  purchase resolved to one. `null` for a course purchase or the
+       *  no-DB platform-default fallback. */
+      teacherPlanId: string | null }
   | { kind: 'invoice_paid'; eventId: string; subscriptionId: string | null;
       paymentIntentId: string | null; amountCents: number; currency: string;
       billingReason: string | null; periodEnd: number | null }
@@ -44,6 +49,7 @@ export function mapStripeEvent(evt: unknown): StripeAction {
       paymentIntentId: str(o.payment_intent),
       subscriptionId: str(o.subscription),
       customerEmail: str(o.customer_details?.email),
+      teacherPlanId: str(meta.teacherPlanId),
     };
   }
   if (type === 'invoice.paid') {

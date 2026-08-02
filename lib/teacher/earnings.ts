@@ -45,15 +45,23 @@
  * TEACHER RESOLUTION: a course payment's teacher is `courses.owner_user_id`
  * for `payment.courseSlug` (read directly off the `courses` table — NOT via
  * `lib/courses/source.ts`'s `getCourseBySlug`, whose `Course` shape doesn't
- * carry `owner_user_id` at all, only slug-keyed content). A subscription
- * payment's teacher is the single active `teacher_plans` row's owner — the
- * marketplace is uniform (see the plan's "owner = teacher #1; the $79 = his
- * teacher_plan. No special-casing") and today there is exactly ONE active
- * plan (scripts/seed-courses.ts seeds it uniquely per owner), so this reads
- * `status = 'active'` with no further disambiguation. If neither resolves —
- * unknown course, no owner, or no active plan — the ledger row is skipped
- * entirely (logged, never thrown): a payment must never be blocked or
- * retried just because we couldn't figure out who to credit.
+ * carry `owner_user_id` at all, only slug-keyed content).
+ *
+ * A subscription payment's teacher is resolved from `teacherPlanId`
+ * (Task: per-teacher subscription checkout) — the SPECIFIC `teacher_plans`
+ * row the buyer actually purchased, carried end to end from
+ * lib/payments/products.ts through Stripe metadata
+ * (lib/payments/stripe.ts) and the webhook payload
+ * (lib/payments/stripe-events.ts) to lib/payments/fulfill.ts, which passes
+ * it here. LEGACY FALLBACK (pre-migration rows / a plan id that no longer
+ * resolves): the single active `teacher_plans` row's owner — this was the
+ * ONLY behaviour before this task, correct only while there was ever exactly
+ * one active plan platform-wide; kept as a last resort so an old in-flight
+ * payment (or a redelivered webhook for one) still resolves to SOMEONE
+ * rather than silently dropping the ledger row. If nothing resolves at
+ * all — unknown course, no owner, or no active plan anywhere — the ledger
+ * row is skipped entirely (logged, never thrown): a payment must never be
+ * blocked or retried just because we couldn't figure out who to credit.
  */
 import { eq, and, sql } from 'drizzle-orm';
 import { db, schema } from '@/db';
@@ -101,6 +109,11 @@ export type FulfilledPayment = {
   currency: string;
   productType: 'course' | 'subscription';
   courseSlug: string | null;
+  /** The specific `teacher_plans.id` this subscription payment is for
+   *  (Task: per-teacher subscription checkout) — see file header's TEACHER
+   *  RESOLUTION note. Always `null` for a course payment (ignored either
+   *  way — course ownership resolves via `courseSlug`). */
+  teacherPlanId: string | null;
 };
 
 /**
@@ -112,6 +125,7 @@ export type FulfilledPayment = {
 async function resolveTeacherUserId(p: {
   productType: 'course' | 'subscription';
   courseSlug: string | null;
+  teacherPlanId: string | null;
 }): Promise<string | null> {
   try {
     if (p.productType === 'course') {
@@ -123,10 +137,21 @@ async function resolveTeacherUserId(p: {
         .limit(1);
       return row?.ownerUserId ?? null;
     }
-    // Subscription: uniform platform plan — see file header. Exactly one
-    // active teacher_plans row today; if that ever changes without wiring a
-    // real per-plan mapping, this deliberately still resolves to the FIRST
-    // active row rather than guessing further.
+    // Subscription: resolve via the SPECIFIC plan purchased, when known —
+    // see file header's TEACHER RESOLUTION note.
+    if (p.teacherPlanId) {
+      const [row] = await db
+        .select({ ownerUserId: T.teacherPlans.ownerUserId })
+        .from(T.teacherPlans)
+        .where(eq(T.teacherPlans.id, p.teacherPlanId))
+        .limit(1);
+      if (row?.ownerUserId) return row.ownerUserId;
+      // Plan id given but no longer resolves (e.g. a hard-deleted row) —
+      // fall through to the legacy guess below rather than giving up.
+    }
+    // LEGACY FALLBACK — see file header. Only reached for a payment with no
+    // teacherPlanId at all (pre-migration row, or the rare no-DB
+    // platform-default checkout).
     const [row] = await db
       .select({ ownerUserId: T.teacherPlans.ownerUserId })
       .from(T.teacherPlans)
@@ -151,6 +176,7 @@ export async function recordSaleEarning(payment: FulfilledPayment): Promise<void
     const teacherUserId = await resolveTeacherUserId({
       productType: payment.productType,
       courseSlug: payment.courseSlug,
+      teacherPlanId: payment.teacherPlanId,
     });
     if (!teacherUserId) {
       console.warn(

@@ -674,6 +674,7 @@
     "title": "Paiement",
     "summary": "Récapitulatif",
     "subItem": "Abonnement PNICE Academy",
+    "subItemTeacher": "Abonnement — {name}",
     "subPer": "Facturé chaque mois",
     "unitLabel": "Formation · accès à vie",
     "methodTitle": "Choisir le moyen de paiement",

@@ -26,11 +26,16 @@ export function PaymentMethods({
   active,
   productType,
   courseSlug,
+  teacherSlug,
 }: {
   payLabel: string;
   active?: string[];
   productType: 'course' | 'subscription';
   courseSlug: string | null;
+  /** Task: per-teacher subscription checkout — `/prof/[slug]`'s own slug,
+   *  when this is a per-teacher subscription purchase; `null` charges the
+   *  platform default, same as before this task. */
+  teacherSlug?: string | null;
 }) {
   const t = useTranslations('checkout');
   const tc = useTranslations('common');
@@ -52,7 +57,7 @@ export function PaymentMethods({
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productType, courseSlug, locale }),
+        body: JSON.stringify({ productType, courseSlug, teacherSlug: teacherSlug ?? null, locale }),
       });
       const data = (await res.json().catch(() => ({}))) as { url?: string };
       if (res.ok && data.url) {

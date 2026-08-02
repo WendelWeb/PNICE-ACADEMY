@@ -60,6 +60,19 @@ export const subscriptions = pgTable(
     providerRef: text('provider_ref'),
     currentPeriodEnd: timestamp('current_period_end', { withTimezone: true }),
     cancelAtPeriodEnd: boolean('cancel_at_period_end').default(false).notNull(),
+    // Which teacher_plans row this subscription is for (Task: per-teacher
+    // subscription checkout). No `.references()` — same soft-reference
+    // pattern as `payments.related_subscription_id` below, chosen because
+    // `teacher_plans` is declared much later in this file and the codebase's
+    // convention (see `lessons.chapter_id`'s comment) is to only ever FK a
+    // table already declared above. Nullable: legacy rows created before
+    // this task, and the platform-default checkout path when no specific
+    // plan could be resolved (see lib/payments/products.ts), have none —
+    // access stays platform-wide regardless (see lib/learner/access.ts's
+    // BINDING model), this column exists ONLY so the earnings ledger can
+    // credit the RIGHT teacher's 70% instead of guessing "the first active
+    // plan" (lib/teacher/earnings.ts's `resolveTeacherUserId`).
+    teacherPlanId: uuid('teacher_plan_id'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull(),

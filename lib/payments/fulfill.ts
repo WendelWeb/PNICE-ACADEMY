@@ -131,6 +131,10 @@ async function fulfillCheckoutCompleted(a: CheckoutCompleted): Promise<'processe
       currency: existingPayment.currency,
       productType: existingPayment.productType,
       courseSlug: existingPayment.courseSlug,
+      // Every redelivery of the SAME event carries the SAME metadata — safe
+      // to re-read off `a` rather than joining back through
+      // `relatedSubscriptionId` (Task: per-teacher subscription checkout).
+      teacherPlanId: a.teacherPlanId,
     });
     await ensureCourseEnrollment(userDbId, a.productType, a.courseSlug, existingPayment.id);
     return 'processed';
@@ -164,6 +168,10 @@ async function fulfillCheckoutCompleted(a: CheckoutCompleted): Promise<'processe
           provider: 'stripe',
           providerRef: subscriptionId,
           currentPeriodEnd: remote?.currentPeriodEnd ?? null,
+          // Task: per-teacher subscription checkout — recorded once, at
+          // creation, so every renewal (fulfillInvoicePaid below) reads it
+          // straight off this row instead of re-parsing Stripe metadata.
+          teacherPlanId: a.teacherPlanId,
         })
         .onConflictDoNothing({ target: subscriptions.providerRef })
         .returning({ id: subscriptions.id });
@@ -214,6 +222,7 @@ async function fulfillCheckoutCompleted(a: CheckoutCompleted): Promise<'processe
       currency: raced.currency,
       productType: raced.productType,
       courseSlug: raced.courseSlug,
+      teacherPlanId: a.teacherPlanId,
     });
     await ensureCourseEnrollment(userDbId, a.productType, a.courseSlug, raced.id);
     return 'processed';
@@ -231,6 +240,7 @@ async function fulfillCheckoutCompleted(a: CheckoutCompleted): Promise<'processe
     currency: a.currency,
     productType: a.productType,
     courseSlug: a.courseSlug,
+    teacherPlanId: a.teacherPlanId,
   });
 
   // 3. Course purchase → enrollment (skip if already enrolled and active).
@@ -374,12 +384,17 @@ async function fulfillInvoicePaid(a: InvoicePaid): Promise<'processed' | 'ignore
   // Additive: record the teacher's earnings-ledger 'sale' row for this
   // renewal charge. NEVER THROWS and internally idempotent (see
   // lib/teacher/earnings.ts's file header) — never blocks fulfillment.
+  // teacherPlanId comes off OUR OWN `subscriptions` row (set once at
+  // creation above), not re-parsed off the invoice — an `invoice.paid`
+  // event carries no per-plan metadata of its own (Task: per-teacher
+  // subscription checkout).
   await recordSaleEarning({
     id: insertedRenewals[0].id,
     amountCents: a.amountCents,
     currency: a.currency,
     productType: 'subscription',
     courseSlug: null,
+    teacherPlanId: sub.teacherPlanId,
   });
 
   await db

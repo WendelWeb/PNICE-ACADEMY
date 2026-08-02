@@ -14,7 +14,7 @@ import { AuthCta } from '@/components/auth/AuthCta';
 import { CourseCatalogCard } from '@/components/courses/CourseCatalogCard';
 import { teachers } from '@/data/teachers';
 import {
-  subscription,
+  SUBSCRIPTION_USD,
   subscriptionPerks_ht,
   subscriptionPerks_fr,
 } from '@/data/pricing';
@@ -78,6 +78,15 @@ export default async function ProfPage({
   const lessonCount = courses.reduce((sum, c) => sum + c.lessons.length, 0);
   const bio = teacher.bio;
   const perks = locale === 'ht' ? subscriptionPerks_ht : subscriptionPerks_fr;
+  // BUG FIX (real per-teacher plan price): THIS teacher's own active
+  // `teacher_plans` price (lib/teacher/public.ts's `getActiveTeacherPlan`),
+  // never the old hardcoded $79. `teacher.plan` is `null` only in the
+  // teacher-#1-with-no-live-DB fallback (see getPublicTeacher's header) —
+  // that's the one case where the platform constant genuinely IS what a
+  // purchase would charge (lib/payments/products.ts's own no-DB fallback),
+  // so it's safe here too. Every other teacher only ever gets `hasPlan` true
+  // when `plan` is a real resolved row, so this can't show a wrong number.
+  const subscriptionUsd = (teacher.plan?.priceCentsMonthly ?? SUBSCRIPTION_USD * 100) / 100;
   // The branded local placeholder — shown whenever there's no validated live
   // `photo_url` (no profile row, not approved, or an unsafe/malformed URL —
   // see getPublicTeacher's photoUrl resolution).
@@ -239,8 +248,9 @@ export default async function ProfPage({
         </Container>
       </Section>
 
-      {/* ---------- Subscription offer (only teachers with an active $79 all-access
-          plan get this block — see getPublicTeacher's hasPlan resolution) ---------- */}
+      {/* ---------- Subscription offer (only teachers with an active
+          all-access plan get this block — see getPublicTeacher's hasPlan
+          resolution; price is THIS teacher's real plan price) ---------- */}
       {teacher.hasPlan && (
       <Section>
         <Container>
@@ -266,7 +276,7 @@ export default async function ProfPage({
               <div className="flex flex-col justify-center border-t-2 border-ochre/40 bg-ochre/[0.07] p-7 md:border-l-2 md:border-t-0 md:p-10">
                 <div className="flex items-baseline gap-1.5">
                   <Price
-                    usd={subscription.usd}
+                    usd={subscriptionUsd}
                     className="font-display text-6xl font-black leading-none text-ink"
                   />
                   <span className="font-mono text-sm text-graphite/70">
@@ -274,11 +284,11 @@ export default async function ProfPage({
                   </span>
                 </div>
                 <p className="mt-2 font-mono text-sm text-graphite/60">
-                  <PriceSecondary usd={subscription.usd} />
+                  <PriceSecondary usd={subscriptionUsd} />
                   {tc('perMonth')}
                 </p>
                 <AuthCta
-                  href="/checkout?plan=sub"
+                  href={`/checkout?teacher=${encodeURIComponent(teacher.slug)}`}
                   className={buttonClasses('primary', 'lg', 'mt-6 w-full')}
                 >
                   {t('sub.cta')}

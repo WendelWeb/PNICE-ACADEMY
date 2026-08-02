@@ -17,7 +17,7 @@ describe('mapStripeEvent', () => {
       mode: 'payment', userDbId: 'user-uuid', checkoutRowId: 'row-uuid',
       productType: 'course', courseSlug: 'zouti-finansye-dijital',
       amountCents: 900, currency: 'USD', paymentIntentId: 'pi_1',
-      subscriptionId: null, customerEmail: 'x@y.com',
+      subscriptionId: null, customerEmail: 'x@y.com', teacherPlanId: null,
     });
   });
 
@@ -37,7 +37,27 @@ describe('mapStripeEvent', () => {
       expect(a.productType).toBe('subscription');
       expect(a.courseSlug).toBeNull();
       expect(a.customerEmail).toBeNull();
+      expect(a.teacherPlanId).toBeNull();
     }
+  });
+
+  // Task: per-teacher subscription checkout — lib/payments/stripe.ts writes
+  // `metadata[teacherPlanId]` only for a resolved per-teacher (or teacher-#1
+  // default) plan; this is the ONE place that metadata is read back off the
+  // webhook payload for lib/payments/fulfill.ts to store on the local
+  // `subscriptions` row and lib/teacher/earnings.ts to credit correctly.
+  it('maps checkout.session.completed with a teacherPlanId (per-teacher subscription)', () => {
+    const a = mapStripeEvent({
+      id: 'evt_2b', type: 'checkout.session.completed',
+      data: { object: {
+        id: 'cs_2b', mode: 'subscription', client_reference_id: 'user-uuid',
+        metadata: { checkoutRowId: 'row-2b', productType: 'subscription', teacherPlanId: 'plan-uuid' },
+        amount_total: 3000, currency: 'usd', payment_intent: null,
+        subscription: 'sub_2b', customer_details: null,
+      } },
+    });
+    expect(a.kind).toBe('checkout_completed');
+    if (a.kind === 'checkout_completed') expect(a.teacherPlanId).toBe('plan-uuid');
   });
 
   it('maps invoice.paid with billing reason + period end', () => {

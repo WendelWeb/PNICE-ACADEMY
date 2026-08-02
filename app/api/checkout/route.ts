@@ -71,8 +71,15 @@ export async function POST(req: NextRequest) {
     customerEmail: row.email,
     locale: body.locale,
     successUrl: `${origin}/${body.locale}/checkout/merci`,
+    // Task: per-teacher subscription checkout — a cancelled per-teacher plan
+    // purchase must return to THAT teacher's checkout summary, not silently
+    // fall back to the platform-default subscription page.
     cancelUrl: `${origin}/${body.locale}/checkout${
-      product.courseSlug ? `?course=${product.courseSlug}` : ''
+      product.courseSlug
+        ? `?course=${product.courseSlug}`
+        : body.teacherSlug
+          ? `?teacher=${encodeURIComponent(body.teacherSlug)}`
+          : ''
     }`,
   });
   if ('error' in result) {

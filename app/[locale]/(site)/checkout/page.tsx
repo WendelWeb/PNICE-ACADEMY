@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { IconLock, IconShieldCheck } from '@tabler/icons-react';
 import { Section, Container } from '@/components/ui/Section';
@@ -7,13 +8,14 @@ import { SmartImage } from '@/components/ui/SmartImage';
 import { CourseSlideshow } from '@/components/courses/CourseSlideshow';
 import { courseImageSrc, siteImages } from '@/lib/courseImage';
 import { getPublishedCourseBySlug } from '@/lib/courses/source';
-import { subscription } from '@/data/pricing';
 import { formatUsd } from '@/lib/money';
 import { Price, PriceSecondary } from '@/components/ui/Price';
 import { courseTitle } from '@/lib/courseFields';
 import { PaymentMethods } from '@/components/checkout/PaymentMethods';
 import { PromoCodeField } from '@/components/checkout/PromoCodeField';
 import { activeProviders } from '@/lib/admin/platform/store';
+import { resolveProduct } from '@/lib/payments/products';
+import { getPublicTeacher } from '@/lib/teacher/public';
 
 export const metadata: Metadata = { title: 'Peman — PNICE Academy' };
 
@@ -42,13 +44,37 @@ export default async function CheckoutPage({
 
   const courseSlug =
     typeof searchParams.course === 'string' ? searchParams.course : undefined;
+  const teacherSlug =
+    typeof searchParams.teacher === 'string' ? searchParams.teacher : undefined;
   const course = courseSlug ? await getPublishedCourseBySlug(courseSlug) : undefined;
   const isSub = !course;
 
-  const amountUsd = isSub ? subscription.usd : course!.priceUsd;
-  const itemName = isSub ? t('subItem') : courseTitle(course!, locale);
+  // Task: per-teacher subscription checkout — the AMOUNT charged always
+  // comes from `resolveProduct`, the exact same resolver `/api/checkout`
+  // uses to create the Stripe session, so this page can never show a price
+  // it wouldn't actually charge. `teacherSlug` selects a specific teacher's
+  // plan; omitted/unresolvable-teacher falls back to the platform default —
+  // an unresolvable NAMED teacher (unknown slug, or no active plan to sell)
+  // 404s rather than silently charging the wrong amount.
+  const subProduct = isSub
+    ? await resolveProduct({ productType: 'subscription', teacherSlug: teacherSlug ?? null })
+    : null;
+  if (isSub && !subProduct) notFound();
+
+  // Display-only: the teacher's localized public name/seal, resolved
+  // separately from the charge amount (lib/teacher/public.ts's
+  // `getPublicTeacher`) — kept apart from `resolveProduct` on purpose so a
+  // cosmetic lookup can never affect what gets charged.
+  const teacherForDisplay = isSub && teacherSlug ? await getPublicTeacher(teacherSlug, locale) : null;
+
+  const amountUsd = isSub ? subProduct!.amountCents / 100 : course!.priceUsd;
+  const itemName = isSub
+    ? teacherForDisplay
+      ? t('subItemTeacher', { name: teacherForDisplay.displayName })
+      : t('subItem')
+    : courseTitle(course!, locale);
   const itemSub = isSub ? t('subPer') : t('unitLabel');
-  const sealCode = isSub ? 'PA' : course!.code;
+  const sealCode = isSub ? teacherForDisplay?.initials ?? 'PA' : course!.code;
   const perLabel = isSub ? tc('perMonth') : '';
 
   // Derive accepted payment badges from active providers.
@@ -134,6 +160,7 @@ export default async function CheckoutPage({
                 active={activeProviders()}
                 productType={isSub ? 'subscription' : 'course'}
                 courseSlug={course ? course.slug : null}
+                teacherSlug={isSub ? teacherSlug ?? null : null}
               />
             </div>
 

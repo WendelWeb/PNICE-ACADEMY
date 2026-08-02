@@ -90,9 +90,20 @@ export async function createStripeCheckout(
     'metadata[productType]': input.product.productType,
   };
   if (input.product.courseSlug) params['metadata[courseSlug]'] = input.product.courseSlug;
+  // Task: per-teacher subscription checkout — carry the resolved plan/owner
+  // through Stripe so lib/payments/fulfill.ts can store it on the local
+  // `subscriptions` row and lib/teacher/earnings.ts can credit the RIGHT
+  // teacher's 70% instead of guessing "the first active plan". Only set for
+  // a subscription that actually resolved to a specific plan (see
+  // lib/payments/products.ts) — absent for a course purchase, or the rare
+  // no-DB platform-default fallback, exactly mirroring `courseSlug` above.
+  if (input.product.teacherPlanId) params['metadata[teacherPlanId]'] = input.product.teacherPlanId;
+  if (input.product.teacherUserId) params['metadata[teacherUserId]'] = input.product.teacherUserId;
   if (input.mode === 'subscription') {
     params['line_items[0][price_data][recurring][interval]'] = 'month';
     params['subscription_data[metadata][userDbId]'] = input.userDbId;
+    if (input.product.teacherPlanId) params['subscription_data[metadata][teacherPlanId]'] = input.product.teacherPlanId;
+    if (input.product.teacherUserId) params['subscription_data[metadata][teacherUserId]'] = input.product.teacherUserId;
   } else {
     params['payment_intent_data[metadata][userDbId]'] = input.userDbId;
   }

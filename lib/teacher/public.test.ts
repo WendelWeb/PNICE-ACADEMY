@@ -17,7 +17,9 @@ import {
   initialsFromName,
   getApprovedTeacherSlugs,
   getPublicTeacher,
+  resolveTeacherOwnerUserIdBySlug,
 } from './public';
+import { teachers } from '@/data/teachers';
 import type { TeacherProfile } from './profile';
 import { courses } from '@/data/courses';
 
@@ -159,6 +161,11 @@ describe('getPublicTeacher — gated fallback, no DATABASE_URL', () => {
     expect(teacher!.rating).toEqual({ avg: null, count: 0 });
     expect(teacher!.studentCount).toBeNull();
     expect(teacher!.hasPlan).toBe(true); // teacher #1's fallback always has the $79 plan block
+    // Task: real per-teacher plan price — `plan` (the real DB row) stays
+    // `null` in the no-DB fallback (nothing live to read a real price from);
+    // renderers fall back to SUBSCRIPTION_USD themselves (see
+    // app/[locale]/(site)/prof/[slug]/page.tsx), never a wrong number.
+    expect(teacher!.plan).toBeNull();
     expect(teacher!.courseCount).toBe(courses.length);
     expect(teacher!.courses).toHaveLength(courses.length);
     expect(teacher!.docNo).toBe('ANS-2026-001');
@@ -168,5 +175,22 @@ describe('getPublicTeacher — gated fallback, no DATABASE_URL', () => {
     const ht = await getPublicTeacher('pnice-academy', 'ht');
     const fr = await getPublicTeacher('pnice-academy', 'fr');
     expect(ht!.bio).not.toBe(fr!.bio);
+  });
+});
+
+// Task: per-teacher subscription checkout — shared by
+// lib/payments/products.ts so a checkout charges the SAME owner
+// /prof/[slug] itself resolves.
+describe('resolveTeacherOwnerUserIdBySlug — shared slug -> owner resolution, no DATABASE_URL', () => {
+  it("resolves teacher #1's own slug via the static registry (no DB needed)", async () => {
+    // No DATABASE_URL in this test env ⇒ getTeacherOwnerUserId itself falls
+    // back to null (see lib/reviews/reviews.ts), but the static-registry
+    // branch is taken either way — this asserts it never throws and returns
+    // a nullable string, not that a DB-only owner id resolves without a DB.
+    await expect(resolveTeacherOwnerUserIdBySlug(teachers[0]!.slug)).resolves.toBeNull();
+  });
+
+  it('an unknown slug (no static entry, no DB) resolves to null, never throws', async () => {
+    await expect(resolveTeacherOwnerUserIdBySlug('no-such-teacher')).resolves.toBeNull();
   });
 });

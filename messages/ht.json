@@ -674,6 +674,7 @@
     "title": "Peman",
     "summary": "Rezime kòmand",
     "subItem": "Abònman PNICE Academy",
+    "subItemTeacher": "Abònman — {name}",
     "subPer": "Faktire chak mwa",
     "unitLabel": "Fòmasyon · aksè a vi",
     "methodTitle": "Chwazi mwayen pou peye",

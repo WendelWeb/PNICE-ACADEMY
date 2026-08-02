@@ -45,6 +45,7 @@ import { getTeacher, teachers, teacherBio, teacherDocNo } from '@/data/teachers'
 import { getTeacherProfile, mapDbTeacherProfile, type TeacherProfile } from '@/lib/teacher/profile';
 import { getTeacherOwnerUserId, getTeacherRating, type RatingSummary } from '@/lib/reviews/reviews';
 import { isValidHttpUrl } from '@/lib/teacher/apply-validation';
+import { SUBSCRIPTION_USD } from '@/data/pricing';
 
 const T = schema;
 
@@ -65,8 +66,17 @@ export type PublicTeacher = {
   studentCount: number | null;
   courses: Course[];
   joinedYear: number;
-  /** Whether this teacher has an active `teacher_plan` (the $79 all-access pass) — gates the subscription block. */
+  /** Whether this teacher has an active `teacher_plan` (their monthly all-access pass) — gates the subscription block. */
   hasPlan: boolean;
+  /**
+   * The active plan's real id + price, when resolvable (Task: per-teacher
+   * subscription checkout / real plan price on `/prof/[slug]`) — `null`
+   * whenever `hasPlan` is true only via the teacher-#1 no-DB fallback (see
+   * `getPublicTeacher`), since there is no live row to read a real price
+   * from. Renderers must fall back to `SUBSCRIPTION_USD` in that case,
+   * exactly like every other "no DB ⇒ constant" fallback in this codebase.
+   */
+  plan: { id: string; priceCentsMonthly: number } | null;
 };
 
 /**
@@ -177,23 +187,64 @@ async function getDistinctStudentCount(courseSlugs: string[]): Promise<number | 
 }
 
 /**
- * True only when `ownerUserId` has an ACTIVE `teacher_plans` row — gates the
- * $79 subscription block generically (no hardcoded slug/name check), per the
- * spec's "uniform, no special-casing" teacher model. GATED + FALLBACK: no
- * DATABASE_URL, no owner, or a failed query ⇒ `false`, never throws.
+ * `ownerUserId`'s ACTIVE `teacher_plans` row (id + effective price), or
+ * `null` — gates the subscription block generically (no hardcoded slug/name
+ * check), per the spec's "uniform, no special-casing" teacher model, and
+ * supplies the REAL price `/prof/[slug]` renders (Task: real plan price
+ * instead of a hardcoded $79). A row with no `price_cents_monthly` set
+ * (shouldn't happen via the studio form, but the column is nullable) falls
+ * back to the platform default — mirrors the studio page's own
+ * `myPlan?.priceCentsMonthly ?? SUBSCRIPTION_USD * 100`. GATED + FALLBACK: no
+ * DATABASE_URL, no owner, or a failed query ⇒ `null`, never throws.
  */
-async function hasActiveTeacherPlan(ownerUserId: string | null): Promise<boolean> {
-  if (!dbConfigured() || !ownerUserId) return false;
+async function getActiveTeacherPlan(
+  ownerUserId: string | null,
+): Promise<{ id: string; priceCentsMonthly: number } | null> {
+  if (!dbConfigured() || !ownerUserId) return null;
   try {
     const [row] = await db
-      .select({ id: T.teacherPlans.id })
+      .select({ id: T.teacherPlans.id, priceCentsMonthly: T.teacherPlans.priceCentsMonthly })
       .from(T.teacherPlans)
       .where(and(eq(T.teacherPlans.ownerUserId, ownerUserId), eq(T.teacherPlans.status, 'active')))
       .limit(1);
-    return Boolean(row);
+    if (!row) return null;
+    return {
+      id: row.id,
+      priceCentsMonthly:
+        typeof row.priceCentsMonthly === 'number' && row.priceCentsMonthly > 0
+          ? row.priceCentsMonthly
+          : SUBSCRIPTION_USD * 100,
+    };
   } catch (err) {
-    console.error('[teacher/public] hasActiveTeacherPlan DB read failed, falling back to false:', err);
-    return false;
+    console.error('[teacher/public] getActiveTeacherPlan DB read failed, falling back to null:', err);
+    return null;
+  }
+}
+
+/**
+ * `slug` → the teacher's `users.id`, using the EXACT same resolution order
+ * `getPublicTeacher` itself uses (static `data/teachers.ts` registry first,
+ * then an APPROVED `teacher_profiles.slug`) — shared by
+ * `lib/payments/products.ts`'s per-teacher subscription checkout (Task:
+ * per-teacher subscription checkout) so "who does this slug belong to" is
+ * answered identically everywhere a purchase or a public page needs it.
+ * GATED + NEVER-THROW: no DATABASE_URL, unknown/non-approved slug, or a
+ * failed query ⇒ `null`.
+ */
+export async function resolveTeacherOwnerUserIdBySlug(slug: string): Promise<string | null> {
+  const staticTeacher = getTeacher(slug);
+  if (staticTeacher) return getTeacherOwnerUserId(staticTeacher.courseSlugs);
+  if (!dbConfigured()) return null;
+  try {
+    const [row] = await db
+      .select({ userId: T.teacherProfiles.userId })
+      .from(T.teacherProfiles)
+      .where(and(eq(T.teacherProfiles.slug, slug), eq(T.teacherProfiles.status, 'approved')))
+      .limit(1);
+    return row?.userId ?? null;
+  } catch (err) {
+    console.error('[teacher/public] resolveTeacherOwnerUserIdBySlug DB read failed, falling back to null:', err);
+    return null;
   }
 }
 
@@ -243,10 +294,10 @@ async function getPublicTeacherFromDbSlug(slug: string, locale: string): Promise
     const profile = mapDbTeacherProfile(row);
     const ownerUserId = profile.userId;
 
-    const [ownerSlugs, rating, hasPlan, publishedAll] = await Promise.all([
+    const [ownerSlugs, rating, activePlan, publishedAll] = await Promise.all([
       getOwnerCourseSlugs(ownerUserId),
       getTeacherRating(ownerUserId),
-      hasActiveTeacherPlan(ownerUserId),
+      getActiveTeacherPlan(ownerUserId),
       getPublishedCourses(),
     ]);
     const slugsForCourses = ownerSlugs ?? [];
@@ -282,7 +333,8 @@ async function getPublicTeacherFromDbSlug(slug: string, locale: string): Promise
       studentCount,
       courses,
       joinedYear,
-      hasPlan,
+      hasPlan: Boolean(activePlan),
+      plan: activePlan,
     };
   } catch (err) {
     console.error('[teacher/public] getPublicTeacherFromDbSlug DB read failed, falling back to null:', err);
@@ -317,14 +369,18 @@ export async function getPublicTeacher(slug: string, locale: string): Promise<Pu
   const ownerSlugs = ownerUserId ? await getOwnerCourseSlugs(ownerUserId) : null;
   const slugsForCourses = ownerSlugs ?? staticTeacher.courseSlugs;
 
-  const [publishedAll, rating, studentCount, hasPlan] = await Promise.all([
+  const [publishedAll, rating, studentCount, activePlan] = await Promise.all([
     getPublishedCourses(),
     getTeacherRating(ownerUserId ?? ''),
     getDistinctStudentCount(slugsForCourses),
-    // Teacher #1's fallback plan block has always rendered with no DB (see
-    // header) — the real check only kicks in once an owner is resolvable.
-    isTeacherOne ? Promise.resolve(true) : hasActiveTeacherPlan(ownerUserId),
+    getActiveTeacherPlan(ownerUserId),
   ]);
+  // Teacher #1's fallback plan block has always rendered with no DB (see
+  // header) even with no resolvable owner/plan row — `plan` stays `null` in
+  // that exact case (no live row to read a real price from), so renderers
+  // fall back to the platform constant exactly like every other "no DB ⇒
+  // constant" path in this codebase.
+  const hasPlan = isTeacherOne || Boolean(activePlan);
 
   const bySlug = new Map(publishedAll.map((c) => [c.slug, c]));
   const courses = slugsForCourses
@@ -352,5 +408,6 @@ export async function getPublicTeacher(slug: string, locale: string): Promise<Pu
     courses,
     joinedYear: staticTeacher.joinedYear,
     hasPlan,
+    plan: activePlan,
   };
 }
