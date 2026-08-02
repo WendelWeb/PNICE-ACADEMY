@@ -99,11 +99,17 @@ export async function createStripeCheckout(
   // no-DB platform-default fallback, exactly mirroring `courseSlug` above.
   if (input.product.teacherPlanId) params['metadata[teacherPlanId]'] = input.product.teacherPlanId;
   if (input.product.teacherUserId) params['metadata[teacherUserId]'] = input.product.teacherUserId;
+  // Task: two subscription products — which pass this is ('teacher' | null
+  // for a course purchase, since `kind` is a subscription-only concept).
+  // lib/payments/stripe-events.ts reads this back off the webhook payload so
+  // lib/payments/fulfill.ts can store it on the local `subscriptions` row.
+  if (input.product.kind) params['metadata[kind]'] = input.product.kind;
   if (input.mode === 'subscription') {
     params['line_items[0][price_data][recurring][interval]'] = 'month';
     params['subscription_data[metadata][userDbId]'] = input.userDbId;
     if (input.product.teacherPlanId) params['subscription_data[metadata][teacherPlanId]'] = input.product.teacherPlanId;
     if (input.product.teacherUserId) params['subscription_data[metadata][teacherUserId]'] = input.product.teacherUserId;
+    if (input.product.kind) params['subscription_data[metadata][kind]'] = input.product.kind;
   } else {
     params['payment_intent_data[metadata][userDbId]'] = input.userDbId;
   }

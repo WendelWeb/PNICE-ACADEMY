@@ -13,7 +13,15 @@ export type StripeAction =
        *  `teacher_plans.id` charged (lib/payments/products.ts), when the
        *  purchase resolved to one. `null` for a course purchase or the
        *  no-DB platform-default fallback. */
-      teacherPlanId: string | null }
+      teacherPlanId: string | null;
+      /** Task: two subscription products — 'teacher' | 'platform', read off
+       *  `metadata[kind]` (lib/payments/stripe.ts). Defaults to 'platform'
+       *  when absent (a course purchase — this field is ignored either way —
+       *  or an in-flight checkout session created before this metadata
+       *  existed): the SAME conservative "unknown ⇒ all-access, never
+       *  retroactively locked out" choice as the `subscriptions.kind` column
+       *  default (db/schema.ts). */
+      subscriptionKind: 'teacher' | 'platform' }
   | { kind: 'invoice_paid'; eventId: string; subscriptionId: string | null;
       paymentIntentId: string | null; amountCents: number; currency: string;
       billingReason: string | null; periodEnd: number | null }
@@ -50,6 +58,7 @@ export function mapStripeEvent(evt: unknown): StripeAction {
       subscriptionId: str(o.subscription),
       customerEmail: str(o.customer_details?.email),
       teacherPlanId: str(meta.teacherPlanId),
+      subscriptionKind: meta.kind === 'teacher' ? 'teacher' : 'platform',
     };
   }
   if (type === 'invoice.paid') {

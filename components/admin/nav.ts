@@ -41,6 +41,7 @@ import {
   IconCurrencyDollar,
   IconFileText,
   IconChalkboard,
+  IconReceipt2,
   type Icon as TablerIcon,
 } from '@tabler/icons-react';
 import type { AdminRole } from '@/lib/admin/roles';
@@ -131,6 +132,11 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
       // (roles.manage ⇒ super-admin only in lib/admin/permissions's matrix): the
       // rate is platform-owner-level, not a regular admin setting.
       { key: 'taux', href: '/admin/taux', icon: 'taux', enabled: true, cap: 'roles.manage' },
+      // Task: two subscription products — the owner-set "Pass PNICE"
+      // all-access price. Same cap as 'taux' (roles.manage ⇒ super-admin
+      // only): a platform-wide price is owner-level, same reasoning as the
+      // FX rate.
+      { key: 'prix', href: '/admin/prix', icon: 'prix', enabled: true, cap: 'roles.manage' },
       { key: 'roles', href: '/admin/role', icon: 'roles', enabled: true, cap: 'roles.manage' },
       { key: 'audit', href: '/admin/audit', icon: 'audit', enabled: true, cap: 'roles.manage' },
       { key: 'health', href: '/admin/sante', icon: 'health', enabled: true, cap: 'support.read' },
@@ -162,6 +168,7 @@ export const ADMIN_NAV_ICONS: Record<string, TablerIcon> = {
   settings: IconSettings,
   platform: IconAdjustments,
   taux: IconCurrencyDollar,
+  prix: IconReceipt2,
   siteContent: IconFileText,
   myStudio: IconChalkboard,
 };

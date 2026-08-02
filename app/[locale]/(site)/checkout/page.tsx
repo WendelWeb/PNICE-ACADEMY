@@ -74,6 +74,15 @@ export default async function CheckoutPage({
       : t('subItem')
     : courseTitle(course!, locale);
   const itemSub = isSub ? t('subPer') : t('unitLabel');
+  // Task: two subscription products — make the SCOPE of a subscription
+  // purchase unambiguous right on the order summary: the platform-wide
+  // "Pass PNICE" covers every course; a named teacher's pass covers only
+  // that teacher's own courses. `null` for a one-off course purchase.
+  const scopeNote = isSub
+    ? teacherForDisplay
+      ? t('subTeacherOnlyNote', { name: teacherForDisplay.displayName })
+      : t('subAllCoursesNote')
+    : null;
   const sealCode = isSub ? teacherForDisplay?.initials ?? 'PA' : course!.code;
   const perLabel = isSub ? tc('perMonth') : '';
 
@@ -121,6 +130,11 @@ export default async function CheckoutPage({
                 <p className="mt-1 font-mono text-xs text-graphite/60">
                   {itemSub}
                 </p>
+                {scopeNote && (
+                  <p className="mt-1.5 text-xs leading-snug text-teal">
+                    {scopeNote}
+                  </p>
+                )}
               </div>
             </div>
 

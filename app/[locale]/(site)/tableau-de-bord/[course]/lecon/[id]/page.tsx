@@ -17,7 +17,7 @@ import { getCourseBySlug, getCourseDetail } from '@/lib/courses/source';
 import { courseTitle, lessonTitle } from '@/lib/courseFields';
 import { cn } from '@/lib/cn';
 import { clerkEnabled } from '@/lib/clerk';
-import { hasCourseAccess, getCourseProgress } from '@/lib/learner/access';
+import { hasCourseAccess, getCourseProgress, getActiveTeacherPassOwner } from '@/lib/learner/access';
 import { MarkLessonDoneButton } from '@/components/dashboard/MarkLessonDoneButton';
 import { LessonPlayer as LessonVideoPlayer } from '@/components/learn/LessonPlayer';
 import { ResourceLinks } from '@/components/courses/ResourceLinks';
@@ -185,16 +185,47 @@ export default async function LessonPlayer({
   const clerkId = clerkEnabled ? (await auth()).userId : null;
   const access = clerkId ? await hasCourseAccess(clerkId, slug) : false;
   const preview = isPreviewLesson(n);
+  const t = await getTranslations('lesson');
 
-  // Binding access model (Task L1): reachable only with real course access,
-  // or if this specific lesson is a free preview. Otherwise → buy page.
+  // Binding access model (Task L1, updated by Task: two subscription
+  // products): reachable only with real course access, or if this specific
+  // lesson is a free preview. Otherwise → buy page — UNLESS the learner
+  // holds an active subscription that just doesn't cover THIS course (a
+  // teacher pass for a DIFFERENT teacher): a silent redirect there is a dead
+  // end that reads like a bug ("I thought I had a subscription!"). That case
+  // renders its own explanatory card below instead, and returns early —
+  // before `current`/the video player are ever touched — so an unauthorized
+  // viewer still never reaches the lesson content itself.
   if (!access && !preview) {
-    redirect(`/${locale}/formations/${slug}`);
+    const heldPass = clerkId ? await getActiveTeacherPassOwner(clerkId) : null;
+    if (!heldPass) {
+      redirect(`/${locale}/formations/${slug}`);
+    }
+    return (
+      <Container className="py-16">
+        <div className="mx-auto max-w-lg rounded-2xl border border-ink/12 bg-paper-light p-8 text-center">
+          <IconLock size={26} className="mx-auto text-ochre" />
+          <h1 className="mt-4 font-display text-2xl font-black text-ink">
+            {t('teacherPassMismatch.title')}
+          </h1>
+          <p className="mt-3 text-sm leading-relaxed text-graphite/75">
+            {t('teacherPassMismatch.body', { name: heldPass.displayName })}
+          </p>
+          <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <Link href="/checkout?plan=sub" className={buttonClasses('primary', 'md')}>
+              {t('teacherPassMismatch.upgradeCta')}
+            </Link>
+            <Link href={`/formations/${slug}`} className={buttonClasses('ghost', 'md')}>
+              {t('teacherPassMismatch.buyThisCta')}
+            </Link>
+          </div>
+        </div>
+      </Container>
+    );
   }
 
   const completed = access && clerkId ? await getCourseProgress(clerkId, slug) : new Set<number>();
 
-  const t = await getTranslations('lesson');
   const current = course.lessons[n - 1];
 
   // Task K3 — curriculum grouping (chapters/notes/resources), read alongside

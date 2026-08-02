@@ -20,6 +20,7 @@ import { resolveAdminRole } from '@/lib/admin/access';
 import { isAdminRole, type AdminRole } from '@/lib/admin/roles';
 import { can, type Capability } from '@/lib/admin/permissions';
 import { setFxRate } from '@/lib/fx';
+import { setPlatformPassPriceCents } from '@/lib/platformPrice';
 import {
   grantCourseAccess,
   revokeCourseAccess,
@@ -165,6 +166,28 @@ export async function setFxRateAction(rate: number): Promise<ActionResult> {
     // route across both locales so an already-cached client picks up the
     // new rate immediately rather than on next natural revalidation —
     // mirrors lib/courses/write.ts's revalidateCoursePaths.
+    revalidatePath('/[locale]', 'layout');
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+// Task: two subscription products — the owner-set "Pass PNICE" all-access
+// price. `usd` is a plain dollar amount from the admin form (e.g. 79, or
+// 79.99); mirrors setFxRateAction's shape exactly (same capability, same
+// belt-and-suspenders rounding on top of lib/platformPrice.ts's own guard,
+// same revalidate-the-public-site-on-write reasoning — the price shows up on
+// /checkout and /prof/[slug] via server components reading it fresh).
+export async function setPlatformPassPriceAction(usd: number): Promise<ActionResult> {
+  try {
+    const { actor } = await requireAdmin('settings.manage');
+    if (!Number.isFinite(usd) || usd <= 0 || usd > 100000) {
+      return { ok: false, message: 'invalid_price' };
+    }
+    const cents = Math.round(usd * 100);
+    await setPlatformPassPriceCents(cents);
+    await recordAudit({ action: 'set_platform_pass_price', userId: actor.id, admin: actor, detail: String(cents) });
     revalidatePath('/[locale]', 'layout');
     return { ok: true };
   } catch (e) {

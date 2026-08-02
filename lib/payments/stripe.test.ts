@@ -66,6 +66,7 @@ describe('createStripeCheckout — teacher metadata (Task: per-teacher subscript
       amountCents: 3000,
       teacherPlanId: 'plan-123',
       teacherUserId: 'owner-456',
+      kind: 'teacher',
     };
 
     await createStripeCheckout({ ...baseInput, mode: 'subscription', product });
@@ -88,6 +89,7 @@ describe('createStripeCheckout — teacher metadata (Task: per-teacher subscript
       amountCents: 900,
       teacherPlanId: null,
       teacherUserId: null,
+      kind: null,
     };
 
     await createStripeCheckout({ ...baseInput, mode: 'payment', product });
@@ -97,17 +99,19 @@ describe('createStripeCheckout — teacher metadata (Task: per-teacher subscript
     expect(body.has('metadata[teacherPlanId]')).toBe(false);
     expect(body.has('metadata[teacherUserId]')).toBe(false);
     expect(body.has('subscription_data[metadata][teacherPlanId]')).toBe(false);
+    expect(body.has('metadata[kind]')).toBe(false);
   });
 
   it('omits teacher metadata for the platform-default subscription (no specific plan resolved)', async () => {
     const product: ResolvedProduct = {
       productType: 'subscription',
       courseSlug: null,
-      nameHt: 'Abònman chak mwa PNICE Academy',
-      nameFr: 'Abonnement mensuel PNICE Academy',
+      nameHt: 'Pass PNICE — tout kou yo',
+      nameFr: 'Pass PNICE — toutes les formations',
       amountCents: 7900,
       teacherPlanId: null,
       teacherUserId: null,
+      kind: 'platform',
     };
 
     await createStripeCheckout({ ...baseInput, mode: 'subscription', product });
@@ -118,5 +122,62 @@ describe('createStripeCheckout — teacher metadata (Task: per-teacher subscript
     expect(body.has('subscription_data[metadata][teacherPlanId]')).toBe(false);
     // userDbId is still always present, unaffected by the teacher fields.
     expect(body.get('subscription_data[metadata][userDbId]')).toBe('user-1');
+  });
+
+  // Task: two subscription products — `kind` metadata is what
+  // lib/payments/fulfill.ts uses to tag the local `subscriptions` row.
+  describe('kind metadata (Task: two subscription products)', () => {
+    it('puts kind=platform on both session and subscription_data metadata', async () => {
+      const product: ResolvedProduct = {
+        productType: 'subscription',
+        courseSlug: null,
+        nameHt: 'Pass PNICE — tout kou yo',
+        nameFr: 'Pass PNICE — toutes les formations',
+        amountCents: 7900,
+        teacherPlanId: null,
+        teacherUserId: null,
+        kind: 'platform',
+      };
+      await createStripeCheckout({ ...baseInput, mode: 'subscription', product });
+      const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      const body = new URLSearchParams(init.body as string);
+      expect(body.get('metadata[kind]')).toBe('platform');
+      expect(body.get('subscription_data[metadata][kind]')).toBe('platform');
+    });
+
+    it('puts kind=teacher on both session and subscription_data metadata', async () => {
+      const product: ResolvedProduct = {
+        productType: 'subscription',
+        courseSlug: null,
+        nameHt: 'Abònman chak mwa — Pwofesè Live',
+        nameFr: 'Abonnement mensuel — Pwofesè Live',
+        amountCents: 3000,
+        teacherPlanId: 'plan-123',
+        teacherUserId: 'owner-456',
+        kind: 'teacher',
+      };
+      await createStripeCheckout({ ...baseInput, mode: 'subscription', product });
+      const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      const body = new URLSearchParams(init.body as string);
+      expect(body.get('metadata[kind]')).toBe('teacher');
+      expect(body.get('subscription_data[metadata][kind]')).toBe('teacher');
+    });
+
+    it('omits kind metadata for a course purchase', async () => {
+      const product: ResolvedProduct = {
+        productType: 'course',
+        courseSlug: 'zouti-finansye-dijital',
+        nameHt: 'Fòmasyon',
+        nameFr: 'Formation',
+        amountCents: 900,
+        teacherPlanId: null,
+        teacherUserId: null,
+        kind: null,
+      };
+      await createStripeCheckout({ ...baseInput, mode: 'payment', product });
+      const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      const body = new URLSearchParams(init.body as string);
+      expect(body.has('metadata[kind]')).toBe(false);
+    });
   });
 });

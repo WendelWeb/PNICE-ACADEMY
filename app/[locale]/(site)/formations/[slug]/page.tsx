@@ -33,7 +33,7 @@ import { getCourseRating, getTeacherOwnerUserId, getTeacherRating } from '@/lib/
 import { getCourseTeacher, teacherShortBio } from '@/data/teachers';
 import { getCourseTestimonial } from '@/lib/admin/site/ops';
 import { courseImages, siteImageSrc } from '@/lib/courseImage';
-import { subscription } from '@/data/pricing';
+import { getPlatformPassPriceCents } from '@/lib/platformPrice';
 import {
   courseTitle,
   courseTagline,
@@ -86,6 +86,12 @@ export default async function CourseDetail({
   const tc = await getTranslations('common');
   const tCatalog = await getTranslations('catalog');
   const tReviews = await getTranslations('reviews');
+  // Task: two subscription products — the "Pass PNICE" ghost CTA below
+  // shows the LIVE owner-set price (lib/platformPrice.ts), never the static
+  // data/pricing.ts constant it used to read (that constant is now only the
+  // no-DB/no-settings-row FALLBACK `getPlatformPassPriceCents` itself falls
+  // back to — see that module's header).
+  const platformPassUsd = (await getPlatformPassPriceCents()) / 100;
   const rating = await getCourseRating(slug);
 
   const learn = courseLearn(course, locale);
@@ -511,7 +517,7 @@ export default async function CourseDetail({
                   href="/checkout?plan=sub"
                   className={buttonClasses('ghost', 'lg', 'w-full')}
                 >
-                  {t('buyCard.subscribeCta', { price: formatUsd(subscription.usd) })}
+                  {t('buyCard.subscribeCta', { price: formatUsd(platformPassUsd) })}
                 </AuthCta>
               </div>
             </aside>

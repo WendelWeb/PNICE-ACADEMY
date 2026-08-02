@@ -123,9 +123,9 @@
       "profileLink": "Wè pwofil li",
       "sub": {
         "eyebrow": "Abònman",
-        "title": "Abònman PNICE Academy",
-        "body": "Louvri tout {count, plural, one {1 fòmasyon} other {# fòmasyon}} PNICE Academy yo ak yon sèl abònman.",
-        "cta": "Pran abònman an"
+        "title": "Pass PNICE — tout kou yo",
+        "body": "Louvri TOUT fòmasyon sou platfòm PNICE la — chak anseyan — ak yon sèl abònman.",
+        "cta": "Pran Pass PNICE la"
       }
     },
     "how": {
@@ -276,7 +276,7 @@
     },
     "buyCard": {
       "guarantee": "Peman sekirize · Aksè aktive kou konfimasyon an rive",
-      "subscribeCta": "Abònman {price}/mwa"
+      "subscribeCta": "Pass PNICE (tout kou) — {price}/mwa"
     },
     "manifest": {
       "previewLabel": "Apèsi",
@@ -673,9 +673,11 @@
   "checkout": {
     "title": "Peman",
     "summary": "Rezime kòmand",
-    "subItem": "Abònman PNICE Academy",
+    "subItem": "Pass PNICE — tout kou yo",
     "subItemTeacher": "Abònman — {name}",
     "subPer": "Faktire chak mwa",
+    "subAllCoursesNote": "Aksè a TOUT kou/fòmasyon sou PNICE — chak pwofesè.",
+    "subTeacherOnlyNote": "Aksè sèlman a kou {name} yo — pa gen aksè a lòt pwofesè.",
     "unitLabel": "Fòmasyon · aksè a vi",
     "methodTitle": "Chwazi mwayen pou peye",
     "total": "Total",
@@ -746,7 +748,13 @@
     "partLabel": "Pati {n} · {title}",
     "partAndLesson": "Pati {part} · Leson {n}",
     "notesTitle": "Nòt anseyan an",
-    "resourcesTitle": "Resous"
+    "resourcesTitle": "Resous",
+    "teacherPassMismatch": {
+      "title": "Ou gen yon abònman — men pa pou fòmasyon sa a",
+      "body": "Ou gen Pass {name} la, ki bay aksè sèlman a fòmasyon {name} yo. Fòmasyon sa a se pou yon lòt pwofesè.",
+      "upgradeCta": "Pran Pass PNICE — tout kou yo",
+      "buyThisCta": "Oswa achte fòmasyon sa a apa"
+    }
   },
   "auth": {
     "signInTitle": "Konekte",
@@ -1090,6 +1098,7 @@
       "audit": "Odit",
       "platform": "Platefòm",
       "taux": "To chanj",
+      "prix": "Pri Pass PNICE",
       "health": "Sante sistèm",
       "siteContent": "Kontni sit la",
       "myStudio": "Estidyo fòmasyon mwen",
@@ -2514,6 +2523,7 @@
         "resend_verification": "Verif voye ankò",
         "resend_receipt": "Resi voye ankò",
         "set_fx_rate": "To FX modifye",
+        "set_platform_pass_price": "Pri Pass PNICE modifye",
         "dunning_reminder": "Relans dunning",
         "engagement_reminder": "Rapèl angajman",
         "revoke_certificate": "Sètifika revoke",
@@ -2593,6 +2603,12 @@
         "note": "Chak anseyan kounye a fikse pwòp pri abònman chak mwa li nan studio pa li.",
         "cta": "Ale nan studio anseyan an"
       },
+      "platformPrice": {
+        "title": "Pri Pass PNICE (tout kou)",
+        "perMonth": " / mwa",
+        "lastBy": "Dènye modif : {name}",
+        "neverEdited": "Pa janm modifye depi admin"
+      },
       "maintenance": {
         "title": "Mòd antretyen",
         "note": "Lè l aktive, sit piblik la bloke (sof /admin). Paj dinamik yo afekte tousuit.",
@@ -2614,6 +2630,25 @@
       "fxStale": "To a pa mete ajou depi plis pase 7 jou.",
       "fxLastBy": "Dènye modif : {name}",
       "fxNeverEdited": "Pa janm modifye depi admin"
+    },
+    "prix": {
+      "subtitle": "Pri Pass PNICE la — abònman ki bay aksè a TOUT kou sou platfòm nan, defini pa administratè a.",
+      "explain": "Pri sa a se sèlman pou Pass PNICE la (aksè a tout kou). Chak pwofesè kontinye fikse pwòp pri abònman pa yo apa, nan studio pa yo.",
+      "neverReviewed": "Pri a pa t verifye depi plis pase 6 mwa.",
+      "lastBy": "Dènye modif : {name}",
+      "neverEdited": "Pa janm modifye depi admin",
+      "panel": {
+        "title": "Pri Pass PNICE la",
+        "help": "Pri abònman ki bay aksè a TOUT kou sou PNICE, chak mwa.",
+        "label": "Pri chak mwa",
+        "perMonth": "/ mwa",
+        "save": "Anrejistre",
+        "saved": "Pri mete ajou.",
+        "invalid": "Pri pa valab.",
+        "error": "Erè.",
+        "updated": "Dènye mizajou",
+        "readonly": "Lekti sèlman (rezève pou admin)."
+      }
     },
     "support": {
       "subtitle": "Bwat sipò : tikè itilizatè yo.",

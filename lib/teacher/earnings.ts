@@ -62,6 +62,16 @@
  * all — unknown course, no owner, or no active plan anywhere — the ledger
  * row is skipped entirely (logged, never thrown): a payment must never be
  * blocked or retried just because we couldn't figure out who to credit.
+ *
+ * SEAM for the pro-rata payout split (Task: two subscription products, follow-
+ * up task NOT built here): a 'platform' subscription payment (the "Pass
+ * PNICE" all-access pass, `subscriptions.kind = 'platform'`) is NEVER
+ * attributed to a single teacher — `recordSaleEarning` returns early for one,
+ * writing NO `earnings_ledger` row at all. The sale is still fully recorded
+ * (the `payments` row fulfill.ts already durably inserted, reachable via
+ * `payments.related_subscription_id` → `subscriptions.kind = 'platform'`) —
+ * a later batch job reads those payments and splits their 70% pro-rata
+ * across active teachers. Do not build that split here.
  */
 import { eq, and, sql } from 'drizzle-orm';
 import { db, schema } from '@/db';
@@ -114,6 +124,12 @@ export type FulfilledPayment = {
    *  RESOLUTION note. Always `null` for a course payment (ignored either
    *  way — course ownership resolves via `courseSlug`). */
   teacherPlanId: string | null;
+  /** 'teacher' | 'platform' — only meaningful when `productType ===
+   *  'subscription'` (Task: two subscription products). A 'platform' sale
+   *  (the "Pass PNICE" all-access pass) is the SEAM described in the file
+   *  header: no ledger row is written for it here. Omit/leave `undefined`
+   *  for a course payment — it's ignored either way. */
+  subscriptionKind?: 'teacher' | 'platform';
 };
 
 /**
@@ -173,6 +189,13 @@ async function resolveTeacherUserId(p: {
  */
 export async function recordSaleEarning(payment: FulfilledPayment): Promise<void> {
   try {
+    // SEAM for the pro-rata payout split (see file header) — a platform-wide
+    // "Pass PNICE" sale is deliberately left unattributed at sale time. No DB
+    // read even happens here: the payment row is already durably recorded by
+    // fulfill.ts before this is called, so skipping is a pure no-op.
+    if (payment.productType === 'subscription' && payment.subscriptionKind === 'platform') {
+      return;
+    }
     const teacherUserId = await resolveTeacherUserId({
       productType: payment.productType,
       courseSlug: payment.courseSlug,

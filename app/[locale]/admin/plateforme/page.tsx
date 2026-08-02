@@ -4,9 +4,11 @@ import { IconCurrencyDollar, IconAlertTriangle, IconArrowRight, IconReceipt2 } f
 import { resolveAdminRole } from '@/lib/admin/access';
 import { getPlatform } from '@/lib/admin/platform/store';
 import { getFxRate } from '@/lib/fx';
+import { getPlatformPassPriceCents } from '@/lib/platformPrice';
 import { getAuditLog, getReferralCreditCents, getSupportSettings } from '@/lib/admin/data';
 import { hasCap } from '@/lib/admin/guard';
 import { fmtDateTime, fmtInt } from '@/lib/admin/format';
+import { formatUsd } from '@/lib/money';
 import { Forbidden } from '@/components/admin/Forbidden';
 import { Link } from '@/i18n/routing';
 import { ProvidersPanel, MaintenancePanel } from '@/components/admin/platform/PlatformPanels';
@@ -36,6 +38,15 @@ export default async function PlatformPage({ params: { locale } }: { params: { l
   // timestamp; never edited ⇒ unknown provenance, treated as stale.
   const updatedAt = lastFx.rows[0]?.createdAt ?? null;
   const fxStale = !updatedAt || Date.now() - Date.parse(updatedAt) > 7 * DAY;
+
+  // Task: two subscription products — the owner-set "Pass PNICE" all-access
+  // price now has its own dedicated editor (/admin/prix, mirroring the FX
+  // page); this is a read-only pointer to it, same pattern as the FX row
+  // right below.
+  const platformPassPriceCents = await getPlatformPassPriceCents();
+  const lastPriceEdit = await getAuditLog({ action: 'set_platform_pass_price', pageSize: 1 });
+  const lastPriceAdmin = lastPriceEdit.rows[0]?.adminName ?? null;
+  const priceUpdatedAt = lastPriceEdit.rows[0]?.createdAt ?? null;
 
   // Moved here from /admin/parametres (Task A1, 2026-07-30 admin restructure):
   // these are business settings, not site content — same props/data loading
@@ -75,6 +86,28 @@ export default async function PlatformPage({ params: { locale } }: { params: { l
           {t('subprice.cta')} <IconArrowRight size={13} />
         </Link>
       </section>
+
+      {/* Task: two subscription products — the DISTINCT, owner-set "Pass
+          PNICE" all-access price (not a teacher's own plan price). Same
+          read-only-pointer pattern as the FX row right below. */}
+      <Link
+        href="/admin/prix"
+        className="flex items-center justify-between gap-2 rounded-xl border border-ink/12 bg-paper-light p-4 hover:border-ochre/40"
+      >
+        <span>
+          <span className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wide text-ink/55">
+            <IconReceipt2 size={13} /> {t('platformPrice.title')}
+          </span>
+          <span className="mt-1 block font-mono text-sm text-ink tabular-nums">
+            {formatUsd(platformPassPriceCents / 100)}{t('platformPrice.perMonth')}
+          </span>
+          <span className="mt-0.5 block font-mono text-[10px] text-ink/45">
+            {lastPriceAdmin ? t('platformPrice.lastBy', { name: lastPriceAdmin }) : t('platformPrice.neverEdited')} ·{' '}
+            {fmtDateTime(priceUpdatedAt, locale)}
+          </span>
+        </span>
+        <IconArrowRight size={18} className="shrink-0 text-ochre" />
+      </Link>
 
       {/* FX — read-only here; editing moved to its own dedicated page
           (Task fix/fx-rate-unify, owner request: the edit form buried in

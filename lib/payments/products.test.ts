@@ -17,6 +17,29 @@ describe('resolveProduct', () => {
     expect(p!.productType).toBe('subscription');
   });
 
+  // Task: two subscription products — the bare `/checkout?plan=sub` path (no
+  // teacherSlug) is the "Pass PNICE" all-access pass, tagged 'platform' and
+  // carrying no teacherPlanId/teacherUserId — the fix for the bug where this
+  // path used to silently charge (and attribute 100% of the commission to)
+  // teacher #1's own plan.
+  describe('kind tagging (Task: two subscription products)', () => {
+    it('the platform-default subscription is tagged platform', async () => {
+      const p = await resolveProduct({ productType: 'subscription' });
+      expect(p!.kind).toBe('platform');
+    });
+
+    it("a named teacher's subscription is tagged teacher", async () => {
+      const teacherOne = teachers[0]!;
+      const p = await resolveProduct({ productType: 'subscription', teacherSlug: teacherOne.slug });
+      expect(p!.kind).toBe('teacher');
+    });
+
+    it('a course purchase carries no kind', async () => {
+      const p = await resolveProduct({ productType: 'course', courseSlug: courses[0]!.slug });
+      expect(p!.kind).toBeNull();
+    });
+  });
+
   it('resolves every catalog course with its own price in cents (via the DB source, fallback == static today)', async () => {
     for (const c of courses) {
       const p = await resolveProduct({ productType: 'course', courseSlug: c.slug });

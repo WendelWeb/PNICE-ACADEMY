@@ -6,7 +6,7 @@
  * lib/teacher/profile.test.ts's approach for its own pure helpers).
  */
 import { describe, it, expect } from 'vitest';
-import { splitEarnings, reverseSale, type SaleAmounts } from './earnings';
+import { splitEarnings, reverseSale, recordSaleEarning, type SaleAmounts } from './earnings';
 
 describe('splitEarnings — the ONE place gross → (commission, net) happens', () => {
   it('splits a $79.00 sale 70/30 (commission 30%)', () => {
@@ -57,5 +57,25 @@ describe('reverseSale — negates a recorded sale into its refund counterpart', 
     expect(sale.grossCents + reversed.grossCents).toBe(0);
     expect(sale.commissionCents + reversed.commissionCents).toBe(0);
     expect(sale.netCents + reversed.netCents).toBe(0);
+  });
+});
+
+// Task: two subscription products — the pro-rata payout split seam. A
+// 'platform' subscription sale must never reach a teacher's ledger, and
+// (money-critical) must never throw even with no DB configured — the skip
+// happens BEFORE any DB read, so this is testable with no DATABASE_URL.
+describe('recordSaleEarning — platform-pass seam (Task: two subscription products)', () => {
+  it('resolves without throwing and writes nothing for a platform subscription sale', async () => {
+    await expect(
+      recordSaleEarning({
+        id: 'payment-1',
+        amountCents: 7900,
+        currency: 'USD',
+        productType: 'subscription',
+        courseSlug: null,
+        teacherPlanId: null,
+        subscriptionKind: 'platform',
+      }),
+    ).resolves.toBeUndefined();
   });
 });

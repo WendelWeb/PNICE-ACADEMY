@@ -8,29 +8,33 @@ import { buttonClasses } from '@/components/ui/Button';
 import { AuthCta } from '@/components/auth/AuthCta';
 import { Price, PriceSecondary } from '@/components/ui/Price';
 import { teachers, teacherCourses, teacherShortBio } from '@/data/teachers';
-import {
-  subscription,
-  subscriptionPerks_ht,
-  subscriptionPerks_fr,
-} from '@/data/pricing';
+import { subscriptionPerks_ht, subscriptionPerks_fr } from '@/data/pricing';
+import { getPlatformPassPriceCents } from '@/lib/platformPrice';
 import { siteImageSrc } from '@/lib/courseImage';
 
 /**
  * PNICE Academy presented as the flagship teacher (M1 target flow #4) — a
- * teacher card (photo, name, stat line, bio, link to /prof/[slug]) that
- * ALSO carries the attributed $79 pass: "Abònman PNICE Academy", not "the
- * platform subscription". `id="pri"` is the anchor nav/footer's `/#pri`
- * link already points at (previously the removed global Pricing table).
+ * teacher card (photo, name, stat line, bio, link to /prof/[slug]) that ALSO
+ * carries a CTA for "Pass PNICE" — Task: two subscription products. This is
+ * genuinely THE PLATFORM subscription now (every published course, every
+ * teacher), priced by the owner (lib/platformPrice.ts) — it is NOT teacher
+ * #1's own pass, even though it's presented alongside their spotlight card;
+ * that used to be true (this comment used to say the opposite) back when
+ * PNICE Academy was the only teacher and `/checkout?plan=sub` silently
+ * charged their own `teacher_plans` price. `id="pri"` is the anchor
+ * nav/footer's `/#pri` link already points at (previously the removed global
+ * Pricing table).
  *
  * Teacher #1 today (data/teachers.ts has exactly one), but reads from the
  * registry rather than hardcoding — when more teachers exist, this becomes
  * "the featured teacher" instead of "the only teacher".
  */
 export async function TeacherSpotlight() {
-  const [t, tc, locale] = await Promise.all([
+  const [t, tc, locale, platformPassCents] = await Promise.all([
     getTranslations('home.spotlight'),
     getTranslations('common'),
     getLocale(),
+    getPlatformPassPriceCents(),
   ]);
 
   const teacher = teachers[0];
@@ -38,6 +42,7 @@ export async function TeacherSpotlight() {
   const shortBio = teacherShortBio(teacher, locale);
   const photo = siteImageSrc(teacher.imageName);
   const perks = locale === 'ht' ? subscriptionPerks_ht : subscriptionPerks_fr;
+  const platformPassUsd = platformPassCents / 100;
 
   return (
     <Section id="pri" className="bg-paper">
@@ -91,19 +96,20 @@ export async function TeacherSpotlight() {
               </Link>
             </div>
 
-            {/* his $79 pass */}
+            {/* Pass PNICE — the platform-wide all-access subscription, not
+                teacher #1's own pass (see the file header) */}
             <div className="flex flex-col justify-center border-t-2 border-ochre/40 bg-ochre/[0.06] p-7 md:border-l-2 md:border-t-0 md:p-10">
               <Eyebrow>{t('sub.eyebrow')}</Eyebrow>
               <h3 className="mt-2 font-display text-xl font-bold text-ink">
                 {t('sub.title')}
               </h3>
               <p className="mt-2 max-w-sm text-sm leading-relaxed text-graphite">
-                {t('sub.body', { count: courseCount })}
+                {t('sub.body')}
               </p>
 
               <div className="mt-5 flex items-baseline gap-1.5">
                 <Price
-                  usd={subscription.usd}
+                  usd={platformPassUsd}
                   className="font-display text-5xl font-black leading-none text-ink"
                 />
                 <span className="font-mono text-sm text-graphite/70">
@@ -111,7 +117,7 @@ export async function TeacherSpotlight() {
                 </span>
               </div>
               <p className="mt-1 font-mono text-sm text-graphite/60">
-                <PriceSecondary usd={subscription.usd} />
+                <PriceSecondary usd={platformPassUsd} />
                 {tc('perMonth')}
               </p>
 

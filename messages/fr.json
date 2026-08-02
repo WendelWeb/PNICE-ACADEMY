@@ -123,9 +123,9 @@
       "profileLink": "Voir son profil",
       "sub": {
         "eyebrow": "Abonnement",
-        "title": "Abonnement PNICE Academy",
-        "body": "Débloque les {count, plural, one {1 formation} other {# formations}} de PNICE Academy avec un seul abonnement.",
-        "cta": "Prendre l'abonnement"
+        "title": "Pass PNICE — toutes les formations",
+        "body": "Débloque TOUTES les formations de la plateforme PNICE — tous les enseignants confondus — avec un seul abonnement.",
+        "cta": "Prendre le Pass PNICE"
       }
     },
     "how": {
@@ -276,7 +276,7 @@
     },
     "buyCard": {
       "guarantee": "Paiement sécurisé · Accès activé dès la confirmation",
-      "subscribeCta": "Abonnement {price}/mois"
+      "subscribeCta": "Pass PNICE (toutes formations) — {price}/mois"
     },
     "manifest": {
       "previewLabel": "Aperçu",
@@ -673,9 +673,11 @@
   "checkout": {
     "title": "Paiement",
     "summary": "Récapitulatif",
-    "subItem": "Abonnement PNICE Academy",
+    "subItem": "Pass PNICE — toutes les formations",
     "subItemTeacher": "Abonnement — {name}",
     "subPer": "Facturé chaque mois",
+    "subAllCoursesNote": "Accès à TOUTES les formations de PNICE — tous les enseignants confondus.",
+    "subTeacherOnlyNote": "Accès uniquement aux formations de {name} — pas accès aux autres enseignants.",
     "unitLabel": "Formation · accès à vie",
     "methodTitle": "Choisir le moyen de paiement",
     "total": "Total",
@@ -746,7 +748,13 @@
     "partLabel": "Partie {n} · {title}",
     "partAndLesson": "Partie {part} · Leçon {n}",
     "notesTitle": "Notes de l'enseignant",
-    "resourcesTitle": "Ressources"
+    "resourcesTitle": "Ressources",
+    "teacherPassMismatch": {
+      "title": "Tu as un abonnement — mais pas pour cette formation",
+      "body": "Tu as le Pass {name}, qui donne accès uniquement aux formations de {name}. Cette formation appartient à un autre enseignant.",
+      "upgradeCta": "Prendre le Pass PNICE — toutes les formations",
+      "buyThisCta": "Ou achète cette formation séparément"
+    }
   },
   "auth": {
     "signInTitle": "Connexion",
@@ -1090,6 +1098,7 @@
       "audit": "Audit",
       "platform": "Plateforme",
       "taux": "Taux de change",
+      "prix": "Prix Pass PNICE",
       "health": "Santé système",
       "siteContent": "Contenu du site",
       "myStudio": "Mon studio de formation",
@@ -2514,6 +2523,7 @@
         "resend_verification": "Vérif renvoyée",
         "resend_receipt": "Reçu renvoyé",
         "set_fx_rate": "Taux FX modifié",
+        "set_platform_pass_price": "Prix du Pass PNICE modifié",
         "dunning_reminder": "Relance dunning",
         "engagement_reminder": "Rappel engagement",
         "revoke_certificate": "Certificat révoqué",
@@ -2593,6 +2603,12 @@
         "note": "Chaque enseignant fixe désormais le prix de son propre abonnement mensuel depuis son studio.",
         "cta": "Aller au studio enseignant"
       },
+      "platformPrice": {
+        "title": "Prix du Pass PNICE (toutes les formations)",
+        "perMonth": " / mois",
+        "lastBy": "Dernière modif : {name}",
+        "neverEdited": "Jamais modifié depuis l’admin"
+      },
       "maintenance": {
         "title": "Mode maintenance",
         "note": "Quand activé, le site public est bloqué (sauf /admin). Les pages dynamiques sont affectées immédiatement.",
@@ -2614,6 +2630,25 @@
       "fxStale": "Le taux n'a pas été mis à jour depuis plus de 7 jours.",
       "fxLastBy": "Dernière modif : {name}",
       "fxNeverEdited": "Jamais modifié depuis l’admin"
+    },
+    "prix": {
+      "subtitle": "Le prix du Pass PNICE — l'abonnement qui donne accès à TOUTES les formations de la plateforme, fixé par l'administrateur.",
+      "explain": "Ce prix concerne uniquement le Pass PNICE (accès à toutes les formations). Chaque enseignant continue de fixer son propre prix d'abonnement séparément, depuis son studio.",
+      "neverReviewed": "Le prix n'a pas été vérifié depuis plus de 6 mois.",
+      "lastBy": "Dernière modif : {name}",
+      "neverEdited": "Jamais modifié depuis l’admin",
+      "panel": {
+        "title": "Prix du Pass PNICE",
+        "help": "Prix de l'abonnement donnant accès à TOUTES les formations PNICE, chaque mois.",
+        "label": "Prix mensuel",
+        "perMonth": "/ mois",
+        "save": "Enregistrer",
+        "saved": "Prix mis à jour.",
+        "invalid": "Prix invalide.",
+        "error": "Erreur.",
+        "updated": "Dernière mise à jour",
+        "readonly": "Lecture seule (réservé à l'admin)."
+      }
     },
     "support": {
       "subtitle": "Boîte de support : tickets des utilisateurs.",

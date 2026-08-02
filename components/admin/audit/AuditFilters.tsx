@@ -8,7 +8,7 @@ import { mergeParams } from '@/lib/admin/users-query';
 
 const ACTIONS = [
   'grant_course', 'revoke_course', 'grant_subscription', 'suspend_user', 'ban_user', 'reactivate_user',
-  'refund_payment', 'resend_verification', 'resend_receipt', 'set_fx_rate', 'dunning_reminder', 'engagement_reminder',
+  'refund_payment', 'resend_verification', 'resend_receipt', 'set_fx_rate', 'set_platform_pass_price', 'dunning_reminder', 'engagement_reminder',
   'revoke_certificate', 'reissue_certificate', 'issue_certificate', 'review_request', 'announcement',
   'invite_admin', 'change_admin_role', 'suspend_admin', 'reactivate_admin', 'toggle_provider', 'set_sub_price', 'toggle_maintenance', 'impersonate',
   'create_course', 'update_course', 'update_course_images', 'submit_course_review', 'publish_course', 'unpublish_course',

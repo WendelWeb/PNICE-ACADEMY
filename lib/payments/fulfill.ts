@@ -3,7 +3,7 @@
  * Idempotent by payments.provider_ref: Stripe retries events, and
  * checkout.session.completed + invoice.paid can describe the same charge.
  */
-import { db } from '@/db';
+import { db, isMissingColumnError } from '@/db';
 import {
   payments,
   enrollments,
@@ -38,6 +38,51 @@ export async function fulfillAction(action: StripeAction): Promise<'processed' |
   }
 }
 
+type NewSubscriptionRow = {
+  userId: string;
+  status: 'active';
+  provider: 'stripe';
+  providerRef: string;
+  currentPeriodEnd: Date | null;
+  teacherPlanId: string | null;
+  kind: 'teacher' | 'platform';
+};
+
+/**
+ * Insert a new `subscriptions` row, tolerating a live DB that still lags
+ * this task's migration (`subscriptions.kind` — the owner applies it
+ * manually with `db:push`, see db/migrations/0015's header). Money-critical:
+ * unlike a read (lib/teacher/profile.ts's own migration-lag fix), a webhook
+ * that throws here isn't just a bad response — Stripe redelivers it, but
+ * until the migration lands every redelivery fails the SAME way, leaving a
+ * customer who already paid unable to access what they just bought. On a
+ * missing-column failure, retry the identical insert without `kind` so
+ * checkout keeps working (grandfathered to the DB column's own eventual
+ * 'platform' default) until `db:push` runs.
+ */
+async function insertSubscriptionRow(
+  values: NewSubscriptionRow,
+): Promise<{ id: string }[]> {
+  try {
+    return await db
+      .insert(subscriptions)
+      .values(values)
+      .onConflictDoNothing({ target: subscriptions.providerRef })
+      .returning({ id: subscriptions.id });
+  } catch (err) {
+    if (!isMissingColumnError(err)) throw err;
+    console.warn(
+      '[fulfill] subscriptions insert fell back to pre-migration columns (no kind) — run `npm run db:push`.',
+    );
+    const { kind: _kind, ...rest } = values;
+    return await db
+      .insert(subscriptions)
+      .values(rest)
+      .onConflictDoNothing({ target: subscriptions.providerRef })
+      .returning({ id: subscriptions.id });
+  }
+}
+
 async function paymentExists(providerRef: string): Promise<boolean> {
   const rows = await db
     .select({ id: payments.id })
@@ -45,6 +90,52 @@ async function paymentExists(providerRef: string): Promise<boolean> {
     .where(and(eq(payments.provider, 'stripe'), eq(payments.providerRef, providerRef)))
     .limit(1);
   return rows.length > 0;
+}
+
+type SubscriptionRow = typeof subscriptions.$inferSelect;
+
+/**
+ * `subscriptions` row by `providerRef`, tolerating a live DB that still lags
+ * this task's migration (see `insertSubscriptionRow`'s header for why this
+ * matters here specifically). A bare `db.select()` names EVERY schema
+ * column, so a missing `kind` column would otherwise fail this read
+ * entirely — not just the two-subscription-products feature, but the
+ * renewal/failed-payment handling that already worked before this task
+ * (`fulfillInvoicePaid`/`fulfillInvoiceFailed` below). Retries with the
+ * pre-migration column list and defaults the missing `kind` to 'platform' —
+ * the SAME grandfather default the column's own schema default applies once
+ * `db:push` runs.
+ */
+async function selectSubscriptionByProviderRef(providerRef: string): Promise<SubscriptionRow | undefined> {
+  try {
+    return (
+      await db.select().from(subscriptions).where(eq(subscriptions.providerRef, providerRef)).limit(1)
+    )[0];
+  } catch (err) {
+    if (!isMissingColumnError(err)) throw err;
+    console.warn(
+      '[fulfill] subscriptions read fell back to pre-migration columns (no kind) — run `npm run db:push`.',
+    );
+    const row = (
+      await db
+        .select({
+          id: subscriptions.id,
+          userId: subscriptions.userId,
+          status: subscriptions.status,
+          provider: subscriptions.provider,
+          providerRef: subscriptions.providerRef,
+          currentPeriodEnd: subscriptions.currentPeriodEnd,
+          cancelAtPeriodEnd: subscriptions.cancelAtPeriodEnd,
+          teacherPlanId: subscriptions.teacherPlanId,
+          createdAt: subscriptions.createdAt,
+          updatedAt: subscriptions.updatedAt,
+        })
+        .from(subscriptions)
+        .where(eq(subscriptions.providerRef, providerRef))
+        .limit(1)
+    )[0];
+    return row ? ({ ...row, kind: 'platform' } as SubscriptionRow) : undefined;
+  }
 }
 
 async function findPaymentByRef(providerRef: string): Promise<
@@ -135,6 +226,7 @@ async function fulfillCheckoutCompleted(a: CheckoutCompleted): Promise<'processe
       // to re-read off `a` rather than joining back through
       // `relatedSubscriptionId` (Task: per-teacher subscription checkout).
       teacherPlanId: a.teacherPlanId,
+      subscriptionKind: a.subscriptionKind,
     });
     await ensureCourseEnrollment(userDbId, a.productType, a.courseSlug, existingPayment.id);
     return 'processed';
@@ -160,21 +252,20 @@ async function fulfillCheckoutCompleted(a: CheckoutCompleted): Promise<'processe
       subscriptionRowId = existing.id;
     } else {
       const remote = await getStripeSubscription(subscriptionId);
-      const insertedSubscriptions = await db
-        .insert(subscriptions)
-        .values({
-          userId: userDbId,
-          status: 'active',
-          provider: 'stripe',
-          providerRef: subscriptionId,
-          currentPeriodEnd: remote?.currentPeriodEnd ?? null,
-          // Task: per-teacher subscription checkout — recorded once, at
-          // creation, so every renewal (fulfillInvoicePaid below) reads it
-          // straight off this row instead of re-parsing Stripe metadata.
-          teacherPlanId: a.teacherPlanId,
-        })
-        .onConflictDoNothing({ target: subscriptions.providerRef })
-        .returning({ id: subscriptions.id });
+      const insertedSubscriptions = await insertSubscriptionRow({
+        userId: userDbId,
+        status: 'active',
+        provider: 'stripe',
+        providerRef: subscriptionId,
+        currentPeriodEnd: remote?.currentPeriodEnd ?? null,
+        // Task: per-teacher subscription checkout — recorded once, at
+        // creation, so every renewal (fulfillInvoicePaid below) reads it
+        // straight off this row instead of re-parsing Stripe metadata.
+        teacherPlanId: a.teacherPlanId,
+        // Task: two subscription products — same reasoning: recorded once
+        // at creation, read straight off this row on every renewal.
+        kind: a.subscriptionKind,
+      });
       if (insertedSubscriptions.length > 0) {
         subscriptionRowId = insertedSubscriptions[0].id;
       } else {
@@ -223,6 +314,7 @@ async function fulfillCheckoutCompleted(a: CheckoutCompleted): Promise<'processe
       productType: raced.productType,
       courseSlug: raced.courseSlug,
       teacherPlanId: a.teacherPlanId,
+      subscriptionKind: a.subscriptionKind,
     });
     await ensureCourseEnrollment(userDbId, a.productType, a.courseSlug, raced.id);
     return 'processed';
@@ -241,6 +333,7 @@ async function fulfillCheckoutCompleted(a: CheckoutCompleted): Promise<'processe
     productType: a.productType,
     courseSlug: a.courseSlug,
     teacherPlanId: a.teacherPlanId,
+    subscriptionKind: a.subscriptionKind,
   });
 
   // 3. Course purchase → enrollment (skip if already enrolled and active).
@@ -335,13 +428,7 @@ type InvoicePaid = Extract<StripeAction, { kind: 'invoice_paid' }>;
 
 async function fulfillInvoicePaid(a: InvoicePaid): Promise<'processed' | 'ignored'> {
   if (!a.subscriptionId) return 'ignored'; // one-off invoice, nothing to renew
-  const sub = (
-    await db
-      .select()
-      .from(subscriptions)
-      .where(eq(subscriptions.providerRef, a.subscriptionId))
-      .limit(1)
-  )[0];
+  const sub = await selectSubscriptionByProviderRef(a.subscriptionId);
   if (!sub) {
     // First invoice can arrive before checkout.session.completed → let Stripe
     // retry (the completed handler will have created the row by then).
@@ -384,10 +471,10 @@ async function fulfillInvoicePaid(a: InvoicePaid): Promise<'processed' | 'ignore
   // Additive: record the teacher's earnings-ledger 'sale' row for this
   // renewal charge. NEVER THROWS and internally idempotent (see
   // lib/teacher/earnings.ts's file header) — never blocks fulfillment.
-  // teacherPlanId comes off OUR OWN `subscriptions` row (set once at
+  // teacherPlanId/kind come off OUR OWN `subscriptions` row (set once at
   // creation above), not re-parsed off the invoice — an `invoice.paid`
   // event carries no per-plan metadata of its own (Task: per-teacher
-  // subscription checkout).
+  // subscription checkout / Task: two subscription products).
   await recordSaleEarning({
     id: insertedRenewals[0].id,
     amountCents: a.amountCents,
@@ -395,6 +482,7 @@ async function fulfillInvoicePaid(a: InvoicePaid): Promise<'processed' | 'ignore
     productType: 'subscription',
     courseSlug: null,
     teacherPlanId: sub.teacherPlanId,
+    subscriptionKind: sub.kind,
   });
 
   await db
@@ -408,13 +496,7 @@ type InvoiceFailed = Extract<StripeAction, { kind: 'invoice_failed' }>;
 
 async function fulfillInvoiceFailed(a: InvoiceFailed): Promise<'processed' | 'ignored'> {
   if (!a.subscriptionId) return 'ignored';
-  const sub = (
-    await db
-      .select()
-      .from(subscriptions)
-      .where(eq(subscriptions.providerRef, a.subscriptionId))
-      .limit(1)
-  )[0];
+  const sub = await selectSubscriptionByProviderRef(a.subscriptionId);
   if (!sub) return 'ignored';
   await db
     .update(subscriptions)

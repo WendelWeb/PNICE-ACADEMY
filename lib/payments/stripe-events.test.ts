@@ -18,6 +18,7 @@ describe('mapStripeEvent', () => {
       productType: 'course', courseSlug: 'zouti-finansye-dijital',
       amountCents: 900, currency: 'USD', paymentIntentId: 'pi_1',
       subscriptionId: null, customerEmail: 'x@y.com', teacherPlanId: null,
+      subscriptionKind: 'platform',
     });
   });
 
@@ -38,6 +39,9 @@ describe('mapStripeEvent', () => {
       expect(a.courseSlug).toBeNull();
       expect(a.customerEmail).toBeNull();
       expect(a.teacherPlanId).toBeNull();
+      // No metadata[kind] on this payload — defaults to 'platform', the same
+      // conservative "unknown ⇒ all-access" choice as the DB column default.
+      expect(a.subscriptionKind).toBe('platform');
     }
   });
 
@@ -58,6 +62,26 @@ describe('mapStripeEvent', () => {
     });
     expect(a.kind).toBe('checkout_completed');
     if (a.kind === 'checkout_completed') expect(a.teacherPlanId).toBe('plan-uuid');
+  });
+
+  // Task: two subscription products.
+  it('maps metadata[kind]=teacher and =platform explicitly, and defaults an unknown value to platform', () => {
+    const build = (kind: unknown) =>
+      mapStripeEvent({
+        id: 'evt_kind', type: 'checkout.session.completed',
+        data: { object: {
+          id: 'cs_kind', mode: 'subscription', client_reference_id: 'user-uuid',
+          metadata: { checkoutRowId: 'row-kind', productType: 'subscription', kind },
+          amount_total: 7900, currency: 'usd', payment_intent: null,
+          subscription: 'sub_kind', customer_details: null,
+        } },
+      });
+    const teacherAction = build('teacher');
+    const platformAction = build('platform');
+    const junkAction = build('nonsense');
+    if (teacherAction.kind === 'checkout_completed') expect(teacherAction.subscriptionKind).toBe('teacher');
+    if (platformAction.kind === 'checkout_completed') expect(platformAction.subscriptionKind).toBe('platform');
+    if (junkAction.kind === 'checkout_completed') expect(junkAction.subscriptionKind).toBe('platform');
   });
 
   it('maps invoice.paid with billing reason + period end', () => {

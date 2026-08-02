@@ -21,14 +21,26 @@
  * of guessing "the first active plan". GATED + FALLBACK throughout: no
  * DATABASE_URL, no resolvable owner/plan, or a failed query never throws —
  * see `resolveTeacherSubscription` below for the exact fallback ladder.
+ *
+ * Task: two subscription products — `kind` on `ResolvedProduct` says WHICH
+ * pass a subscription purchase is for: 'teacher' (a specific teacher's own
+ * catalogue, `?teacher=<slug>`) or 'platform' (the "Pass PNICE" all-access
+ * pass, priced by the owner via lib/platformPrice.ts, everything else). This
+ * is the fix for the bug where the bare `/checkout?plan=sub` path used to
+ * silently charge teacher #1's own plan price and attribute 100% of the 70%
+ * to them — `resolveDefaultSubscription` below now reads the OWNER-set
+ * platform price instead, and carries no teacherPlanId/teacherUserId at all
+ * (see lib/teacher/earnings.ts's header for how a 'platform' sale stays
+ * unattributed). Always `null` for a course purchase, same as
+ * `teacherPlanId`/`teacherUserId`.
  */
 import { and, eq } from 'drizzle-orm';
 import { db, schema } from '@/db';
 import { dbConfigured, getPublishedCourseBySlug } from '@/lib/courses/source';
-import { getTeacherOwnerUserId } from '@/lib/reviews/reviews';
 import { resolveTeacherOwnerUserIdBySlug } from '@/lib/teacher/public';
 import { getTeacher, teachers } from '@/data/teachers';
 import { SUBSCRIPTION_USD } from '@/data/pricing';
+import { getPlatformPassPriceCents } from '@/lib/platformPrice';
 
 const T = schema;
 
@@ -39,15 +51,17 @@ export type ResolvedProduct = {
   nameHt: string;
   amountCents: number;
   /** The specific `teacher_plans.id` charged, when resolvable — null for a
-   *  course purchase or a subscription that fell back to the platform
-   *  default with no live DB. */
+   *  course purchase or the platform-wide "Pass PNICE" subscription. */
   teacherPlanId: string | null;
   /** The plan owner's `users.id` — same nullability as `teacherPlanId`. */
   teacherUserId: string | null;
+  /** 'teacher' | 'platform' for a subscription purchase (Task: two
+   *  subscription products); always `null` for a course purchase. */
+  kind: 'teacher' | 'platform' | null;
 };
 
-const GENERIC_NAME_HT = 'Abònman chak mwa PNICE Academy';
-const GENERIC_NAME_FR = 'Abonnement mensuel PNICE Academy';
+const GENERIC_NAME_HT = 'Pass PNICE — tout kou yo';
+const GENERIC_NAME_FR = 'Pass PNICE — toutes les formations';
 
 type ResolvedSubscription = {
   amountCents: number;
@@ -55,17 +69,8 @@ type ResolvedSubscription = {
   nameFr: string;
   teacherPlanId: string | null;
   teacherUserId: string | null;
+  kind: 'teacher' | 'platform';
 };
-
-function fallbackSubscription(): ResolvedSubscription {
-  return {
-    amountCents: SUBSCRIPTION_USD * 100,
-    nameHt: GENERIC_NAME_HT,
-    nameFr: GENERIC_NAME_FR,
-    teacherPlanId: null,
-    teacherUserId: null,
-  };
-}
 
 /** A teacher's own `display_name` for the Stripe line-item name only (not
  *  the public-facing overlay lib/teacher/public.ts's `resolvePublicIdentity`
@@ -109,36 +114,29 @@ async function activePlanFor(ownerUserId: string): Promise<{ id: string; amountC
 }
 
 /**
- * The platform-default subscription (no `teacherSlug` given — every existing
- * `/checkout?plan=sub` / bare `/checkout` entry point across the site).
- * BEHAVIOR UNCHANGED from before this task (byte-identical `amountCents` —
- * see products.test.ts): teacher #1's own active plan, or the constant.
- * ADDITIVE: now ALSO returns that plan's id/owner so the earnings ledger can
- * credit the resolved teacher precisely instead of a separate "first active
- * plan" guess (closes the gap flagged in lib/teacher/earnings.ts's header —
- * harmless while there was only ever one active plan, live once a 2nd
- * teacher sets their own price).
+ * The platform-wide "Pass PNICE" subscription (no `teacherSlug` given — every
+ * existing `/checkout?plan=sub` / bare `/checkout` entry point across the
+ * site). Task: two subscription products — THIS is the fix for the bug that
+ * used to live here: this path used to silently charge teacher #1's own
+ * `teacher_plans` price and attribute 100% of the 70% to them (see git
+ * history), which meant ANY teacher pricing their own plan low effectively
+ * set the platform's all-access price and pocketed the whole commission.
+ * Now it reads the OWNER-set price (lib/platformPrice.ts, gated + fallback to
+ * the constant on its own) and carries no teacherPlanId/teacherUserId at
+ * all — a 'platform' sale is deliberately unattributed at purchase time (see
+ * lib/teacher/earnings.ts's header for the pro-rata-split seam). Never
+ * throws: `getPlatformPassPriceCents` already degrades to the constant.
  */
 async function resolveDefaultSubscription(): Promise<ResolvedSubscription> {
-  if (!dbConfigured()) return fallbackSubscription();
-  try {
-    const teacherOne = teachers[0];
-    if (!teacherOne) return fallbackSubscription();
-    const ownerUserId = await getTeacherOwnerUserId(teacherOne.courseSlugs);
-    if (!ownerUserId) return fallbackSubscription();
-    const plan = await activePlanFor(ownerUserId);
-    if (!plan) return fallbackSubscription();
-    return {
-      amountCents: plan.amountCents,
-      nameHt: GENERIC_NAME_HT,
-      nameFr: GENERIC_NAME_FR,
-      teacherPlanId: plan.id,
-      teacherUserId: ownerUserId,
-    };
-  } catch (err) {
-    console.error('[payments/products] resolveDefaultSubscription DB read failed, falling back to constant:', err);
-    return fallbackSubscription();
-  }
+  const amountCents = await getPlatformPassPriceCents();
+  return {
+    amountCents,
+    nameHt: GENERIC_NAME_HT,
+    nameFr: GENERIC_NAME_FR,
+    teacherPlanId: null,
+    teacherUserId: null,
+    kind: 'platform',
+  };
 }
 
 /**
@@ -153,14 +151,26 @@ async function resolveDefaultSubscription(): Promise<ResolvedSubscription> {
  * same as an unknown course slug.
  *
  * EXCEPTION for teacher #1 with no live DB: their own slug still resolves to
- * the platform-default constant (never `null`) — a fresh checkout of
- * `/prof/pnice-academy`'s own CTA must work identically to the legacy bare
- * `/checkout?plan=sub` link with no DATABASE_URL configured.
+ * the constant price (never `null`) — a fresh checkout of `/prof/pnice-academy`'s
+ * own CTA must work with no DATABASE_URL configured, still tagged 'teacher'
+ * since the visitor explicitly picked a named teacher's own plan (Task: two
+ * subscription products) — access control itself is moot with no DB (every
+ * lib/learner/access.ts reader is gated off `dbReady()` too), so this only
+ * affects what a partially-configured deploy (Stripe keys, no DB) would tag.
  */
 async function resolveNamedTeacherSubscription(teacherSlug: string): Promise<ResolvedSubscription | null> {
   if (!dbConfigured()) {
     const teacherOne = teachers[0];
-    return teacherOne && teacherSlug === teacherOne.slug ? fallbackSubscription() : null;
+    return teacherOne && teacherSlug === teacherOne.slug
+      ? {
+          amountCents: SUBSCRIPTION_USD * 100,
+          nameHt: `Abònman chak mwa — ${teacherOne.displayName}`,
+          nameFr: `Abonnement mensuel — ${teacherOne.displayName}`,
+          teacherPlanId: null,
+          teacherUserId: null,
+          kind: 'teacher',
+        }
+      : null;
   }
   try {
     const ownerUserId = await resolveTeacherOwnerUserIdBySlug(teacherSlug);
@@ -174,6 +184,7 @@ async function resolveNamedTeacherSubscription(teacherSlug: string): Promise<Res
       nameFr: `Abonnement mensuel — ${displayName}`,
       teacherPlanId: plan.id,
       teacherUserId: ownerUserId,
+      kind: 'teacher',
     };
   } catch (err) {
     console.error('[payments/products] resolveNamedTeacherSubscription DB read failed:', err);
@@ -199,6 +210,7 @@ export async function resolveProduct(input: {
       amountCents: resolved.amountCents,
       teacherPlanId: resolved.teacherPlanId,
       teacherUserId: resolved.teacherUserId,
+      kind: resolved.kind,
     };
   }
   if (!input.courseSlug) return null;
@@ -212,5 +224,6 @@ export async function resolveProduct(input: {
     amountCents: Math.round(course.priceUsd * 100),
     teacherPlanId: null,
     teacherUserId: null,
+    kind: null,
   };
 }

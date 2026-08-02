@@ -141,6 +141,7 @@ export type AuditAction =
   | 'resend_verification'
   | 'resend_receipt'
   | 'set_fx_rate'
+  | 'set_platform_pass_price'
   | 'dunning_reminder'
   | 'engagement_reminder'
   | 'revoke_certificate'

@@ -73,6 +73,22 @@ export const subscriptions = pgTable(
     // credit the RIGHT teacher's 70% instead of guessing "the first active
     // plan" (lib/teacher/earnings.ts's `resolveTeacherUserId`).
     teacherPlanId: uuid('teacher_plan_id'),
+    // Task: two subscription products (teacher catalogue vs PNICE all-access).
+    // Explicit column — deliberately NOT inferred from `teacherPlanId` being
+    // null/set (see lib/learner/access.ts's BINDING model header for why):
+    // 'teacher' = access to ONE teacher's published courses only (that
+    // teacher's own `teacher_plans` price, 70% credited to them at sale —
+    // lib/teacher/earnings.ts); 'platform' = every published course, priced
+    // by the OWNER (lib/platformPrice.ts), whose 70% is NOT attributed to any
+    // single teacher (accrues for a later pro-rata split — follow-up task).
+    // BACKFILL: every row that predates this column defaults to 'platform' —
+    // including rows that already carry a `teacherPlanId` from the earlier
+    // per-teacher-checkout task. This is deliberate, not an oversight: a
+    // subscriber who was already paying is grandfathered into all-access
+    // rather than being retroactively locked out of courses they could
+    // browse yesterday. Only a subscription created AFTER this column exists
+    // can ever be 'teacher'.
+    kind: text('kind').$type<'teacher' | 'platform'>().default('platform').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -406,6 +422,15 @@ export const auditLog = pgTable('audit_log', {
 export const platformSettings = pgTable('platform_settings', {
   id: text('id').primaryKey().default('singleton'),
   subscriptionUsdCents: integer('subscription_usd_cents').notNull(),
+  // Task: two subscription products — the OWNER-set price of the "Pass
+  // PNICE" all-access pass (lib/platformPrice.ts's getPlatformPassPriceCents/
+  // setPlatformPassPriceCents, mirroring fxRateHtg below exactly: gated read,
+  // non-positive/missing ⇒ fall back to the SUBSCRIPTION_USD constant).
+  // Default 7900 ($79.00) = the constant's value, so behaviour is UNCHANGED
+  // until the owner edits it from /admin/prix. Distinct from the legacy
+  // `subscriptionUsdCents` column above, which is written but never read as
+  // a price source (see lib/fx.ts's header) — kept as-is, untouched.
+  platformPassUsdCents: integer('platform_pass_usd_cents').default(7900).notNull(),
   referralCreditCents: integer('referral_credit_cents').default(500).notNull(),
   providersJson: jsonb('providers_json'),
   maintenanceEnabled: boolean('maintenance_enabled').default(false).notNull(),
