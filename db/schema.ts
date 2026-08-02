@@ -731,6 +731,69 @@ export const teacherProfiles = pgTable('teacher_profiles', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
+/**
+ * Task: pro-rata split of PNICE all-access revenue (follow-up to Task: two
+ * subscription products — see earningsLedger's SEAM note below, and
+ * lib/teacher/earnings.ts's file header, for the seam this closes). A
+ * 'platform' subscription sale is NEVER attributed to one teacher at sale
+ * time; instead, once a calendar month closes, its 70% pool is split
+ * pro-rata across every teacher whose courses platform-pass holders actually
+ * completed lessons in (lib/teacher/platform-pass-split.ts's pure math,
+ * lib/teacher/platform-pass-payout.ts's DB orchestration).
+ *
+ * `platform_pass_periods` — ONE row per calendar month ('YYYY-MM'), the pool
+ * accounting: this month's own 70% share, what carried in from an earlier
+ * month with zero qualifying consumption, the total actually available, and
+ * what got distributed vs. carried further forward. `period` is UNIQUE:
+ * re-running an already-computed period is a no-op that returns the
+ * PERSISTED row untouched (idempotency — a re-run must never recompute, and
+ * therefore must never double-carry into the period after it).
+ *
+ * `platform_pass_splits` — one row per (teacher, period): the UNIQUE
+ * CONSTRAINT the task specifically calls for, so re-running a period can
+ * never double-credit the same teacher for it. `.onConflictDoNothing()`
+ * against `platform_pass_splits_teacher_period_uniq`, mirroring
+ * `recordSaleEarning`'s sale-per-payment guard exactly.
+ */
+export const platformPassPeriods = pgTable('platform_pass_periods', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  period: text('period').notNull().unique(), // 'YYYY-MM', UTC calendar month.
+  grossCents: integer('gross_cents').notNull(),
+  // Frozen at compute time — same "commission figée à la vente" reasoning as
+  // earningsLedger.commissionPctApplied below; a later platform-setting
+  // change never rewrites an already-computed period.
+  commissionPctApplied: integer('commission_pct_applied').notNull(),
+  ownPoolCents: integer('own_pool_cents').notNull(), // 70% of grossCents this month.
+  carryInCents: integer('carry_in_cents').notNull(), // carried from the most recent earlier computed period's carryOutCents.
+  totalPoolCents: integer('total_pool_cents').notNull(), // ownPoolCents + carryInCents.
+  consumptionTotal: integer('consumption_total').notNull(), // total qualifying lesson completions counted.
+  distributedCents: integer('distributed_cents').notNull(), // sum credited to teachers this run — 0 when consumptionTotal is 0.
+  carryOutCents: integer('carry_out_cents').notNull(), // totalPoolCents - distributedCents.
+  // Admin display name, or 'cron' for the automated monthly run. Purely
+  // informational (mirrors withdrawal_requests.processedBy's Clerk-id-as-text
+  // convention, kept human-readable here instead since there's no admin
+  // action row to join back to).
+  computedBy: text('computed_by'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const platformPassSplits = pgTable(
+  'platform_pass_splits',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    period: text('period').notNull(),
+    teacherUserId: uuid('teacher_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    completions: integer('completions').notNull(),
+    shareCents: integer('share_cents').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    uniqTeacherPeriod: unique('platform_pass_splits_teacher_period_uniq').on(t.teacherUserId, t.period),
+  }),
+);
+
 export const earningsLedger = pgTable(
   'earnings_ledger',
   {
@@ -740,15 +803,32 @@ export const earningsLedger = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     // Nullable — adjustments/manual entries have no originating payment.
     paymentId: uuid('payment_id').references(() => payments.id, { onDelete: 'set null' }),
-    kind: text('kind').$type<'sale' | 'refund' | 'withdrawal' | 'adjustment'>().notNull(),
+    // 'platform_pass' (Task: pro-rata split of PNICE all-access revenue) —
+    // one teacher's monthly share of the platform-pass pool. Distinct from
+    // 'sale' so a teacher's ledger reads "Pass PNICE — juillet 2026" instead
+    // of looking like an ordinary course/subscription sale (see
+    // components/teacher/studio/WithdrawalPanel.tsx).
+    kind: text('kind').$type<'sale' | 'refund' | 'withdrawal' | 'adjustment' | 'platform_pass'>().notNull(),
     grossCents: integer('gross_cents').notNull(),
     // Frozen at write time — see header note ("commission figée à la vente").
+    // Always 0 for a 'platform_pass' row: the pool it's paid from is already
+    // NET of commission (platformPassPeriods.ownPoolCents = the 70% share),
+    // so grossCents === netCents for these rows — no further split happens.
     commissionPctApplied: integer('commission_pct_applied').notNull(),
     commissionCents: integer('commission_cents').notNull(),
     // Negative for refund/withdrawal rows. Balance = SUM(net_cents), never denormalised.
     netCents: integer('net_cents').notNull(),
     currency: text('currency').default('USD').notNull(),
+    // For a 'platform_pass' row: the 'YYYY-MM' period it was credited for
+    // (parsed back into a localized "juillet 2026" label at display time —
+    // lib/admin/format.ts's `fmtPeriodLabel` — since Intl has no Kreyòl
+    // locale, same fallback lib/admin/format.ts's `fmtDate` already uses).
     note: text('note'),
+    // Which platform_pass_splits row this credits (Task: pro-rata split of
+    // PNICE all-access revenue). Nullable — every other kind has none.
+    platformPassSplitId: uuid('platform_pass_split_id').references(() => platformPassSplits.id, {
+      onDelete: 'set null',
+    }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => ({
@@ -763,6 +843,13 @@ export const earningsLedger = pgTable(
     uniqSalePerPayment: uniqueIndex('earnings_ledger_sale_payment_uniq')
       .on(t.paymentId)
       .where(sql`${t.paymentId} IS NOT NULL AND ${t.kind} = 'sale'`),
+    // Same pattern, second dimension (Task: pro-rata split of PNICE
+    // all-access revenue): belt-and-suspenders alongside
+    // platform_pass_splits' own (teacher, period) unique constraint — at
+    // most one 'platform_pass' ledger row per split, ever.
+    uniqPlatformPassPerSplit: uniqueIndex('earnings_ledger_platform_pass_split_uniq')
+      .on(t.platformPassSplitId)
+      .where(sql`${t.platformPassSplitId} IS NOT NULL AND ${t.kind} = 'platform_pass'`),
   }),
 );
 

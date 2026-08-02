@@ -123,6 +123,7 @@ describe('mapDbLedgerRow / mapDbWithdrawalRow — DB row → app shape', () => {
       netCents: 7000,
       currency: 'USD',
       note: null,
+      platformPassSplitId: null,
       createdAt: new Date('2026-01-01T00:00:00Z'),
     });
     expect(row).toEqual({

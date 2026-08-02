@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { IconLoader2, IconSend, IconAlertTriangle, IconCheck } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
 import { buttonClasses } from '@/components/ui/Button';
-import { fmtUsdCents, fmtDate } from '@/lib/admin/format';
+import { fmtUsdCents, fmtDate, fmtPeriodLabel } from '@/lib/admin/format';
 import { requestWithdrawalAction } from '@/lib/teacher/studio-actions';
 import type { LedgerRow } from '@/lib/teacher/profile';
 
@@ -144,7 +144,10 @@ export function WithdrawalPanel({
             {ledger.map((row) => (
               <li key={row.id} className="flex items-center justify-between gap-3 font-mono text-[12px]">
                 <span className="text-ink/60">
-                  {fmtDate(row.createdAt, locale as 'ht' | 'fr')} · {t(`ledger.kind.${row.kind}`)}
+                  {fmtDate(row.createdAt, locale as 'ht' | 'fr')} ·{' '}
+                  {row.kind === 'platform_pass'
+                    ? t('ledger.kind.platform_pass', { period: fmtPeriodLabel(row.note, locale as 'ht' | 'fr') })
+                    : t(`ledger.kind.${row.kind}`)}
                 </span>
                 <span className={cn('tabular-nums', row.netCents < 0 ? 'text-stampred' : 'text-ink')}>
                   {row.netCents < 0 ? '-' : '+'}

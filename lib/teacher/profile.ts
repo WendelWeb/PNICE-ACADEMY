@@ -53,7 +53,7 @@ export type LedgerRow = {
   id: string;
   teacherUserId: string;
   paymentId: string | null;
-  kind: 'sale' | 'refund' | 'withdrawal' | 'adjustment';
+  kind: 'sale' | 'refund' | 'withdrawal' | 'adjustment' | 'platform_pass';
   grossCents: number;
   commissionPctApplied: number;
   commissionCents: number;

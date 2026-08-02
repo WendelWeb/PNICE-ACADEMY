@@ -138,8 +138,10 @@ export function subscriptionAccessibleSlugs(
 
 /** `teacher_plans.id` → its `owner_user_id`, for the given plan ids only.
  *  Skips ids with no resolvable owner. Never throws on its own — callers
- *  already run inside a try/catch. */
-async function planOwnerMap(teacherPlanIds: string[]): Promise<Map<string, string>> {
+ *  already run inside a try/catch. Exported (Task: pro-rata split of PNICE
+ *  all-access revenue) so lib/teacher/platform-pass-payout.ts can resolve
+ *  the same teacher-plan → owner map without restating this query. */
+export async function planOwnerMap(teacherPlanIds: string[]): Promise<Map<string, string>> {
   if (teacherPlanIds.length === 0) return new Map();
   const rows = await db
     .select({ id: T.teacherPlans.id, ownerUserId: T.teacherPlans.ownerUserId })

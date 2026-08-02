@@ -42,6 +42,7 @@ import {
   IconFileText,
   IconChalkboard,
   IconReceipt2,
+  IconChartPie,
   type Icon as TablerIcon,
 } from '@tabler/icons-react';
 import type { AdminRole } from '@/lib/admin/roles';
@@ -99,6 +100,11 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
     items: [
       { key: 'teachers', href: '/admin/enseignants', icon: 'teachers', enabled: true, cap: 'teachers.review' },
       { key: 'payouts', href: '/admin/retraits', icon: 'payouts', enabled: true, cap: 'payouts.process' },
+      // Task: pro-rata split of PNICE all-access revenue — the "Pass PNICE"
+      // pool distributed pro-rata across teachers each month. Same cap as
+      // 'payouts' (payouts.process): this page moves money into the SAME
+      // teacher ledger that page's queue reads.
+      { key: 'platformSplit', href: '/admin/repartition', icon: 'platformSplit', enabled: true, cap: 'payouts.process' },
     ],
   },
   {
@@ -171,6 +177,7 @@ export const ADMIN_NAV_ICONS: Record<string, TablerIcon> = {
   prix: IconReceipt2,
   siteContent: IconFileText,
   myStudio: IconChalkboard,
+  platformSplit: IconChartPie,
 };
 
 /**

@@ -624,7 +624,8 @@
           "sale": "Vente",
           "refund": "Remboursement",
           "withdrawal": "Retrait",
-          "adjustment": "Ajustement"
+          "adjustment": "Ajustement",
+          "platform_pass": "Pass PNICE — {period}"
         }
       },
       "create": {
@@ -1083,6 +1084,7 @@
       "users": "Utilisateurs",
       "teachers": "Enseignants",
       "payouts": "Retraits",
+      "platformSplit": "Répartition Pass PNICE",
       "courses": "Cours",
       "subscriptions": "Abonnements",
       "payments": "Paiements",
@@ -2649,6 +2651,45 @@
         "updated": "Dernière mise à jour",
         "readonly": "Lecture seule (réservé à l'admin)."
       }
+    },
+    "repartition": {
+      "subtitle": "Répartition de l'argent du Pass PNICE — chaque mois, 70% des ventes du Pass PNICE (accès à tous les cours) est réparti entre les enseignants selon la consommation réelle.",
+      "explain": "Chaque mois, 70% de l'argent généré par le Pass PNICE (30% est la commission de la plateforme, comme pour toute autre vente) est réparti entre les enseignants selon le nombre de leçons que des abonnés Pass PNICE ont terminées dans les cours de cet enseignant. Si aucun abonné Pass PNICE n'a terminé de leçon un mois donné, l'argent n'est pas perdu — il est reporté sur le pool du mois suivant.",
+      "candidate": {
+        "title": "Période à traiter : {period}",
+        "previewNote": "Ceci est un aperçu — rien n'est encore enregistré. Clique le bouton pour le confirmer.",
+        "alreadyListed": "Cette période est déjà dans l'historique ci-dessous."
+      },
+      "run": {
+        "cta": "Lancer la répartition",
+        "success": "La répartition est faite.",
+        "already_computed": "Cette période a déjà été traitée.",
+        "empty_pool": "Il n'y a rien à distribuer pour cette période.",
+        "db_required": "Le système n'est pas encore actif. Réessaie plus tard.",
+        "forbidden": "Action non autorisée.",
+        "unauthorized": "Action non autorisée.",
+        "error": "Une erreur est survenue."
+      },
+      "card": {
+        "gross": "Total des ventes Pass PNICE",
+        "ownPool": "Pool propre du mois (70%)",
+        "carryIn": "Report entrant",
+        "totalPool": "Pool total à répartir",
+        "consumption": "Leçons comptées",
+        "distributed": "Distribué aux enseignants",
+        "carryOut": "Reporté au mois suivant"
+      },
+      "col": {
+        "teacher": "Enseignant",
+        "completions": "Leçons terminées",
+        "share": "Part de l'enseignant"
+      },
+      "noShares": "Aucun enseignant ne qualifie pour cette période.",
+      "history": {
+        "title": "Historique des périodes"
+      },
+      "empty": "Pas encore d'historique.",
+      "computedBy": "Traité par {name}"
     },
     "support": {
       "subtitle": "Boîte de support : tickets des utilisateurs.",

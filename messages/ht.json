@@ -624,7 +624,8 @@
           "sale": "Vant",
           "refund": "Ranbousman",
           "withdrawal": "Retrè",
-          "adjustment": "Ajisteman"
+          "adjustment": "Ajisteman",
+          "platform_pass": "Pass PNICE — {period}"
         }
       },
       "create": {
@@ -1083,6 +1084,7 @@
       "users": "Itilizatè",
       "teachers": "Pwofesè",
       "payouts": "Retrè",
+      "platformSplit": "Repartisyon Pass PNICE",
       "courses": "Fòmasyon",
       "subscriptions": "Abònman",
       "payments": "Peman",
@@ -2649,6 +2651,45 @@
         "updated": "Dènye mizajou",
         "readonly": "Lekti sèlman (rezève pou admin)."
       }
+    },
+    "repartition": {
+      "subtitle": "Repartisyon lajan Pass PNICE la — chak mwa, 70% sou tout lavant Pass PNICE (aksè a tout kou) separe bay pwofesè yo dapre konsomasyon reyèl.",
+      "explain": "Chak mwa, 70% sou tout lajan Pass PNICE fè (30% se komisyon platfòm nan, menm jan ak tout lòt lavant) separe bay pwofesè yo dapre kantite leson elèv Pass PNICE yo fin fè nan kou pwofesè a. Si okenn elèv Pass PNICE pa fin fè yon leson yon mwa, lajan an pa pèdi — li ale nan pòl mwa apre a.",
+      "candidate": {
+        "title": "Peryòd pou trete : {period}",
+        "previewNote": "Sa a se yon apèsi — anyen poko anrejistre. Klike bouton an pou konfime li.",
+        "alreadyListed": "Peryòd sa a deja nan istorik anba a."
+      },
+      "run": {
+        "cta": "Lanse repartisyon an",
+        "success": "Repartisyon an fèt.",
+        "already_computed": "Peryòd sa a deja trete.",
+        "empty_pool": "Pa gen lajan pou distribye pou peryòd sa a.",
+        "db_required": "Sistèm nan poko aktif. Tanpri eseye pita.",
+        "forbidden": "Aksyon pa otorize.",
+        "unauthorized": "Aksyon pa otorize.",
+        "error": "Gen yon erè ki fèt."
+      },
+      "card": {
+        "gross": "Total lavant Pass PNICE",
+        "ownPool": "Pòl pwòp mwa a (70%)",
+        "carryIn": "Repòte ki antre",
+        "totalPool": "Pòl total pou separe",
+        "consumption": "Leson konte",
+        "distributed": "Distribye bay pwofesè yo",
+        "carryOut": "Repòte pou pwochen mwa"
+      },
+      "col": {
+        "teacher": "Pwofesè",
+        "completions": "Leson fin fèt",
+        "share": "Pa pwofesè a"
+      },
+      "noShares": "Okenn pwofesè pa kalifye pou peryòd sa a.",
+      "history": {
+        "title": "Istorik peryòd yo"
+      },
+      "empty": "Pa gen istorik ankò.",
+      "computedBy": "Trete pa {name}"
     },
     "support": {
       "subtitle": "Bwat sipò : tikè itilizatè yo.",

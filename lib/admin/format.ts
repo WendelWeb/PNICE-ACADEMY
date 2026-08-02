@@ -54,3 +54,20 @@ export function fmtDateTime(iso: string | null | undefined, locale: 'ht' | 'fr' 
     minute: '2-digit',
   });
 }
+
+/**
+ * "juillet 2026" from a `'YYYY-MM'` period string (Task: pro-rata split of
+ * PNICE all-access revenue — the "Pass PNICE" ledger label and the
+ * /admin/repartition page's period headings). Same ht→fr Intl fallback as
+ * `fmtDate` (no Kreyòl month locale exists) — `timeZone: 'UTC'` pins the
+ * month regardless of the reader's local offset, since the period itself is
+ * a UTC calendar month (lib/teacher/platform-pass-split.ts). Returns the raw
+ * string unchanged if it isn't a valid `'YYYY-MM'`.
+ */
+export function fmtPeriodLabel(period: string | null | undefined, locale: 'ht' | 'fr' = 'fr'): string {
+  if (!period) return '—';
+  const m = /^(\d{4})-(\d{2})$/.exec(period);
+  if (!m) return period;
+  const date = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, 1));
+  return date.toLocaleDateString(intlLocale(locale), { month: 'long', year: 'numeric', timeZone: 'UTC' });
+}
