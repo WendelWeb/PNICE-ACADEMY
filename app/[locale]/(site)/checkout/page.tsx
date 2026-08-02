@@ -6,7 +6,7 @@ import { Section, Container } from '@/components/ui/Section';
 import { Sceau } from '@/components/ui/Sceau';
 import { SmartImage } from '@/components/ui/SmartImage';
 import { CourseSlideshow } from '@/components/courses/CourseSlideshow';
-import { courseImageSrc, siteImages } from '@/lib/courseImage';
+import { courseMainImage, siteImages } from '@/lib/courseImage';
 import { getPublishedCourseBySlug } from '@/lib/courses/source';
 import { formatUsd } from '@/lib/money';
 import { Price, PriceSecondary } from '@/components/ui/Price';
@@ -108,7 +108,7 @@ export default async function CheckoutPage({
             {course && (
               <div className="relative mt-5 aspect-[16/9] overflow-hidden rounded-xl border border-ink/10 bg-paper-light">
                 <SmartImage
-                  src={courseImageSrc(course.code)}
+                  src={courseMainImage(course.images, course.code)}
                   alt={itemName}
                   fill
                   sizes="(max-width: 768px) 100vw, 480px"

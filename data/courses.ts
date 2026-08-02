@@ -64,6 +64,22 @@ export type Course = {
    */
   bilingual?: boolean;
   primary_locale?: 'ht' | 'fr';
+  /**
+   * Teacher-set course photos from the DB `images` jsonb (Stage 3 — course
+   * photos). OPTIONAL and `undefined` for every static catalog entry below —
+   * the public surfaces resolve through `lib/courseImage.ts`'s
+   * `courseImageList`/`courseMainImage` (DB images → repo filesystem →
+   * branded SVG placeholder), so a static course keeps resolving exactly as
+   * it always has. Set by `lib/courses/source.ts`'s `mapDbCourseToCourse`
+   * whenever the DB row carries images.
+   */
+  images?: CourseImages;
+};
+
+/** Shape of the DB `courses.images` jsonb as exposed publicly (see `Course.images`). */
+export type CourseImages = {
+  main?: string;
+  secondary?: { url: string; alt?: string }[];
 };
 
 export const courses: Course[] = [

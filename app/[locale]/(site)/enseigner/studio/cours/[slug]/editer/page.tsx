@@ -3,6 +3,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { auth } from '@clerk/nextjs/server';
 import { Section, Container } from '@/components/ui/Section';
 import { clerkEnabled } from '@/lib/clerk';
+import { bunnyStorageConfigured } from '@/lib/bunny/storage';
 import { dbConfigured } from '@/lib/courses/source';
 import { resolveUserId } from '@/lib/learner/access';
 import { isApprovedTeacher } from '@/lib/teacher/profile';
@@ -197,7 +198,14 @@ export default async function EditMyCoursePage({
                 />
               )}
               {activeTab === 'medias' && (
-                <ImagesManager slug={course.slug} mainImage={course.mainImage} secondary={course.secondaryImages} actions={imageActions} />
+                <ImagesManager
+                  slug={course.slug}
+                  mainImage={course.mainImage}
+                  secondary={course.secondaryImages}
+                  actions={imageActions}
+                  courseTitle={title}
+                  uploadEnabled={bunnyStorageConfigured()}
+                />
               )}
               {activeTab === 'ressources' && (
                 <CourseResourcesPanel slug={course.slug} resources={course.resources} updateAction={updateMyCourseAction} />

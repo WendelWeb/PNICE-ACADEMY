@@ -10,7 +10,7 @@ import { Link } from '@/i18n/routing';
 import { buttonClasses } from '@/components/ui/Button';
 import { CourseIcon } from '@/components/courses/CourseIcon';
 import { SmartImage } from '@/components/ui/SmartImage';
-import { courseImageSrc } from '@/lib/courseImage';
+import { courseMainImage } from '@/lib/courseImage';
 import type { Course } from '@/data/courses';
 import { getCourseBySlug } from '@/lib/courses/source';
 import { courseTitle } from '@/lib/courseFields';
@@ -42,7 +42,7 @@ function CourseCard({
     <div className="card-hover flex flex-col overflow-hidden rounded-xl border border-ink/12 bg-paper-light hover:border-ink/35">
       <div className="relative aspect-[16/9] bg-paper">
         <SmartImage
-          src={courseImageSrc(course.code)}
+          src={courseMainImage(course.images, course.code)}
           alt={courseTitle(course, locale)}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -178,7 +178,10 @@ export default async function DashboardPage({
                     <div className="grid gap-0 md:grid-cols-[minmax(0,340px)_1fr]">
                       <div className="relative aspect-[16/9] bg-paper md:aspect-auto md:min-h-[280px]">
                         <SmartImage
-                          src={courseImageSrc(continueEnrollment.course.code)}
+                          src={courseMainImage(
+                            continueEnrollment.course.images,
+                            continueEnrollment.course.code,
+                          )}
                           alt={courseTitle(continueEnrollment.course, locale)}
                           fill
                           sizes="(max-width: 768px) 100vw, 340px"

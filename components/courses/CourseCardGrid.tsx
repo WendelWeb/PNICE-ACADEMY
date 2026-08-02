@@ -4,7 +4,7 @@ import { Link } from '@/i18n/routing';
 import { Reveal } from '@/components/ui/Reveal';
 import { CourseIcon } from '@/components/courses/CourseIcon';
 import { CourseSlideshow } from '@/components/courses/CourseSlideshow';
-import { courseImages } from '@/lib/courseImage';
+import { courseImageList } from '@/lib/courseImage';
 import { courseTitle, courseTagline } from '@/lib/courseFields';
 import { Price, PriceSecondary } from '@/components/ui/Price';
 import { getCourseTeacher } from '@/data/teachers';
@@ -18,7 +18,9 @@ export async function CourseCardGrid({ courses }: { courses: Course[] }) {
   return (
     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {courses.map((c, i) => {
-        const images = courseImages(c.code);
+        // Stage 3 — DB-first: the photos a teacher uploads in the studio are
+        // what students see here (fallback: repo filesystem, then SVG).
+        const images = courseImageList(c.images, c.code);
         const hasImage = !images[0].endsWith('.svg');
         const teacher = getCourseTeacher(c.slug);
         return (

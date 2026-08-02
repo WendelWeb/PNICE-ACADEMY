@@ -87,6 +87,11 @@ export function mapDbCourseToCourse(row: DbCourseRow, lessonRows: DbLessonRow[])
     // covers that (and is a no-op once the column always has a real value).
     bilingual: row.bilingual ?? true,
     primary_locale: row.primaryLocale ?? 'ht',
+    // Stage 3 — course photos: expose the teacher-set images jsonb so the
+    // public surfaces can resolve DB-first (see lib/courseImage.ts's
+    // `courseImageList`). `undefined` (not null) when the row has none, so a
+    // DB course without photos falls back exactly like a static one.
+    images: row.images ?? undefined,
   };
 }
 

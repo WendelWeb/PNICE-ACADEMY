@@ -32,7 +32,8 @@ import {
 import { getCourseRating, getTeacherOwnerUserId, getTeacherRating } from '@/lib/reviews/reviews';
 import { getCourseTeacher, teacherShortBio } from '@/data/teachers';
 import { getCourseTestimonial } from '@/lib/admin/site/ops';
-import { courseImages, siteImageSrc } from '@/lib/courseImage';
+import { absoluteImageUrl, courseImageList, courseMainImage, siteImageSrc } from '@/lib/courseImage';
+import { SITE_URL } from '@/lib/email/layout';
 import { getPlatformPassPriceCents } from '@/lib/platformPrice';
 import {
   courseTitle,
@@ -66,8 +67,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const c = await getPublishedCourseBySlug(slug);
   if (!c) return {};
+  const title = `${locale === 'ht' ? c.title_ht : c.title_fr} — PNICE Academy`;
+  // Stage 3 — WhatsApp is how Haiti shares links: og/twitter image is the
+  // course's resolved main photo (teacher-set DB image first, static file
+  // path otherwise) as an ABSOLUTE url — WhatsApp ignores relative paths.
+  const image = absoluteImageUrl(courseMainImage(c.images, c.code), SITE_URL);
   return {
-    title: `${locale === 'ht' ? c.title_ht : c.title_fr} — PNICE Academy`,
+    title,
+    openGraph: { title, images: [image] },
+    twitter: { card: 'summary_large_image', title, images: [image] },
   };
 }
 
@@ -178,7 +186,7 @@ export default async function CourseDetail({
           {/* cover */}
           <div className="relative mt-6 aspect-[16/9] overflow-hidden rounded-2xl border border-ink/12 bg-paper">
             <CourseSlideshow
-              images={courseImages(course.code)}
+              images={courseImageList(course.images, course.code)}
               alt={`${courseTitle(course, locale)} — PNICE Academy`}
               sizes="(max-width: 1120px) 100vw, 1120px"
               priority
