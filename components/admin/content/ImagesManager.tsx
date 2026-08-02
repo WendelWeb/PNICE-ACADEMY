@@ -31,6 +31,7 @@ import {
   fitWithin,
   uploadBlobName,
 } from '@/lib/uploads/image-prep';
+import { postCourseAsset } from '@/components/content/courseAssetUpload';
 import { Field, inputCls } from './fields';
 
 type ContentResult = { ok: boolean; message?: string; slug?: string; count?: number };
@@ -59,8 +60,6 @@ type UploadState =
   | { phase: 'uploading'; pct: number }
   | { phase: 'saving' }
   | { phase: 'error'; message: string };
-
-type UploadResponse = { ok: true; url: string } | { ok: false; message: string };
 
 const focusRing =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ochre focus-visible:ring-offset-1 focus-visible:ring-offset-paper-light';
@@ -102,38 +101,6 @@ async function fileToResizedBlob(file: File): Promise<Blob | null> {
   } finally {
     URL.revokeObjectURL(url);
   }
-}
-
-/** XHR (not fetch) purely for upload progress events — same reasoning as
- *  VideoUpload. The route ALWAYS answers HTTP 200 with `{ ok, … }`. */
-function postCourseAsset(
-  form: FormData,
-  onPct: (pct: number) => void,
-  xhrRef: React.MutableRefObject<XMLHttpRequest | null>,
-): Promise<UploadResponse> {
-  return new Promise((resolve) => {
-    const xhr = new XMLHttpRequest();
-    xhrRef.current = xhr;
-    xhr.open('POST', '/api/upload/course-asset', true);
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) onPct(Math.round((e.loaded / e.total) * 100));
-    };
-    xhr.onload = () => {
-      try {
-        const body = JSON.parse(xhr.responseText) as UploadResponse;
-        if (body && typeof body === 'object' && 'ok' in body) {
-          resolve(body);
-          return;
-        }
-      } catch {
-        /* non-JSON response — treated as a generic failure below */
-      }
-      resolve({ ok: false, message: 'error' });
-    };
-    xhr.onerror = () => resolve({ ok: false, message: 'network' });
-    xhr.onabort = () => resolve({ ok: false, message: 'aborted' });
-    xhr.send(form);
-  });
 }
 
 /**

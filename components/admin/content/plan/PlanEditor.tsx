@@ -71,6 +71,7 @@ export function PlanEditor({
   isDraft,
   bilingual = true,
   primaryLocale = 'ht',
+  uploadEnabled = true,
   actions = defaultLessonActions,
 }: {
   slug: string;
@@ -89,6 +90,14 @@ export function PlanEditor({
    */
   bilingual?: boolean;
   primaryLocale?: 'ht' | 'fr';
+  /**
+   * Server-known "is the document upload rail configured?" (Stage 4,
+   * `bunnyStorageConfigured()`) — threaded down to `LessonEditPanel`'s
+   * `ResourcesEditor` dropzone, same plain-data-prop route as `bilingual`.
+   * Additive with a `true` default (an un-updated call site keeps the
+   * dropzone, and a runtime `not_configured` answer still degrades calmly).
+   */
+  uploadEnabled?: boolean;
   /** Injected by the teacher studio (Task C3-T4 / K2); defaults to the admin
    *  CMS actions so every existing `/admin/cours/[slug]/editer` call site is
    *  unchanged. */
@@ -197,6 +206,7 @@ export function PlanEditor({
               actions={actions}
               bilingual={bilingual}
               primaryLocale={primaryLocale}
+              uploadEnabled={uploadEnabled}
               expandedId={expandedId}
               onToggleExpand={toggleExpand}
             />
@@ -223,6 +233,7 @@ export function PlanEditor({
                     chapters={chaptersSorted}
                     bilingual={bilingual}
                     primaryLocale={primaryLocale}
+                    uploadEnabled={uploadEnabled}
                     expandedId={expandedId}
                     onToggleExpand={toggleExpand}
                   />

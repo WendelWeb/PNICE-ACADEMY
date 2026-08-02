@@ -10,6 +10,7 @@ import { updateCourseAction } from '@/lib/admin/content-actions';
 import type { CoursePatch } from '@/lib/courses/write';
 import type { CourseResource } from '@/db/schema';
 import { ResourcesEditor } from '@/components/content/ResourcesEditor';
+import { MONO_LOCALE_NAME } from './fields';
 
 type UpdateResult = { ok: boolean; message?: string };
 /** Same shape as `CourseEditor`'s injected `updateAction` — the studio
@@ -33,6 +34,9 @@ export function CourseResourcesPanel({
   slug,
   resources,
   updateAction = updateCourseAction,
+  bilingual = true,
+  primaryLocale = 'ht',
+  uploadEnabled = true,
 }: {
   slug: string;
   resources: CourseResource[];
@@ -40,6 +44,16 @@ export function CourseResourcesPanel({
    *  `updateMyCourseAction`; defaults to the admin CMS action so every
    *  existing `/admin/cours/[slug]/editer` call site is unchanged. */
   updateAction?: UpdateAction;
+  /** The course's optional-translation setting (Stage 4 — resources were the
+   *  last bilingual exception): monolingual renders ONE 'Tit lyen an' input
+   *  per row, the server mirrors the other side on save. Additive defaults
+   *  (`true`/`'ht'` = the pre-existing bilingual UI) keep un-updated call
+   *  sites unchanged. */
+  bilingual?: boolean;
+  primaryLocale?: 'ht' | 'fr';
+  /** Server-known `bunnyStorageConfigured()` (Stage 4) — `false` hides the
+   *  document dropzone in favour of the calm link-first fallback. */
+  uploadEnabled?: boolean;
 }) {
   const t = useTranslations('admin.cms.editor');
   const router = useRouter();
@@ -47,12 +61,17 @@ export function CourseResourcesPanel({
   const [list, setList] = useState<CourseResource[]>(resources);
   const [save, setSave] = useState<SaveState>('idle');
   const [err, setErr] = useState<string | null>(null);
+  const mono = bilingual ? undefined : primaryLocale;
 
-  const onSave = () =>
+  /** One save path for both triggers: the explicit "Anrejistre" button, and
+   *  `ResourcesEditor`'s `onUploaded` auto-save (Stage 4 #5 — an uploaded
+   *  document already round-tripped the server, so its row is committed
+   *  immediately and the bar just shows '✓'). */
+  const saveList = (next: CourseResource[]) =>
     start(async () => {
       setSave('saving');
       setErr(null);
-      const res = await updateAction(slug, { resources: list });
+      const res = await updateAction(slug, { resources: next });
       if (res.ok) {
         setSave('saved');
         router.refresh();
@@ -62,6 +81,8 @@ export function CourseResourcesPanel({
       }
     });
 
+  const onSave = () => saveList(list);
+
   return (
     <div className="space-y-4">
       <section className="rounded-xl border border-ink/12 bg-paper-light p-4">
@@ -70,7 +91,10 @@ export function CourseResourcesPanel({
             <IconLink size={14} />
           </span>
           <div className="min-w-0">
-            <span className="font-mono text-[10px] uppercase tracking-wide text-ink/55">{t('resourcesLabel')}</span>
+            <span className="font-mono text-[10px] uppercase tracking-wide text-ink/55">
+              {t('resourcesLabel')}
+              {mono && <span className="text-ink/40 normal-case"> · {MONO_LOCALE_NAME[mono]}</span>}
+            </span>
             <p className="mt-0.5 text-[11px] leading-snug text-ink/60">{t('resourcesHelp')}</p>
           </div>
         </div>
@@ -83,6 +107,14 @@ export function CourseResourcesPanel({
               setSave('idle');
             }}
             serverError={err?.startsWith('resource_') ? err : null}
+            slug={slug}
+            mono={mono}
+            uploadEnabled={uploadEnabled}
+            audienceNote={t('resourcesAudienceNote')}
+            onUploaded={(next) => {
+              setList(next);
+              saveList(next);
+            }}
           />
         </div>
         {/* Cross-link (Stage 1 — task-first navigation): "Resous" here used

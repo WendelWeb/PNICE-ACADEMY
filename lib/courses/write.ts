@@ -448,6 +448,46 @@ function normalizeResource(r: CourseResource): CourseResource {
   return { label_ht: r.label_ht.trim(), label_fr: r.label_fr.trim(), url: r.url.trim(), kind: r.kind };
 }
 
+export type PreparedResources = { ok: true; resources: CourseResource[] } | { ok: false; message: string };
+
+/**
+ * THE shared resource path (Stage 4 — documents/ressources) that BOTH
+ * `updateCourse` and `updateLesson` traverse when a patch carries
+ * `resources`. Resources were the ONE bilingual exception left after Task:
+ * course/lesson/chapter-language: `validateResource` hard-requires BOTH
+ * labels, so a monolingual kreyòl course was still forced to type a French
+ * title for every link. Same cure as everywhere else — mirror the PRIMARY
+ * locale's label into the other side (byte-identical, the exact invariant
+ * `mirrorBilingualFields` maintains for column pairs — resources just live
+ * INSIDE one jsonb column, so the mirroring happens per-row here instead of
+ * per-column there), THEN validate:
+ *
+ *  - monolingual (`bilingual === false`): the missing/stale other-side label
+ *    is overwritten with the primary one, so a row typed once passes the
+ *    unchanged strict validation — and a visitor browsing in the other
+ *    locale still sees a real label. An EMPTY primary label still fails
+ *    (mirroring '' into '' trips `resource_label_*_required`) — mono never
+ *    weakens the "every row needs a title" rule, only the "in two languages"
+ *    part.
+ *  - bilingual: pass-through — the strict both-labels validation is
+ *    untouched.
+ *
+ * Pure + exported for unit testing (lib/courses/write.resources.test.ts)
+ * without a DB, like every other decision helper in this module.
+ */
+export function prepareResourcesForWrite(
+  resources: CourseResource[],
+  bilingual: boolean,
+  primaryLocale: 'ht' | 'fr',
+): PreparedResources {
+  const mirrored = bilingual
+    ? resources
+    : resources.map((r) => (primaryLocale === 'ht' ? { ...r, label_fr: r.label_ht } : { ...r, label_ht: r.label_fr }));
+  const err = validateResources(mirrored);
+  if (err) return { ok: false, message: err };
+  return { ok: true, resources: mirrored.map(normalizeResource) };
+}
+
 /**
  * Resolves teacher #1 (the site owner)'s `users.id` for `courses.owner_user_id`
  * — same rule as scripts/seed-courses.ts (ADMIN_BOOTSTRAP_EMAILS match, else
@@ -688,12 +728,26 @@ export async function updateCourse(slug: string, patch: CoursePatch, actor: Admi
     .limit(1);
   if (!current) return { ok: false, message: 'not_found' };
 
-  if (patch.resources !== undefined) {
-    const err = validateResources(patch.resources);
-    if (err) return { ok: false, message: err };
-  }
   if (patch.primaryLocale !== undefined && !isValidLocale(patch.primaryLocale)) {
     return { ok: false, message: 'invalid_primary_locale' };
+  }
+
+  // Effective translation setting for THIS save — the (possibly just-toggled-
+  // by-this-patch) bilingual/primaryLocale, falling back to the row's CURRENT
+  // value for whichever one the patch doesn't touch (see the mirroring note
+  // above `mirrorBilingualFields` below; hoisted up here since Stage 4 so the
+  // resources path can use the same effective pair).
+  const bilingual = patch.bilingual !== undefined ? patch.bilingual : current.bilingual;
+  const primaryLocale = patch.primaryLocale !== undefined ? patch.primaryLocale : current.primaryLocale;
+
+  // Stage 4 — mirror-then-validate for a monolingual course's resource
+  // labels, strict both-labels validation for a bilingual one. See
+  // `prepareResourcesForWrite` (the same path `updateLesson` traverses).
+  let preparedResources: CourseResource[] | null = null;
+  if (patch.resources !== undefined) {
+    const prepared = prepareResourcesForWrite(patch.resources, bilingual, primaryLocale);
+    if (!prepared.ok) return { ok: false, message: prepared.message };
+    preparedResources = prepared.resources;
   }
 
   const set: Partial<typeof T.courses.$inferInsert> = { updatedAt: new Date() };
@@ -721,7 +775,7 @@ export async function updateCourse(slug: string, patch: CoursePatch, actor: Admi
     set.faqHt = patch.faq.map((f) => ({ q: f.q_ht, a: f.a_ht }));
     set.faqFr = patch.faq.map((f) => ({ q: f.q_fr, a: f.a_fr }));
   }
-  if (patch.resources !== undefined) set.resources = patch.resources.map(normalizeResource);
+  if (preparedResources !== null) set.resources = preparedResources;
   if (patch.bilingual !== undefined) set.bilingual = patch.bilingual;
   if (patch.primaryLocale !== undefined) set.primaryLocale = patch.primaryLocale;
 
@@ -729,12 +783,9 @@ export async function updateCourse(slug: string, patch: CoursePatch, actor: Admi
   if (wasPublished) set.hasUnpublishedChanges = true;
 
   // THE ONE PLACE (Task: course-language) — see `mirrorBilingualFields`'s own
-  // doc comment. Uses the (possibly just-toggled-by-this-patch) bilingual/
-  // primaryLocale, falling back to the row's CURRENT value for whichever one
-  // this patch doesn't touch — a save that doesn't touch the toggle must
-  // mirror (or not) using the course's existing setting, not silently reset it.
-  const bilingual = patch.bilingual !== undefined ? patch.bilingual : current.bilingual;
-  const primaryLocale = patch.primaryLocale !== undefined ? patch.primaryLocale : current.primaryLocale;
+  // doc comment. `bilingual`/`primaryLocale` are the EFFECTIVE pair computed
+  // above — a save that doesn't touch the toggle must mirror (or not) using
+  // the course's existing setting, not silently reset it.
   const mirroredSet = mirrorBilingualFields(set, bilingual, primaryLocale);
 
   await db.update(T.courses).set(mirroredSet).where(eq(T.courses.slug, slug));
@@ -1014,9 +1065,29 @@ export async function updateLesson(
 ): Promise<CourseWriteResult> {
   if (!dbConfigured()) return dbRequired();
 
+  // Parent-course translation context (Task: lesson-language, extended by
+  // Stage 4): resolved ONCE, and only when this patch touches something that
+  // needs it — a mirrored title/desc/notes pair OR the resources list (whose
+  // per-row labels mirror the same way, see `prepareResourcesForWrite`). A
+  // plain video/duration/preview save still skips the extra course read.
+  const touchesLessonMirror =
+    patch.title_ht !== undefined ||
+    patch.title_fr !== undefined ||
+    patch.desc_ht !== undefined ||
+    patch.desc_fr !== undefined ||
+    patch.notes_ht !== undefined ||
+    patch.notes_fr !== undefined;
+  const mirrorContext =
+    touchesLessonMirror || patch.resources !== undefined ? await resolveLessonMirrorContext(slug) : null;
+
+  // Stage 4 — the SAME mirror-then-validate resource path `updateCourse`
+  // traverses, fed the parent course's server-resolved translation setting.
+  let preparedResources: CourseResource[] | null = null;
   if (patch.resources !== undefined) {
-    const err = validateResources(patch.resources);
-    if (err) return { ok: false, message: err };
+    const ctx = mirrorContext ?? { bilingual: true, primaryLocale: 'ht' as const };
+    const prepared = prepareResourcesForWrite(patch.resources, ctx.bilingual, ctx.primaryLocale);
+    if (!prepared.ok) return { ok: false, message: prepared.message };
+    preparedResources = prepared.resources;
   }
 
   // Orphan cleanup (best-effort — see lib/bunny/upload.ts's `deleteBunnyVideo`
@@ -1046,26 +1117,17 @@ export async function updateLesson(
   if (patch.isPreview !== undefined) set.isPreview = patch.isPreview;
   if (patch.notes_ht !== undefined) set.notesHt = patch.notes_ht;
   if (patch.notes_fr !== undefined) set.notesFr = patch.notes_fr;
-  if (patch.resources !== undefined) set.resources = patch.resources.map(normalizeResource);
+  if (preparedResources !== null) set.resources = preparedResources;
 
   // Lesson-level optional translation (Task: lesson-language) — when the
   // PARENT COURSE is monolingual, mirror this save's primary-locale value
   // into both columns for title/desc/notes, the SAME `mirrorBilingualFields`
   // helper `updateCourse` uses for course fields (see its doc comment) —
-  // just fed `LESSON_BILINGUAL_PAIR_COLUMNS` instead. Only paid for when the
-  // patch actually touches one of the three mirrored pairs, so a plain
-  // video/duration/preview/resources-only save skips the extra course read.
-  const touchesLessonMirror =
-    patch.title_ht !== undefined ||
-    patch.title_fr !== undefined ||
-    patch.desc_ht !== undefined ||
-    patch.desc_fr !== undefined ||
-    patch.notes_ht !== undefined ||
-    patch.notes_fr !== undefined;
+  // just fed `LESSON_BILINGUAL_PAIR_COLUMNS` instead. `mirrorContext` was
+  // resolved above, only when actually needed.
   let mirroredSet = set;
-  if (touchesLessonMirror) {
-    const { bilingual, primaryLocale } = await resolveLessonMirrorContext(slug);
-    mirroredSet = mirrorBilingualFields(set, bilingual, primaryLocale, LESSON_BILINGUAL_PAIR_COLUMNS);
+  if (touchesLessonMirror && mirrorContext) {
+    mirroredSet = mirrorBilingualFields(set, mirrorContext.bilingual, mirrorContext.primaryLocale, LESSON_BILINGUAL_PAIR_COLUMNS);
   }
 
   const res = await db

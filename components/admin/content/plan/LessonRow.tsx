@@ -28,6 +28,7 @@ export function LessonRow({
   chapters,
   bilingual,
   primaryLocale,
+  uploadEnabled,
   expandedId,
   onToggleExpand,
 }: {
@@ -44,6 +45,9 @@ export function LessonRow({
    *  comment. Does NOT change the `actions` DI contract. */
   bilingual: boolean;
   primaryLocale: 'ht' | 'fr';
+  /** "Is the document upload rail configured?" (Stage 4) — plain data prop
+   *  threaded down to `LessonEditPanel` exactly like `bilingual`. */
+  uploadEnabled: boolean;
   expandedId: string | null;
   onToggleExpand: (lessonId: string) => void;
 }) {
@@ -156,6 +160,7 @@ export function LessonRow({
             chapters={chapters}
             bilingual={bilingual}
             primaryLocale={primaryLocale}
+            uploadEnabled={uploadEnabled}
             onAct={onAct}
           />
         </div>

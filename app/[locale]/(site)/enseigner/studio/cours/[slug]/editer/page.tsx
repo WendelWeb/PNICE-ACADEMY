@@ -194,6 +194,7 @@ export default async function EditMyCoursePage({
                   isDraft={isDraft}
                   bilingual={course.bilingual}
                   primaryLocale={course.primary_locale}
+                  uploadEnabled={bunnyStorageConfigured()}
                   actions={lessonActions}
                 />
               )}
@@ -208,7 +209,14 @@ export default async function EditMyCoursePage({
                 />
               )}
               {activeTab === 'ressources' && (
-                <CourseResourcesPanel slug={course.slug} resources={course.resources} updateAction={updateMyCourseAction} />
+                <CourseResourcesPanel
+                  slug={course.slug}
+                  resources={course.resources}
+                  updateAction={updateMyCourseAction}
+                  bilingual={course.bilingual}
+                  primaryLocale={course.primary_locale}
+                  uploadEnabled={bunnyStorageConfigured()}
+                />
               )}
             </div>
           </div>

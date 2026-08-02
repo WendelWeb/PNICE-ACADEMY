@@ -16,8 +16,10 @@ import {
   IconVideo,
   IconChevronRight,
   IconCircleCheck,
+  IconDeviceFloppy,
 } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
+import { buttonClasses } from '@/components/ui/Button';
 import type { AdminLesson, AdminChapter, LessonPatch } from '@/lib/courses/write';
 import type { CourseResource } from '@/db/schema';
 import { VideoUpload } from '@/components/content/VideoUpload';
@@ -29,6 +31,10 @@ import type { LessonActions } from './types';
 function hasText(v: string): boolean {
   return v.trim() !== '';
 }
+
+/** Same explicit save-state machine as `CourseResourcesPanel` (Stage 4 #5 —
+ *  ONE save model for resources, visible at both levels). */
+type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
 /**
  * The EXPANDED lesson editing surface (Task A2 #4) — everything `LessonRow`
@@ -67,6 +73,7 @@ export function LessonEditPanel({
   chapters,
   bilingual,
   primaryLocale,
+  uploadEnabled,
   onAct,
 }: {
   slug: string;
@@ -76,9 +83,14 @@ export function LessonEditPanel({
   chapters: AdminChapter[];
   bilingual: boolean;
   primaryLocale: 'ht' | 'fr';
+  /** Server-known "is the document upload rail configured?" (Stage 4,
+   *  `bunnyStorageConfigured()`) — plain data prop threaded down exactly
+   *  like `bilingual`/`primaryLocale`, handed to `ResourcesEditor`. */
+  uploadEnabled: boolean;
   onAct: (fn: () => Promise<{ ok: boolean }>) => void;
 }) {
   const t = useTranslations('admin.cms.lessons');
+  const tEditor = useTranslations('admin.cms.editor');
   const router = useRouter();
   const mono = bilingual ? undefined : primaryLocale;
   const [titleHt, setTitleHt] = useState(lesson.title_ht);
@@ -90,6 +102,7 @@ export function LessonEditPanel({
   const [notesFr, setNotesFr] = useState(lesson.notes_fr);
   const [resources, setResources] = useState<CourseResource[]>(lesson.resources);
   const [resourcesErr, setResourcesErr] = useState<string | null>(null);
+  const [resourcesSave, setResourcesSave] = useState<SaveState>('idle');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [rp, rStart] = useTransition();
 
@@ -110,19 +123,23 @@ export function LessonEditPanel({
     );
 
   /**
-   * `resources` is an array field — there's no single input to "blur" the
-   * way a scalar text field has, so it commits when focus leaves the WHOLE
-   * notes/resources block (the wrapping `onBlur` below checks
-   * `relatedTarget` is actually outside the container, the standard
-   * a11y-safe "focus really left this subtree" check).
+   * Stage 4 #5 — the invisible commit-on-blur (11px spinner as the only
+   * feedback) is gone: lesson-level resources now use the SAME explicit
+   * save bar + status text `CourseResourcesPanel` has, so both levels of
+   * the page share ONE save model. Uploaded documents auto-save through
+   * this same function (via `ResourcesEditor`'s `onUploaded`) — they
+   * already round-tripped the server, so the teacher just sees the '✓'.
    */
   const commitResources = (next: CourseResource[]) =>
     rStart(async () => {
+      setResourcesSave('saving');
       const res = await actions.updateLesson(slug, lesson.id, { resources: next });
       if (res.ok) {
+        setResourcesSave('saved');
         setResourcesErr(null);
         router.refresh();
       } else {
+        setResourcesSave('error');
         setResourcesErr(res.message ?? 'error');
       }
     });
@@ -258,25 +275,58 @@ export function LessonEditPanel({
           yon dokiman" quick action jumps to. */}
       <EditPanelSection
         id={`lesson-${lesson.id}-resources`}
-        title={
-          <span className="inline-flex items-center gap-1.5">
-            {t('sectionResources')} {rp && <IconLoader2 size={11} className="animate-spin text-ink/40" />}
-          </span>
-        }
+        title={sectionTitle(t('sectionResources'))}
         icon={IconLink}
         hint={t('hints.resources')}
       >
-        <div
-          onBlur={(e) => {
-            if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-              if (JSON.stringify(resources) !== JSON.stringify(lesson.resources)) commitResources(resources);
-            }
+        {/* `label=""` suppresses ResourcesEditor's own default heading —
+            `EditPanelSection` above already supplies the "Ressources"
+            label, so rendering both would double it up. */}
+        <ResourcesEditor
+          label=""
+          resources={resources}
+          onChange={(next) => {
+            setResources(next);
+            setResourcesSave('idle');
           }}
-        >
-          {/* `label=""` suppresses ResourcesEditor's own default heading —
-              `EditPanelSection` above already supplies the "Ressources"
-              label, so rendering both would double it up. */}
-          <ResourcesEditor label="" resources={resources} onChange={setResources} serverError={resourcesErr} />
+          serverError={resourcesErr}
+          slug={slug}
+          mono={mono}
+          uploadEnabled={uploadEnabled}
+          audienceNote={t('resourcesAudienceNote')}
+          onUploaded={(next) => {
+            setResources(next);
+            commitResources(next);
+          }}
+        />
+        {/* The explicit save bar (Stage 4 #5) — ported from
+            `CourseResourcesPanel`'s SaveState pattern, same
+            admin.cms.editor save/saved/saving/unsaved/error strings. */}
+        <div className="mt-2.5 flex items-center gap-3 border-t border-ink/10 pt-2.5">
+          <button
+            type="button"
+            disabled={rp}
+            onClick={() => commitResources(resources)}
+            className={cn(buttonClasses('primary', 'sm'), 'text-xs')}
+          >
+            {resourcesSave === 'saving' ? <IconLoader2 size={14} className="animate-spin" /> : <IconDeviceFloppy size={14} />}
+            {tEditor('save')}
+          </button>
+          <span
+            className={cn(
+              'font-mono text-[11px]',
+              resourcesSave === 'saved' ? 'text-teal' : resourcesSave === 'error' ? 'text-stampred' : 'text-ink/45',
+            )}
+            role="status"
+          >
+            {resourcesSave === 'saved'
+              ? tEditor('saved')
+              : resourcesSave === 'error'
+                ? tEditor('error')
+                : resourcesSave === 'saving'
+                  ? tEditor('saving')
+                  : tEditor('unsaved')}
+          </span>
         </div>
       </EditPanelSection>
 

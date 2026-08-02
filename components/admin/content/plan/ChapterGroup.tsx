@@ -30,6 +30,7 @@ export function ChapterGroup({
   actions,
   bilingual,
   primaryLocale,
+  uploadEnabled,
   expandedId,
   onToggleExpand,
 }: {
@@ -48,6 +49,9 @@ export function ChapterGroup({
    *  fields, and also threaded straight through to each `LessonRow`. */
   bilingual: boolean;
   primaryLocale: 'ht' | 'fr';
+  /** "Is the document upload rail configured?" (Stage 4) — threaded straight
+   *  through to each `LessonRow`, exactly like `bilingual`. */
+  uploadEnabled: boolean;
   expandedId: string | null;
   onToggleExpand: (lessonId: string) => void;
 }) {
@@ -265,6 +269,7 @@ export function ChapterGroup({
                   chapters={chapters}
                   bilingual={bilingual}
                   primaryLocale={primaryLocale}
+                  uploadEnabled={uploadEnabled}
                   expandedId={expandedId}
                   onToggleExpand={onToggleExpand}
                 />
