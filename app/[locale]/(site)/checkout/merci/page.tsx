@@ -6,19 +6,47 @@ import { Sceau } from '@/components/ui/Sceau';
 import { Stamp } from '@/components/ui/Stamp';
 import { Link } from '@/i18n/routing';
 import { buttonClasses } from '@/components/ui/Button';
+import { formatUsd } from '@/lib/money';
+import {
+  stripeConfigured,
+  getStripeCheckoutSession,
+  type StripeSessionSummary,
+} from '@/lib/payments/stripe';
 
 export const metadata: Metadata = { title: 'Mèsi — PNICE Academy' };
 
+// Reads the buyer's own Stripe session — never prerendered/cached.
+export const dynamic = 'force-dynamic';
+
 export default async function MerciPage({
   params: { locale },
+  searchParams,
 }: {
   params: { locale: string };
+  searchParams: { [key: string]: string | string[] | undefined };
 }) {
   setRequestLocale(locale);
   const t = await getTranslations('merci');
 
-  // Real, uneventful confirmation date — no fabricated order number since this
-  // page receives no session/order id (purely a post-payment landing screen).
+  // Stage: checkout honesty — /api/checkout appends
+  // ?session_id={CHECKOUT_SESSION_ID} to the success URL, so this page can
+  // read back (server-side, env-gated, never-throw) what was REALLY bought:
+  // item, amount, reference. A direct visit with no/bad session id — or no
+  // Stripe key — degrades to the generic confirmation exactly as before.
+  const sessionId =
+    typeof searchParams.session_id === 'string' ? searchParams.session_id : undefined;
+  let purchase: StripeSessionSummary | null = null;
+  if (sessionId && stripeConfigured()) {
+    const s = await getStripeCheckoutSession(sessionId);
+    // Only show details for a session Stripe confirms is actually settled.
+    if (s && (s.paymentStatus === 'paid' || s.paymentStatus === 'no_payment_required')) {
+      purchase = s;
+    }
+  }
+
+  // Real, uneventful confirmation date — shown alongside the real Stripe
+  // reference when we have one; still no fabricated order number when the
+  // page has no session to read.
   const dateLabel = new Intl.DateTimeFormat('fr-FR', {
     day: '2-digit',
     month: 'short',
@@ -59,6 +87,37 @@ export default async function MerciPage({
           <p className="mt-3 text-[15px] leading-relaxed text-graphite/80">
             {t('body')}
           </p>
+
+          {purchase && (
+            <dl className="mt-6 space-y-2.5 border-t border-ink/10 pt-5 text-left">
+              {purchase.itemName && (
+                <div className="flex items-baseline justify-between gap-3">
+                  <dt className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-ink/45">
+                    {t('purchased')}
+                  </dt>
+                  <dd className="text-right text-sm font-medium leading-snug text-ink">
+                    {purchase.itemName}
+                  </dd>
+                </div>
+              )}
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-ink/45">
+                  {t('amount')}
+                </dt>
+                <dd className="text-right font-display text-lg font-black text-ink tabular-nums">
+                  {formatUsd(purchase.amountCents / 100)}
+                </dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-ink/45">
+                  {t('reference')}
+                </dt>
+                <dd className="break-all text-right font-mono text-[11px] text-graphite/70">
+                  {purchase.reference}
+                </dd>
+              </div>
+            </dl>
+          )}
         </div>
 
         <div className="mt-8">

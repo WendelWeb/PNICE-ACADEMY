@@ -10,6 +10,7 @@ import { describe, it, expect } from 'vitest';
 import {
   subscriptionsGrantCourse,
   subscriptionAccessibleSlugs,
+  subscriptionPurchaseConflict,
   type SubscriptionGrant,
 } from './access';
 
@@ -110,5 +111,70 @@ describe('subscriptionAccessibleSlugs', () => {
     ]);
     const result = subscriptionAccessibleSlugs(subs, allSlugs, ownerSlugs, planOwners);
     expect([...result].sort()).toEqual(['course-a1', 'course-b1']);
+  });
+});
+
+// Stage: checkout honesty — the repurchase guard's one decision point:
+// would buying this subscription be a DOUBLE CHARGE given what's already
+// active? Consumed by the checkout page (friendly "Ou gen aksè deja" state)
+// and /api/checkout (409 backstop).
+describe('subscriptionPurchaseConflict', () => {
+  const platformTarget = { kind: 'platform' as const, teacherPlanId: null, teacherUserId: null };
+  const teacherTarget = { kind: 'teacher' as const, teacherPlanId: 'plan-a', teacherUserId: 'owner-a' };
+
+  it('an active platform pass blocks buying the platform pass again', () => {
+    const subs: SubscriptionGrant[] = [{ kind: 'platform', teacherPlanId: null }];
+    expect(subscriptionPurchaseConflict(subs, platformTarget, new Map())).toBe(true);
+  });
+
+  it('an active platform pass blocks buying ANY teacher pass (it already covers everything)', () => {
+    const subs: SubscriptionGrant[] = [{ kind: 'platform', teacherPlanId: null }];
+    expect(subscriptionPurchaseConflict(subs, teacherTarget, new Map())).toBe(true);
+  });
+
+  it('holding the SAME teacher plan blocks buying it again', () => {
+    const subs: SubscriptionGrant[] = [{ kind: 'teacher', teacherPlanId: 'plan-a' }];
+    expect(subscriptionPurchaseConflict(subs, teacherTarget, new Map())).toBe(true);
+  });
+
+  it('holding a DIFFERENT plan of the SAME teacher still blocks (one catalogue, never pay twice)', () => {
+    const subs: SubscriptionGrant[] = [{ kind: 'teacher', teacherPlanId: 'plan-old' }];
+    const planOwners = new Map([['plan-old', 'owner-a']]);
+    expect(subscriptionPurchaseConflict(subs, teacherTarget, planOwners)).toBe(true);
+  });
+
+  it("holding ANOTHER teacher's pass does NOT block buying this teacher's pass", () => {
+    const subs: SubscriptionGrant[] = [{ kind: 'teacher', teacherPlanId: 'plan-b' }];
+    const planOwners = new Map([['plan-b', 'owner-b']]);
+    expect(subscriptionPurchaseConflict(subs, teacherTarget, planOwners)).toBe(false);
+  });
+
+  it('holding only teacher passes never blocks the platform pass — a genuine upgrade', () => {
+    const subs: SubscriptionGrant[] = [
+      { kind: 'teacher', teacherPlanId: 'plan-a' },
+      { kind: 'teacher', teacherPlanId: 'plan-b' },
+    ];
+    const planOwners = new Map([
+      ['plan-a', 'owner-a'],
+      ['plan-b', 'owner-b'],
+    ]);
+    expect(subscriptionPurchaseConflict(subs, platformTarget, planOwners)).toBe(false);
+  });
+
+  it('no active subscriptions never conflicts', () => {
+    expect(subscriptionPurchaseConflict([], platformTarget, new Map())).toBe(false);
+    expect(subscriptionPurchaseConflict([], teacherTarget, new Map())).toBe(false);
+  });
+
+  it('an unresolvable held plan (owner unknown) only blocks on an exact plan-id match', () => {
+    const subs: SubscriptionGrant[] = [{ kind: 'teacher', teacherPlanId: 'plan-mystery' }];
+    expect(subscriptionPurchaseConflict(subs, teacherTarget, new Map())).toBe(false);
+    expect(
+      subscriptionPurchaseConflict(
+        subs,
+        { kind: 'teacher', teacherPlanId: 'plan-mystery', teacherUserId: null },
+        new Map(),
+      ),
+    ).toBe(true);
   });
 });

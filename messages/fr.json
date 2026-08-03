@@ -17,7 +17,6 @@
     "subscribe": "Prendre l'abonnement",
     "seeAll": "Voir toutes les formations",
     "or": "ou",
-    "demo": "Démo — non actif",
     "example": "Exemple"
   },
   "footer": {
@@ -697,24 +696,34 @@
     "total": "Total",
     "pay": "Payer",
     "secure": "Ton paiement est sécurisé",
-    "secureSub": "PayPal · Visa/Mastercard · MonCash · NatCash · Crypto",
-    "demoNote": "Ceci est une démo UI — aucun paiement réel n'est effectué à cette étape.",
     "secureNote": "Paiement sécurisé par Stripe. Ton accès s'active automatiquement après confirmation.",
     "payErr": "Le paiement n'a pas pu démarrer. Réessaie dans un instant.",
     "redirect": "Redirection vers le paiement sécurisé…",
+    "noMethods": "Le paiement n'est pas disponible pour le moment. Réessaie bientôt, ou contacte le support.",
+    "comingSoonTitle": "D'autres moyens arrivent",
+    "comingSoonChip": "Bientôt",
+    "owned": {
+      "title": "Tu as déjà accès",
+      "bodyCourse": "Tu as déjà cette formation — pas besoin de payer une deuxième fois. Va dans ton tableau de bord pour continuer à apprendre.",
+      "bodySub": "Tu as déjà un abonnement actif qui couvre ceci — pas besoin de payer une deuxième fois. Va dans ton tableau de bord pour continuer à apprendre.",
+      "cta": "Aller au tableau de bord",
+      "payRefused": "Tu as déjà cet accès — on ne te fait pas payer deux fois. Va dans ton tableau de bord."
+    },
     "promo": {
       "label": "Code promo",
       "placeholder": "Entrez un code",
       "apply": "Appliquer",
       "remove": "Retirer",
       "newTotal": "Nouveau total :",
+      "payInvalid": "Le code promo n'est plus valable. Retire-le et réessaie.",
       "error": {
         "not_found": "Code introuvable.",
         "inactive": "Ce code est désactivé.",
         "expired": "Ce code a expiré.",
         "depleted": "Ce code a atteint sa limite.",
         "scheduled": "Ce code n'est pas encore actif.",
-        "wrong_product": "Ce code ne s'applique pas à cet article."
+        "wrong_product": "Ce code ne s'applique pas à cet article.",
+        "too_small": "Avec ce code, le total devient trop bas pour un paiement par carte. Contacte le support pour qu'on t'aide."
       }
     },
     "trust": {
@@ -730,7 +739,10 @@
     "docHeader": "REÇU · PNICE ACADEMY",
     "sealWord": "PAYÉ",
     "nextSteps": "Prochaine étape",
-    "emailNote": "Tu vas recevoir un reçu par email."
+    "emailNote": "Tu vas recevoir un reçu par email.",
+    "purchased": "Ton achat",
+    "amount": "Montant",
+    "reference": "Référence"
   },
   "dashboard": {
     "title": "Tableau de bord",

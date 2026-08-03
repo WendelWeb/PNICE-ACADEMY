@@ -18,8 +18,37 @@ describe('mapStripeEvent', () => {
       productType: 'course', courseSlug: 'zouti-finansye-dijital',
       amountCents: 900, currency: 'USD', paymentIntentId: 'pi_1',
       subscriptionId: null, customerEmail: 'x@y.com', teacherPlanId: null,
-      subscriptionKind: 'platform',
+      subscriptionKind: 'platform', promoCode: null,
     });
+  });
+
+  // Stage: checkout honesty — `metadata[promoCode]` (written by
+  // lib/payments/stripe.ts when /api/checkout applied a validated code) is
+  // read back here so fulfillment can mark the redemption.
+  it('carries metadata[promoCode] through, null when absent or empty', () => {
+    const base = {
+      id: 'evt_p', type: 'checkout.session.completed',
+      data: { object: {
+        id: 'cs_p', mode: 'payment', client_reference_id: 'user-uuid',
+        metadata: { productType: 'course', courseSlug: 'x', promoCode: 'LANSMAN20' },
+        amount_total: 720, currency: 'usd',
+      } },
+    };
+    const withCode = mapStripeEvent(base);
+    expect(withCode.kind).toBe('checkout_completed');
+    if (withCode.kind === 'checkout_completed') expect(withCode.promoCode).toBe('LANSMAN20');
+
+    const without = mapStripeEvent({
+      ...base,
+      data: { object: { ...base.data.object, metadata: { productType: 'course', courseSlug: 'x' } } },
+    });
+    if (without.kind === 'checkout_completed') expect(without.promoCode).toBeNull();
+
+    const empty = mapStripeEvent({
+      ...base,
+      data: { object: { ...base.data.object, metadata: { productType: 'course', courseSlug: 'x', promoCode: '' } } },
+    });
+    if (empty.kind === 'checkout_completed') expect(empty.promoCode).toBeNull();
   });
 
   it('maps checkout.session.completed (subscription mode)', () => {

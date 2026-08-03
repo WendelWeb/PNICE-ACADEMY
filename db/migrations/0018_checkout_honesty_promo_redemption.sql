@@ -1,0 +1,14 @@
+-- Stage: checkout honesty — promo codes now discount REAL charges:
+-- /api/checkout re-validates the submitted code server-side and creates the
+-- Stripe session at the discounted unit_amount, carrying the code in session
+-- metadata; fulfillment (lib/payments/fulfill.ts →
+-- lib/payments/promo-redemption.ts) marks ONE redemption per real payment
+-- (promo_redemptions row + promo_codes.used_count bump).
+--
+-- This partial unique index (NULLs exempt) is the concurrency backstop for
+-- that "one redemption per payment" rule — Stripe redelivers webhooks and two
+-- deliveries can race, exactly the earnings_ledger_sale_payment_uniq
+-- pattern. Admin "simulate redemption" rows (related_payment_id NULL) stay
+-- unconstrained. Insert path uses onConflictDoNothing, so the code tolerates
+-- a live DB that has not applied this yet (tiny race window until db:push).
+CREATE UNIQUE INDEX "promo_redemptions_payment_uniq" ON "promo_redemptions" USING btree ("related_payment_id") WHERE "promo_redemptions"."related_payment_id" IS NOT NULL;

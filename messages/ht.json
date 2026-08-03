@@ -17,7 +17,6 @@
     "subscribe": "Pran abonman an",
     "seeAll": "Wè tout fòmasyon yo",
     "or": "oswa",
-    "demo": "Demo — pa aktif",
     "example": "Egzanp"
   },
   "footer": {
@@ -697,24 +696,34 @@
     "total": "Total",
     "pay": "Peye",
     "secure": "Peman ou an sekirize",
-    "secureSub": "PayPal · Visa/Mastercard · MonCash · NatCash · Kripto",
-    "demoNote": "Sa se yon demo UI — pa gen okenn vrè peman ki fèt nan etap sa a.",
     "secureNote": "Peman sekirize pa Stripe. Aksè w ap aktive otomatikman apre konfimasyon.",
     "payErr": "Peman an pa t ka kòmanse. Eseye ankò talè.",
     "redirect": "N ap voye w sou paj peman sekirize a…",
+    "noMethods": "Peman pa disponib kounye a. Eseye ankò talè, oswa kontakte sipò a.",
+    "comingSoonTitle": "Lòt mwayen k ap vini",
+    "comingSoonChip": "Byento",
+    "owned": {
+      "title": "Ou gen aksè deja",
+      "bodyCourse": "Ou deja gen fòmasyon sa a — ou pa bezwen peye yon dezyèm fwa. Ale nan tablodbò w pou w kontinye aprann.",
+      "bodySub": "Ou deja gen yon abònman aktif ki kouvri sa a — ou pa bezwen peye yon dezyèm fwa. Ale nan tablodbò w pou w kontinye aprann.",
+      "cta": "Ale nan tablodbò a",
+      "payRefused": "Ou gen aksè sa a deja — nou pa fè w peye de fwa. Ale nan tablodbò w."
+    },
     "promo": {
       "label": "Kòd pwomo",
       "placeholder": "Antre yon kòd",
       "apply": "Aplike",
       "remove": "Retire",
       "newTotal": "Nouvo total :",
+      "payInvalid": "Kòd pwomo a pa valab ankò. Retire l epi eseye ankò.",
       "error": {
         "not_found": "Kòd la pa jwenn.",
         "inactive": "Kòd sa a dezaktive.",
         "expired": "Kòd sa a ekspire.",
         "depleted": "Kòd sa a rive nan limit li.",
         "scheduled": "Kòd sa a poko aktif.",
-        "wrong_product": "Kòd sa a pa aplike sou atik sa a."
+        "wrong_product": "Kòd sa a pa aplike sou atik sa a.",
+        "too_small": "Ak kòd sa a, total la vin twò piti pou yon peman kat. Kontakte sipò a pou n ede w."
       }
     },
     "trust": {
@@ -730,7 +739,10 @@
     "docHeader": "RESI · PNICE ACADEMY",
     "sealWord": "PEYE",
     "nextSteps": "Pwochèn etap",
-    "emailNote": "Ou pral resevwa yon resi nan imèl ou."
+    "emailNote": "Ou pral resevwa yon resi nan imèl ou.",
+    "purchased": "Sa ou achte",
+    "amount": "Montan",
+    "reference": "Referans"
   },
   "dashboard": {
     "title": "Tablo debò",

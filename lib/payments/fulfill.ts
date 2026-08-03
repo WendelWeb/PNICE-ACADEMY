@@ -21,6 +21,7 @@ import { htgLabelAt } from '@/lib/money';
 import { getFxRate } from '@/lib/fx';
 import { getCourseBySlug } from '@/lib/courses/source';
 import { recordSaleEarning, recordRefundReversal } from '@/lib/teacher/earnings';
+import { recordPromoRedemption } from './promo-redemption';
 import type { StripeAction } from './stripe-events';
 
 export async function fulfillAction(action: StripeAction): Promise<'processed' | 'ignored'> {
@@ -228,6 +229,12 @@ async function fulfillCheckoutCompleted(a: CheckoutCompleted): Promise<'processe
       teacherPlanId: a.teacherPlanId,
       subscriptionKind: a.subscriptionKind,
     });
+    // Additive (Stage: checkout honesty): same self-heal for a missed promo
+    // redemption — NEVER THROWS and idempotent (pre-check + partial unique
+    // index, see lib/payments/promo-redemption.ts), no-op once marked.
+    if (a.promoCode) {
+      await recordPromoRedemption({ paymentId: existingPayment.id, userDbId, promoCode: a.promoCode });
+    }
     await ensureCourseEnrollment(userDbId, a.productType, a.courseSlug, existingPayment.id);
     return 'processed';
   }
@@ -316,6 +323,11 @@ async function fulfillCheckoutCompleted(a: CheckoutCompleted): Promise<'processe
       teacherPlanId: a.teacherPlanId,
       subscriptionKind: a.subscriptionKind,
     });
+    // Additive (Stage: checkout honesty): heal a missed promo redemption on
+    // the raced path too — idempotent, never throws.
+    if (a.promoCode) {
+      await recordPromoRedemption({ paymentId: raced.id, userDbId, promoCode: a.promoCode });
+    }
     await ensureCourseEnrollment(userDbId, a.productType, a.courseSlug, raced.id);
     return 'processed';
   }
@@ -335,6 +347,15 @@ async function fulfillCheckoutCompleted(a: CheckoutCompleted): Promise<'processe
     teacherPlanId: a.teacherPlanId,
     subscriptionKind: a.subscriptionKind,
   });
+
+  // 2c. Additive (Stage: checkout honesty): the promo code /api/checkout
+  // validated and applied to this charge is marked redeemed against the real
+  // payment — promo_redemptions row + used_count bump. NEVER THROWS and
+  // idempotent (lib/payments/promo-redemption.ts), so it can never fail or
+  // block fulfillment, which is already durably recorded above.
+  if (a.promoCode) {
+    await recordPromoRedemption({ paymentId: payment.id, userDbId, promoCode: a.promoCode });
+  }
 
   // 3. Course purchase → enrollment (skip if already enrolled and active).
   await ensureCourseEnrollment(userDbId, a.productType, a.courseSlug, payment.id);

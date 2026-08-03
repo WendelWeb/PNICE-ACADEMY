@@ -5,13 +5,15 @@
  * `activeProviders()` = the admin's DB-backed provider toggles
  * (platform_settings.providers_json, lib/admin/platform/store.ts) ∩ the
  * rails that are ACTUALLY implemented end-to-end today — currently card
- * only, via Stripe (components/checkout/PaymentMethods.tsx's `isLive`;
- * MonCash/NatCash/PayPal/crypto are demo-only selections with no live
- * charge path). Public trust surfaces (the footer's "payments" badge row,
- * the checkout "we accept" badge list) consume THIS module, so a rail that
- * is toggled on but not yet built — or built but toggled off — is never
- * advertised. When a new rail goes live, add it to IMPLEMENTED_PROVIDERS
- * and every claim updates together.
+ * only, via Stripe. Public trust surfaces (the footer's "payments" badge
+ * row, the checkout "we accept" badge list) consume THIS module, and since
+ * Stage: checkout honesty the checkout method SELECTOR does too
+ * (components/checkout/PaymentMethods.tsx renders only `live` from
+ * `splitProviders` below — toggled-but-unbuilt rails appear solely as
+ * non-interactive "Byento" chips). A rail that is toggled on but not yet
+ * built — or built but toggled off — is never advertised or selectable.
+ * When a new rail goes live, add it to IMPLEMENTED_PROVIDERS and every
+ * claim updates together.
  *
  * NEVER-THROW: the underlying toggle read is gated + never-throw (defaults:
  * all toggles on), so with no DB this resolves to the implemented list.
@@ -40,4 +42,25 @@ export async function activeProviders(): Promise<ProviderKey[]> {
 /** The same list as display labels, for badge rows. */
 export async function activeProviderLabels(): Promise<string[]> {
   return (await activeProviders()).map((k) => PROVIDER_LABELS[k]);
+}
+
+/**
+ * Split the admin's toggled rails into what checkout may SELL today vs what
+ * it may only ANNOUNCE (Stage: checkout honesty). Pure — the async DB read
+ * stays in `activeProviders`; this is the one testable rule:
+ *   - `live`      = toggled ∩ implemented → the ONLY selectable methods, in
+ *                   IMPLEMENTED_PROVIDERS order (a rail nobody can charge
+ *                   through must never render a radio row).
+ *   - `comingSoon`= toggled ∖ implemented → small non-interactive "Byento"
+ *                   chips, in the toggles' own order. Toggling a future rail
+ *                   OFF removes even its chip.
+ */
+export function splitProviders(toggled: ProviderKey[]): {
+  live: ProviderKey[];
+  comingSoon: ProviderKey[];
+} {
+  return {
+    live: IMPLEMENTED_PROVIDERS.filter((k) => toggled.includes(k)),
+    comingSoon: toggled.filter((k) => !IMPLEMENTED_PROVIDERS.includes(k)),
+  };
 }

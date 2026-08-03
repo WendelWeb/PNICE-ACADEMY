@@ -136,6 +136,60 @@ export function subscriptionAccessibleSlugs(
   return slugs;
 }
 
+/**
+ * Pure: would buying `target` be REDUNDANT given these already-active
+ * subscriptions? (Stage: checkout honesty — the repurchase guard's one
+ * decision point, exported for unit testing without a DB, exactly like
+ * `subscriptionsGrantCourse` above.)
+ *   - Any active 'platform' pass already covers EVERYTHING — buying either
+ *     pass again is redundant.
+ *   - Buying a 'teacher' pass is redundant if an active teacher pass is the
+ *     SAME plan, or resolves to the SAME owner (a teacher may retire plan A
+ *     and sell plan B — still one catalogue, never worth paying twice).
+ *   - Holding only teacher passes never blocks buying the 'platform' pass —
+ *     that is a genuine upgrade, not a double charge.
+ */
+export function subscriptionPurchaseConflict(
+  subs: SubscriptionGrant[],
+  target: { kind: 'teacher' | 'platform'; teacherPlanId: string | null; teacherUserId: string | null },
+  planOwnerByPlanId: Map<string, string>,
+): boolean {
+  if (subs.some((s) => s.kind === 'platform')) return true;
+  if (target.kind === 'platform') return false;
+  return subs.some((s) => {
+    if (s.kind !== 'teacher' || !s.teacherPlanId) return false;
+    if (target.teacherPlanId && s.teacherPlanId === target.teacherPlanId) return true;
+    const owner = planOwnerByPlanId.get(s.teacherPlanId);
+    return Boolean(owner && target.teacherUserId && owner === target.teacherUserId);
+  });
+}
+
+/**
+ * GATED + NEVER-THROW wrapper around `subscriptionPurchaseConflict` for the
+ * checkout page and `/api/checkout` (Stage: checkout honesty): does this
+ * signed-in user already hold an active subscription that makes buying
+ * `target` a double charge? Signed out / no DB / any failure ⇒ `false` —
+ * checkout behaves exactly as before this guard existed.
+ */
+export async function hasSubscriptionConflict(
+  clerkId: string,
+  target: { kind: 'teacher' | 'platform'; teacherPlanId: string | null; teacherUserId: string | null },
+): Promise<boolean> {
+  if (!dbReady() || !clerkId) return false;
+  try {
+    const userId = await resolveUserId(clerkId);
+    if (!userId) return false;
+    const subs = await getActiveSubscriptions(userId);
+    if (subs.length === 0) return false;
+    const teacherPlanIds = subs.map((s) => s.teacherPlanId).filter((id): id is string => Boolean(id));
+    const planOwners = await planOwnerMap(teacherPlanIds);
+    return subscriptionPurchaseConflict(subs, target, planOwners);
+  } catch (err) {
+    console.error('[learner/access] hasSubscriptionConflict failed:', err);
+    return false;
+  }
+}
+
 /** `teacher_plans.id` → its `owner_user_id`, for the given plan ids only.
  *  Skips ids with no resolvable owner. Never throws on its own — callers
  *  already run inside a try/catch. Exported (Task: pro-rata split of PNICE

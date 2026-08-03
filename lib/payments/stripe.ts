@@ -67,6 +67,12 @@ export type StripeCheckoutInput = {
   locale: 'fr' | 'ht';
   successUrl: string;
   cancelUrl: string;
+  /** Stage: checkout honesty — the promo code /api/checkout validated and
+   *  ALREADY applied to `product.amountCents` before calling here. Carried
+   *  as metadata only (never re-priced in this module) so fulfillment
+   *  (lib/payments/fulfill.ts → lib/payments/promo-redemption.ts) can mark
+   *  the redemption against the real payment. Absent = no code applied. */
+  promoCode?: string | null;
 };
 
 export async function createStripeCheckout(
@@ -90,6 +96,11 @@ export async function createStripeCheckout(
     'metadata[productType]': input.product.productType,
   };
   if (input.product.courseSlug) params['metadata[courseSlug]'] = input.product.courseSlug;
+  // Stage: checkout honesty — the validated promo code rides along so the
+  // webhook can record the redemption (promo_redemptions + used_count) against
+  // the real payment. The AMOUNT was already discounted by the caller
+  // (/api/checkout via lib/payments/promo.ts) — this is bookkeeping only.
+  if (input.promoCode) params['metadata[promoCode]'] = input.promoCode;
   // Task: per-teacher subscription checkout — carry the resolved plan/owner
   // through Stripe so lib/payments/fulfill.ts can store it on the local
   // `subscriptions` row and lib/teacher/earnings.ts can credit the RIGHT
@@ -119,6 +130,46 @@ export async function createStripeCheckout(
     params,
   );
   return res.ok ? { id: res.data.id, url: res.data.url } : { error: res.error };
+}
+
+export type StripeSessionSummary = {
+  /** The buyer-facing payment reference: the payment intent when Stripe
+   *  provides one, else the session id itself. */
+  reference: string;
+  paymentStatus: string;
+  amountCents: number;
+  currency: string;
+  /** First line item's display name — what was actually bought. */
+  itemName: string | null;
+};
+
+/**
+ * Read back a Checkout Session so the merci page can show what was REALLY
+ * bought (Stage: checkout honesty) — item, amount, reference — instead of a
+ * generic screen. GATED + NEVER-THROW: no key, a malformed id, or any
+ * API/network failure resolves to `null` and the page degrades to its
+ * generic state. The id is shape-checked before being interpolated into the
+ * request path.
+ */
+export async function getStripeCheckoutSession(id: string): Promise<StripeSessionSummary | null> {
+  if (!/^cs_[A-Za-z0-9_]{8,240}$/.test(id)) return null;
+  const res = await stripeRequest<{
+    id: string;
+    payment_status?: string;
+    amount_total?: number | null;
+    currency?: string | null;
+    payment_intent?: string | null;
+    line_items?: { data?: { description?: string | null }[] };
+  }>('GET', `/checkout/sessions/${id}`, { 'expand[]': 'line_items' });
+  if (!res.ok) return null;
+  const s = res.data;
+  return {
+    reference: typeof s.payment_intent === 'string' && s.payment_intent ? s.payment_intent : s.id,
+    paymentStatus: typeof s.payment_status === 'string' ? s.payment_status : 'unknown',
+    amountCents: typeof s.amount_total === 'number' && Number.isFinite(s.amount_total) ? s.amount_total : 0,
+    currency: (s.currency ?? 'usd').toUpperCase(),
+    itemName: s.line_items?.data?.[0]?.description ?? null,
+  };
 }
 
 export async function getStripeSubscription(id: string): Promise<{

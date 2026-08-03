@@ -3,15 +3,18 @@
 import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { IconTag, IconLoader2, IconX, IconCheck } from '@tabler/icons-react';
-import { cn } from '@/lib/cn';
 import { formatUsd } from '@/lib/money';
 import { validatePromoAction } from '@/lib/admin/marketing-actions';
 import type { ProductType, PromoValidation } from '@/lib/admin/data';
+import { usePromoContext } from './promo-context';
 
 /**
- * Public checkout promo field. Validates a code against the concrete price and
- * previews the discounted total. PREVIEW ONLY (checkout is a demo) — the
- * redemption is recorded at real payment confirmation, once providers are wired.
+ * Public checkout promo field (Stage: checkout honesty — no longer a demo).
+ * Validates a code against the concrete price and previews the discounted
+ * total; the applied code is published to the checkout promo context so the
+ * pay button sends it to /api/checkout, which RE-validates it server-side
+ * and creates the Stripe session at the discounted amount. The redemption is
+ * marked at real payment confirmation (lib/payments/promo-redemption.ts).
  */
 export function PromoCodeField({
   productType,
@@ -23,29 +26,36 @@ export function PromoCodeField({
   grossCents: number;
 }) {
   const t = useTranslations('checkout.promo');
-  const tc = useTranslations('common');
   const [pending, start] = useTransition();
   const [code, setCode] = useState('');
   const [result, setResult] = useState<PromoValidation | null>(null);
+  const promo = usePromoContext();
 
   const apply = () =>
     start(async () => {
       const r = await validatePromoAction({ code: code.trim(), productType, courseSlug, grossCents });
       setResult(r);
+      promo?.setApplied(
+        r.valid
+          ? {
+              code: r.code,
+              discountCents: r.discountCents ?? 0,
+              netCents: r.netCents ?? grossCents,
+            }
+          : null,
+      );
     });
 
   const clear = () => {
     setResult(null);
     setCode('');
+    promo?.setApplied(null);
   };
 
   return (
     <div className="mt-4 border-t border-ink/10 pt-4">
       <span className="mb-1.5 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wide text-ink/50">
         <IconTag size={12} /> {t('label')}
-        <span className="rounded bg-ink/10 px-1.5 py-0.5 font-mono text-[10px] uppercase text-ink/60">
-          {tc('demo')}
-        </span>
       </span>
 
       {result?.valid ? (
@@ -86,10 +96,7 @@ export function PromoCodeField({
       {result?.valid && (
         <p className="mt-2 text-right font-mono text-sm text-ink tabular-nums">
           {t('newTotal')}{' '}
-          <span className="font-semibold">{formatUsd((result.netCents ?? grossCents) / 100)}</span>{' '}
-          <span className="rounded bg-ink/10 px-1.5 py-0.5 font-mono text-[10px] uppercase text-ink/60">
-            {tc('demo')}
-          </span>
+          <span className="font-semibold">{formatUsd((result.netCents ?? grossCents) / 100)}</span>
         </p>
       )}
     </div>

@@ -21,7 +21,13 @@ export type StripeAction =
        *  existed): the SAME conservative "unknown ⇒ all-access, never
        *  retroactively locked out" choice as the `subscriptions.kind` column
        *  default (db/schema.ts). */
-      subscriptionKind: 'teacher' | 'platform' }
+      subscriptionKind: 'teacher' | 'platform';
+      /** Stage: checkout honesty — the promo code /api/checkout validated
+       *  and applied to this session's amount, read off
+       *  `metadata[promoCode]`. `null` when no code was applied (every
+       *  session created before this stage included). Fulfillment marks the
+       *  redemption (lib/payments/promo-redemption.ts). */
+      promoCode: string | null }
   | { kind: 'invoice_paid'; eventId: string; subscriptionId: string | null;
       paymentIntentId: string | null; amountCents: number; currency: string;
       billingReason: string | null; periodEnd: number | null }
@@ -59,6 +65,7 @@ export function mapStripeEvent(evt: unknown): StripeAction {
       customerEmail: str(o.customer_details?.email),
       teacherPlanId: str(meta.teacherPlanId),
       subscriptionKind: meta.kind === 'teacher' ? 'teacher' : 'platform',
+      promoCode: str(meta.promoCode),
     };
   }
   if (type === 'invoice.paid') {

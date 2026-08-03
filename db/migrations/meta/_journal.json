@@ -127,6 +127,13 @@
       "when": 1785776025739,
       "tag": "0017_durable_site_content",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1785777385749,
+      "tag": "0018_checkout_honesty_promo_redemption",
+      "breakpoints": true
     }
   ]
 }

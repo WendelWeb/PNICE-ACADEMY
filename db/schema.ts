@@ -213,21 +213,36 @@ export const promoCodes = pgTable('promo_codes', {
     .notNull(),
 });
 
-export const promoRedemptions = pgTable('promo_redemptions', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  promoCodeId: uuid('promo_code_id')
-    .notNull()
-    .references(() => promoCodes.id, { onDelete: 'cascade' }),
-  relatedPaymentId: uuid('related_payment_id').references(() => payments.id, {
-    onDelete: 'set null',
+export const promoRedemptions = pgTable(
+  'promo_redemptions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    promoCodeId: uuid('promo_code_id')
+      .notNull()
+      .references(() => promoCodes.id, { onDelete: 'cascade' }),
+    relatedPaymentId: uuid('related_payment_id').references(() => payments.id, {
+      onDelete: 'set null',
+    }),
+    redeemedAt: timestamp('redeemed_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => ({
+    // Stage: checkout honesty — promos now discount REAL charges, and
+    // fulfillment marks one redemption per payment
+    // (lib/payments/promo-redemption.ts). Partial unique (NULLs exempt) so
+    // concurrent webhook deliveries can't double-count a redemption, exactly
+    // the earnings_ledger_sale_payment_uniq pattern; admin "simulate
+    // redemption" rows (related_payment_id NULL) stay unconstrained.
+    // Migration 0018 — the owner applies it with db:push.
+    uniqRedemptionPerPayment: uniqueIndex('promo_redemptions_payment_uniq')
+      .on(t.relatedPaymentId)
+      .where(sql`${t.relatedPaymentId} IS NOT NULL`),
   }),
-  redeemedAt: timestamp('redeemed_at', { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-});
+);
 
 export const creditLedger = pgTable('credit_ledger', {
   id: uuid('id').primaryKey().defaultRandom(),

@@ -9,6 +9,7 @@ import { describe, it, expect } from 'vitest';
 import {
   activeProviders,
   activeProviderLabels,
+  splitProviders,
   IMPLEMENTED_PROVIDERS,
   PROVIDER_LABELS,
 } from './providers';
@@ -36,5 +37,34 @@ describe('activeProviderLabels — the badge rows (footer + checkout)', () => {
     for (const k of PROVIDER_KEYS) {
       expect(PROVIDER_LABELS[k]).toBeTruthy();
     }
+  });
+});
+
+// Stage: checkout honesty — the method selector renders ONLY `live` (rails
+// that really charge); everything else toggled on becomes a non-interactive
+// "Byento" chip. This split is the one rule the page consumes.
+describe('splitProviders — sellable vs announced', () => {
+  it('with all toggles on: live = implemented rails only, the rest are coming soon', () => {
+    const { live, comingSoon } = splitProviders([...PROVIDER_KEYS]);
+    expect(live).toEqual(IMPLEMENTED_PROVIDERS); // card only today
+    expect(comingSoon.sort()).toEqual(
+      PROVIDER_KEYS.filter((k) => !IMPLEMENTED_PROVIDERS.includes(k)).sort(),
+    );
+  });
+
+  it('an unimplemented rail can NEVER become selectable, whatever the toggles say', () => {
+    const { live } = splitProviders(['moncash', 'natcash', 'paypal', 'crypto', 'card']);
+    for (const k of live) expect(IMPLEMENTED_PROVIDERS).toContain(k);
+  });
+
+  it('toggling a future rail off removes even its coming-soon chip', () => {
+    const { comingSoon } = splitProviders(['card', 'moncash']);
+    expect(comingSoon).toEqual(['moncash']);
+  });
+
+  it('toggling every implemented rail off leaves no live methods (page shows its no-methods state)', () => {
+    const { live, comingSoon } = splitProviders(['moncash', 'crypto']);
+    expect(live).toEqual([]);
+    expect(comingSoon).toEqual(['moncash', 'crypto']);
   });
 });
