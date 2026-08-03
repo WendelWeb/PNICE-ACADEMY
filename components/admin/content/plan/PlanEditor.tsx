@@ -3,8 +3,9 @@
 import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { IconPlus, IconLoader2, IconBooks, IconInfoCircle } from '@tabler/icons-react';
+import { IconPlus, IconLoader2, IconBooks, IconInfoCircle, IconAlertTriangle } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
+import { beginUploadActivity, endUploadActivity } from '@/components/content/uploadActivity';
 import {
   addLessonAction,
   updateLessonAction,
@@ -107,7 +108,25 @@ export function PlanEditor({
   const router = useRouter();
   const [pending, start] = useTransition();
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const act = (fn: () => Promise<{ ok: boolean }>) => start(async () => { if ((await fn()).ok) router.refresh(); });
+  /**
+   * Review fix — the plan's saves must FAIL VISIBLY, not silently: every
+   * lesson commit routed through here (title blur, mm:ss blur, preview
+   * toggle, the video-guid commit after an upload) used to produce nothing
+   * at all on failure. A failed action now raises the red line rendered
+   * under the section heading below, and `act` RESOLVES with the result so
+   * a caller that needs its own, closer-to-the-field surface (the video
+   * save in `LessonEditPanel` → `VideoUpload`) can await it.
+   */
+  const [actionError, setActionError] = useState(false);
+  const act = (fn: () => Promise<{ ok: boolean }>): Promise<{ ok: boolean }> =>
+    new Promise((resolve) =>
+      start(async () => {
+        const r = await fn();
+        setActionError(!r.ok);
+        if (r.ok) router.refresh();
+        resolve(r);
+      }),
+    );
   const toggleExpand = (lessonId: string) => setExpandedId((cur) => (cur === lessonId ? null : lessonId));
 
   /**
@@ -138,6 +157,31 @@ export function PlanEditor({
       delete next[lessonId];
       return next;
     });
+
+  /**
+   * Review fix — while any video upload is actually in flight ('creating' /
+   * 'uploading'; a settled 'error' can wait), two guards make the dropzone's
+   * "ou ka kontinye travay" promise survive navigation OUT of the plan too:
+   *  - `beginUploadActivity()` registers with the module-level tally that
+   *    `MobileStepBar`/`ControlRail`/`QuickActions` consult before a `?tab=`
+   *    push (which unmounts this whole component, upload included);
+   *  - a `beforeunload` listener makes the browser confirm hard navigations
+   *    (reload, tab close, external link) the router never sees.
+   */
+  const uploadBusy = Object.values(uploads).some((u) => u.phase === 'creating' || u.phase === 'uploading');
+  useEffect(() => {
+    if (!uploadBusy) return;
+    beginUploadActivity();
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => {
+      endUploadActivity();
+      window.removeEventListener('beforeunload', warn);
+    };
+  }, [uploadBusy]);
 
   /**
    * The studio bon-de-contrôle rail's jump-to-field (Task D1 — le
@@ -209,6 +253,14 @@ export function PlanEditor({
         <h2 className="font-mono text-[11px] uppercase tracking-wide text-ink/55">{t('title')} · {lessons.length}</h2>
         {pending && <IconLoader2 size={14} className="animate-spin text-ink/40" />}
       </div>
+
+      {/* Review fix — a failed save is SAID, in plain language (same visual
+          as ImagesManager's error line), instead of vanishing silently. */}
+      {actionError && (
+        <p className="mt-2 flex items-center gap-1.5 rounded-lg border border-stampred/30 bg-stampred/5 px-3 py-2 font-mono text-[11px] text-stampred" role="alert">
+          <IconAlertTriangle size={13} className="shrink-0" /> {t('actionError')}
+        </p>
+      )}
 
       {isEmpty ? (
         <div className="mt-3 flex flex-col items-center gap-2 rounded-xl border border-dashed border-ink/20 bg-paper px-4 py-8 text-center">

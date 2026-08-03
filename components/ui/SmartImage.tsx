@@ -25,6 +25,14 @@ export function SmartImage(props: ImageProps) {
   const src = typeof props.src === 'string' ? props.src : '';
   const isSvg = src.toLowerCase().split(/[?#]/)[0].endsWith('.svg');
   const isRemote = /^https?:\/\//i.test(src);
+  // Fail SAFE on an unrenderable string src (review fix): next/image THROWS
+  // at render time for a src that is neither root-relative ('/…') nor an
+  // absolute http(s) URL — e.g. a teacher-pasted "monsite.com/foto.jpg" or
+  // an empty string that slipped into the DB before write-time validation
+  // existed. That throw would 500 the whole public page (catalogue, sales,
+  // checkout); rendering nothing degrades gracefully instead. Non-string
+  // srcs (static imports) pass straight through.
+  if (typeof props.src === 'string' && !isRemote && !src.startsWith('/')) return null;
   const unoptimized = props.unoptimized ?? (isSvg || (isRemote && !isBunnyCdnUrl(src)));
   return <Image {...props} unoptimized={unoptimized} />;
 }

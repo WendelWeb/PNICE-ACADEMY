@@ -123,3 +123,21 @@ export function isValidHttpUrl(urlString: string): boolean {
     return false;
   }
 }
+
+/**
+ * Forgiving URL entry, shared by client AND server (review fix): a teacher
+ * pasting "monsite.com/foto.jpg" from memory shouldn't be told their link is
+ * broken over a missing scheme — a value that looks like a bare domain
+ * (letters/digits/dashes with at least one dot, optionally followed by a
+ * path) gets 'https://' prepended. Anything already carrying a scheme, or
+ * not domain-shaped at all, is returned untouched (trimmed) for
+ * `isValidHttpUrl` above to judge. Used by `ResourcesEditor`'s blur
+ * normalizer and by the image write actions (studio + admin CMS), which must
+ * never store a URL `next/image` would throw on at render time.
+ */
+export function normalizeHttpUrlInput(value: string): string {
+  const s = value.trim();
+  if (!s || /^[a-z][a-z0-9+.-]*:/i.test(s)) return s;
+  if (/^[\w-]+(\.[\w-]+)+([/?#]\S*)?$/i.test(s)) return `https://${s}`;
+  return s;
+}

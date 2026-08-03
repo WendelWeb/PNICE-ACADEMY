@@ -79,17 +79,21 @@ describe('validateCourseAsset (the route decision table, pure)', () => {
     if (zip.ok) expect(zip.mime).toBe('application/zip');
   });
 
-  it('enforces the per-purpose size caps (8MB image, 25MB resource)', () => {
-    expect(validateCourseAsset({ purpose: 'image', mime: 'image/png', size: 8 * 1024 * 1024, head: HEADS.png }).ok).toBe(true);
-    expect(validateCourseAsset({ purpose: 'image', mime: 'image/png', size: 8 * 1024 * 1024 + 1, head: HEADS.png })).toEqual({
+  it('enforces the per-purpose size caps (4MB — the Vercel body-limit honest ceiling)', () => {
+    expect(validateCourseAsset({ purpose: 'image', mime: 'image/png', size: ASSET_MAX_BYTES.image, head: HEADS.png }).ok).toBe(true);
+    expect(validateCourseAsset({ purpose: 'image', mime: 'image/png', size: ASSET_MAX_BYTES.image + 1, head: HEADS.png })).toEqual({
       ok: false,
       message: 'too_large',
     });
-    expect(validateCourseAsset({ purpose: 'resource', mime: 'application/pdf', size: 25 * 1024 * 1024, head: HEADS.pdf }).ok).toBe(true);
-    expect(validateCourseAsset({ purpose: 'resource', mime: 'application/pdf', size: 25 * 1024 * 1024 + 1, head: HEADS.pdf })).toEqual({
+    expect(validateCourseAsset({ purpose: 'resource', mime: 'application/pdf', size: ASSET_MAX_BYTES.resource, head: HEADS.pdf }).ok).toBe(true);
+    expect(validateCourseAsset({ purpose: 'resource', mime: 'application/pdf', size: ASSET_MAX_BYTES.resource + 1, head: HEADS.pdf })).toEqual({
       ok: false,
       message: 'too_large',
     });
+    // The caps must stay under Vercel's ~4.5 MB serverless request-body limit
+    // — a bigger cap advertises uploads the platform 413s before the route runs.
+    expect(ASSET_MAX_BYTES.image).toBeLessThanOrEqual(4.5 * 1024 * 1024);
+    expect(ASSET_MAX_BYTES.resource).toBeLessThanOrEqual(4.5 * 1024 * 1024);
   });
 
   it('refuses empty or nonsense sizes', () => {

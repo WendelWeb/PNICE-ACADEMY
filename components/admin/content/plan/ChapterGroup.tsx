@@ -43,7 +43,7 @@ export function ChapterGroup({
   lessons: AdminLesson[];
   chapters: AdminChapter[];
   isDraft: boolean;
-  onAct: (fn: () => Promise<{ ok: boolean }>) => void;
+  onAct: (fn: () => Promise<{ ok: boolean }>) => Promise<{ ok: boolean }>;
   actions: LessonActions;
   /** The parent course's optional-translation setting (Task: lesson-language,
    *  extended to the chapter's own title/summary by Task: chapter-language)

@@ -48,7 +48,7 @@ import { resolveUserId } from '@/lib/learner/access';
 import * as writeOps from '@/lib/courses/write';
 import type { CoursePatch, LessonPatch, NewCourseInput, ChapterPatch } from '@/lib/courses/write';
 import { getTeacherProfile, isApprovedTeacher, getTeacherBalanceCents, getPayoutThresholdCents, getWithdrawals } from './profile';
-import { validatePayoutSettings, validatePlanPrice, type PayoutMethod } from './apply-validation';
+import { validatePayoutSettings, validatePlanPrice, isValidHttpUrl, normalizeHttpUrlInput, type PayoutMethod } from './apply-validation';
 import { recordAudit } from '@/lib/admin/data/real/users';
 import type { AdminActor } from '@/lib/admin/data/types';
 import { createBunnyVideo, bunnyUploadConfigured, type BunnyUploadResult } from '@/lib/bunny/upload';
@@ -435,15 +435,27 @@ export async function createMyVideoUploadAction(
  * `requireOwnedCourse`), computes the new array in JS, then calls
  * `writeOps.setCourseImages` — same shape as
  * `lib/admin/content-actions.ts`'s four image actions.
+ *
+ * URL VALIDATION (review fix): a stored image URL is rendered on every
+ * public surface (catalogue card, sales page, checkout, dashboard) through
+ * `next/image`, which THROWS at render time for a src that is neither
+ * root-relative nor an absolute http(s) URL — so a scheme-less paste like
+ * "monsite.com/foto.jpg" must never reach the DB. Same forgiveness the
+ * resources editor applies (`normalizeHttpUrlInput` auto-prefixes https://
+ * on bare domains), then the same `isValidHttpUrl` gate resources already
+ * enforce at write time. Rejections use the `invalid_url` code the gallery
+ * translates into plain teacher copy.
  */
 export async function setMyMainImageAction(slug: string, url: string): Promise<StudioResult> {
   if (!dbConfigured()) return dbRequired();
   try {
     const { userId, actor, wasPublished } = await requireOwnedCourse(slug);
+    const clean = normalizeHttpUrlInput(url);
+    if (clean && !isValidHttpUrl(clean)) return { ok: false, message: 'invalid_url' };
     const course = await writeOps.getAdminCourse(slug);
     if (!course) return { ok: false, message: 'not_found' };
     const secondary = course.secondaryImages.map((i) => ({ url: i.url, alt: i.alt }));
-    const result = await writeOps.setCourseImages(slug, { main: url.trim() || null, secondary }, actor);
+    const result = await writeOps.setCourseImages(slug, { main: clean || null, secondary }, actor);
     if (result.ok) await reenterReviewIfWasPublished(slug, userId, wasPublished);
     return result;
   } catch (e) {
@@ -455,10 +467,12 @@ export async function addMySecondaryImageAction(slug: string, url: string, alt: 
   if (!dbConfigured()) return dbRequired();
   try {
     const { userId, actor, wasPublished } = await requireOwnedCourse(slug);
-    if (!url.trim()) return { ok: false, message: 'empty' };
+    const clean = normalizeHttpUrlInput(url);
+    if (!clean) return { ok: false, message: 'empty' };
+    if (!isValidHttpUrl(clean)) return { ok: false, message: 'invalid_url' };
     const course = await writeOps.getAdminCourse(slug);
     if (!course) return { ok: false, message: 'not_found' };
-    const secondary = [...course.secondaryImages.map((i) => ({ url: i.url, alt: i.alt })), { url: url.trim(), alt: alt.trim() }];
+    const secondary = [...course.secondaryImages.map((i) => ({ url: i.url, alt: i.alt })), { url: clean, alt: alt.trim() }];
     const result = await writeOps.setCourseImages(slug, { main: course.mainImage, secondary }, actor);
     if (result.ok) await reenterReviewIfWasPublished(slug, userId, wasPublished);
     return result;

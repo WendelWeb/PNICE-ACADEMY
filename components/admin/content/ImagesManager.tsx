@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
@@ -156,7 +156,7 @@ export function ImagesManager({
 
   const [upload, setUpload] = useState<UploadState>({ phase: 'idle' });
   const [justSaved, setJustSaved] = useState(false);
-  const [actionFailed, setActionFailed] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [notConfigured, setNotConfigured] = useState(!uploadEnabled);
   const [dragOver, setDragOver] = useState(false);
   const [advanced, setAdvanced] = useState(false);
@@ -166,29 +166,61 @@ export function ImagesManager({
   const inputRef = useRef<HTMLInputElement>(null);
   const xhrRef = useRef<XMLHttpRequest | null>(null);
 
-  const hasMain = Boolean(mainImage && mainImage.trim());
-  const photoCount = (hasMain ? 1 : 0) + secondary.length;
+  /**
+   * OPTIMISTIC gallery counts (review fix): `mainImage`/`secondary` are
+   * SERVER props that only update once `router.refresh()` round-trips — a
+   * window of several seconds on the slow connections this editor targets.
+   * A teacher adding photos back-to-back inside that window used to hit the
+   * stale `hasMain === false` branch twice, so photo 2 silently REPLACED
+   * photo 1 as the main image. Successful saves now record themselves here
+   * immediately, and the effect below resets the overlay as soon as the
+   * refreshed props actually land (the props change is the reconciliation
+   * signal — from then on the server truth wins again).
+   */
+  const [optimistic, setOptimistic] = useState({ hasMain: false, secondaryAdded: 0 });
+  useEffect(() => {
+    setOptimistic({ hasMain: false, secondaryAdded: 0 });
+  }, [mainImage, secondary.length]);
+
+  /** Server truth alone — drives the main photo CARD (there is no URL to
+   *  draw before the refresh lands); `hasMain` below (server OR optimistic)
+   *  drives every DECISION (setMain-vs-addSecondary, filled ✓, count). */
+  const hasMainProp = Boolean(mainImage && mainImage.trim());
+  const hasMain = hasMainProp || optimistic.hasMain;
+  const secondaryCount = secondary.length + optimistic.secondaryAdded;
+  const photoCount = (hasMain ? 1 : 0) + secondaryCount;
   const busy = pending || upload.phase === 'preparing' || upload.phase === 'uploading' || upload.phase === 'saving';
+
+  /** A failed action's plain-language line: the write actions' `invalid_url`
+   *  refusal (review fix — an unusable pasted link) gets its own specific
+   *  copy; everything else keeps the generic "pa t anrejistre" message. */
+  const failureText = (r: ContentResult) => t(r.message === 'invalid_url' ? 'errorUrl' : 'errorAction');
 
   const act = (fn: () => Promise<ContentResult>) =>
     start(async () => {
-      setActionFailed(false);
+      setActionError(null);
       setJustSaved(false);
       const r = await fn();
       if (r.ok) router.refresh();
-      else setActionFailed(true);
+      else setActionError(failureText(r));
     });
 
   /** First photo becomes the main one; every later photo joins the slideshow
    *  with an auto-derived alt — the teacher never types "alt". */
   const autoSavePhoto = async (photoUrl: string): Promise<ContentResult> => {
-    if (!hasMain) return actions.setMain(slug, photoUrl);
-    return actions.addSecondary(slug, photoUrl, deriveAutoAlt(courseTitle, slug, secondary.length + 2));
+    if (!hasMain) {
+      const r = await actions.setMain(slug, photoUrl);
+      if (r.ok) setOptimistic((o) => ({ ...o, hasMain: true }));
+      return r;
+    }
+    const r = await actions.addSecondary(slug, photoUrl, deriveAutoAlt(courseTitle, slug, secondaryCount + 2));
+    if (r.ok) setOptimistic((o) => ({ ...o, secondaryAdded: o.secondaryAdded + 1 }));
+    return r;
   };
 
   const handleFile = async (file: File) => {
     setJustSaved(false);
-    setActionFailed(false);
+    setActionError(null);
 
     // Plain-language refusals BEFORE any network (ProfileTab's OK_TYPES/
     // MAX_BYTES approach): a declared non-image type, or an absurdly large
@@ -259,12 +291,14 @@ export function ImagesManager({
   const addByUrl = () =>
     act(async () => {
       const clean = url.trim();
-      const r = hasMain
-        ? await actions.addSecondary(slug, clean, deriveAutoAlt(courseTitle, slug, secondary.length + 2))
+      const wasMain = hasMain;
+      const r = wasMain
+        ? await actions.addSecondary(slug, clean, deriveAutoAlt(courseTitle, slug, secondaryCount + 2))
         : await actions.setMain(slug, clean);
       if (r.ok) {
         setUrl('');
         setJustSaved(true);
+        setOptimistic((o) => (wasMain ? { ...o, secondaryAdded: o.secondaryAdded + 1 } : { ...o, hasMain: true }));
       }
       return r;
     });
@@ -332,14 +366,14 @@ export function ImagesManager({
             }}
           />
 
-          {actionFailed && (
-            <p className="mb-2 flex items-center gap-1.5 rounded-lg border border-stampred/30 bg-stampred/5 px-3 py-2 font-mono text-[11px] text-stampred">
-              <IconAlertTriangle size={13} className="shrink-0" /> {t('errorAction')}
+          {actionError && (
+            <p className="mb-2 flex items-center gap-1.5 rounded-lg border border-stampred/30 bg-stampred/5 px-3 py-2 font-mono text-[11px] text-stampred" role="alert">
+              <IconAlertTriangle size={13} className="shrink-0" /> {actionError}
             </p>
           )}
 
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {hasMain && (
+            {hasMainProp && (
               <li>
                 {photoCard(
                   { url: (mainImage ?? '').trim(), alt: '' },
@@ -565,7 +599,13 @@ export function ImagesManager({
                 <button
                   type="button"
                   disabled={busy}
-                  onClick={() => act(() => actions.setMain(slug, mainUrl))}
+                  onClick={() =>
+                    act(async () => {
+                      const r = await actions.setMain(slug, mainUrl);
+                      if (r.ok) setOptimistic((o) => ({ ...o, hasMain: Boolean(mainUrl.trim()) }));
+                      return r;
+                    })
+                  }
                   className={cn('shrink-0 rounded border border-ink/15 px-2.5 py-1.5 font-mono text-[11px] text-ink/70 hover:bg-ink/[0.04]', focusRing)}
                 >
                   {t('setMain')}
@@ -594,11 +634,12 @@ export function ImagesManager({
                       const r = await actions.addSecondary(
                         slug,
                         url,
-                        alt.trim() || deriveAutoAlt(courseTitle, slug, secondary.length + 2),
+                        alt.trim() || deriveAutoAlt(courseTitle, slug, secondaryCount + 2),
                       );
                       if (r.ok) {
                         setUrl('');
                         setAlt('');
+                        setOptimistic((o) => ({ ...o, secondaryAdded: o.secondaryAdded + 1 }));
                       }
                       return r;
                     })

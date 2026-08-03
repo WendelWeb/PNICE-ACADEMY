@@ -10,9 +10,11 @@
  *
  * Why client-side resize at all: teachers are on phones — a 12 MP photo is
  * 4000×3000 and 3–6 MB. Resizing before the network (a) keeps uploads fast
- * on Haitian mobile connections, (b) stays under the server's 8 MB image cap
- * without ever showing a teacher a size error for a normal phone photo, and
- * (c) removes the need for server-side sharp entirely.
+ * on Haitian mobile connections, (b) stays under the server's 4 MB image cap
+ * (which itself sits under Vercel's ~4.5 MB request-body limit — see
+ * lib/uploads/course-asset.ts's ASSET_MAX_BYTES) without ever showing a
+ * teacher a size error for a normal phone photo, and (c) removes the need
+ * for server-side sharp entirely.
  */
 
 /** Longest output side, px — plenty for the largest render (1120px hero, 2x DPR is capped by quality anyway). */
@@ -25,7 +27,7 @@ export const IMAGE_ENCODE_QUALITY = 0.85;
  * Client-side sanity cap on the SOURCE file (before decode) — mirrors
  * ProfileTab's MAX_BYTES approach: an immediate plain message instead of the
  * phone freezing on a decode of something absurd. Generous on purpose: the
- * OUTPUT is what must fit the server's 8 MB image cap, and a ≤1600px
+ * OUTPUT is what must fit the server's 4 MB image cap, and a ≤1600px
  * webp/jpeg is always far under it.
  */
 export const IMAGE_SOURCE_MAX_BYTES = 25 * 1024 * 1024;

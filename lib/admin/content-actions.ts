@@ -28,6 +28,7 @@ import type { CoursePatch, LessonPatch, NewCourseInput, ChapterPatch } from '@/l
 import type { AdminActor } from '@/lib/admin/data/types';
 import { createBunnyVideo, bunnyUploadConfigured, type BunnyUploadResult } from '@/lib/bunny/upload';
 import { planOrganizedUpload } from '@/lib/bunny/organize';
+import { isValidHttpUrl, normalizeHttpUrlInput } from '@/lib/teacher/apply-validation';
 
 export type ContentResult = {
   ok: boolean;
@@ -269,14 +270,22 @@ export async function createVideoUploadAction(
  * Each of these four reads the course's current images, computes the new
  * array in JS, then calls `writeOps.setCourseImages` (full replace) — see
  * that function's doc comment for why no per-image id is persisted.
+ *
+ * URL VALIDATION (review fix, mirrors the studio's owner-scoped versions):
+ * stored image URLs feed `next/image` on every public surface, which THROWS
+ * for a src that is neither root-relative nor absolute http(s) — normalize
+ * bare domains (auto-https://, same forgiveness as the resources editor)
+ * and refuse anything still failing `isValidHttpUrl` with `invalid_url`.
  */
 export async function setMainImageAction(slug: string, url: string): Promise<ContentResult> {
   try {
     const actor = await requireEditor();
+    const clean = normalizeHttpUrlInput(url);
+    if (clean && !isValidHttpUrl(clean)) return { ok: false, message: 'invalid_url' };
     const course = await getAdminCourse(slug);
     if (!course) return { ok: false, message: 'not_found' };
     const secondary = course.secondaryImages.map((i) => ({ url: i.url, alt: i.alt }));
-    return await writeOps.setCourseImages(slug, { main: url.trim() || null, secondary }, actor);
+    return await writeOps.setCourseImages(slug, { main: clean || null, secondary }, actor);
   } catch (e) {
     return fail(e);
   }
@@ -285,12 +294,14 @@ export async function setMainImageAction(slug: string, url: string): Promise<Con
 export async function addSecondaryImageAction(slug: string, url: string, alt: string): Promise<ContentResult> {
   try {
     const actor = await requireEditor();
-    if (!url.trim()) return { ok: false, message: 'empty' };
+    const clean = normalizeHttpUrlInput(url);
+    if (!clean) return { ok: false, message: 'empty' };
+    if (!isValidHttpUrl(clean)) return { ok: false, message: 'invalid_url' };
     const course = await getAdminCourse(slug);
     if (!course) return { ok: false, message: 'not_found' };
     // Production: upload the file to Bunny Storage + resize server-side (sharp,
     // max 1200px, WebP), then store the returned CDN url. Here we store the url.
-    const secondary = [...course.secondaryImages.map((i) => ({ url: i.url, alt: i.alt })), { url: url.trim(), alt: alt.trim() }];
+    const secondary = [...course.secondaryImages.map((i) => ({ url: i.url, alt: i.alt })), { url: clean, alt: alt.trim() }];
     return await writeOps.setCourseImages(slug, { main: course.mainImage, secondary }, actor);
   } catch (e) {
     return fail(e);

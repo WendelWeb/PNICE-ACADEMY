@@ -5,6 +5,7 @@ import { IconVideo, IconPhoto, IconFileText } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
 import { useRouter } from '@/i18n/routing';
 import type { EditorStepKey } from '@/lib/courses/readiness-anchors';
+import { hasActiveUploads } from '@/components/content/uploadActivity';
 import { jumpToAnchor } from './jump';
 
 const focusRing =
@@ -44,10 +45,14 @@ export function QuickActions({
   resourcesAnchor: string;
 }) {
   const t = useTranslations('teach.studio.editor.quick');
+  const tEditor = useTranslations('teach.studio.editor');
   const router = useRouter();
 
   function go(step: EditorStepKey, anchorId: string) {
     if (step !== activeTab) {
+      // Review fix: switching steps swaps the plan out of the tree and kills
+      // any in-flight video upload — confirm before navigating.
+      if (hasActiveUploads() && !window.confirm(tEditor('uploadLeaveConfirm'))) return;
       const base = step === 'infos' ? basePath : `${basePath}?tab=${step}`;
       router.push(`${base}#${anchorId}`);
     } else {

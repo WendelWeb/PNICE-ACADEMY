@@ -6,6 +6,7 @@ import { cn } from '@/lib/cn';
 import { useRouter } from '@/i18n/routing';
 import type { ReadinessItem, ReadinessKey } from '@/lib/courses/readiness';
 import { EDITOR_STEPS, type EditorStepKey, type ReadinessAnchor } from '@/lib/courses/readiness-anchors';
+import { hasActiveUploads } from '@/components/content/uploadActivity';
 import { STEP_ICONS, STEP_GLYPH } from './steps';
 import { jumpToAnchor } from './jump';
 
@@ -50,13 +51,20 @@ export function ControlRail({
 
   const hrefForStep = (step: EditorStepKey) => (step === 'infos' ? basePath : `${basePath}?tab=${step}`);
 
+  /** Review fix: a `?tab=` push swaps the active step's content out of the
+   *  tree — killing any in-flight video upload with it. Never silently. */
+  function confirmLeaveUploads(): boolean {
+    return !hasActiveUploads() || window.confirm(t('uploadLeaveConfirm'));
+  }
+
   function goToStep(step: EditorStepKey) {
-    if (step !== activeTab) router.push(hrefForStep(step));
+    if (step !== activeTab && confirmLeaveUploads()) router.push(hrefForStep(step));
   }
 
   function goToItem(key: ReadinessKey) {
     const { step, anchorId } = anchors[key];
     if (step !== activeTab) {
+      if (!confirmLeaveUploads()) return;
       router.push(`${hrefForStep(step)}#${anchorId}`);
     } else {
       try {

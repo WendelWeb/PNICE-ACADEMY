@@ -31,10 +31,20 @@
 
 export type AssetPurpose = 'image' | 'resource';
 
-/** Per-purpose size caps (bytes): a course image ≤ 8 MB, a resource ≤ 25 MB. */
+/**
+ * Per-purpose size caps (bytes): 4 MB each. WHY SO LOW (review fix): the
+ * production platform (Vercel — see vercel.json / the launch checklist)
+ * rejects serverless request bodies over ~4.5 MB with a non-JSON 413 BEFORE
+ * the route handler ever runs, so any advertised cap above that is a lie
+ * that surfaces as a generic "tcheke koneksyon w" error. 4 MB is the honest
+ * ceiling this proxying route can actually deliver — and the teacher-facing
+ * copy (messages/{ht,fr}.json `admin.cms.resources`) states the same number.
+ * Course photos are resized in the browser to ≤1600px webp before upload
+ * (lib/uploads/image-prep.ts), so they sit far below this cap in practice.
+ */
 export const ASSET_MAX_BYTES: Record<AssetPurpose, number> = {
-  image: 8 * 1024 * 1024,
-  resource: 25 * 1024 * 1024,
+  image: 4 * 1024 * 1024,
+  resource: 4 * 1024 * 1024,
 };
 
 /** How many leading bytes `validateCourseAsset` needs to sniff magic bytes. */

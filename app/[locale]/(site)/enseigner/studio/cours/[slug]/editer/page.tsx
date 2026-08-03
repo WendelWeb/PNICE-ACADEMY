@@ -158,12 +158,13 @@ export default async function EditMyCoursePage({
             missing={readinessMissing}
             submitAction={submitMyCourseForReviewAction}
             unpublishAction={unpublishMyCourseAction}
-          />
-
-          {/* Stage 1 — the phone-first step bar, right under the sticky
-              header: the 4 steps always visible (<lg), navigating on the
-              same frozen ?tab= URLs the rail uses. */}
-          <MobileStepBar activeTab={activeTab} basePath={basePath} />
+          >
+            {/* Stage 1 — the phone-first step bar: the 4 steps always visible
+                (<lg), navigating on the same frozen ?tab= URLs the rail uses.
+                Slotted INSIDE the sticky header (review fix) so it genuinely
+                stays on screen while a long plan scrolls. */}
+            <MobileStepBar activeTab={activeTab} basePath={basePath} />
+          </BordereauHeader>
 
           <div className="grid gap-4 pt-2 lg:grid-cols-[280px_1fr] lg:items-start lg:gap-6">
             <ControlRail items={readinessItems} anchors={anchors} activeTab={activeTab} basePath={basePath} />

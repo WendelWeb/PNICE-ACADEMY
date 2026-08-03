@@ -14,7 +14,7 @@ import {
   IconCircleCheck,
 } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
-import { isValidHttpUrl } from '@/lib/teacher/apply-validation';
+import { isValidHttpUrl, normalizeHttpUrlInput } from '@/lib/teacher/apply-validation';
 import { ASSET_MAX_BYTES } from '@/lib/uploads/course-asset';
 import { MONO_LOCALE_NAME } from '@/components/admin/content/fields';
 import { postCourseAsset } from './courseAssetUpload';
@@ -71,12 +71,12 @@ export function fileNameToLabel(name: string, fallback: string): string {
  * at least one dot, optionally followed by a path) gets 'https://' prepended.
  * Anything already carrying a scheme, or not domain-shaped at all, is
  * returned untouched (and the normal client-side validity check judges it).
+ * The logic itself now lives in `lib/teacher/apply-validation.ts`
+ * (`normalizeHttpUrlInput`) so the image write actions apply the SAME
+ * forgiveness server-side; this export stays for existing importers.
  */
 export function normalizeUrlInput(value: string): string {
-  const s = value.trim();
-  if (!s || /^[a-z][a-z0-9+.-]*:/i.test(s)) return s;
-  if (/^[\w-]+(\.[\w-]+)+([/?#]\S*)?$/i.test(s)) return `https://${s}`;
-  return s;
+  return normalizeHttpUrlInput(value);
 }
 
 type UploadPhase = { phase: 'idle' } | { phase: 'uploading'; pct: number } | { phase: 'error'; message: string };
@@ -91,7 +91,7 @@ type UploadPhase = { phase: 'idle' } | { phase: 'uploading'; pct: number } | { p
  *
  * What Stage 4 changed (audit findings):
  *  - REAL file upload: 'Trennen dokiman an isit la…' dropzone → POST
- *    /api/upload/course-asset (`purpose: 'resource'`, ≤ 25 MB, pdf/office/
+ *    /api/upload/course-asset (`purpose: 'resource'`, ≤ 4 MB, pdf/office/
  *    zip/txt) → on success a `{ kind: 'file' }` row is auto-appended with a
  *    renamable title prefilled from the cleaned file name, and `onUploaded`
  *    lets the caller AUTO-SAVE it immediately (it already round-tripped the
@@ -177,7 +177,9 @@ export function ResourcesEditor({
     setJustUploaded(null);
 
     // Plain-language refusals BEFORE any network (ImagesManager's approach):
-    // wrong document type, or over the 25 MB resource cap.
+    // wrong document type, or over the resource cap (4 MB — the honest
+    // ceiling under Vercel's serverless request-body limit, see
+    // lib/uploads/course-asset.ts's ASSET_MAX_BYTES).
     const ext = fileExtension(file.name);
     if (!ext || !RESOURCE_EXT_MIME[ext]) {
       setUpload({ phase: 'error', message: t('errorType') });

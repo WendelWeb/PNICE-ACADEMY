@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
@@ -88,7 +88,7 @@ export function LessonEditPanel({
    *  `bunnyStorageConfigured()`) — plain data prop threaded down exactly
    *  like `bilingual`/`primaryLocale`, handed to `ResourcesEditor`. */
   uploadEnabled: boolean;
-  onAct: (fn: () => Promise<{ ok: boolean }>) => void;
+  onAct: (fn: () => Promise<{ ok: boolean }>) => Promise<{ ok: boolean }>;
   /** Stage 5 (optional, additive) — bubbles `VideoUpload`'s phase changes up
    *  to `PlanEditor`'s lifted per-lesson upload map so an in-flight upload
    *  survives the accordion collapsing this panel. See types.ts. */
@@ -112,6 +112,10 @@ export function LessonEditPanel({
   const [rp, rStart] = useTransition();
 
   const noVideo = !lesson.bunnyVideoId;
+  /** Resolves with the save result (review fix): most callers fire-and-forget
+   *  (`PlanEditor.act` now raises its own visible error line on failure), but
+   *  the video path below AWAITS it so `VideoUpload` only shows "✓ videyo
+   *  pare" once the guid really reached the lesson row. */
   const commit = (patch: LessonPatch) => onAct(() => actions.updateLesson(slug, lesson.id, patch));
 
   /** Section header (Task: lesson-language) — appends the "· Kreyòl"/
@@ -134,12 +138,19 @@ export function LessonEditPanel({
    * the page share ONE save model. Uploaded documents auto-save through
    * this same function (via `ResourcesEditor`'s `onUploaded`) — they
    * already round-tripped the server, so the teacher just sees the '✓'.
+   *
+   * `lastSavedResources` (review fix) tracks the last list that actually
+   * reached the server, so the focus-leave safety net below only commits
+   * when something is genuinely unsaved — comparing against the possibly
+   * stale `lesson.resources` prop would re-send identical data.
    */
+  const lastSavedResources = useRef(JSON.stringify(lesson.resources));
   const commitResources = (next: CourseResource[]) =>
     rStart(async () => {
       setResourcesSave('saving');
       const res = await actions.updateLesson(slug, lesson.id, { resources: next });
       if (res.ok) {
+        lastSavedResources.current = JSON.stringify(next);
         setResourcesSave('saved');
         setResourcesErr(null);
         router.refresh();
@@ -167,12 +178,14 @@ export function LessonEditPanel({
             // rounded video length; commit it WITH the guid (one save) and
             // prefill the manual mm:ss field, which stays as the correction/
             // fallback path when the browser couldn't read the metadata.
+            // RETURNS the commit's result promise (review fix): VideoUpload
+            // awaits it and only shows "✓ videyo pare" when the save
+            // actually landed — a failed save shows its retry error instead.
             if (typeof durationSeconds === 'number' && durationSeconds > 0) {
               setDur(secToMmss(durationSeconds));
-              commit({ bunnyVideoId: guid, durationSeconds });
-            } else {
-              commit({ bunnyVideoId: guid });
+              return commit({ bunnyVideoId: guid, durationSeconds });
             }
+            return commit({ bunnyVideoId: guid });
           }}
           onManualIdCommit={(guid) => commit({ bunnyVideoId: guid })}
           onPhaseChange={(phase, pct) => onUploadPhase?.(lesson.id, phase, pct)}
@@ -296,6 +309,23 @@ export function LessonEditPanel({
         icon={IconLink}
         hint={t('hints.resources')}
       >
+        {/* Focus-leave SAFETY NET around the whole resources block (review
+            fix): the explicit save bar below stays the visible save model,
+            but collapsing the row / opening another lesson / switching steps
+            UNMOUNTS this panel with its local `resources` state — before
+            this wrapper, a typed-but-unsaved link was silently discarded.
+            Any focus departure that leaves the block with unsaved edits
+            auto-commits them through the SAME commitResources (so the save
+            bar's status still narrates what happened); the blur fires
+            before the unmount because the departing tap/click moves focus
+            out first. */}
+        <div
+          onBlur={(e) => {
+            if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+            if (rp || resourcesSave === 'saving') return;
+            if (JSON.stringify(resources) !== lastSavedResources.current) commitResources(resources);
+          }}
+        >
         {/* `label=""` suppresses ResourcesEditor's own default heading —
             `EditPanelSection` above already supplies the "Ressources"
             label, so rendering both would double it up. */}
@@ -344,6 +374,7 @@ export function LessonEditPanel({
                   ? tEditor('saving')
                   : tEditor('unsaved')}
           </span>
+        </div>
         </div>
       </EditPanelSection>
 

@@ -39,7 +39,7 @@ export function LessonRow({
   index: number;
   total: number;
   isDraft: boolean;
-  onAct: (fn: () => Promise<{ ok: boolean }>) => void;
+  onAct: (fn: () => Promise<{ ok: boolean }>) => Promise<{ ok: boolean }>;
   actions: LessonActions;
   chapters: AdminChapter[];
   /** The parent course's optional-translation setting (Task: lesson-language)

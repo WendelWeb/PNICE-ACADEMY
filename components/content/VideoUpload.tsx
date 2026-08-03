@@ -22,8 +22,11 @@ type SessionState =
   | { phase: 'done'; fileName: string }
   /** `resumable` (Stage 5): the connection died mid-upload but the video
    *  object + partial bytes still exist on Bunny — "Eseye ankò" RESUMES
-   *  from the last server-acked offset instead of restarting at 0%. */
-  | { phase: 'error'; message: string; resumable?: boolean };
+   *  from the last server-acked offset instead of restarting at 0%.
+   *  `resave` (review fix): the upload itself SUCCEEDED but the caller's
+   *  save of the guid onto the lesson failed — "Eseye ankò" re-runs only
+   *  that commit (via finishUpload), never the upload. */
+  | { phase: 'error'; message: string; resumable?: boolean; resave?: boolean };
 
 /** The component's lifecycle phases, mirrored to the optional
  *  `onPhaseChange` callback (Stage 5) so `PlanEditor` can keep an in-flight
@@ -35,7 +38,7 @@ type View =
   | { kind: 'creating' }
   | { kind: 'uploading'; pct: number }
   | { kind: 'ready'; fileName: string | null }
-  | { kind: 'error'; message: string; resumable: boolean };
+  | { kind: 'error'; message: string; resumable: boolean; resave: boolean };
 
 /**
  * Resolves what to actually show: `session` (this browser tab's own upload
@@ -49,7 +52,9 @@ type View =
 function resolveView(session: SessionState, hasExisting: boolean, forceDropzone: boolean): View {
   if (session.phase === 'creating') return { kind: 'creating' };
   if (session.phase === 'uploading') return { kind: 'uploading', pct: session.pct };
-  if (session.phase === 'error') return { kind: 'error', message: session.message, resumable: Boolean(session.resumable) };
+  if (session.phase === 'error') {
+    return { kind: 'error', message: session.message, resumable: Boolean(session.resumable), resave: Boolean(session.resave) };
+  }
   if (session.phase === 'done') return { kind: 'ready', fileName: session.fileName };
   // session.phase === 'idle'
   if (forceDropzone) return { kind: 'dropzone' };
@@ -179,8 +184,11 @@ export function VideoUpload({
    *  finishes. `durationSeconds` (Stage 5, ADDITIVE — optional second arg)
    *  is the auto-detected, rounded video length, `undefined` when the
    *  browser couldn't read it; existing `(guid) => …` callers keep
-   *  compiling and working unchanged. */
-  onUploaded: (guid: string, durationSeconds?: number) => void;
+   *  compiling and working unchanged. A caller MAY return the save result
+   *  (review fix, ADDITIVE): when it resolves `{ ok: false }`, this
+   *  component shows a "save failed — retry" error (re-running only the
+   *  commit) instead of a false "✓ videyo pare". */
+  onUploaded: (guid: string, durationSeconds?: number) => void | Promise<{ ok: boolean } | void>;
   /** Called when the "avancé" manual-ID field is blurred with a changed,
    *  non-empty-vs-previous value — a distinct callback from `onUploaded`
    *  even though both usually end up calling the same `updateLesson`, so
@@ -374,14 +382,27 @@ export function VideoUpload({
   };
 
   /** Shared success tail for both upload paths: await the (long-finished)
-   *  duration read, hand BOTH values to the caller in ONE commit, then show
-   *  ✓ — `onUploaded` runs before the 'done' phase-change so the caller's
-   *  state settles while this panel is guaranteed still mounted. */
+   *  duration read, hand BOTH values to the caller in ONE commit, and only
+   *  THEN show ✓ (review fix): `onUploaded` may resolve with the actual
+   *  save result, and a `{ ok: false }` save means the video reached Bunny
+   *  but never the lesson row — showing "✓ videyo pare" there would let the
+   *  teacher walk away from an unsaved lesson. The context is kept so
+   *  "Eseye ankò" re-enters HERE and re-runs only the commit. */
   const finishUpload = async (ctx: ResumeContext) => {
     const durationSeconds = await ctx.durationPromise;
-    resumeRef.current = null;
     setManualId(ctx.init.guid);
-    onUploaded(ctx.init.guid, durationSeconds);
+    let saved: { ok: boolean } | void;
+    try {
+      saved = await onUploaded(ctx.init.guid, durationSeconds);
+    } catch {
+      saved = { ok: false };
+    }
+    if (saved && saved.ok === false) {
+      resumeRef.current = ctx;
+      update({ phase: 'error', message: t('uploadSaveFailed'), resave: true });
+      return;
+    }
+    resumeRef.current = null;
     update({ phase: 'done', fileName: ctx.file.name });
   };
 
@@ -512,11 +533,16 @@ export function VideoUpload({
           <button
             type="button"
             onClick={() => {
+              // Resave (review fix — upload done, lesson save failed):
+              // re-run ONLY the commit; the bytes are already on Bunny.
               // Resumable (connection died mid-upload): re-enter the chunked
               // upload with the SAME context — it HEAD-resyncs and continues
               // from the last acked offset, not from zero. Otherwise: back
               // to the dropzone for a fresh pick.
-              if (view.resumable && resumeRef.current) {
+              if (view.resave && resumeRef.current) {
+                update({ phase: 'creating' }); // "Preparasyon…" while the commit retries
+                void finishUpload(resumeRef.current);
+              } else if (view.resumable && resumeRef.current) {
                 void runUpload();
               } else {
                 update({ phase: 'idle' });

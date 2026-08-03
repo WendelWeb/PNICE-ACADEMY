@@ -3,8 +3,12 @@
  * downloadable resource) as multipart formData `{ file, slug, purpose }`,
  * validates it, and stores it in the platform's Bunny Storage Zone. This is
  * a ROUTE HANDLER (not a server action) on purpose: server actions cap the
- * request body at ~1 MB, while a course photo is up to 8 MB and a resource
- * up to 25 MB — formData streaming through a route handler has no such cap.
+ * request body at ~1 MB, while course assets go up to ASSET_MAX_BYTES (4 MB
+ * each). The 4 MB ceiling is deliberate (review fix): the production
+ * platform (Vercel) rejects serverless request bodies over ~4.5 MB with a
+ * non-JSON 413 BEFORE this handler runs, so the cap — and the teacher-facing
+ * copy — must stay under that or every larger file fails with a generic,
+ * misleading error.
  *
  * RESPONSE CONTRACT (never-throw, mirrors the server-action result shape the
  * studio/CMS clients already speak): ALWAYS HTTP 200 with

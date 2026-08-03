@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/cn';
 import { useRouter } from '@/i18n/routing';
 import { EDITOR_STEPS, type EditorStepKey } from '@/lib/courses/readiness-anchors';
+import { hasActiveUploads } from '@/components/content/uploadActivity';
 import { STEP_ICONS, STEP_GLYPH } from './steps';
 
 const focusRing =
@@ -15,9 +16,17 @@ const focusRing =
  * collapsed `<details>` most teachers never opened — so the video step was
  * effectively invisible on the very devices our teachers use. This bar shows
  * the 4 steps permanently (icon + short label + step number, ≥44px touch
- * targets) right under the sticky `BordereauHeader`, and navigates EXACTLY
- * like `ControlRail`'s step buttons: same `?tab=` URLs, same frozen keys.
- * Hidden from `lg:` up, where the desktop rail already shows the steps.
+ * targets) and navigates EXACTLY like `ControlRail`'s step buttons: same
+ * `?tab=` URLs, same frozen keys. Hidden from `lg:` up, where the desktop
+ * rail already shows the steps.
+ *
+ * ALWAYS visible for real (review fix): the bar renders INSIDE
+ * `BordereauHeader`'s sticky container (the editor page slots it in as
+ * children), so it stays pinned with the header while a long plan scrolls —
+ * in normal flow it scrolled off-screen and a teacher deep in step ② had to
+ * scroll all the way back up to switch steps. Switching steps while a video
+ * upload is in flight asks for confirmation first (`hasActiveUploads`) —
+ * the `?tab=` swap unmounts the plan and would kill the upload.
  */
 export function MobileStepBar({
   activeTab,
@@ -34,7 +43,7 @@ export function MobileStepBar({
   return (
     <nav
       aria-label={t('stepsNav')}
-      className="-mx-4 border-b border-ink/12 bg-paper-light px-1 sm:mx-0 sm:rounded-xl sm:border sm:px-2 lg:hidden"
+      className="-mx-4 -mb-3 mt-2 border-t border-ink/12 px-1 sm:px-2 lg:hidden"
     >
       <div className="grid grid-cols-4">
         {EDITOR_STEPS.map(({ key, number }) => {
@@ -47,7 +56,11 @@ export function MobileStepBar({
               aria-current={active ? 'step' : undefined}
               aria-label={t(`steps.${key}.title`)}
               onClick={() => {
-                if (!active) router.push(hrefForStep(key));
+                if (active) return;
+                // Review fix: the `?tab=` swap unmounts the plan editor and
+                // kills any in-flight video upload — never silently.
+                if (hasActiveUploads() && !window.confirm(t('uploadLeaveConfirm'))) return;
+                router.push(hrefForStep(key));
               }}
               className={cn(
                 'flex min-h-[52px] flex-col items-center justify-center gap-1 rounded-t border-b-2 px-1 py-2',

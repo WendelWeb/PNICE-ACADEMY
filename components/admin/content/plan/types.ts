@@ -63,7 +63,11 @@ export type LessonActions = {
 export type PlanCommonProps = {
   slug: string;
   isDraft: boolean;
-  onAct: (fn: () => Promise<{ ok: boolean }>) => void;
+  /** Runs a server action inside `PlanEditor`'s transition (refresh on ok,
+   *  visible error line on failure — review fix) and RESOLVES with the
+   *  result so a caller can surface the failure next to its own field
+   *  (fire-and-forget callers just ignore the returned promise). */
+  onAct: (fn: () => Promise<{ ok: boolean }>) => Promise<{ ok: boolean }>;
   actions: LessonActions;
   chapters: AdminChapter[];
   /** The parent course's optional-translation setting (Task: lesson-language)

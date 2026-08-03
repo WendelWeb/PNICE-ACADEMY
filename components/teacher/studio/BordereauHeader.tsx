@@ -66,6 +66,7 @@ export function BordereauHeader({
   missing,
   submitAction,
   unpublishAction,
+  children,
 }: {
   slug: string;
   code: string;
@@ -77,6 +78,11 @@ export function BordereauHeader({
   missing: number;
   submitAction: (slug: string) => Promise<{ ok: boolean; message?: string }>;
   unpublishAction: (slug: string) => Promise<{ ok: boolean; message?: string }>;
+  /** Rendered INSIDE the sticky header, below the identity/action rows —
+   *  the editor page slots `MobileStepBar` here (review fix) so the phone
+   *  step navigation actually stays on screen while the plan scrolls,
+   *  instead of scrolling away in normal flow. Optional/additive. */
+  children?: React.ReactNode;
 }) {
   const t = useTranslations('teach.studio');
   const router = useRouter();
@@ -175,6 +181,8 @@ export function BordereauHeader({
           <IconAlertTriangle size={12} /> {err}
         </p>
       )}
+
+      {children}
     </header>
   );
 }
