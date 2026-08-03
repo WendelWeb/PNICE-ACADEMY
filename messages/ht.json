@@ -767,7 +767,8 @@
     "emptyTitle": "Katalòg la ap tann ou",
     "emptyBody": "Ou poko enskri nan okenn fòmasyon. Chwazi yon konpetans ki fè lajan, epi kòmanse jodi a.",
     "emptyCta": "Gade katalòg la",
-    "subscriptionActiveNote": "Ou gen yon abònman aktif — ou gen aksè a tout fòmasyon yo. Chwazi yonn pou kòmanse."
+    "subscriptionActiveNote": "Ou gen yon abònman aktif — ou gen aksè a tout fòmasyon yo. Chwazi yonn pou kòmanse.",
+    "subscriptionActiveNoteTeacher": "Ou gen Pass {name} la — ou gen aksè a tout fòmasyon {name} yo. Chwazi yonn pou kòmanse."
   },
   "lesson": {
     "lessonsList": "Leson yo",
@@ -785,6 +786,13 @@
     "partAndLesson": "Pati {part} · Leson {n}",
     "notesTitle": "Nòt anseyan an",
     "resourcesTitle": "Resous",
+    "markError": "Nou pa t ka anrejistre pwogrè a. Tcheke koneksyon ou.",
+    "retry": "Eseye ankò",
+    "celebrationTitle": "Bravo! Ou fini tout fòmasyon an!",
+    "celebrationBody": "Sètifika w pare — li gen yon kòd verifikasyon inik ou ka pataje. W ap toujou jwenn li nan kont ou, seksyon Sètifika.",
+    "celebrationCodeLabel": "Kòd sètifika w",
+    "celebrationDownload": "Telechaje PDF la",
+    "celebrationRateInvite": "Di lòt moun sa w panse — bay fòmasyon an yon nòt",
     "teacherPassMismatch": {
       "title": "Ou gen yon abònman — men pa pou fòmasyon sa a",
       "body": "Ou gen Pass {name} la, ki bay aksè sèlman a fòmasyon {name} yo. Fòmasyon sa a se pou yon lòt pwofesè.",
@@ -818,9 +826,64 @@
       "privacy": "Konfidansyalite",
       "support": "Sipò"
     },
-    "comingSoon": {
-      "title": "Byento disponib",
-      "text": "Seksyon sa a ap vini talè."
+    "subscription": {
+      "title": "Abònman mwen",
+      "empty": "Ou poko gen abònman. Ak yon pass, ou jwenn aksè a plizyè fòmasyon pou yon sèl pri chak mwa.",
+      "emptyCta": "Gade pri yo",
+      "kindPlatform": "Pass PNICE — tout fòmasyon yo",
+      "kindTeacher": "Pass {name}",
+      "price": "Pri",
+      "pricePerMonth": "{price} / mwa",
+      "startedAt": "Kòmanse",
+      "renewsAt": "Pwochen renouvèlman",
+      "endsAt": "Aksè jiska",
+      "cancelScheduled": "Abònman an ap kanpe nan fen peryòd la — ou kenbe aksè jiska dat sa a.",
+      "manage": "Jere / anile abònman an",
+      "manageHint": "W ap ale sou paj Stripe ki an sekirite a — chanje kat ou oswa anile lè ou vle.",
+      "portalUnavailable": "Nou pa ka louvri paj jesyon an kounye a. Ekri nou, n ap ede w byen vit.",
+      "portalSupportLink": "Kontakte sipò",
+      "statusLabels": {
+        "active": "Aktif",
+        "past_due": "Peman an reta",
+        "canceled": "Anile",
+        "incomplete": "Poko fini"
+      },
+      "purchases": {
+        "title": "Acha ou yo",
+        "empty": "Ou poko fè okenn acha.",
+        "itemPass": "Abònman chak mwa",
+        "refunded": "Ranbouse",
+        "receipt": "Resi PDF"
+      }
+    },
+    "certificates": {
+      "title": "Sètifika mwen yo",
+      "empty": "Ou poko gen sètifika. Fini tout leson yon fòmasyon epi sètifika w ap parèt la a otomatikman.",
+      "emptyCta": "Ale nan tablo debò a",
+      "issuedOn": "Delivre {date}",
+      "codeLabel": "Kòd verifikasyon",
+      "verifyLink": "Paj verifikasyon",
+      "downloadPdf": "Telechaje PDF"
+    },
+    "courses": {
+      "title": "Fòmasyon mwen yo",
+      "empty": "Ou poko enskri nan okenn fòmasyon. Chwazi yonn nan katalòg la pou w kòmanse.",
+      "emptyCta": "Gade katalòg la",
+      "progress": "{done}/{total} leson · {pct}%",
+      "completed": "Fini ✓",
+      "dashboardLink": "Ale nan tablo debò a"
+    },
+    "notifications": {
+      "title": "Dènye aktivite",
+      "empty": "Poko gen anyen isit la. Lè ou achte, fini yon fòmasyon oswa chanje abònman ou, w ap wè li la a.",
+      "purchase": "Ou achte « {title} »",
+      "purchasePass": "Ou peye abònman ou",
+      "refund": "Ranbousman pou « {title} »",
+      "refundPass": "Ranbousman abònman",
+      "certificate": "Ou resevwa sètifika « {title} » — felisitasyon!",
+      "subscriptionStarted": "Abònman ou kòmanse",
+      "subscriptionCanceled": "Abònman ou anile",
+      "subscriptionPastDue": "Peman abònman ou an reta — tcheke kat ou"
     },
     "common": {
       "save": "Anrejistre",
@@ -941,7 +1004,7 @@
         "link": "Konekte",
         "unlink": "Dekonekte",
         "unlinked": "Kont la dekonekte.",
-        "appleSoon": "Byento disponib"
+        "appleSoon": "Poko disponib"
       },
       "overview": {
         "title": "Eta sekirite",
@@ -1100,8 +1163,27 @@
       "error": "Pa ka voye. Tcheke sijè a ak mesaj la.",
       "submit": "Voye demann lan",
       "sentTitle": "Demann voye !",
-      "sentBody": "Ekip nou an ap reponn ou pa imel pi vit posib.",
-      "sendAnother": "Voye yon lòt demann"
+      "sentBody": "Ekip nou an ap reponn ou pa imel — epi w ap wè repons lan isit la tou.",
+      "sendAnother": "Voye yon lòt demann",
+      "myTicketsTitle": "Demann sipò ou yo",
+      "noTickets": "Ou poko voye okenn demann.",
+      "newTicket": "Nouvo demann",
+      "backToList": "Tounen nan lis la",
+      "cancelNew": "Anile",
+      "threadTitle": "Konvèsasyon",
+      "openedOn": "Ouvè {date}",
+      "you": "Ou menm",
+      "team": "Ekip PNICE",
+      "replyLabel": "Repons ou",
+      "replyPlaceholder": "Ekri repons ou la a…",
+      "replySend": "Voye repons lan",
+      "replyError": "Pa ka voye repons lan. Eseye ankò.",
+      "replyCount": "{count} repons",
+      "statusLabels": {
+        "open": "Ouvè",
+        "in_progress": "N ap travay sou li",
+        "resolved": "Rezoud"
+      }
     }
   },
   "admin": {

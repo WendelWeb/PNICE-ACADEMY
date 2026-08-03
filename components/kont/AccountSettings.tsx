@@ -8,12 +8,16 @@ import { IconArrowRight } from '@tabler/icons-react';
 import { Link } from '@/i18n/routing';
 import { Sceau } from '@/components/ui/Sceau';
 import { cn } from '@/lib/cn';
+import type { MyAccountData } from '@/lib/learner/account';
 import { ProfileTab } from './ProfileTab';
 import { SecurityTab } from './SecurityTab';
 import { PreferencesTab } from './PreferencesTab';
 import { PrivacyTab } from './PrivacyTab';
 import { SupportTab } from './SupportTab';
-import { ComingSoon } from './ComingSoon';
+import { SubscriptionTab } from './SubscriptionTab';
+import { CoursesTab, type KontCourse } from './CoursesTab';
+import { CertificatesTab } from './CertificatesTab';
+import { NotificationsTab } from './NotificationsTab';
 
 const TABS = [
   'profile',
@@ -33,7 +37,18 @@ function initialTabFrom(requested: string | null): TabId {
   return (TABS as readonly string[]).includes(requested ?? '') ? (requested as TabId) : 'profile';
 }
 
-export function AccountSettings({ isApprovedTeacher = false }: { isApprovedTeacher?: boolean }) {
+export function AccountSettings({
+  isApprovedTeacher = false,
+  account,
+  courses = [],
+}: {
+  isApprovedTeacher?: boolean;
+  /** Server-loaded account bundle (Stage: learner account) — subscriptions,
+   *  purchases, certificates, tickets, events. */
+  account: MyAccountData;
+  /** Server-resolved "my learning" rows for the Fòmasyon tab. */
+  courses?: KontCourse[];
+}) {
   const t = useTranslations('kont');
   const { isLoaded, user } = useUser();
   const searchParams = useSearchParams();
@@ -140,9 +155,15 @@ export function AccountSettings({ isApprovedTeacher = false }: { isApprovedTeach
           ) : active === 'privacy' ? (
             <PrivacyTab />
           ) : active === 'support' ? (
-            <SupportTab />
+            <SupportTab tickets={account.tickets} />
+          ) : active === 'subscription' ? (
+            <SubscriptionTab account={account} onOpenSupport={() => setActive('support')} />
+          ) : active === 'courses' ? (
+            <CoursesTab courses={courses} />
+          ) : active === 'certificates' ? (
+            <CertificatesTab certificates={account.certificates} />
           ) : (
-            <ComingSoon />
+            <NotificationsTab events={account.events} />
           )}
         </div>
       </div>

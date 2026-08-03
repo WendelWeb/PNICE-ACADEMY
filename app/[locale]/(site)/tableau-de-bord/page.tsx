@@ -103,9 +103,9 @@ export default async function DashboardPage({
   const name = user?.firstName || user?.username || null;
   const clerkId = clerkEnabled ? (await auth()).userId : null;
 
-  const { courses: myCourses, hasSubscription } = clerkId
+  const { courses: myCourses, hasSubscription, hasPlatformPass, teacherPassNames } = clerkId
     ? await getMyLearning(clerkId)
-    : { courses: [], hasSubscription: false };
+    : { courses: [], hasSubscription: false, hasPlatformPass: false, teacherPassNames: [] as string[] };
 
   const resolvedEnrollments = await Promise.all(
     myCourses.map(async ({ slug, lessonsDone, lessonsTotal }) => {
@@ -156,7 +156,14 @@ export default async function DashboardPage({
               </p>
               {hasSubscription ? (
                 <p className="mx-auto mt-3 max-w-md font-mono text-xs uppercase tracking-wide text-teal">
-                  {t('subscriptionActiveNote')}
+                  {/* Stage: learner account — the note tells the truth per
+                      pass kind: a teacher pass grants ONE teacher's courses,
+                      not all of them. */}
+                  {hasPlatformPass
+                    ? t('subscriptionActiveNote')
+                    : t('subscriptionActiveNoteTeacher', {
+                        name: teacherPassNames.join(', ') || 'Anseyan',
+                      })}
                 </p>
               ) : null}
               <Link

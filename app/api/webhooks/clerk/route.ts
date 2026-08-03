@@ -13,6 +13,7 @@
 import crypto from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { db, schema } from '@/db';
+import { mapClerkUserToDbUser, type ClerkWebhookUser } from '@/lib/clerkUserSync';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -35,17 +36,10 @@ function verifySvix(secret: string, id: string | null, ts: string | null, sigHea
   });
 }
 
-type ClerkEmail = { id: string; email_address: string };
-type ClerkUser = {
-  id: string;
-  email_addresses?: ClerkEmail[];
-  primary_email_address_id?: string;
-  phone_numbers?: { phone_number: string }[];
-  first_name?: string | null;
-  last_name?: string | null;
-  username?: string | null;
-  banned?: boolean;
-};
+// Payload shape + upsert mapping now live in lib/clerkUserSync.ts (pure,
+// unit-tested) — Stage: learner account, which also syncs the /kont-chosen
+// certificateName from unsafe_metadata on user.updated.
+type ClerkUser = ClerkWebhookUser;
 
 export async function POST(req: Request): Promise<Response> {
   const secret = process.env.CLERK_WEBHOOK_SECRET;
@@ -72,17 +66,11 @@ export async function POST(req: Request): Promise<Response> {
   const data = evt.data;
   try {
     if (evt.type === 'user.created' || evt.type === 'user.updated') {
-      const email =
-        data.email_addresses?.find((e) => e.id === data.primary_email_address_id)?.email_address ??
-        data.email_addresses?.[0]?.email_address ??
-        '';
-      const phone = data.phone_numbers?.[0]?.phone_number ?? null;
-      const name = [data.first_name, data.last_name].filter(Boolean).join(' ') || data.username || email || data.id;
-      const status = data.banned ? ('banned' as const) : ('active' as const);
+      const { values, set } = mapClerkUserToDbUser(data);
       await db
         .insert(schema.users)
-        .values({ clerkId: data.id, email, name, certificateName: name, phone, status })
-        .onConflictDoUpdate({ target: schema.users.clerkId, set: { email, name, phone, status } });
+        .values(values)
+        .onConflictDoUpdate({ target: schema.users.clerkId, set });
     } else if (evt.type === 'user.deleted') {
       if (data.id) await db.delete(schema.users).where(eq(schema.users.clerkId, data.id));
     }

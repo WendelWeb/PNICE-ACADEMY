@@ -172,6 +172,43 @@ export async function getStripeCheckoutSession(id: string): Promise<StripeSessio
   };
 }
 
+/**
+ * The Stripe customer id behind one of OUR subscriptions (Stage: learner
+ * account). We never stored customer ids locally — the subscription's
+ * provider_ref is the durable key — so the billing portal resolves the
+ * customer through the subscription at click time. GATED + NEVER-THROW:
+ * no key / bad id / API failure ⇒ `null` and the caller degrades politely.
+ */
+export async function getStripeSubscriptionCustomerId(id: string): Promise<string | null> {
+  if (!/^sub_[A-Za-z0-9_]{3,240}$/.test(id)) return null;
+  const res = await stripeRequest<{ customer?: string | { id?: string } | null }>(
+    'GET',
+    `/subscriptions/${id}`,
+  );
+  if (!res.ok) return null;
+  const c = res.data.customer;
+  if (typeof c === 'string' && c) return c;
+  if (c && typeof c === 'object' && typeof c.id === 'string' && c.id) return c.id;
+  return null;
+}
+
+/**
+ * Stripe billing-portal session (Stage: learner account) — the hosted page
+ * where a subscriber updates their card or cancels, so "Jere abònman an"
+ * is real self-service instead of a support ticket. Plain REST like
+ * everything else in this file. Never throws — `{ error }` on any failure.
+ */
+export async function createBillingPortalSession(
+  customerId: string,
+  returnUrl: string,
+): Promise<{ url: string } | { error: string }> {
+  const res = await stripeRequest<{ url: string }>('POST', '/billing_portal/sessions', {
+    customer: customerId,
+    return_url: returnUrl,
+  });
+  return res.ok ? { url: res.data.url } : { error: res.error };
+}
+
 export async function getStripeSubscription(id: string): Promise<{
   status: string;
   currentPeriodEnd: Date | null;

@@ -247,10 +247,25 @@ export async function resolveUserId(clerkId: string): Promise<string | null> {
   return row?.id ?? null;
 }
 
-export async function getMyLearning(
-  clerkId: string,
-): Promise<{ courses: MyCourse[]; hasSubscription: boolean }> {
-  const empty = { courses: [], hasSubscription: false };
+export type MyLearning = {
+  courses: MyCourse[];
+  hasSubscription: boolean;
+  /** Stage: learner account (additive) — whether any active pass is the
+   *  all-access 'platform' kind, so the dashboard stops telling a
+   *  teacher-pass holder they have access to ALL courses. */
+  hasPlatformPass: boolean;
+  /** Display names of the teachers behind active 'teacher'-kind passes
+   *  (deduped; empty when none resolve). */
+  teacherPassNames: string[];
+};
+
+export async function getMyLearning(clerkId: string): Promise<MyLearning> {
+  const empty: MyLearning = {
+    courses: [],
+    hasSubscription: false,
+    hasPlatformPass: false,
+    teacherPassNames: [],
+  };
   if (!dbReady() || !clerkId) return empty;
 
   try {
@@ -277,6 +292,22 @@ export async function getMyLearning(
     const planOwners = await planOwnerMap(teacherPlanIds);
     const ownerIds = [...new Set([...planOwners.values()])];
     const ownerSlugs = await ownerCourseSlugsMap(ownerIds);
+
+    // Stage: learner account (additive) — which kind(s) of pass are held, so
+    // the dashboard's subscription note can tell the truth per kind.
+    const hasPlatformPass = subs.some((s) => s.kind === 'platform');
+    const teacherOwnerIds = [
+      ...new Set(
+        subs
+          .filter((s) => s.kind === 'teacher' && s.teacherPlanId)
+          .map((s) => planOwners.get(s.teacherPlanId as string))
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    const teacherPassNames =
+      teacherOwnerIds.length > 0
+        ? await Promise.all(teacherOwnerIds.map((id) => resolveOwnerDisplayName(id)))
+        : [];
 
     const courses = await getAllCourses();
     const allCourseSlugs = courses.map((c) => c.slug);
@@ -312,7 +343,7 @@ export async function getMyLearning(
         lastLessonIndex: Math.min(lessonsDone + 1, Math.max(lessonsTotal, 1)),
       });
     }
-    return { courses: result, hasSubscription };
+    return { courses: result, hasSubscription, hasPlatformPass, teacherPassNames };
   } catch (err) {
     console.error('[learner/access] getMyLearning failed:', err);
     return empty;

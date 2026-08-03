@@ -34,7 +34,42 @@ export type StripeAction =
   | { kind: 'invoice_failed'; eventId: string; subscriptionId: string | null;
       amountCents: number; attemptCount: number }
   | { kind: 'charge_refunded'; eventId: string; paymentIntentId: string | null }
+  /* Stage: learner account — Stripe billing-portal cancellations (and any
+   * other external change) now reach the DB instead of leaving zombie
+   * access. Additive: two new actions, handled by fulfill.ts alongside the
+   * existing invoice handlers; nothing existing changes shape. */
+  | { kind: 'subscription_updated'; eventId: string; subscriptionId: string | null;
+      status: string | null; cancelAtPeriodEnd: boolean; periodEnd: number | null }
+  | { kind: 'subscription_deleted'; eventId: string; subscriptionId: string | null }
   | { kind: 'ignored'; eventId: string; type: string };
+
+/**
+ * Pure: Stripe's subscription `status` vocabulary → ours
+ * (db/schema.ts `subscriptions.status`). Conservative on the unknown/edge
+ * values: anything Stripe might add later maps to 'active' rather than
+ * silently cancelling a paying subscriber ("unknown ⇒ keep access", the same
+ * grandfather bias as `subscriptions.kind`'s default). Exported for unit
+ * testing without a DB.
+ */
+export function mapStripeSubscriptionStatus(
+  s: string | null,
+): 'active' | 'past_due' | 'canceled' | 'incomplete' {
+  switch (s) {
+    case 'past_due':
+    case 'unpaid':
+    case 'paused':
+      return 'past_due';
+    case 'canceled':
+    case 'incomplete_expired':
+      return 'canceled';
+    case 'incomplete':
+      return 'incomplete';
+    case 'active':
+    case 'trialing':
+    default:
+      return 'active';
+  }
+}
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const str = (v: any): string | null => (typeof v === 'string' && v.length > 0 ? v : null);
@@ -91,6 +126,26 @@ export function mapStripeEvent(evt: unknown): StripeAction {
   }
   if (type === 'charge.refunded') {
     return { kind: 'charge_refunded', eventId, paymentIntentId: str(o.payment_intent) };
+  }
+  if (type === 'customer.subscription.updated') {
+    return {
+      kind: 'subscription_updated',
+      eventId,
+      subscriptionId: str(o.id),
+      status: str(o.status),
+      cancelAtPeriodEnd: o.cancel_at_period_end === true,
+      // Older API versions carry current_period_end at the top level; newer
+      // ones move it onto the subscription item. Read both.
+      periodEnd:
+        typeof o.current_period_end === 'number'
+          ? o.current_period_end
+          : typeof o.items?.data?.[0]?.current_period_end === 'number'
+            ? o.items.data[0].current_period_end
+            : null,
+    };
+  }
+  if (type === 'customer.subscription.deleted') {
+    return { kind: 'subscription_deleted', eventId, subscriptionId: str(o.id) };
   }
   return { kind: 'ignored', eventId, type };
 }

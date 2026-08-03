@@ -22,7 +22,7 @@ import { getFxRate } from '@/lib/fx';
 import { getCourseBySlug } from '@/lib/courses/source';
 import { recordSaleEarning, recordRefundReversal } from '@/lib/teacher/earnings';
 import { recordPromoRedemption } from './promo-redemption';
-import type { StripeAction } from './stripe-events';
+import { mapStripeSubscriptionStatus, type StripeAction } from './stripe-events';
 
 export async function fulfillAction(action: StripeAction): Promise<'processed' | 'ignored'> {
   switch (action.kind) {
@@ -34,6 +34,10 @@ export async function fulfillAction(action: StripeAction): Promise<'processed' |
       return fulfillInvoiceFailed(action);
     case 'charge_refunded':
       return fulfillChargeRefunded(action);
+    case 'subscription_updated':
+      return fulfillSubscriptionUpdated(action);
+    case 'subscription_deleted':
+      return fulfillSubscriptionDeleted(action);
     default:
       return 'ignored';
   }
@@ -530,6 +534,63 @@ async function fulfillInvoiceFailed(a: InvoiceFailed): Promise<'processed' | 'ig
     userName: null,
     amountCents: a.amountCents,
     detail: `Échec renouvellement (tentative ${a.attemptCount})`,
+  });
+  return 'processed';
+}
+
+type SubscriptionUpdated = Extract<StripeAction, { kind: 'subscription_updated' }>;
+
+/**
+ * Stage: learner account — mirror an EXTERNAL subscription change (Stripe
+ * billing portal, dashboard edit, dunning outcome) onto our own row, exactly
+ * like the invoice handlers above map their events to status. ADDITIVE only:
+ * no payment/enrollment/earnings write here — money guards frozen. Unknown
+ * subscription ⇒ 'ignored': checkout.session.completed creates the row from
+ * fresh remote state, so an early-arriving update has nothing to fix, and a
+ * genuinely foreign id has nothing to do with us. Naturally idempotent — the
+ * same event maps to the same UPDATE … SET every time.
+ */
+async function fulfillSubscriptionUpdated(a: SubscriptionUpdated): Promise<'processed' | 'ignored'> {
+  if (!a.subscriptionId) return 'ignored';
+  const sub = await selectSubscriptionByProviderRef(a.subscriptionId);
+  if (!sub) return 'ignored';
+  await db
+    .update(subscriptions)
+    .set({
+      status: mapStripeSubscriptionStatus(a.status),
+      cancelAtPeriodEnd: a.cancelAtPeriodEnd,
+      ...(a.periodEnd ? { currentPeriodEnd: new Date(a.periodEnd * 1000) } : {}),
+      updatedAt: new Date(),
+    })
+    .where(eq(subscriptions.id, sub.id));
+  return 'processed';
+}
+
+type SubscriptionDeleted = Extract<StripeAction, { kind: 'subscription_deleted' }>;
+
+/**
+ * Stage: learner account — a subscription cancelled OUTSIDE our app (billing
+ * portal, Stripe dashboard, final dunning failure) finally reaches the DB —
+ * before this handler the row stayed 'active' forever (zombie access).
+ * Idempotent: an already-'canceled' row is acked without a second admin
+ * notification (same duplicate discipline as fulfillChargeRefunded).
+ */
+async function fulfillSubscriptionDeleted(a: SubscriptionDeleted): Promise<'processed' | 'ignored'> {
+  if (!a.subscriptionId) return 'ignored';
+  const sub = await selectSubscriptionByProviderRef(a.subscriptionId);
+  if (!sub) return 'ignored';
+  if (sub.status === 'canceled') return 'processed'; // duplicate delivery
+  await db
+    .update(subscriptions)
+    .set({ status: 'canceled', cancelAtPeriodEnd: false, updatedAt: new Date() })
+    .where(eq(subscriptions.id, sub.id));
+  await db.insert(adminNotifications).values({
+    kind: 'sub_canceled',
+    severity: 'info',
+    userId: sub.userId,
+    userName: null,
+    amountCents: null,
+    detail: 'Abonnement annulé (Stripe)',
   });
   return 'processed';
 }

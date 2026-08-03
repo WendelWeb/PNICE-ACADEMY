@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mapStripeEvent } from '@/lib/payments/stripe-events';
+import { mapStripeEvent, mapStripeSubscriptionStatus } from '@/lib/payments/stripe-events';
 
 describe('mapStripeEvent', () => {
   it('maps checkout.session.completed (payment mode)', () => {
@@ -165,5 +165,63 @@ describe('mapStripeEvent', () => {
     expect(mapStripeEvent({ id: 'evt_6', type: 'customer.created', data: { object: {} } }))
       .toEqual({ kind: 'ignored', eventId: 'evt_6', type: 'customer.created' });
     expect(mapStripeEvent(null)).toEqual({ kind: 'ignored', eventId: 'unknown', type: 'unknown' });
+  });
+
+  // Stage: learner account — external subscription changes (billing portal
+  // cancellations, dunning outcomes) finally reach the DB.
+  it('maps customer.subscription.updated (top-level current_period_end)', () => {
+    const a = mapStripeEvent({
+      id: 'evt_su1', type: 'customer.subscription.updated',
+      data: { object: {
+        id: 'sub_1', status: 'active', cancel_at_period_end: true,
+        current_period_end: 1760000000,
+      } },
+    });
+    expect(a).toEqual({
+      kind: 'subscription_updated', eventId: 'evt_su1', subscriptionId: 'sub_1',
+      status: 'active', cancelAtPeriodEnd: true, periodEnd: 1760000000,
+    });
+  });
+
+  it('maps customer.subscription.updated with the item-level period end (newer API shape)', () => {
+    const a = mapStripeEvent({
+      id: 'evt_su2', type: 'customer.subscription.updated',
+      data: { object: {
+        id: 'sub_2', status: 'past_due', cancel_at_period_end: false,
+        items: { data: [{ current_period_end: 1770000000 }] },
+      } },
+    });
+    expect(a.kind).toBe('subscription_updated');
+    if (a.kind === 'subscription_updated') {
+      expect(a.periodEnd).toBe(1770000000);
+      expect(a.status).toBe('past_due');
+      expect(a.cancelAtPeriodEnd).toBe(false);
+    }
+  });
+
+  it('maps customer.subscription.deleted', () => {
+    const a = mapStripeEvent({
+      id: 'evt_sd1', type: 'customer.subscription.deleted',
+      data: { object: { id: 'sub_1', status: 'canceled' } },
+    });
+    expect(a).toEqual({ kind: 'subscription_deleted', eventId: 'evt_sd1', subscriptionId: 'sub_1' });
+  });
+});
+
+describe('mapStripeSubscriptionStatus', () => {
+  it('maps the full Stripe vocabulary onto our four statuses', () => {
+    expect(mapStripeSubscriptionStatus('active')).toBe('active');
+    expect(mapStripeSubscriptionStatus('trialing')).toBe('active');
+    expect(mapStripeSubscriptionStatus('past_due')).toBe('past_due');
+    expect(mapStripeSubscriptionStatus('unpaid')).toBe('past_due');
+    expect(mapStripeSubscriptionStatus('paused')).toBe('past_due');
+    expect(mapStripeSubscriptionStatus('canceled')).toBe('canceled');
+    expect(mapStripeSubscriptionStatus('incomplete_expired')).toBe('canceled');
+    expect(mapStripeSubscriptionStatus('incomplete')).toBe('incomplete');
+  });
+
+  it('defaults the unknown to active — never silently cancels a paying subscriber', () => {
+    expect(mapStripeSubscriptionStatus('some_future_status')).toBe('active');
+    expect(mapStripeSubscriptionStatus(null)).toBe('active');
   });
 });

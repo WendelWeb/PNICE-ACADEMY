@@ -767,7 +767,8 @@
     "emptyTitle": "Le catalogue t'attend",
     "emptyBody": "Tu n'es inscrit à aucune formation pour l'instant. Choisis un savoir-faire qui rapporte, et commence aujourd'hui.",
     "emptyCta": "Voir le catalogue",
-    "subscriptionActiveNote": "Tu as un abonnement actif — tu as accès à toutes les formations. Choisis-en une pour commencer."
+    "subscriptionActiveNote": "Tu as un abonnement actif — tu as accès à toutes les formations. Choisis-en une pour commencer.",
+    "subscriptionActiveNoteTeacher": "Tu as le Pass {name} — tu as accès à toutes les formations de {name}. Choisis-en une pour commencer."
   },
   "lesson": {
     "lessonsList": "Leçons",
@@ -785,6 +786,13 @@
     "partAndLesson": "Partie {part} · Leçon {n}",
     "notesTitle": "Notes de l'enseignant",
     "resourcesTitle": "Ressources",
+    "markError": "Impossible d’enregistrer ta progression. Vérifie ta connexion.",
+    "retry": "Réessayer",
+    "celebrationTitle": "Bravo ! Tu as terminé toute la formation !",
+    "celebrationBody": "Ton certificat est prêt — il porte un code de vérification unique que tu peux partager. Tu le retrouveras toujours dans ton compte, section Certificats.",
+    "celebrationCodeLabel": "Ton code de certificat",
+    "celebrationDownload": "Télécharger le PDF",
+    "celebrationRateInvite": "Dis-le aux autres — donne une note à la formation",
     "teacherPassMismatch": {
       "title": "Tu as un abonnement — mais pas pour cette formation",
       "body": "Tu as le Pass {name}, qui donne accès uniquement aux formations de {name}. Cette formation appartient à un autre enseignant.",
@@ -818,9 +826,64 @@
       "privacy": "Confidentialité",
       "support": "Support"
     },
-    "comingSoon": {
-      "title": "Bientôt disponible",
-      "text": "Cette section arrive bientôt."
+    "subscription": {
+      "title": "Mon abonnement",
+      "empty": "Tu n’as pas encore d’abonnement. Avec un pass, tu accèdes à plusieurs formations pour un seul prix par mois.",
+      "emptyCta": "Voir les prix",
+      "kindPlatform": "Pass PNICE — toutes les formations",
+      "kindTeacher": "Pass {name}",
+      "price": "Prix",
+      "pricePerMonth": "{price} / mois",
+      "startedAt": "Débuté le",
+      "renewsAt": "Prochain renouvellement",
+      "endsAt": "Accès jusqu’au",
+      "cancelScheduled": "L’abonnement s’arrêtera à la fin de la période — tu gardes l’accès jusqu’à cette date.",
+      "manage": "Gérer / annuler l’abonnement",
+      "manageHint": "Tu iras sur la page sécurisée Stripe — change ta carte ou annule quand tu veux.",
+      "portalUnavailable": "Impossible d’ouvrir la page de gestion pour le moment. Écris-nous, on t’aide rapidement.",
+      "portalSupportLink": "Contacter le support",
+      "statusLabels": {
+        "active": "Actif",
+        "past_due": "Paiement en retard",
+        "canceled": "Annulé",
+        "incomplete": "Incomplet"
+      },
+      "purchases": {
+        "title": "Tes achats",
+        "empty": "Tu n’as encore fait aucun achat.",
+        "itemPass": "Abonnement mensuel",
+        "refunded": "Remboursé",
+        "receipt": "Reçu PDF"
+      }
+    },
+    "certificates": {
+      "title": "Mes certificats",
+      "empty": "Tu n’as pas encore de certificat. Termine toutes les leçons d’une formation et ton certificat apparaîtra ici automatiquement.",
+      "emptyCta": "Aller au tableau de bord",
+      "issuedOn": "Délivré le {date}",
+      "codeLabel": "Code de vérification",
+      "verifyLink": "Page de vérification",
+      "downloadPdf": "Télécharger le PDF"
+    },
+    "courses": {
+      "title": "Mes formations",
+      "empty": "Tu n’es inscrit à aucune formation pour l’instant. Choisis-en une dans le catalogue pour commencer.",
+      "emptyCta": "Voir le catalogue",
+      "progress": "{done}/{total} leçons · {pct}%",
+      "completed": "Terminé ✓",
+      "dashboardLink": "Aller au tableau de bord"
+    },
+    "notifications": {
+      "title": "Activité récente",
+      "empty": "Rien ici pour l’instant. Quand tu achètes, termines une formation ou changes ton abonnement, tu le verras ici.",
+      "purchase": "Tu as acheté « {title} »",
+      "purchasePass": "Tu as payé ton abonnement",
+      "refund": "Remboursement pour « {title} »",
+      "refundPass": "Remboursement d’abonnement",
+      "certificate": "Tu as reçu le certificat « {title} » — félicitations !",
+      "subscriptionStarted": "Ton abonnement a commencé",
+      "subscriptionCanceled": "Ton abonnement est annulé",
+      "subscriptionPastDue": "Le paiement de ton abonnement est en retard — vérifie ta carte"
     },
     "common": {
       "save": "Enregistrer",
@@ -941,7 +1004,7 @@
         "link": "Connecter",
         "unlink": "Déconnecter",
         "unlinked": "Le compte a été déconnecté.",
-        "appleSoon": "Bientôt disponible"
+        "appleSoon": "Pas encore disponible"
       },
       "overview": {
         "title": "État de sécurité",
@@ -1100,8 +1163,27 @@
       "error": "Impossible d’envoyer. Vérifie le sujet et le message.",
       "submit": "Envoyer la demande",
       "sentTitle": "Demande envoyée !",
-      "sentBody": "Notre équipe te répondra par email dans les meilleurs délais.",
-      "sendAnother": "Envoyer une autre demande"
+      "sentBody": "Notre équipe te répondra par email — et tu verras la réponse ici aussi.",
+      "sendAnother": "Envoyer une autre demande",
+      "myTicketsTitle": "Tes demandes de support",
+      "noTickets": "Tu n’as encore envoyé aucune demande.",
+      "newTicket": "Nouvelle demande",
+      "backToList": "Retour à la liste",
+      "cancelNew": "Annuler",
+      "threadTitle": "Conversation",
+      "openedOn": "Ouverte le {date}",
+      "you": "Toi",
+      "team": "Équipe PNICE",
+      "replyLabel": "Ta réponse",
+      "replyPlaceholder": "Écris ta réponse ici…",
+      "replySend": "Envoyer la réponse",
+      "replyError": "Impossible d’envoyer la réponse. Réessaie.",
+      "replyCount": "{count} réponses",
+      "statusLabels": {
+        "open": "Ouverte",
+        "in_progress": "En cours",
+        "resolved": "Résolue"
+      }
     }
   },
   "admin": {
