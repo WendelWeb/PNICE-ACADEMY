@@ -6,6 +6,7 @@ import { Sceau } from '@/components/ui/Sceau';
 import { CatalogBrowser } from '@/components/courses/CatalogBrowser';
 import { CourseCatalogCard } from '@/components/courses/CourseCatalogCard';
 import { getPublishedCourses } from '@/lib/courses/source';
+import { getCourseTeacherChips } from '@/lib/home/source';
 
 export const metadata: Metadata = {
   title: 'Fòmasyon — PNICE Academy',
@@ -50,6 +51,11 @@ export default async function FormationsPage({
   setRequestLocale(locale);
   const t = await getTranslations('catalog');
   const courses = await getPublishedCourses();
+  // Stage 4 — real attribution on every catalogue card: DB-first teacher
+  // chips (courses.owner_user_id → approved teacher_profiles), static
+  // registry as fallback — the same batch read the home grid uses. Gated +
+  // never-throws; no DB ⇒ exactly the static mapping as before.
+  const teacherChips = await getCourseTeacherChips(courses.map((c) => c.slug));
 
   return (
     <Section>
@@ -97,12 +103,16 @@ export default async function FormationsPage({
               fallback={
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                   {courses.map((c) => (
-                    <CourseCatalogCard key={c.code} course={c} />
+                    <CourseCatalogCard
+                      key={c.code}
+                      course={c}
+                      teacher={teacherChips[c.slug]}
+                    />
                   ))}
                 </div>
               }
             >
-              <CatalogBrowser courses={courses} />
+              <CatalogBrowser courses={courses} teacherChips={teacherChips} />
             </Suspense>
           </div>
         </div>

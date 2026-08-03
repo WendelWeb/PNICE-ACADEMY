@@ -326,6 +326,24 @@ html[data-reduce-motion='true'] .formations-skeleton-card {
   }
 }
 
+/* Lesson-preview modal (Stage 4 — watchable previews): gentle entrance.
+   Both reduced-motion kill switches below (OS-level and the user-level
+   data-reduce-motion preference) neutralize this automatically — the dialog
+   then simply appears. */
+.preview-modal-panel {
+  animation: preview-modal-in 0.18s ease-out;
+}
+@keyframes preview-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* User-level "reduce animations" preference (independent of the OS setting) */
 html[data-reduce-motion='true'] *,
 html[data-reduce-motion='true'] *::before,

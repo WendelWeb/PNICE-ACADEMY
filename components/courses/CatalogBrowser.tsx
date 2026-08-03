@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { IconSearch, IconX } from '@tabler/icons-react';
@@ -9,6 +9,7 @@ import { Reveal } from '@/components/ui/Reveal';
 import { CourseCatalogCard } from '@/components/courses/CourseCatalogCard';
 import { COURSE_CATEGORIES, type Course, type CourseCategory } from '@/data/courses';
 import { getCourseTeacher } from '@/data/teachers';
+import type { TeacherChip } from '@/lib/home/source';
 
 type SortKey = 'priceAsc' | 'priceDesc' | 'az';
 const SORTS: SortKey[] = ['priceAsc', 'priceDesc', 'az'];
@@ -62,17 +63,25 @@ function mergeParams(
  * server-rendered unfiltered grid (see the Suspense fallback in the page) so
  * the plain catalogue stays crawlable without JS.
  *
- * Teacher filter (Task C3-T7): derived from `getCourseTeacher()` (the same
- * static registry lookup `CourseCatalogCard`'s teacher attribution line
- * already uses — client-safe, no DB) over the `courses` PROP, not the full
- * catalogue — so the chip row only ever lists teachers who actually have a
- * course in view. Rendered only when 2+ distinct teachers are present (a
- * single-teacher marketplace has nothing to filter by); the ?teacher=
- * URL param and filtering logic work for any count, so this becomes a real
- * multi-teacher chooser the moment a second teacher's course publishes —
- * no mechanism change needed then.
+ * Teacher filter (Task C3-T7, upgraded Stage 4): attribution now prefers the
+ * server-resolved `teacherChips` prop (DB-first — courses.owner_user_id →
+ * approved teacher_profiles, resolved by the page via
+ * lib/home/source.ts's getCourseTeacherChips, static registry included as
+ * its fallback), so a DB-authored course credits its REAL teacher in the
+ * filter row, the cards, and the filtering itself. Without the prop (or for
+ * a slug the chips don't know) it falls back to the same client-safe static
+ * `getCourseTeacher()` lookup as before. Rendered only when 2+ distinct
+ * teachers are present (a single-teacher marketplace has nothing to filter
+ * by); the ?teacher= URL param and filtering logic work for any count.
  */
-export function CatalogBrowser({ courses }: { courses: Course[] }) {
+export function CatalogBrowser({
+  courses,
+  teacherChips,
+}: {
+  courses: Course[];
+  /** Server-resolved slug → { name, slug } attribution map (DB-first). */
+  teacherChips?: Record<string, TeacherChip>;
+}) {
   const t = useTranslations('catalog');
   const locale = useLocale();
   const router = useRouter();
@@ -98,17 +107,31 @@ export function CatalogBrowser({ courses }: { courses: Course[] }) {
     ? (rawSort as SortKey)
     : DEFAULT_SORT;
 
+  // One resolution rule for every use below (filter row, filtering, cards):
+  // the server-resolved chip first, the static registry as fallback.
+  const chipFor = useCallback(
+    (courseSlug: string): TeacherChip | null => {
+      const fromServer = teacherChips?.[courseSlug];
+      if (fromServer) return fromServer;
+      const staticTeacher = getCourseTeacher(courseSlug);
+      return staticTeacher
+        ? { name: staticTeacher.displayName, slug: staticTeacher.slug }
+        : null;
+    },
+    [teacherChips],
+  );
+
   // Teacher chips: distinct (slug, displayName) pairs among the courses in
   // view, in first-seen order — stable across renders since `courses` is a
   // stable prop reference for the lifetime of one /formations visit.
   const teacherEntries = useMemo(() => {
     const bySlug = new Map<string, string>();
     for (const c of courses) {
-      const teacher = getCourseTeacher(c.slug);
-      if (teacher && !bySlug.has(teacher.slug)) bySlug.set(teacher.slug, teacher.displayName);
+      const teacher = chipFor(c.slug);
+      if (teacher && !bySlug.has(teacher.slug)) bySlug.set(teacher.slug, teacher.name);
     }
     return [...bySlug.entries()];
-  }, [courses]);
+  }, [courses, chipFor]);
 
   const rawTeacher = get('teacher');
   const teacherFilter: string | 'all' = teacherEntries.some(([s]) => s === rawTeacher)
@@ -155,7 +178,7 @@ export function CatalogBrowser({ courses }: { courses: Course[] }) {
     const list = courses.filter(
       (c) =>
         (category === 'all' || c.category === category) &&
-        (teacherFilter === 'all' || getCourseTeacher(c.slug)?.slug === teacherFilter) &&
+        (teacherFilter === 'all' || chipFor(c.slug)?.slug === teacherFilter) &&
         matchesQuery(c, needle),
     );
     if (sort === 'priceAsc') return [...list].sort((a, b) => a.priceUsd - b.priceUsd);
@@ -167,7 +190,7 @@ export function CatalogBrowser({ courses }: { courses: Course[] }) {
         locale === 'ht' ? b.title_ht : b.title_fr,
       ),
     );
-  }, [courses, category, teacherFilter, needle, sort, locale]);
+  }, [courses, category, teacherFilter, needle, sort, locale, chipFor]);
 
   const hasFilters = !!get('q') || !!get('cat') || !!get('sort') || !!get('teacher');
 
@@ -323,7 +346,7 @@ export function CatalogBrowser({ courses }: { courses: Course[] }) {
         <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((c, i) => (
             <Reveal key={c.code} delay={(i % 3) * 60}>
-              <CourseCatalogCard course={c} />
+              <CourseCatalogCard course={c} teacher={chipFor(c.slug)} />
             </Reveal>
           ))}
         </div>

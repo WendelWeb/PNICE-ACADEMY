@@ -249,6 +249,65 @@ export async function resolveTeacherOwnerUserIdBySlug(slug: string): Promise<str
 }
 
 /**
+ * `courseSlug` → the OWNING teacher's public `/prof/[slug]` slug (Stage 4 —
+ * real attribution everywhere public). DB FIRST: the course row's
+ * `owner_user_id` → that owner's APPROVED `teacher_profiles.slug` — this is
+ * what finally credits a DB-authored course to its real teacher on the sales
+ * page. Falls back to the static `data/teachers.ts` registry
+ * (`getCourseTeacher`) when the DB can't attribute it (no DATABASE_URL, no
+ * course row, owner without an approved profile, or a failed query) — the
+ * exact same DB-over-static layering `lib/home/source.ts`'s
+ * `getCourseTeacherChips` applies in batch for the card grids. GATED +
+ * NEVER-THROW: unattributable ⇒ `null` (the sales page simply renders no
+ * teacher block, as before).
+ */
+export async function getCourseTeacherSlug(courseSlug: string): Promise<string | null> {
+  if (dbConfigured()) {
+    try {
+      const [courseRow] = await db
+        .select({ ownerUserId: T.courses.ownerUserId })
+        .from(T.courses)
+        .where(eq(T.courses.slug, courseSlug))
+        .limit(1);
+      if (courseRow?.ownerUserId) {
+        const [profile] = await db
+          .select({ slug: T.teacherProfiles.slug })
+          .from(T.teacherProfiles)
+          .where(
+            and(
+              eq(T.teacherProfiles.userId, courseRow.ownerUserId),
+              eq(T.teacherProfiles.status, 'approved'),
+            ),
+          )
+          .limit(1);
+        if (profile?.slug) return profile.slug;
+      }
+    } catch (err) {
+      console.error('[teacher/public] getCourseTeacherSlug DB read failed, falling back to static:', err);
+    }
+  }
+  const staticTeacher = teachers.find((t) => t.courseSlugs.includes(courseSlug));
+  return staticTeacher?.slug ?? null;
+}
+
+/**
+ * The complete public roster (Stage 4 — the `/prof` teacher directory):
+ * static registry slugs (teacher #1) ∪ every approved `teacher_profiles`
+ * slug, each resolved through the exact same `getPublicTeacher` read
+ * `/prof/[slug]` itself uses — so the directory can never list a teacher
+ * whose page would 404, and every card field (live photo, real rating,
+ * course count) matches their public page. GATED + NEVER-THROW all the way
+ * down; with no DB this is exactly teacher #1's static card.
+ */
+export async function getAllPublicTeachers(locale: string): Promise<PublicTeacher[]> {
+  const staticSlugs = teachers.map((t) => t.slug);
+  const dbSlugs = await getApprovedTeacherSlugs();
+  const slugs = [...staticSlugs, ...dbSlugs.filter((s) => !staticSlugs.includes(s))];
+  const resolved = await Promise.all(slugs.map((slug) => getPublicTeacher(slug, locale)));
+  return resolved.filter((t): t is PublicTeacher => Boolean(t));
+}
+
+/**
  * Every slug from an APPROVED `teacher_profiles` row (Task: DB-backed
  * teacher slugs) — used by `/prof/[slug]`'s `generateStaticParams` to
  * pre-render real teachers' pages alongside the static `data/teachers.ts`

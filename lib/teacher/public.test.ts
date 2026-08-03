@@ -18,6 +18,8 @@ import {
   getApprovedTeacherSlugs,
   getPublicTeacher,
   resolveTeacherOwnerUserIdBySlug,
+  getCourseTeacherSlug,
+  getAllPublicTeachers,
 } from './public';
 import { teachers } from '@/data/teachers';
 import type { TeacherProfile } from './profile';
@@ -192,5 +194,26 @@ describe('resolveTeacherOwnerUserIdBySlug — shared slug -> owner resolution, n
 
   it('an unknown slug (no static entry, no DB) resolves to null, never throws', async () => {
     await expect(resolveTeacherOwnerUserIdBySlug('no-such-teacher')).resolves.toBeNull();
+  });
+});
+
+// Stage 4 — real attribution everywhere public: course slug -> owning
+// teacher's /prof slug, DB-first with the static registry as fallback.
+describe('getCourseTeacherSlug — gated fallback, no DATABASE_URL', () => {
+  it('resolves every static-registry course to teacher #1 via the fallback', async () => {
+    expect(await getCourseTeacherSlug(courses[0]!.slug)).toBe(teachers[0]!.slug);
+  });
+
+  it('an unknown course slug resolves to null, never throws', async () => {
+    expect(await getCourseTeacherSlug('pa-egziste')).toBeNull();
+  });
+});
+
+// Stage 4 — the /prof teacher directory read.
+describe('getAllPublicTeachers — gated fallback, no DATABASE_URL', () => {
+  it('with no DB the roster is exactly the static registry (teacher #1 still shows)', async () => {
+    const roster = await getAllPublicTeachers('ht');
+    expect(roster.map((t) => t.slug)).toEqual(teachers.map((t) => t.slug));
+    expect(roster[0]!.displayName).toBe('PNICE Academy');
   });
 });

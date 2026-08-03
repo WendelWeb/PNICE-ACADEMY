@@ -23,6 +23,7 @@
   "footer": {
     "tagline": "Des savoir-faire concrets qui rapportent",
     "madeFor": "Conçu pour Haïti et la diaspora",
+    "aboutLink": "Découvrir notre mission",
     "columns": {
       "learn": {
         "title": "Apprendre",
@@ -33,10 +34,13 @@
       "teach": {
         "title": "Enseigner",
         "become": "Devenir enseignant",
+        "directory": "Tous les enseignants",
         "example": "Voir un profil d'enseignant"
       },
       "help": {
         "title": "Aide",
+        "faq": "Questions fréquentes",
+        "contactPage": "Nous contacter",
         "account": "Mon compte",
         "verify": "Vérifier un certificat",
         "email": "Nous écrire par e-mail",
@@ -270,12 +274,16 @@
     },
     "buyCard": {
       "guarantee": "Paiement sécurisé · Accès activé dès la confirmation",
-      "subscribeCta": "Pass PNICE (toutes formations) — {price}/mois"
+      "subscribeCta": "Pass PNICE (toutes formations) — {price}/mois",
+      "teacherPassCta": "Pass {name} — {price}/mois",
+      "platformPassAlso": "Ou Pass PNICE (toute la plateforme) — {price}/mois"
     },
     "manifest": {
       "previewLabel": "Aperçu",
       "chaptersCount": "{count} parties",
-      "partLabel": "Partie {n} · {title}"
+      "partLabel": "Partie {n} · {title}",
+      "watchPreview": "Regarder l'aperçu gratuit",
+      "closePreview": "Fermer l'aperçu"
     },
     "teacher": {
       "eyebrow": "L'enseignant",
@@ -286,6 +294,13 @@
     }
   },
   "prof": {
+    "index": {
+      "metaTitle": "Les enseignants — PNICE Academy",
+      "metaDescription": "Découvre tous les enseignants approuvés sur PNICE Academy : leurs profils, leurs formations et les notes de leurs élèves.",
+      "eyebrow": "Les enseignants",
+      "title": "Celles et ceux qui enseignent sur la plateforme",
+      "subtitle": "{count, plural, one {1 enseignant approuvé — chaque cours est révisé avant publication, et des places sont ouvertes pour les prochains.} other {# enseignants approuvés — chaque cours est révisé avant publication, et des places sont ouvertes pour les prochains.}}"
+    },
     "docLabel": "Fiche enseignant",
     "docBrand": "PNICE Academy",
     "docNo": "Nº {docNo}",
@@ -3006,5 +3021,222 @@
     "thanksBody": "Ton témoignage a bien été reçu. Il sera vérifié avant publication.",
     "invalidTitle": "Lien invalide ou expiré",
     "invalidBody": "Ce lien de témoignage n'est plus valable. Demande-en un nouveau au support."
+  },
+  "pri": {
+    "metaTitle": "Tarifs — PNICE Academy",
+    "metaDescription": "Trois façons d'apprendre sur PNICE Academy : acheter une formation à l'unité, prendre le pass d'un enseignant, ou le Pass PNICE pour toute la plateforme — des prix réels, sans frais cachés.",
+    "intro": "Chaque enseignant fixe son propre prix — un seul prix pour tout le monde, Haïti comme diaspora. Voici les trois façons de payer, et ce que chacune débloque vraiment.",
+    "unit": {
+      "scope": "Cette formation uniquement — mais elle est à toi à vie, sans aucun abonnement."
+    },
+    "teacher": {
+      "genericName": "l'enseignant"
+    },
+    "examples": {
+      "title": "Des exemples réels, avec des chiffres réels",
+      "unitLine": "Une formation à l'unité — par exemple « {title} »",
+      "teacherLine": "Le pass de {name} — tout le catalogue de cet enseignant",
+      "platformLine": "Pass PNICE — toutes les formations de la plateforme",
+      "note": "Ces prix sont les prix réels d'aujourd'hui — fixés par les enseignants et par PNICE, ils peuvent évoluer. L'équivalent en gourdes est indicatif ; tu paies en dollars américains."
+    },
+    "faqEyebrow": "Questions sur les prix",
+    "faqTitle": "Les questions qu'on nous pose sur les prix",
+    "faq": [
+      {
+        "q": "Quelle différence entre le pass d'un enseignant et le Pass PNICE ?",
+        "a": "Le pass d'un enseignant débloque toutes les formations d'UN seul enseignant, au prix que cet enseignant a fixé. Le Pass PNICE débloque TOUTES les formations de toute la plateforme — chaque enseignant. Les deux se renouvellent chaque mois."
+      },
+      {
+        "q": "Le prix est-il le même pour Haïti et la diaspora ?",
+        "a": "Oui, un seul prix pour tout le monde. Les prix sont en dollars américains, avec l'équivalent en gourdes à titre indicatif."
+      },
+      {
+        "q": "Si j'arrête un abonnement, est-ce que je perds les formations achetées à l'unité ?",
+        "a": "Non. Une formation achetée à l'unité est à toi à vie, même si tu ne prends jamais d'abonnement ou que tu l'arrêtes. Seul l'accès du pass se ferme à la fin de l'abonnement."
+      },
+      {
+        "q": "Comment arrêter un abonnement ?",
+        "a": "Écris-nous à tout moment — depuis ta page Compte, la page Contact, ou par e-mail — et nous arrêtons le renouvellement. Tu gardes l'accès jusqu'à la fin de la période déjà payée."
+      },
+      {
+        "q": "Et si je ne suis pas satisfait — puis-je être remboursé ?",
+        "a": "Nous avons une politique de remboursement claire, avec ses conditions et ses délais. Lis-la avant de faire ta demande — le lien est juste en dessous."
+      }
+    ],
+    "refundLink": "Lire la politique de remboursement",
+    "cta": {
+      "title": "Choisis ta façon d'apprendre",
+      "body": "Commence avec une seule formation, ou débloque toute la plateforme avec le Pass PNICE — tu peux changer d'avis à tout moment.",
+      "browse": "Voir les formations"
+    }
+  },
+  "kontak": {
+    "metaTitle": "Contact — PNICE Academy",
+    "metaDescription": "Écris à l'équipe PNICE Academy : par e-mail, sur WhatsApp, ou avec le formulaire de contact — nous répondons par e-mail.",
+    "eyebrow": "Contact",
+    "title": "Écris-nous — on te répond",
+    "subtitle": "Une question sur une formation, un paiement, ou l'envie d'enseigner ? Choisis le canal le plus simple pour toi.",
+    "emailTitle": "Par e-mail",
+    "whatsappTitle": "Sur WhatsApp",
+    "whatsappNote": "Ouvre une conversation directe avec nous",
+    "formTitle": "Envoyer un message",
+    "faqPrompt": "Beaucoup de réponses sont déjà sur la page d'aide :",
+    "faqLink": "questions fréquentes",
+    "accountLink": "J'ai un compte — aller au support de mon compte",
+    "form": {
+      "nameLabel": "Ton nom",
+      "emailLabel": "Ton e-mail",
+      "messageLabel": "Ton message",
+      "messageHint": "Donne-nous les détails : quelle formation, quel problème, ce dont tu as besoin.",
+      "submit": "Envoyer le message",
+      "sending": "Envoi en cours…",
+      "successTitle": "Message bien reçu",
+      "successBody": "Nous avons bien reçu ton message — nous te répondrons par e-mail.",
+      "errRateLimited": "Tu as déjà envoyé plusieurs messages — attends un petit moment avant de réessayer.",
+      "errGeneric": "Une erreur est survenue — vérifie le nom, l'e-mail et le message puis réessaie."
+    }
+  },
+  "apropos": {
+    "metaTitle": "À propos — PNICE Academy",
+    "metaDescription": "L'histoire de PNICE Academy : une marketplace de formations par des Haïtiens, pour les Haïtiens — en créole, avec une modération sérieuse et un partage 70/30 transparent.",
+    "eyebrow": "Document de mission",
+    "title": "À propos de PNICE Academy",
+    "intro": "Qui nous sommes, d'où nous venons, et comment l'argent circule — dit clairement, sans jargon.",
+    "sections": {
+      "story": {
+        "title": "D'où nous venons",
+        "p": [
+          "PNICE a commencé comme un business simple : transporter des colis entre Miami et Haïti. Chaque jour sur la route, la même barrière se répétait — des gens réellement talentueux, mais sans carte pour payer en ligne, sans outils pour vendre, sans confiance dans le numérique.",
+          "L'Academy est notre réponse à ce problème. Le fondateur a construit la plateforme — et il y enseigne aussi, comme enseignant #1, avec les mêmes règles que tous les autres : même révision, même partage 70/30, même page publique."
+        ]
+      },
+      "marketplace": {
+        "title": "Ce qu'est PNICE Academy",
+        "p": [
+          "Une marketplace de formations par des Haïtiens, pour les Haïtiens : chaque enseignant apporte son propre savoir-faire, fixe son propre prix, et vend sur la même plateforme. Toute la plateforme est disponible en créole et en français — parce qu'un savoir-faire concret doit parler ta langue.",
+          "Tu peux acheter une formation à l'unité (elle est à toi à vie), prendre le pass d'un enseignant, ou le Pass PNICE qui débloque toute la plateforme."
+        ]
+      },
+      "moderation": {
+        "title": "Comment nous tenons la qualité",
+        "p": [
+          "Aucun cours n'apparaît en public tout seul : chaque enseignant est approuvé avant de pouvoir vendre, et chaque formation est révisée avant publication. Les notes et avis viennent uniquement d'élèves réels — nous ne publions jamais de faux témoignages."
+        ]
+      },
+      "money": {
+        "title": "Comment l'argent circule",
+        "p": [
+          "Simple et public : sur chaque vente, 70 % vont à l'enseignant, 30 % restent à la plateforme — paiements, vidéo, certificats, support. Les paiements se font par carte (Visa/Mastercard) sur une connexion sécurisée ; nous ne stockons jamais ton numéro de carte."
+        ],
+        "facts": ["70 % pour l'enseignant", "30 % pour la plateforme", "Paiement sécurisé par carte"]
+      }
+    },
+    "links": {
+      "catalog": "Voir le catalogue",
+      "teacherOne": "Voir le profil de l'enseignant #1",
+      "teach": "Devenir enseignant",
+      "pricing": "Voir les tarifs"
+    }
+  },
+  "fak": {
+    "metaTitle": "Aide et questions — PNICE Academy",
+    "metaDescription": "Toutes les réponses au même endroit : comment apprendre, payer, enseigner, retirer ton argent et obtenir ton certificat sur PNICE Academy.",
+    "eyebrow": "Aide",
+    "title": "Questions fréquentes",
+    "intro": "Toutes les réponses, classées par thème. Chaque question a son propre lien — facile à partager.",
+    "tocLabel": "Les sections",
+    "sections": {
+      "aprann": { "title": "Apprendre" },
+      "peye": { "title": "Payer" },
+      "anseye": { "title": "Enseigner" },
+      "retre": { "title": "Retraits" },
+      "setifika": { "title": "Certificats" }
+    },
+    "items": {
+      "kijan-li-mache": {
+        "q": "Comment ça marche quand j'achète une formation ?",
+        "a": "Tu paies une seule fois, et la formation apparaît immédiatement dans ton tableau de bord. Tu suis les leçons à ton rythme, où tu veux, et tu obtiens un certificat à la fin. Une formation à l'unité est à toi à vie."
+      },
+      "lang": {
+        "q": "Le contenu est-il en créole ?",
+        "a": "Oui. La plateforme est pensée créole d'abord — toutes les pages existent en créole et en français, et tu changes de langue quand tu veux. Certaines formations sont dans une seule langue ; c'est indiqué clairement sur leur page avant l'achat."
+      },
+      "telefon": {
+        "q": "Puis-je apprendre sur mon téléphone ?",
+        "a": "Oui — la plateforme est conçue pour le téléphone d'abord. Un téléphone et une connexion internet suffisent pour suivre les leçons."
+      },
+      "pwograme": {
+        "q": "Dois-je savoir programmer ?",
+        "a": "Non. Les formations te montrent comment utiliser des outils qui existent déjà, étape par étape, sans écrire de code."
+      },
+      "kat": {
+        "q": "Comment est-ce que je paie aujourd'hui ?",
+        "a": "Aujourd'hui tu paies par carte Visa ou Mastercard, en toute sécurité. Chaque prix s'affiche en dollars avec son équivalent en gourdes."
+      },
+      "moncash": {
+        "q": "Puis-je payer avec MonCash ou NatCash ?",
+        "a": "Pas encore — mais ça arrive. Dès que MonCash et NatCash seront prêts, tu les verras apparaître automatiquement sur la page de paiement."
+      },
+      "sel-pri": {
+        "q": "Le prix est-il le même pour Haïti et la diaspora ?",
+        "a": "Oui, un seul prix pour tout le monde. Aucune différence entre Haïti et la diaspora."
+      },
+      "pass-diferans": {
+        "q": "Quelle différence entre le pass d'un enseignant et le Pass PNICE ?",
+        "a": "Le pass d'un enseignant débloque toutes les formations d'UN seul enseignant, au prix que cet enseignant a fixé. Le Pass PNICE débloque TOUTES les formations de toute la plateforme — chaque enseignant. Les deux se renouvellent chaque mois.",
+        "linkLabel": "Voir tous les tarifs"
+      },
+      "kanpe-abonman": {
+        "q": "Comment arrêter un abonnement ?",
+        "a": "Écris-nous à tout moment — depuis ta page Compte, la page Contact, ou par e-mail — et nous arrêtons le renouvellement. Tu gardes l'accès jusqu'à la fin de la période déjà payée, et les formations achetées à l'unité restent à toi à vie."
+      },
+      "ranbousman": {
+        "q": "Et si je ne suis pas satisfait — puis-je être remboursé ?",
+        "a": "Nous avons une politique de remboursement claire, avec ses conditions et ses délais. Lis-la avant de faire ta demande.",
+        "linkLabel": "Lire la politique de remboursement"
+      },
+      "vin-anseyan": {
+        "q": "Comment devenir enseignant sur PNICE Academy ?",
+        "a": "Les candidatures sont ouvertes. Va sur la page Enseigner, remplis ta candidature (environ 5 minutes), et un admin la révisera avant que tu puisses publier.",
+        "linkLabel": "Commencer sur la page Enseigner"
+      },
+      "kont-anseyan": {
+        "q": "Ai-je besoin d'un autre compte pour enseigner ?",
+        "a": "Non — le même compte. Quand nous t'approuvons, ton compte gagne un espace enseignant (le studio), en plus de l'espace élève."
+      },
+      "pri-ou": {
+        "q": "Qui fixe le prix de mes formations ?",
+        "a": "Toi. Tu fixes le prix de chacune de tes formations, ainsi que le prix de ton propre pass si tu veux en vendre un — et tu touches 70 % de chaque vente."
+      },
+      "kalite": {
+        "q": "N'importe qui peut-il publier n'importe quoi ?",
+        "a": "Non. Chaque enseignant est approuvé avant de pouvoir vendre, et chaque formation est révisée avant d'apparaître en public. C'est ainsi que nous protégeons les élèves comme les enseignants sérieux."
+      },
+      "kijan-touche": {
+        "q": "Combien touche un enseignant ?",
+        "a": "70 % de chaque vente — qu'il s'agisse d'une vente à l'unité ou de ta part d'un pass. Les 30 % restants couvrent la plateforme : paiements, vidéo, certificats, support."
+      },
+      "metod-retre": {
+        "q": "Comment vais-je recevoir mon argent ?",
+        "a": "Retraits en MonCash pour commencer. Les autres méthodes (NatCash, PayPal, virement) arriveront ensuite."
+      },
+      "minimum": {
+        "q": "Quand puis-je faire un retrait ?",
+        "a": "Dès que ton solde atteint 25 $ ou plus, tu peux demander un retrait depuis ton studio. Chaque demande est traitée par une personne de l'équipe — cela peut prendre un peu de temps, mais ça arrive."
+      },
+      "jwenn-setifika": {
+        "q": "Comment obtenir mon certificat ?",
+        "a": "Termine toutes les leçons d'une formation, et ton certificat est disponible automatiquement dans ton tableau de bord — avec son code de vérification unique."
+      },
+      "verifye-setifika": {
+        "q": "Comment quelqu'un peut-il vérifier un certificat ?",
+        "a": "Chaque certificat porte un code unique. N'importe qui — un employeur, un client — peut saisir ce code sur la page de vérification pour confirmer qu'il est authentique.",
+        "linkLabel": "Vérifier un certificat"
+      }
+    },
+    "contactTitle": "Tu ne trouves pas ta réponse ?",
+    "contactBody": "Écris-nous directement — nous répondons par e-mail.",
+    "contactCta": "Aller à la page contact",
+    "browseLink": "voir les formations"
   }
 }

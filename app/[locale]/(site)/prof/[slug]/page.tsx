@@ -13,11 +13,7 @@ import { Price, PriceSecondary } from '@/components/ui/Price';
 import { AuthCta } from '@/components/auth/AuthCta';
 import { CourseCatalogCard } from '@/components/courses/CourseCatalogCard';
 import { teachers } from '@/data/teachers';
-import {
-  SUBSCRIPTION_USD,
-  subscriptionPerks_ht,
-  subscriptionPerks_fr,
-} from '@/data/pricing';
+import { SUBSCRIPTION_USD, teacherPassPerks } from '@/data/pricing';
 import { siteImageSrc } from '@/lib/courseImage';
 import { getPublicTeacher, getApprovedTeacherSlugs } from '@/lib/teacher/public';
 
@@ -77,7 +73,10 @@ export default async function ProfPage({
   const courses = teacher.courses;
   const lessonCount = courses.reduce((sum, c) => sum + c.lessons.length, 0);
   const bio = teacher.bio;
-  const perks = locale === 'ht' ? subscriptionPerks_ht : subscriptionPerks_fr;
+  // Stage 4 — honest scope: this block sells THIS teacher's pass, so the
+  // perk list must promise only their own catalogue (data/pricing.ts's
+  // `teacherPassPerks`), never « tout fòmasyon PNICE Academy yo ».
+  const perks = teacherPassPerks(teacher.displayName, locale);
   // BUG FIX (real per-teacher plan price): THIS teacher's own active
   // `teacher_plans` price (lib/teacher/public.ts's `getActiveTeacherPlan`),
   // never the old hardcoded $79. `teacher.plan` is `null` only in the

@@ -67,6 +67,14 @@ export async function Footer() {
               {t('tagline')}
             </p>
             <p className="mt-3 text-sm text-paper-light/60">{t('madeFor')}</p>
+            <p className="mt-2">
+              <Link
+                href="/apropos"
+                className="text-sm text-paper-light/60 underline decoration-paper-light/25 underline-offset-2 transition-colors hover:text-ochre"
+              >
+                {t('aboutLink')}
+              </Link>
+            </p>
             {socials.length > 0 && (
               <ul className="mt-5 flex items-center gap-3">
                 {socials.map(({ key, href, Icon }) => (
@@ -122,6 +130,11 @@ export async function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/prof" className={linkCls}>
+                  {t('columns.teach.directory')}
+                </Link>
+              </li>
+              <li>
                 <Link href={`/prof/${teachers[0].slug}`} className={linkCls}>
                   {t('columns.teach.example')}
                 </Link>
@@ -135,6 +148,16 @@ export async function Footer() {
               {t('columns.help.title')}
             </h3>
             <ul className="mt-4 space-y-2.5 text-sm">
+              <li>
+                <Link href="/fak" className={linkCls}>
+                  {t('columns.help.faq')}
+                </Link>
+              </li>
+              <li>
+                <Link href="/kontak" className={linkCls}>
+                  {t('columns.help.contactPage')}
+                </Link>
+              </li>
               <li>
                 <Link href="/kont" className={linkCls}>
                   {t('columns.help.account')}

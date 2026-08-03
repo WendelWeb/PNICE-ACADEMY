@@ -5,11 +5,13 @@
  * lib/admin/support-actions.ts because these are learner-facing, unauthenticated-
  * safe entry points — not admin mutations.
  */
+import { headers } from 'next/headers';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { db, schema } from '@/db';
 import { clerkEnabled } from '@/lib/clerk';
 import { createTicket, getTickets } from '@/lib/admin/data';
 import { resolveUserId } from '@/lib/learner/access';
+import { allowContactSubmission } from '@/lib/site/contact-rate-limit';
 
 export type SiteActionResult = { ok: boolean; message?: string; id?: string };
 
@@ -71,6 +73,68 @@ export async function registerTeachInterestAction(): Promise<SiteActionResult> {
       type: 'other',
       subject: 'Enterese anseye',
       message: `${name} klike sou « Mwen enterese » nan seksyon Anseye a sou paj akèy la — li vle vin anseyan sou PNICE Academy.`,
+    });
+    return { ok: true, id: r.id };
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : 'error' };
+  }
+}
+
+export type ContactMessageInput = {
+  name: string;
+  email: string;
+  message: string;
+};
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * The public /kontak form (Stage 4) — files the visitor's message as a
+ * support ticket through the EXISTING data-layer contract (`createTicket`,
+ * type 'other'), exactly like the other public entry points here. Works for
+ * ANONYMOUS visitors: a signed-in user's ticket resolves via their Clerk id
+ * as usual; a signed-out visitor's uses their supplied email as the external
+ * id — `resolveOrCreateUserId` (lib/admin/data/real/support.ts, note 1)
+ * self-heals a `users` row from the supplied name/email, the same upsert
+ * shape the Clerk webhook performs, so the ticket satisfies the uuid FK and
+ * repeat messages from the same address land on the same row.
+ *
+ * RATE-LIMITED per IP (x-forwarded-for's first hop) via
+ * lib/site/contact-rate-limit.ts — in-memory and PER-INSTANCE by design; see
+ * that module's honest-limitation header. Refused calls return
+ * `message: 'rate_limited'` for the form's friendly copy.
+ *
+ * Never throws; input is trimmed, validated, and length-capped so a
+ * malformed or mischievous submission degrades to `{ ok: false }`.
+ */
+export async function submitContactMessageAction(
+  input: ContactMessageInput,
+): Promise<SiteActionResult> {
+  try {
+    const name = (input.name ?? '').trim().slice(0, 120);
+    const email = (input.email ?? '').trim().slice(0, 200);
+    const message = (input.message ?? '').trim().slice(0, 4000);
+    if (!name || !EMAIL_RE.test(email) || message.length < 5) {
+      return { ok: false, message: 'invalid' };
+    }
+
+    const ip =
+      headers().get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    if (!allowContactSubmission(ip)) {
+      return { ok: false, message: 'rate_limited' };
+    }
+
+    // Signed-in visitors keep their real identity resolution; anonymous ones
+    // are keyed by the email they supplied (see the doc comment above).
+    const { userId: clerkId } = clerkEnabled ? await auth() : { userId: null };
+
+    const r = await createTicket({
+      userId: clerkId ?? email,
+      userName: name,
+      userEmail: email,
+      type: 'other',
+      subject: `Mesaj kontak — ${name}`,
+      message,
     });
     return { ok: true, id: r.id };
   } catch (e) {

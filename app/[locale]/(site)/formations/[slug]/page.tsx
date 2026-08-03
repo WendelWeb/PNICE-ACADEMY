@@ -29,8 +29,11 @@ import {
   getPublishedCourseBySlug,
   getCourseDetail,
 } from '@/lib/courses/source';
-import { getCourseRating, getTeacherOwnerUserId, getTeacherRating } from '@/lib/reviews/reviews';
-import { getCourseTeacher, teacherShortBio } from '@/data/teachers';
+import { getCourseRating } from '@/lib/reviews/reviews';
+import { getTeacher, teacherShortBio } from '@/data/teachers';
+import { getCourseTeacherSlug, getPublicTeacher } from '@/lib/teacher/public';
+import { bunnyEmbedUrl } from '@/lib/bunny/embed';
+import { SUBSCRIPTION_USD } from '@/data/pricing';
 import { getCourseTestimonial } from '@/lib/admin/site/ops';
 import { absoluteImageUrl, courseImageList, courseMainImage, siteImageSrc } from '@/lib/courseImage';
 import { SITE_URL } from '@/lib/email/layout';
@@ -94,6 +97,10 @@ export default async function CourseDetail({
   const tc = await getTranslations('common');
   const tCatalog = await getTranslations('catalog');
   const tReviews = await getTranslations('reviews');
+  // Stage 4 — the subscription upsell's scope wording is CHECKOUT's own
+  // (`subTeacherOnlyNote`/`subAllCoursesNote`), so the promise made here can
+  // never drift from what the pay page says — same reuse as PricingTriptych.
+  const tCheckout = await getTranslations('checkout');
   // Task: two subscription products — the "Pass PNICE" ghost CTA below
   // shows the LIVE owner-set price (lib/platformPrice.ts), never the static
   // data/pricing.ts constant it used to read (that constant is now only the
@@ -150,20 +157,42 @@ export default async function CourseDetail({
     duration: `${l.minutes} ${t('minShort')}`,
     preview: l.isPreview,
     number: l.index,
+    // Stage 4 — watchable previews: a flagged lesson with a video gets its
+    // real Bunny embed URL so the row can offer « Gade apèsi gratis ».
+    // bunnyEmbedUrl is env-gated (null without BUNNY_STREAM_LIBRARY_ID or a
+    // video id) — the affordance simply hides then. ONLY `is_preview`
+    // lessons ever get an embed URL here; every other lesson stays gated
+    // behind the auth-only lesson routes.
+    previewEmbedUrl: l.isPreview ? bunnyEmbedUrl(l.bunnyVideoId) : null,
   });
   const courseResources = detail.resources ?? [];
 
-  const teacher = getCourseTeacher(course.slug);
-  // Optional teacher-rating line in the teacher block below (Task C3-T7) —
-  // same resolution /prof/[slug] uses (owner_user_id via any of the
-  // teacher's known course slugs, then the weighted rating across their
-  // published courses' reviews). No DB / no owner / no reviews yet ⇒ the
-  // block simply omits the rating line (RatingSummary isn't rendered at all
-  // — no confusing "—" cluttering a compact card-foot block).
-  const teacherOwnerUserId = teacher ? await getTeacherOwnerUserId(teacher.courseSlugs) : null;
-  const teacherRating = teacherOwnerUserId
-    ? await getTeacherRating(teacherOwnerUserId)
-    : { avg: null, count: 0 };
+  // Stage 4 — REAL attribution: the owning teacher resolved DB-first
+  // (courses.owner_user_id → approved teacher_profiles) with the static
+  // registry as fallback, then hydrated through the exact same
+  // `getPublicTeacher` read /prof/[slug] renders from — so a DB-authored
+  // course finally credits its actual author (photo, rating, live name),
+  // not just the static teacher #1. Unattributable ⇒ no teacher block,
+  // exactly as before. Everything gated + never-throws.
+  const teacherSlug = await getCourseTeacherSlug(course.slug);
+  const teacher = teacherSlug ? await getPublicTeacher(teacherSlug, locale) : null;
+  // Compact bio for the card-foot block: the static registry's hand-written
+  // short bio when this teacher has one; a DB-only teacher's live bio
+  // (clamped in the markup) otherwise.
+  const staticTeacher = teacher ? getTeacher(teacher.slug) : undefined;
+  const teacherBioText = staticTeacher
+    ? teacherShortBio(staticTeacher, locale)
+    : teacher?.bio ?? '';
+  // Stage 4 — honest upsell: when THIS course's teacher sells their own
+  // pass, that pass (at its REAL price — lib/teacher/public.ts's
+  // getActiveTeacherPlan resolution, surfaced as `teacher.plan`) is the
+  // primary subscription offer; the platform-wide Pass PNICE becomes a
+  // secondary mention. `plan` is null only in the teacher-#1 no-DB fallback,
+  // where the platform constant IS what checkout would charge (same
+  // reasoning as /prof/[slug]).
+  const teacherPassUsd = teacher?.hasPlan
+    ? (teacher.plan?.priceCentsMonthly ?? SUBSCRIPTION_USD * 100) / 100
+    : null;
   const testimonial = await getCourseTestimonial(course.slug);
   const testimonialQuote = testimonial
     ? locale === 'ht'
@@ -388,6 +417,8 @@ export default async function CourseDetail({
                             <ManifestList
                               rows={c.lessons.map(curriculumRow)}
                               previewLabel={t('manifest.previewLabel')}
+                              watchLabel={t('manifest.watchPreview')}
+                              closeLabel={t('manifest.closePreview')}
                             />
                           </div>
                         </div>
@@ -397,6 +428,8 @@ export default async function CourseDetail({
                       <ManifestList
                         rows={ungroupedLessons.map(curriculumRow)}
                         previewLabel={t('manifest.previewLabel')}
+                        watchLabel={t('manifest.watchPreview')}
+                        closeLabel={t('manifest.closePreview')}
                       />
                     )}
                   </div>
@@ -417,35 +450,46 @@ export default async function CourseDetail({
                 </div>
               </Reveal>
 
-              {/* teacher block */}
+              {/* teacher block — the REAL owner (Stage 4 attribution) */}
               {teacher && (
                 <Reveal className="mt-12">
                   <Eyebrow>{t('teacher.eyebrow')}</Eyebrow>
                   <div className="mt-4 flex flex-col gap-5 rounded-2xl border border-ink/12 bg-paper-light p-6 sm:flex-row sm:items-center">
                     <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border border-ink/15 bg-ink sm:h-24 sm:w-24">
-                      <SmartImage
-                        src={siteImageSrc(teacher.imageName)}
-                        alt={teacher.displayName}
-                        fill
-                        sizes="96px"
-                        className="object-cover"
-                      />
+                      {teacher.photoUrl ? (
+                        // A validated external photo_url (same reasoning as
+                        // /prof/[slug]): plain <img>, no remote-host config.
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={teacher.photoUrl}
+                          alt={teacher.displayName}
+                          className="absolute inset-0 h-full w-full object-cover"
+                        />
+                      ) : (
+                        <SmartImage
+                          src={siteImageSrc(teacher.imageName)}
+                          alt={teacher.displayName}
+                          fill
+                          sizes="96px"
+                          className="object-cover"
+                        />
+                      )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <h3 className="font-display text-xl font-bold text-ink">
                         {teacher.displayName}
                       </h3>
-                      {teacherRating.avg !== null && (
+                      {teacher.rating.avg !== null && (
                         <RatingSummary
-                          avg={teacherRating.avg}
-                          countLabel={tReviews('countLabel', { count: teacherRating.count })}
+                          avg={teacher.rating.avg}
+                          countLabel={tReviews('countLabel', { count: teacher.rating.count })}
                           emptyLabel=""
                           size={13}
                           className="mt-1"
                         />
                       )}
-                      <p className="mt-1.5 text-sm leading-relaxed text-graphite/85">
-                        {teacherShortBio(teacher, locale)}
+                      <p className="mt-1.5 line-clamp-3 text-sm leading-relaxed text-graphite/85">
+                        {teacherBioText}
                       </p>
                       <Link
                         href={`/prof/${teacher.slug}`}
@@ -521,12 +565,45 @@ export default async function CourseDetail({
                   <span className="h-px flex-1 bg-ink/10" />
                 </div>
 
-                <AuthCta
-                  href="/checkout?plan=sub"
-                  className={buttonClasses('ghost', 'lg', 'w-full')}
-                >
-                  {t('buyCard.subscribeCta', { price: formatUsd(platformPassUsd) })}
-                </AuthCta>
+                {teacher && teacherPassUsd !== null ? (
+                  <>
+                    {/* THIS teacher's own pass first (real plan price), the
+                        platform pass as a secondary mention — scope wording
+                        is checkout's own, so it can't drift. */}
+                    <AuthCta
+                      href={`/checkout?teacher=${encodeURIComponent(teacher.slug)}`}
+                      className={buttonClasses('ghost', 'lg', 'w-full')}
+                    >
+                      {t('buyCard.teacherPassCta', {
+                        name: teacher.displayName,
+                        price: formatUsd(teacherPassUsd),
+                      })}
+                    </AuthCta>
+                    <p className="mt-2 text-xs leading-snug text-teal">
+                      {tCheckout('subTeacherOnlyNote', { name: teacher.displayName })}
+                    </p>
+                    <p className="mt-3 text-center">
+                      <AuthCta
+                        href="/checkout?plan=sub"
+                        className="font-mono text-[11px] text-ink/55 underline decoration-ink/25 underline-offset-2 transition-colors hover:text-ochre"
+                      >
+                        {t('buyCard.platformPassAlso', { price: formatUsd(platformPassUsd) })}
+                      </AuthCta>
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <AuthCta
+                      href="/checkout?plan=sub"
+                      className={buttonClasses('ghost', 'lg', 'w-full')}
+                    >
+                      {t('buyCard.subscribeCta', { price: formatUsd(platformPassUsd) })}
+                    </AuthCta>
+                    <p className="mt-2 text-xs leading-snug text-teal">
+                      {tCheckout('subAllCoursesNote')}
+                    </p>
+                  </>
+                )}
               </div>
             </aside>
           </div>
@@ -549,11 +626,23 @@ export default async function CourseDetail({
             >
               {tc('buy')} · <Price usd={course.priceUsd} />
             </AuthCta>
+            {/* Stage 4 — the subscription CTA mirrors the purchase card:
+                this teacher's own pass when they sell one, the platform
+                pass otherwise. */}
             <AuthCta
-              href="/checkout?plan=sub"
+              href={
+                teacher && teacherPassUsd !== null
+                  ? `/checkout?teacher=${encodeURIComponent(teacher.slug)}`
+                  : '/checkout?plan=sub'
+              }
               className={buttonClasses('ghost', 'lg', '!border-paper-light/30 !text-paper-light hover:!border-paper-light/60')}
             >
-              {tc('subscribe')}
+              {teacher && teacherPassUsd !== null
+                ? t('buyCard.teacherPassCta', {
+                    name: teacher.displayName,
+                    price: formatUsd(teacherPassUsd),
+                  })
+                : tc('subscribe')}
             </AuthCta>
           </div>
         </Container>

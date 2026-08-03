@@ -1,5 +1,6 @@
 import { IconClock } from '@tabler/icons-react';
 import { Reveal } from '@/components/ui/Reveal';
+import { LessonPreviewButton } from '@/components/courses/LessonPreview';
 
 export type ManifestRow = {
   title: string;
@@ -14,6 +15,15 @@ export type ManifestRow = {
    * course's full curriculum when `rows` is only one chapter's slice of it.
    */
   number?: number;
+  /**
+   * Stage 4 — watchable previews: a ready Bunny embed URL for a `preview`
+   * row. When present (the server only supplies it for `is_preview` lessons
+   * with a video, and only when Bunny is configured — lib/bunny/embed.ts
+   * returns `null` otherwise) AND `watchLabel`/`closeLabel` are given, the
+   * row grows a « Gade apèsi gratis » button opening the preview modal.
+   * Absent ⇒ the row renders exactly as before.
+   */
+  previewEmbedUrl?: string | null;
 };
 
 /**
@@ -26,9 +36,15 @@ export type ManifestRow = {
 export function ManifestList({
   rows,
   previewLabel,
+  watchLabel,
+  closeLabel,
 }: {
   rows: ManifestRow[];
   previewLabel?: string;
+  /** Localized « Gade apèsi gratis » — required for the preview button to render. */
+  watchLabel?: string;
+  /** Localized close label for the preview modal — required alongside `watchLabel`. */
+  closeLabel?: string;
 }) {
   return (
     <ol className="border-y border-ink/10">
@@ -60,6 +76,14 @@ export function ManifestList({
                   <p className="mt-1 text-sm leading-relaxed text-graphite/80">
                     {row.desc}
                   </p>
+                )}
+                {row.preview && row.previewEmbedUrl && watchLabel && closeLabel && (
+                  <LessonPreviewButton
+                    title={row.title}
+                    embedUrl={row.previewEmbedUrl}
+                    openLabel={watchLabel}
+                    closeLabel={closeLabel}
+                  />
                 )}
               </div>
             </div>

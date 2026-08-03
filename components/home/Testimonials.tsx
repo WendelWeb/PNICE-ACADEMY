@@ -20,7 +20,9 @@ export async function Testimonials() {
   if (testimonials.length === 0) return null;
 
   return (
-    <Section className="bg-paper">
+    // `id="temwayaj"` — the landing anchor for the bare /temoignage
+    // redirect (Stage 4); see app/[locale]/(site)/temoignage/page.tsx.
+    <Section id="temwayaj" className="bg-paper">
       <Container>
         <Eyebrow>{t('eyebrow')}</Eyebrow>
         <h2 className="mt-3 font-display text-3xl font-extrabold text-ink md:text-4xl">
