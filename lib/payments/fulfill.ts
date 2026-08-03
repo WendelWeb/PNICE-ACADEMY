@@ -14,8 +14,13 @@ import {
 } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { getStripeSubscription } from './stripe';
+import { resolveSubscriptionNaming } from './products';
 import { sendEmail, emailConfigured } from '@/lib/email/resend';
-import { buildReceiptHtml } from '@/lib/email/templates';
+import {
+  buildReceiptHtml,
+  buildPaymentFailedHtml,
+  buildRefundConfirmationHtml,
+} from '@/lib/email/templates';
 import { buildReceiptPdf } from '@/lib/pdf/receipt';
 import { htgLabelAt } from '@/lib/money';
 import { getFxRate } from '@/lib/fx';
@@ -514,6 +519,37 @@ async function fulfillInvoicePaid(a: InvoicePaid): Promise<'processed' | 'ignore
     .update(subscriptions)
     .set({ status: 'active', currentPeriodEnd: periodEnd, updatedAt: new Date() })
     .where(eq(subscriptions.id, sub.id));
+
+  // Renewal receipt (Stage 6): the renewal branch used to record the payment
+  // and send NOTHING. Reuses the first-purchase receipt builder with the
+  // subscription's own naming (resolveSubscriptionNaming — same names
+  // resolveProduct produced at purchase time). Only reached on the FIRST
+  // recording of this charge (`insertedRenewals` non-empty above), so a
+  // redelivered event never re-sends. NEVER THROWS: a receipt failure must
+  // never fail the webhook — the payment is already durably recorded.
+  try {
+    const user = (
+      await db.select().from(users).where(eq(users.id, sub.userId)).limit(1)
+    )[0];
+    if (user?.email) {
+      const locale = user.localePref === 'fr' ? 'fr' : 'ht';
+      const naming = await resolveSubscriptionNaming({ kind: sub.kind, teacherPlanId: sub.teacherPlanId });
+      const rateHtg = await getFxRate();
+      const receipt = buildReceiptHtml({
+        locale,
+        name: user.name,
+        itemName: locale === 'fr' ? naming.nameFr : naming.nameHt,
+        amountCents: a.amountCents,
+        dateIso: new Date().toISOString(),
+        ref,
+        rateHtg,
+      });
+      await sendEmail({ to: user.email, subject: receipt.subject, html: receipt.html, text: receipt.text });
+    }
+  } catch (err) {
+    console.error('[fulfill] renewal receipt email failed (payment already recorded):', err);
+  }
+
   return 'processed';
 }
 
@@ -535,6 +571,24 @@ async function fulfillInvoiceFailed(a: InvoiceFailed): Promise<'processed' | 'ig
     amountCents: a.amountCents,
     detail: `Échec renouvellement (tentative ${a.attemptCount})`,
   });
+
+  // Stage 6: dunning email to the LEARNER — before this, a failed renewal
+  // only rang the admin bell and the learner was silently locked out at
+  // period end. Links the /kont subscription tab. NEVER THROWS: an email
+  // failure must never fail the webhook (a retry would re-insert the admin
+  // notification above).
+  try {
+    const user = (
+      await db.select().from(users).where(eq(users.id, sub.userId)).limit(1)
+    )[0];
+    if (user?.email) {
+      const locale = user.localePref === 'fr' ? 'fr' : 'ht';
+      const email = buildPaymentFailedHtml({ locale, name: user.name });
+      await sendEmail({ to: user.email, subject: email.subject, html: email.html, text: email.text });
+    }
+  } catch (err) {
+    console.error('[fulfill] payment-failed dunning email failed (status already recorded):', err);
+  }
   return 'processed';
 }
 
@@ -629,5 +683,52 @@ async function fulfillChargeRefunded(a: ChargeRefunded): Promise<'processed' | '
     amountCents: payment.amountCents,
     detail: 'Remboursement Stripe confirmé',
   });
+
+  // Stage 6: refund confirmation to the learner — before this, the refund
+  // flipped access with no word to the person refunded. Only reached on the
+  // FIRST processing (`payment.status === 'refunded'` short-circuits every
+  // redelivery above). NEVER THROWS — the refund is already durably recorded.
+  try {
+    const user = (
+      await db.select().from(users).where(eq(users.id, payment.userId)).limit(1)
+    )[0];
+    if (user?.email) {
+      const locale = user.localePref === 'fr' ? 'fr' : 'ht';
+      let itemName: string;
+      if (payment.productType === 'course' && payment.courseSlug) {
+        const course = await getCourseBySlug(payment.courseSlug);
+        itemName = course
+          ? locale === 'fr'
+            ? course.title_fr
+            : course.title_ht
+          : payment.courseSlug;
+      } else {
+        const relatedSub = payment.relatedSubscriptionId
+          ? (
+              await db
+                .select({ kind: subscriptions.kind, teacherPlanId: subscriptions.teacherPlanId })
+                .from(subscriptions)
+                .where(eq(subscriptions.id, payment.relatedSubscriptionId))
+                .limit(1)
+            )[0]
+          : undefined;
+        const naming = await resolveSubscriptionNaming({
+          // Unknown ⇒ the neutral "Abònman chak mwa" label, not "Pass PNICE".
+          kind: relatedSub?.kind ?? 'teacher',
+          teacherPlanId: relatedSub?.teacherPlanId ?? null,
+        });
+        itemName = locale === 'fr' ? naming.nameFr : naming.nameHt;
+      }
+      const email = buildRefundConfirmationHtml({
+        locale,
+        name: user.name,
+        itemName,
+        amountCents: payment.amountCents,
+      });
+      await sendEmail({ to: user.email, subject: email.subject, html: email.html, text: email.text });
+    }
+  } catch (err) {
+    console.error('[fulfill] refund confirmation email failed (refund already recorded):', err);
+  }
   return 'processed';
 }

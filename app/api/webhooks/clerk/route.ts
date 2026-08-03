@@ -14,6 +14,8 @@ import crypto from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { db, schema } from '@/db';
 import { mapClerkUserToDbUser, type ClerkWebhookUser } from '@/lib/clerkUserSync';
+import { sendEmail } from '@/lib/email/resend';
+import { buildWelcomeHtml } from '@/lib/email/templates';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -71,6 +73,20 @@ export async function POST(req: Request): Promise<Response> {
         .insert(schema.users)
         .values(values)
         .onConflictDoUpdate({ target: schema.users.clerkId, set });
+
+      // Stage 6: learner welcome — ONLY on user.created (an update must never
+      // re-welcome). A brand-new account has no locale preference yet, so
+      // the platform default (ht) applies. NEVER THROWS: sendEmail is
+      // env-gated + never-throws, and the whole step is wrapped so an email
+      // hiccup can't 500 the webhook (which would make Clerk redeliver).
+      if (evt.type === 'user.created' && values.email) {
+        try {
+          const welcome = buildWelcomeHtml({ locale: 'ht', name: values.name || null });
+          await sendEmail({ to: values.email, subject: welcome.subject, html: welcome.html, text: welcome.text });
+        } catch (err) {
+          console.error('[webhook:clerk] welcome email failed (user already synced):', err);
+        }
+      }
     } else if (evt.type === 'user.deleted') {
       if (data.id) await db.delete(schema.users).where(eq(schema.users.clerkId, data.id));
     }

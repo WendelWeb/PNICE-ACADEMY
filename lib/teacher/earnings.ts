@@ -75,6 +75,8 @@
  */
 import { eq, and, sql } from 'drizzle-orm';
 import { db, schema } from '@/db';
+import { sendEmail } from '@/lib/email/resend';
+import { buildTeacherSaleHtml } from '@/lib/email/templates';
 import { getCommissionPct } from './profile';
 
 const T = schema;
@@ -210,7 +212,7 @@ export async function recordSaleEarning(payment: FulfilledPayment): Promise<void
     }
     const commissionPct = await getCommissionPct();
     const { commissionCents, netCents } = splitEarnings(payment.amountCents, commissionPct);
-    await db
+    const insertedSale = await db
       .insert(T.earningsLedger)
       .values({
         teacherUserId,
@@ -225,10 +227,80 @@ export async function recordSaleEarning(payment: FulfilledPayment): Promise<void
       .onConflictDoNothing({
         target: T.earningsLedger.paymentId,
         where: sql`${T.earningsLedger.paymentId} IS NOT NULL AND ${T.earningsLedger.kind} = 'sale'`,
+      })
+      .returning({ id: T.earningsLedger.id });
+
+    // Stage 6, ADDITIVE — sale notification to the teacher, strictly AFTER
+    // the ledger write and ONLY when THIS call actually inserted the row
+    // (`returning` non-empty). A duplicate delivery, or a fulfill.ts
+    // retry-heal path that found the row already ledgered, conflicts into a
+    // no-op above and never re-notifies. Own try/catch: an email hiccup can
+    // never be mistaken for (or interfere with) a ledger failure.
+    if (insertedSale.length > 0) {
+      await sendTeacherSaleEmail({
+        teacherUserId,
+        productType: payment.productType,
+        courseSlug: payment.courseSlug,
+        netCents,
+        commissionPct,
       });
+    }
   } catch (err) {
     console.error(
       `[teacher/earnings] recordSaleEarning failed for payment ${payment.id} (payment already recorded, ledger row skipped):`,
+      err,
+    );
+  }
+}
+
+/**
+ * Stage 6 — 'Ou fè yon vant' email to the credited teacher, called ONLY when
+ * `recordSaleEarning` actually inserted a fresh 'sale' row (never on the
+ * idempotent-conflict/heal paths). The teacher's address comes from the
+ * `users` table (`teacherUserId` IS `users.id` — the same resolution
+ * lib/teacher/payouts.ts and platform-pass-payout.ts already use). NEVER
+ * THROWS — a lookup/build/send failure is logged and swallowed; the ledger
+ * row this notifies about is already durably written.
+ */
+async function sendTeacherSaleEmail(p: {
+  teacherUserId: string;
+  productType: 'course' | 'subscription';
+  courseSlug: string | null;
+  netCents: number;
+  commissionPct: number;
+}): Promise<void> {
+  try {
+    const [teacher] = await db
+      .select({ email: T.users.email, name: T.users.name, localePref: T.users.localePref })
+      .from(T.users)
+      .where(eq(T.users.id, p.teacherUserId))
+      .limit(1);
+    if (!teacher?.email) return;
+    const locale: 'fr' | 'ht' = teacher.localePref === 'fr' ? 'fr' : 'ht';
+
+    let itemName: string;
+    if (p.productType === 'course' && p.courseSlug) {
+      const [course] = await db
+        .select({ titleHt: T.courses.titleHt, titleFr: T.courses.titleFr })
+        .from(T.courses)
+        .where(eq(T.courses.slug, p.courseSlug))
+        .limit(1);
+      itemName = (locale === 'fr' ? course?.titleFr : course?.titleHt) || p.courseSlug;
+    } else {
+      itemName = locale === 'fr' ? 'Abonnement mensuel' : 'Abònman chak mwa';
+    }
+
+    const email = buildTeacherSaleHtml({
+      locale,
+      name: teacher.name,
+      itemName,
+      netCents: p.netCents,
+      netPct: 100 - p.commissionPct,
+    });
+    await sendEmail({ to: teacher.email, subject: email.subject, html: email.html, text: email.text });
+  } catch (err) {
+    console.error(
+      `[teacher/earnings] sale notification email failed for teacher ${p.teacherUserId} (ledger row already recorded):`,
       err,
     );
   }

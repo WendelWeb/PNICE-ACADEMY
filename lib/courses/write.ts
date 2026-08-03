@@ -44,6 +44,9 @@ import { db, schema } from '@/db';
 import { dbConfigured, selectCourseRows, selectCourseRowBySlug } from './source';
 import { bootstrapEmails } from '@/lib/admin/access';
 import { recordAudit } from '@/lib/admin/data/real/users';
+import { sendEmail } from '@/lib/email/resend';
+import { buildCourseApprovedHtml, buildCourseRejectedHtml } from '@/lib/email/templates';
+import { SITE_URL } from '@/lib/email/layout';
 import type { AdminActor } from '@/lib/admin/data/types';
 import { isValidHttpUrl } from '@/lib/teacher/apply-validation';
 import type { CourseResource } from '@/db/schema';
@@ -860,7 +863,11 @@ export async function publishCourse(slug: string, actor: AdminActor): Promise<Co
  */
 export async function approveCourse(slug: string, actor: AdminActor): Promise<CourseWriteResult> {
   if (!dbConfigured()) return dbRequired();
-  const [current] = await db.select({ status: T.courses.status }).from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
+  const [current] = await db
+    .select({ status: T.courses.status, ownerUserId: T.courses.ownerUserId, titleHt: T.courses.titleHt, titleFr: T.courses.titleFr })
+    .from(T.courses)
+    .where(eq(T.courses.slug, slug))
+    .limit(1);
   if (!current) return { ok: false, message: 'not_found' };
   if (current.status !== 'pending_review') return { ok: false, message: 'invalid_status' };
   const now = new Date();
@@ -870,13 +877,18 @@ export async function approveCourse(slug: string, actor: AdminActor): Promise<Co
     .where(eq(T.courses.slug, slug));
   await recordAudit({ action: 'approve_course', userId: actor.id, admin: actor, detail: slug });
   revalidateCoursePaths(slug);
+  await sendCourseReviewEmail(slug, current, { kind: 'approved' });
   return { ok: true };
 }
 
 /** Admin course-review queue (Task C3-T3): reject a submitted course with a required note. Requires `current.status === 'pending_review'`. */
 export async function rejectCourse(slug: string, note: string, actor: AdminActor): Promise<CourseWriteResult> {
   if (!dbConfigured()) return dbRequired();
-  const [current] = await db.select({ status: T.courses.status }).from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
+  const [current] = await db
+    .select({ status: T.courses.status, ownerUserId: T.courses.ownerUserId, titleHt: T.courses.titleHt, titleFr: T.courses.titleFr })
+    .from(T.courses)
+    .where(eq(T.courses.slug, slug))
+    .limit(1);
   if (!current) return { ok: false, message: 'not_found' };
   if (current.status !== 'pending_review') return { ok: false, message: 'invalid_status' };
   await db
@@ -885,7 +897,53 @@ export async function rejectCourse(slug: string, note: string, actor: AdminActor
     .where(eq(T.courses.slug, slug));
   await recordAudit({ action: 'reject_course', userId: actor.id, admin: actor, detail: slug, reason: note });
   revalidateCoursePaths(slug);
+  await sendCourseReviewEmail(slug, current, { kind: 'rejected', note });
   return { ok: true };
+}
+
+/**
+ * Stage 6 — the review-decision email to the course OWNER: approved carries
+ * the public link, rejected carries the admin's note + a link straight to the
+ * studio editor. Owner resolved via `courses.owner_user_id` → `users` (the
+ * same resolution lib/teacher/admin.ts's `getOwnerDisplayNames` uses).
+ * Best-effort, NEVER THROWS: an unowned course (legacy rows) or any lookup/
+ * send failure is logged and swallowed — the review itself is already
+ * durably recorded.
+ */
+async function sendCourseReviewEmail(
+  slug: string,
+  course: { ownerUserId: string | null; titleHt: string | null; titleFr: string | null },
+  decision: { kind: 'approved' } | { kind: 'rejected'; note: string },
+): Promise<void> {
+  try {
+    if (!course.ownerUserId) return;
+    const [owner] = await db
+      .select({ email: T.users.email, name: T.users.name, localePref: T.users.localePref })
+      .from(T.users)
+      .where(eq(T.users.id, course.ownerUserId))
+      .limit(1);
+    if (!owner?.email) return;
+    const locale: 'fr' | 'ht' = owner.localePref === 'fr' ? 'fr' : 'ht';
+    const courseTitle = (locale === 'fr' ? course.titleFr : course.titleHt) || course.titleFr || course.titleHt || slug;
+    const email =
+      decision.kind === 'approved'
+        ? buildCourseApprovedHtml({
+            locale,
+            name: owner.name,
+            courseTitle,
+            publicUrl: `${SITE_URL}/${locale}/formations/${slug}`,
+          })
+        : buildCourseRejectedHtml({
+            locale,
+            name: owner.name,
+            courseTitle,
+            note: decision.note,
+            editUrl: `${SITE_URL}/${locale}/enseigner/studio/cours/${slug}/editer`,
+          });
+    await sendEmail({ to: owner.email, subject: email.subject, html: email.html, text: email.text });
+  } catch (err) {
+    console.error(`[courses/write] course review email failed for ${slug} (review already recorded):`, err);
+  }
 }
 
 export async function unpublishCourse(slug: string, actor: AdminActor): Promise<CourseWriteResult> {

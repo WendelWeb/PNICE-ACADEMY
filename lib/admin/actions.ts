@@ -19,7 +19,7 @@ import { revalidatePath } from 'next/cache';
 import { resolveAdminRole } from '@/lib/admin/access';
 import { isAdminRole, type AdminRole } from '@/lib/admin/roles';
 import { can, type Capability } from '@/lib/admin/permissions';
-import { setFxRate } from '@/lib/fx';
+import { setFxRate, getFxRate } from '@/lib/fx';
 import { setPlatformPassPriceCents } from '@/lib/platformPrice';
 import {
   grantCourseAccess,
@@ -37,6 +37,12 @@ import {
   type UserStatus,
 } from '@/lib/admin/data';
 import { sendEmail } from '@/lib/email/resend';
+import {
+  buildReceiptHtml,
+  buildPaymentFailedHtml,
+  buildEngagementReminderHtml,
+} from '@/lib/email/templates';
+import { getCourseBySlug } from '@/lib/courses/source';
 
 export type ActionResult = { ok: boolean; message?: string };
 
@@ -195,19 +201,38 @@ export async function setPlatformPassPriceAction(usd: number): Promise<ActionRes
   }
 }
 
+/**
+ * Stage 6: rebuilt on the shared branded layout (lib/email/templates.ts) —
+ * the previous inline HTML interpolated the user's self-chosen display name
+ * UNESCAPED (markup injection into our own transactional email). Reuses the
+ * REAL receipt builder with the actual payment's amount/date/reference and
+ * the course's proper title, in the learner's own language.
+ */
 export async function resendReceiptAction(userId: string, paymentId: string): Promise<ActionResult> {
   try {
     const { actor } = await requireAdmin('transactions.read');
-    // Email the receipt (real send when on real data; safe no-op on mock). The
-    // PDF attachment lands with the PDF pipeline; this sends the confirmation.
+    // Email the receipt (real send when on real data; safe no-op on mock).
     const detail = await getUserById(userId);
     const pay = detail?.payments.find((p) => p.id === paymentId);
-    if (detail?.user.email) {
-      await sendEmail({
-        to: detail.user.email,
-        subject: 'Votre reçu — PNICE Academy',
-        html: `<p>Bonjou ${detail.user.name},</p><p>Men resi pou peman ou${pay ? ` ($${Math.round(pay.amountCents / 100)})` : ''}. Mèsi!</p><hr><p style="color:#888;font-size:12px">PNICE Academy</p>`,
+    if (!detail || !pay) return { ok: false, message: 'not_found' };
+    if (detail.user.email) {
+      const locale = detail.user.language === 'fr' ? 'fr' : 'ht';
+      const course = pay.courseSlug ? await getCourseBySlug(pay.courseSlug) : undefined;
+      const itemName = course
+        ? locale === 'fr'
+          ? course.title_fr
+          : course.title_ht
+        : pay.courseSlug ?? (locale === 'fr' ? 'Abonnement mensuel' : 'Abònman chak mwa');
+      const receipt = buildReceiptHtml({
+        locale,
+        name: detail.user.name,
+        itemName,
+        amountCents: pay.amountCents,
+        dateIso: pay.createdAt,
+        ref: pay.id,
+        rateHtg: await getFxRate(),
       });
+      await sendEmail({ to: detail.user.email, subject: receipt.subject, html: receipt.html, text: receipt.text });
     }
     await recordAudit({ action: 'resend_receipt', userId, admin: actor, detail: paymentId });
     return { ok: true, message: 'receipt_sent' };
@@ -216,6 +241,9 @@ export async function resendReceiptAction(userId: string, paymentId: string): Pr
   }
 }
 
+/** Stage 6: rebuilt on the branded, escaped layout — same builder the
+ *  automatic invoice.payment_failed dunning email uses (lib/payments/
+ *  fulfill.ts), so the manual admin nudge and the webhook one match. */
 export async function sendDunningReminderAction(userId: string): Promise<ActionResult> {
   try {
     const { actor } = await requireAdmin('transactions.refund');
@@ -223,11 +251,11 @@ export async function sendDunningReminderAction(userId: string): Promise<ActionR
     // MonCash/NatCash/Crypto have no native recurring billing → dunning is manual.
     const detail = await getUserById(userId);
     if (detail?.user.email) {
-      await sendEmail({
-        to: detail.user.email,
-        subject: 'Pwoblèm ak peman abònman ou — PNICE Academy',
-        html: `<p>Bonjou ${detail.user.name},</p><p>Dènye peman abònman ou pa pase. Tanpri mete ajou mwayen peman ou pou kontinye gen aksè.</p><hr><p style="color:#888;font-size:12px">PNICE Academy</p>`,
+      const email = buildPaymentFailedHtml({
+        locale: detail.user.language === 'fr' ? 'fr' : 'ht',
+        name: detail.user.name,
       });
+      await sendEmail({ to: detail.user.email, subject: email.subject, html: email.html, text: email.text });
     }
     await recordAudit({ action: 'dunning_reminder', userId, admin: actor });
     return { ok: true, message: 'reminder_sent' };
@@ -237,17 +265,18 @@ export async function sendDunningReminderAction(userId: string): Promise<ActionR
 }
 
 /* ----------------------- engagement & certificates ----------------------- */
+/** Stage 6: rebuilt on the branded, escaped layout (was raw inline HTML). */
 export async function sendEngagementReminderAction(userId: string): Promise<ActionResult> {
   try {
     const { actor } = await requireAdmin('courses.read');
     // "Stuck learner" nudge (real send on real data; no-op on mock).
     const detail = await getUserById(userId);
     if (detail?.user.email) {
-      await sendEmail({
-        to: detail.user.email,
-        subject: 'Kontinye fòmasyon ou — PNICE Academy',
-        html: `<p>Bonjou ${detail.user.name},</p><p>Nou wè ou kòmanse yon fòmasyon men ou poko fini. Tounen kontinye lè ou pare — n ap tann ou!</p><hr><p style="color:#888;font-size:12px">PNICE Academy</p>`,
+      const email = buildEngagementReminderHtml({
+        locale: detail.user.language === 'fr' ? 'fr' : 'ht',
+        name: detail.user.name,
       });
+      await sendEmail({ to: detail.user.email, subject: email.subject, html: email.html, text: email.text });
     }
     await recordAudit({ action: 'engagement_reminder', userId, admin: actor });
     return { ok: true, message: 'reminder_sent' };

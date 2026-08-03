@@ -34,7 +34,7 @@ import {
 } from '@/lib/admin/data';
 import { checkBunnyStream, type BunnyStatus } from '@/lib/admin/health/bunny';
 import { sendEmail, emailLive, DEFAULT_FROM } from '@/lib/email/resend';
-import { buildTestEmailHtml, buildSupportReplyHtml } from '@/lib/email/templates';
+import { buildTestEmailHtml, buildSupportReplyHtml, buildTicketReceivedHtml } from '@/lib/email/templates';
 
 export type SupResult = { ok: boolean; message?: string; id?: string };
 
@@ -280,11 +280,15 @@ export async function setDigestAction(enabled: boolean, hour: number): Promise<S
 }
 
 /* ----------------------- learner-facing ticket form ---------------------- */
-/** Authenticated LEARNER files a support ticket from /kont (not an admin gate). */
+/** Authenticated LEARNER files a support ticket from /kont (not an admin
+ *  gate). `locale` (additive, optional — existing callers keep compiling)
+ *  drives the Stage 6 ticket-received confirmation email's language; the
+ *  /kont form passes the tab's current locale. */
 export async function submitSupportTicketAction(input: {
   type: TicketType;
   subject: string;
   message: string;
+  locale?: 'fr' | 'ht';
 }): Promise<SupResult> {
   try {
     const { userId } = await auth();
@@ -303,6 +307,23 @@ export async function submitSupportTicketAction(input: {
       subject: input.subject.trim(),
       message: input.message.trim(),
     });
+
+    // Stage 6: ticket-received confirmation — best-effort AFTER the ticket is
+    // filed; an email failure must never fail the submission (sendEmail is
+    // env-gated + never-throws; the guard covers the builder too).
+    if (email.includes('@')) {
+      try {
+        const confirmation = buildTicketReceivedHtml({
+          locale: input.locale ?? 'ht',
+          name,
+          ticketSubject: input.subject.trim(),
+          ref: r.id,
+        });
+        await sendEmail({ to: email, subject: confirmation.subject, html: confirmation.html, text: confirmation.text });
+      } catch (err) {
+        console.error('[support-actions] ticket-received email failed (ticket already filed):', err);
+      }
+    }
     return { ok: true, id: r.id };
   } catch (e) {
     return fail(e);

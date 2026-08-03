@@ -27,7 +27,7 @@
  */
 import { and, eq, isNull, isNotNull, lt } from 'drizzle-orm';
 import { db, schema } from '@/db';
-import { courses } from '@/data/courses';
+import { getCourseBySlug } from '@/lib/courses/source';
 import { sendEmail } from '@/lib/email/resend';
 import { buildCartReminderHtml } from '@/lib/email/templates';
 import { getFxRate } from '@/lib/fx';
@@ -38,7 +38,6 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
-const courseBySlug = new Map(courses.map((c) => [c.slug, c]));
 
 export async function GET(req: Request): Promise<Response> {
   const authResult = checkCronAuth(req.headers.get('authorization'));
@@ -97,7 +96,12 @@ export async function GET(req: Request): Promise<Response> {
       if (!user?.email) continue;
 
       const locale: 'fr' | 'ht' = user.localePref === 'fr' ? 'fr' : 'ht';
-      const course = session.courseSlug ? courseBySlug.get(session.courseSlug) : undefined;
+      // Stage 6: names via lib/courses/source (DB first, static fallback) —
+      // the old static data/courses.ts map made every DB-created course fall
+      // through to its raw slug. Subscription carts (teacher pass or Pass
+      // PNICE — checkout_sessions stores no plan reference) keep the generic
+      // subscription label.
+      const course = session.courseSlug ? await getCourseBySlug(session.courseSlug) : undefined;
       const itemName =
         session.productType === 'subscription'
           ? locale === 'fr'

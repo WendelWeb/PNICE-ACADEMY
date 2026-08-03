@@ -18,6 +18,8 @@ import { eq, inArray } from 'drizzle-orm';
 import { db, schema } from '@/db';
 import { dbConfigured } from '@/lib/courses/source';
 import { recordAudit } from '@/lib/admin/data/real/users';
+import { sendEmail } from '@/lib/email/resend';
+import { buildTeacherApprovedHtml, buildTeacherRejectedHtml } from '@/lib/email/templates';
 import { getDefaultVideoQuotaMinutes, mapDbTeacherProfile, type TeacherProfile } from './profile';
 import type { AdminActor } from '@/lib/admin/data/types';
 
@@ -152,6 +154,32 @@ export async function getOwnerDisplayNames(userIds: (string | null)[]): Promise<
 /* ------------------------------- mutations -------------------------------- */
 
 /**
+ * Stage 6 — the review-decision email (approved / rejected with the note) to
+ * the applicant, resolved off the `users` table (the same join every read in
+ * this file already does). Best-effort, NEVER THROWS: sendEmail is env-gated
+ * + never-throws, and the whole step is wrapped so an email hiccup can never
+ * fail a review that is already durably recorded.
+ */
+async function sendTeacherReviewEmail(userId: string, decision: { kind: 'approved' } | { kind: 'rejected'; note: string }): Promise<void> {
+  try {
+    const [user] = await db
+      .select({ email: T.users.email, name: T.users.name, localePref: T.users.localePref })
+      .from(T.users)
+      .where(eq(T.users.id, userId))
+      .limit(1);
+    if (!user?.email) return;
+    const locale: 'fr' | 'ht' = user.localePref === 'fr' ? 'fr' : 'ht';
+    const email =
+      decision.kind === 'approved'
+        ? buildTeacherApprovedHtml({ locale, name: user.name })
+        : buildTeacherRejectedHtml({ locale, name: user.name, note: decision.note });
+    await sendEmail({ to: user.email, subject: email.subject, html: email.html, text: email.text });
+  } catch (err) {
+    console.error(`[teacher/admin] review email failed for ${userId} (review already recorded):`, err);
+  }
+}
+
+/**
  * Pure kebab-case ASCII slug from a teacher's display name (Task: DB-backed
  * teacher slugs) — mirrors `lib/courses/write.ts`'s private `slugify` exactly
  * (same normalize/strip-diacritics/collapse-punctuation/trim/cap-length
@@ -219,6 +247,7 @@ export async function approveTeacherProfile(p: { userId: string; admin: AdminAct
     .set({ status: 'approved', reviewedBy: p.admin.id, videoQuotaMinutes: quota, slug, updatedAt: new Date() })
     .where(eq(T.teacherProfiles.userId, p.userId));
   await recordAudit({ action: 'approve_teacher', userId: p.userId, admin: p.admin });
+  await sendTeacherReviewEmail(p.userId, { kind: 'approved' });
   return { ok: true };
 }
 
@@ -233,6 +262,7 @@ export async function rejectTeacherProfile(p: { userId: string; note: string; ad
     .set({ status: 'rejected', reviewNote: p.note, reviewedBy: p.admin.id, updatedAt: new Date() })
     .where(eq(T.teacherProfiles.userId, p.userId));
   await recordAudit({ action: 'reject_teacher', userId: p.userId, admin: p.admin, reason: p.note });
+  await sendTeacherReviewEmail(p.userId, { kind: 'rejected', note: p.note });
   return { ok: true };
 }
 

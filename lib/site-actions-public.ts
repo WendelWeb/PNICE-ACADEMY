@@ -12,6 +12,8 @@ import { clerkEnabled } from '@/lib/clerk';
 import { createTicket, getTickets } from '@/lib/admin/data';
 import { resolveUserId } from '@/lib/learner/access';
 import { allowContactSubmission } from '@/lib/site/contact-rate-limit';
+import { sendEmail } from '@/lib/email/resend';
+import { buildTicketReceivedHtml } from '@/lib/email/templates';
 
 export type SiteActionResult = { ok: boolean; message?: string; id?: string };
 
@@ -84,6 +86,10 @@ export type ContactMessageInput = {
   name: string;
   email: string;
   message: string;
+  /** Additive (Stage 6): drives the ticket-received confirmation email's
+   *  language. Optional so existing callers keep compiling; defaults to the
+   *  platform's ht. */
+  locale?: 'fr' | 'ht';
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -136,6 +142,21 @@ export async function submitContactMessageAction(
       subject: `Mesaj kontak — ${name}`,
       message,
     });
+
+    // Stage 6: ticket-received confirmation to the address the visitor gave —
+    // best-effort AFTER the ticket is filed; a send failure must never fail
+    // the submission (sendEmail is env-gated + never-throws).
+    try {
+      const confirmation = buildTicketReceivedHtml({
+        locale: input.locale === 'fr' ? 'fr' : 'ht',
+        name,
+        ticketSubject: message.length > 120 ? `${message.slice(0, 120)}…` : message,
+        ref: r.id,
+      });
+      await sendEmail({ to: email, subject: confirmation.subject, html: confirmation.html, text: confirmation.text });
+    } catch (err) {
+      console.error('[site-actions-public] ticket-received email failed (ticket already filed):', err);
+    }
     return { ok: true, id: r.id };
   } catch (e) {
     return { ok: false, message: e instanceof Error ? e.message : 'error' };

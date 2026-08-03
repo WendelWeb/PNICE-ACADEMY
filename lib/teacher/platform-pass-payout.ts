@@ -57,6 +57,8 @@ import {
 } from './platform-pass-split';
 import type { AdminActor } from '@/lib/admin/data/types';
 import { recordAudit } from '@/lib/admin/data/real/users';
+import { sendEmail } from '@/lib/email/resend';
+import { buildPlatformPassSplitHtml } from '@/lib/email/templates';
 
 const T = schema;
 
@@ -216,10 +218,15 @@ async function getQualifyingConsumption(start: Date, end: Date): Promise<Consump
   return [...consumptionMap.entries()].map(([teacherUserId, completions]) => ({ teacherUserId, completions }));
 }
 
-async function resolveTeacherNames(userIds: string[]): Promise<Map<string, { name: string | null; email: string }>> {
+async function resolveTeacherNames(
+  userIds: string[],
+): Promise<Map<string, { name: string | null; email: string; localePref: 'fr' | 'ht' | null }>> {
   if (userIds.length === 0) return new Map();
-  const rows = await db.select({ id: T.users.id, name: T.users.name, email: T.users.email }).from(T.users).where(inArray(T.users.id, userIds));
-  return new Map(rows.map((r) => [r.id, { name: r.name ?? null, email: r.email }]));
+  const rows = await db
+    .select({ id: T.users.id, name: T.users.name, email: T.users.email, localePref: T.users.localePref })
+    .from(T.users)
+    .where(inArray(T.users.id, userIds));
+  return new Map(rows.map((r) => [r.id, { name: r.name ?? null, email: r.email, localePref: r.localePref ?? null }]));
 }
 
 /** The read + pure-compute half, with NO writes — shared by the live preview and the actual run. */
@@ -416,6 +423,16 @@ export async function runPlatformPassSplitForPeriod(period: string, actor: Admin
     // neon-http driver, see file header) but each independently idempotent,
     // so a crash mid-loop just leaves the remaining teachers for a healing
     // re-run rather than any double-credit.
+    //
+    // Stage 6: teacher contact info resolved up front (one query) for the
+    // split-credited email below — a lookup failure degrades to "no emails",
+    // never to a failed run.
+    const contactByTeacher = await resolveTeacherNames(
+      agg.split.shares.filter((s) => s.shareCents > 0).map((s) => s.teacherUserId),
+    ).catch((err) => {
+      console.error('[teacher/platform-pass-payout] teacher contact lookup failed, skipping credit emails:', err);
+      return new Map<string, { name: string | null; email: string; localePref: 'fr' | 'ht' | null }>();
+    });
     for (const share of agg.split.shares) {
       if (share.shareCents <= 0) continue;
       const insertedSplit = await db
@@ -443,6 +460,29 @@ export async function runPlatformPassSplitForPeriod(period: string, actor: Admin
           target: T.earningsLedger.platformPassSplitId,
           where: sql`${T.earningsLedger.platformPassSplitId} IS NOT NULL AND ${T.earningsLedger.kind} = 'platform_pass'`,
         });
+
+      // Stage 6: 'Pass PNICE — {month}: +$X' credit email — ONLY when THIS
+      // run inserted the teacher's split row (`insertedSplit` non-empty; a
+      // healing/concurrent re-run conflicts into a `continue` above), so a
+      // teacher is notified at most once per period. Best-effort: an email
+      // failure never interrupts the remaining teachers' credits.
+      try {
+        const contact = contactByTeacher.get(share.teacherUserId);
+        if (contact?.email) {
+          const credit = buildPlatformPassSplitHtml({
+            locale: contact.localePref === 'fr' ? 'fr' : 'ht',
+            name: contact.name,
+            period,
+            amountCents: share.shareCents,
+          });
+          await sendEmail({ to: contact.email, subject: credit.subject, html: credit.html, text: credit.text });
+        }
+      } catch (emailErr) {
+        console.error(
+          `[teacher/platform-pass-payout] split credit email failed for ${share.teacherUserId} (credit already recorded):`,
+          emailErr,
+        );
+      }
     }
 
     const persisted = await readPersistedView(period);

@@ -80,13 +80,16 @@ export async function GET(req: Request): Promise<Response> {
       return Response.json({ ...summary, sent: false, skipped: true, reason: 'digest_disabled' });
     }
 
-    const recipient = bootstrapEmails()[0];
-    if (!recipient) {
+    // Stage 6: EVERY bootstrap admin gets the digest (it used to go only to
+    // the first address), and the platform-default kreyòl replaces the old
+    // hardcoded 'fr' (there is no per-admin locale stored anywhere).
+    const recipients = bootstrapEmails();
+    if (recipients.length === 0) {
       return Response.json({ ...summary, sent: false, skipped: true, reason: 'no_recipient' });
     }
 
-    const { subject, html, text } = buildDailyDigestHtml({ locale: 'fr', dateIso: new Date().toISOString(), ...summary });
-    const result = await sendEmail({ to: recipient, subject, html, text });
+    const { subject, html, text } = buildDailyDigestHtml({ locale: 'ht', dateIso: new Date().toISOString(), ...summary });
+    const result = await sendEmail({ to: recipients, subject, html, text });
 
     return Response.json({ ...summary, sent: result.sent, skipped: result.skipped });
   } catch (e) {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { IconCircleCheck, IconSend } from '@tabler/icons-react';
 import { buttonClasses } from '@/components/ui/Button';
 import {
@@ -24,6 +24,7 @@ import { submitContactMessageAction } from '@/lib/site-actions-public';
  */
 export function ContactForm() {
   const t = useTranslations('kontak.form');
+  const locale = useLocale();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
@@ -35,7 +36,14 @@ export function ContactForm() {
     e.preventDefault();
     setStatus(null);
     startTransition(async () => {
-      const r = await submitContactMessageAction({ name, email, message });
+      const r = await submitContactMessageAction({
+        name,
+        email,
+        message,
+        // Stage 6: the ticket-received confirmation email follows the
+        // language the visitor was browsing in.
+        locale: locale === 'fr' ? 'fr' : 'ht',
+      });
       if (r.ok) {
         setSent(true);
         return;

@@ -10,6 +10,9 @@ import { auth } from '@clerk/nextjs/server';
 import { db, schema } from '@/db';
 import { clerkEnabled } from '@/lib/clerk';
 import { getCourseBySlug } from '@/lib/courses/source';
+import { sendEmail } from '@/lib/email/resend';
+import { buildCertificateEarnedHtml } from '@/lib/email/templates';
+import { SITE_URL } from '@/lib/email/layout';
 import { hasCourseAccess, resolveUserId } from './access';
 
 const T = schema;
@@ -101,7 +104,12 @@ export async function markLessonDoneAction(
         verificationCode = existingCert.verificationCode;
       } else {
         const [user] = await db
-          .select({ certificateName: T.users.certificateName, name: T.users.name })
+          .select({
+            certificateName: T.users.certificateName,
+            name: T.users.name,
+            email: T.users.email,
+            localePref: T.users.localePref,
+          })
           .from(T.users)
           .where(eq(T.users.id, userId))
           .limit(1);
@@ -122,6 +130,27 @@ export async function markLessonDoneAction(
             certificateIssued = true;
           } catch (err) {
             if (attempt === 4) throw err;
+          }
+        }
+
+        // Stage 6: certificate-earned email — ONLY at first issuance (the
+        // existing-certificate branch above never reaches here), with the
+        // verification code + public verify link. NEVER THROWS: an email
+        // failure must never fail the completion action — the certificate is
+        // already durably issued.
+        if (certificateIssued && verificationCode && user?.email) {
+          try {
+            const locale: 'fr' | 'ht' = user.localePref === 'fr' ? 'fr' : 'ht';
+            const email = buildCertificateEarnedHtml({
+              locale,
+              name: user.name,
+              courseTitle: locale === 'fr' ? course.title_fr : course.title_ht,
+              code: verificationCode,
+              verifyUrl: `${SITE_URL}/${locale}/certificats/verifier/${verificationCode}`,
+            });
+            await sendEmail({ to: user.email, subject: email.subject, html: email.html, text: email.text });
+          } catch (err) {
+            console.error('[learner/progress-actions] certificate email failed (certificate already issued):', err);
           }
         }
       }

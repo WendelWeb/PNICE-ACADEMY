@@ -39,6 +39,8 @@ import { and, eq } from 'drizzle-orm';
 import { db, schema } from '@/db';
 import { dbConfigured } from '@/lib/courses/source';
 import { recordAudit } from '@/lib/admin/data/real/users';
+import { sendEmail } from '@/lib/email/resend';
+import { buildPayoutPaidHtml, buildPayoutRejectedHtml } from '@/lib/email/templates';
 import { getTeacherBalanceCents, mapDbWithdrawalRow, type WithdrawalRow } from './profile';
 import type { AdminActor } from '@/lib/admin/data/types';
 
@@ -123,6 +125,37 @@ export async function countWithdrawalsByStatus(): Promise<Record<WithdrawalRow['
 /* ------------------------------- mutations -------------------------------- */
 
 /**
+ * Stage 6 — the payout-decision email (paid with its reference / rejected
+ * with the note) to the requesting teacher, resolved off the `users` table
+ * (the same join `listWithdrawalRequests` above already does). Best-effort,
+ * NEVER THROWS: only ever called AFTER the atomic status flip (and, for
+ * 'paid', after the ledger debit) — so it fires at most once per request and
+ * an email hiccup can never fail or double-run the money path.
+ */
+async function sendPayoutDecisionEmail(
+  teacherUserId: string,
+  amountCents: number,
+  decision: { kind: 'paid'; reference: string } | { kind: 'rejected'; note: string },
+): Promise<void> {
+  try {
+    const [user] = await db
+      .select({ email: T.users.email, name: T.users.name, localePref: T.users.localePref })
+      .from(T.users)
+      .where(eq(T.users.id, teacherUserId))
+      .limit(1);
+    if (!user?.email) return;
+    const locale: 'fr' | 'ht' = user.localePref === 'fr' ? 'fr' : 'ht';
+    const email =
+      decision.kind === 'paid'
+        ? buildPayoutPaidHtml({ locale, name: user.name, amountCents, reference: decision.reference })
+        : buildPayoutRejectedHtml({ locale, name: user.name, amountCents, note: decision.note });
+    await sendEmail({ to: user.email, subject: email.subject, html: email.html, text: email.text });
+  } catch (err) {
+    console.error(`[teacher/payouts] payout decision email failed for ${teacherUserId} (decision already recorded):`, err);
+  }
+}
+
+/**
  * Marks a `pending` withdrawal request 'paid': records the reference, the
  * processing admin + timestamp, AND inserts the negative 'withdrawal'
  * earnings_ledger row that actually debits the teacher's balance (see file
@@ -164,6 +197,7 @@ export async function markWithdrawalPaid(p: { id: string; reference: string; adm
   });
 
   await recordAudit({ action: 'mark_withdrawal_paid', userId: current.teacherUserId, admin: p.admin, detail: p.reference });
+  await sendPayoutDecisionEmail(current.teacherUserId, current.amountCents, { kind: 'paid', reference: p.reference });
   return { ok: true };
 }
 
@@ -175,7 +209,11 @@ export async function markWithdrawalPaid(p: { id: string; reference: string; adm
 export async function rejectWithdrawal(p: { id: string; note: string; admin: AdminActor }): Promise<PayoutResult> {
   if (!dbConfigured()) return dbRequired();
   const [current] = await db
-    .select({ status: T.withdrawalRequests.status, teacherUserId: T.withdrawalRequests.teacherUserId })
+    .select({
+      status: T.withdrawalRequests.status,
+      teacherUserId: T.withdrawalRequests.teacherUserId,
+      amountCents: T.withdrawalRequests.amountCents,
+    })
     .from(T.withdrawalRequests)
     .where(eq(T.withdrawalRequests.id, p.id))
     .limit(1);
@@ -193,5 +231,6 @@ export async function rejectWithdrawal(p: { id: string; note: string; admin: Adm
   if (claimed.length === 0) return { ok: false, message: 'invalid_status' };
 
   await recordAudit({ action: 'reject_withdrawal', userId: current.teacherUserId, admin: p.admin, reason: p.note });
+  await sendPayoutDecisionEmail(current.teacherUserId, current.amountCents, { kind: 'rejected', note: p.note });
   return { ok: true };
 }

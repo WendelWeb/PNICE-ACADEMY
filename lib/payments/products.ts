@@ -227,3 +227,56 @@ export async function resolveProduct(input: {
     kind: null,
   };
 }
+
+const TEACHER_SUB_NAME_HT = 'Abònman chak mwa';
+const TEACHER_SUB_NAME_FR = 'Abonnement mensuel';
+
+/**
+ * Display names for an EXISTING subscription, resolved off our own
+ * `subscriptions` row's (`kind`, `teacherPlanId`) — the renewal-receipt email
+ * (Stage 6, lib/payments/fulfill.ts's `fulfillInvoicePaid`) has no checkout
+ * request in hand to run `resolveProduct` with, so this reuses the SAME
+ * naming this module already produces at purchase time: the platform pass's
+ * generic "Pass PNICE" names, or a teacher plan's own title / "Abònman chak
+ * mwa — {displayName}". GATED + NEVER THROWS: any lookup miss degrades to the
+ * generic teacher-subscription label, never blocks the caller.
+ */
+export async function resolveSubscriptionNaming(input: {
+  kind: 'teacher' | 'platform' | null;
+  teacherPlanId: string | null;
+}): Promise<{ nameHt: string; nameFr: string }> {
+  if (input.kind !== 'teacher') {
+    return { nameHt: GENERIC_NAME_HT, nameFr: GENERIC_NAME_FR };
+  }
+  if (!input.teacherPlanId || !dbConfigured()) {
+    return { nameHt: TEACHER_SUB_NAME_HT, nameFr: TEACHER_SUB_NAME_FR };
+  }
+  try {
+    const [plan] = await db
+      .select({ titleHt: T.teacherPlans.titleHt, titleFr: T.teacherPlans.titleFr, ownerUserId: T.teacherPlans.ownerUserId })
+      .from(T.teacherPlans)
+      .where(eq(T.teacherPlans.id, input.teacherPlanId))
+      .limit(1);
+    if (!plan) return { nameHt: TEACHER_SUB_NAME_HT, nameFr: TEACHER_SUB_NAME_FR };
+    const titleHt = plan.titleHt?.trim();
+    const titleFr = plan.titleFr?.trim();
+    if (titleHt || titleFr) {
+      return { nameHt: titleHt || titleFr || TEACHER_SUB_NAME_HT, nameFr: titleFr || titleHt || TEACHER_SUB_NAME_FR };
+    }
+    if (plan.ownerUserId) {
+      const [prof] = await db
+        .select({ displayName: T.teacherProfiles.displayName })
+        .from(T.teacherProfiles)
+        .where(eq(T.teacherProfiles.userId, plan.ownerUserId))
+        .limit(1);
+      const dn = prof?.displayName?.trim();
+      if (dn) {
+        return { nameHt: `${TEACHER_SUB_NAME_HT} — ${dn}`, nameFr: `${TEACHER_SUB_NAME_FR} — ${dn}` };
+      }
+    }
+    return { nameHt: TEACHER_SUB_NAME_HT, nameFr: TEACHER_SUB_NAME_FR };
+  } catch (err) {
+    console.error('[payments/products] resolveSubscriptionNaming DB read failed, using generic label:', err);
+    return { nameHt: TEACHER_SUB_NAME_HT, nameFr: TEACHER_SUB_NAME_FR };
+  }
+}

@@ -10,7 +10,7 @@
  */
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import {
   IconArrowLeft,
   IconCircleCheck,
@@ -53,6 +53,7 @@ function StatusChip({ status }: { status: MyTicket['status'] }) {
 
 function NewTicketForm({ onBack }: { onBack: () => void }) {
   const t = useTranslations('kont.support');
+  const locale = useLocale();
   const router = useRouter();
   const [pending, start] = useTransition();
   const [type, setType] = useState<TicketType>('question');
@@ -131,7 +132,14 @@ function NewTicketForm({ onBack }: { onBack: () => void }) {
             onClick={() =>
               start(async () => {
                 setErr(null);
-                const r = await submitSupportTicketAction({ type, subject, message });
+                const r = await submitSupportTicketAction({
+                  type,
+                  subject,
+                  message,
+                  // Stage 6: the ticket-received confirmation email follows
+                  // the language the learner was browsing in.
+                  locale: locale === 'fr' ? 'fr' : 'ht',
+                });
                 if (r.ok) {
                   setDone(true);
                   router.refresh();

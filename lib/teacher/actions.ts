@@ -45,6 +45,8 @@ import { eq } from 'drizzle-orm';
 import { db, schema } from '@/db';
 import { dbConfigured } from '@/lib/courses/source';
 import { resolveUserId } from '@/lib/learner/access';
+import { sendEmail } from '@/lib/email/resend';
+import { buildTeacherApplicationReceivedHtml } from '@/lib/email/templates';
 import { getTeacherProfile } from './profile';
 import { validateApplyInput, type ApplyAsTeacherInput } from './apply-validation';
 
@@ -126,6 +128,26 @@ export async function applyAsTeacherAction(
         .where(eq(T.teacherProfiles.userId, userId));
     } else {
       await db.insert(T.teacherProfiles).values({ userId, ...fields });
+    }
+
+    // Stage 6: application-received confirmation — best-effort AFTER the
+    // profile write; an email failure must never fail the application
+    // (sendEmail is env-gated + never-throws; the guard covers the lookup).
+    try {
+      const [user] = await db
+        .select({ email: T.users.email, name: T.users.name, localePref: T.users.localePref })
+        .from(T.users)
+        .where(eq(T.users.id, userId))
+        .limit(1);
+      if (user?.email) {
+        const confirmation = buildTeacherApplicationReceivedHtml({
+          locale: user.localePref === 'fr' ? 'fr' : 'ht',
+          name: input.displayName.trim() || user.name,
+        });
+        await sendEmail({ to: user.email, subject: confirmation.subject, html: confirmation.html, text: confirmation.text });
+      }
+    } catch (err) {
+      console.error('[teacher/actions] application-received email failed (application already recorded):', err);
     }
 
     return { ok: true, status: 'pending' };

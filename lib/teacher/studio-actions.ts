@@ -53,6 +53,8 @@ import { recordAudit } from '@/lib/admin/data/real/users';
 import type { AdminActor } from '@/lib/admin/data/types';
 import { createBunnyVideo, bunnyUploadConfigured, type BunnyUploadResult } from '@/lib/bunny/upload';
 import { planOrganizedUpload } from '@/lib/bunny/organize';
+import { sendEmail } from '@/lib/email/resend';
+import { buildPayoutRequestedHtml } from '@/lib/email/templates';
 
 const T = schema;
 
@@ -692,6 +694,28 @@ export async function requestWithdrawalAction(amountCents: number): Promise<With
     } catch (insertErr) {
       console.error('[teacher/studio-actions] requestWithdrawalAction insert failed:', insertErr);
       return { ok: false, message: 'pending_exists' };
+    }
+
+    // Stage 6: payout-requested confirmation to the teacher — best-effort
+    // AFTER the pending row is durably inserted; an email failure must never
+    // fail the request (sendEmail is env-gated + never-throws).
+    try {
+      const [user] = await db
+        .select({ email: T.users.email, name: T.users.name, localePref: T.users.localePref })
+        .from(T.users)
+        .where(eq(T.users.id, userId))
+        .limit(1);
+      if (user?.email) {
+        const confirmation = buildPayoutRequestedHtml({
+          locale: user.localePref === 'fr' ? 'fr' : 'ht',
+          name: user.name,
+          amountCents,
+          method: profile.payoutMethod,
+        });
+        await sendEmail({ to: user.email, subject: confirmation.subject, html: confirmation.html, text: confirmation.text });
+      }
+    } catch (emailErr) {
+      console.error('[teacher/studio-actions] payout-requested email failed (request already recorded):', emailErr);
     }
     return { ok: true };
   } catch (e) {
