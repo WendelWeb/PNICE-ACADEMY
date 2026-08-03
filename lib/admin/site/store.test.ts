@@ -64,8 +64,11 @@ describe('testimonials — placeholders can NEVER be published', () => {
     expect(r).toEqual({ ok: false, reason: 'placeholder' });
   });
 
-  it('home shows placeholders until a real testimonial is published, then only real ones', async () => {
-    expect((await getHomeTestimonials()).every((t) => t.status === 'placeholder')).toBe(true);
+  it('home shows ONLY published testimonials — zero published means an empty list', async () => {
+    // Stage: the living manifest — the placeholder personas never reach the
+    // public home again; the section renders nothing until something real
+    // is published.
+    expect(await getHomeTestimonials()).toHaveLength(0);
 
     const { id } = await createTestimonial({
       name: 'Marie',
@@ -87,9 +90,9 @@ describe('testimonials — placeholders can NEVER be published', () => {
     expect((await getCourseTestimonial('test-course'))?.id).toBe(id);
     expect(await getCourseTestimonial('other-course')).toBeNull();
 
-    // Unpublish drops it from home (placeholders return) and the course page.
+    // Unpublish drops it from home (back to empty) and the course page.
     expect(await unpublishTestimonial(id)).toBe(true);
-    expect((await getHomeTestimonials()).every((t) => t.status === 'placeholder')).toBe(true);
+    expect(await getHomeTestimonials()).toHaveLength(0);
     expect(await getCourseTestimonial('test-course')).toBeNull();
   });
 

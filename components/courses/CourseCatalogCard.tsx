@@ -5,11 +5,13 @@ import { IconCheck } from '@tabler/icons-react';
 import { Link } from '@/i18n/routing';
 import { Sceau } from '@/components/ui/Sceau';
 import { Price, PriceSecondary } from '@/components/ui/Price';
+import { Stars } from '@/components/reviews/Stars';
 import { courseTitle, courseTagline, courseLearn, courseIsBilingual, coursePrimaryLocale } from '@/lib/courseFields';
 import { categoryTone } from '@/lib/courseCategory';
 import { cn } from '@/lib/cn';
 import { getCourseTeacher } from '@/data/teachers';
 import type { Course } from '@/data/courses';
+import type { RatingSummary } from '@/lib/reviews/reviews';
 
 /**
  * The catalogue's discovery card — used both by the interactive toolbar-driven
@@ -21,14 +23,34 @@ import type { Course } from '@/data/courses';
  * Teacher attribution (M2): a subtle mono line at the card's foot, its own
  * real `<Link>` to /prof/[slug] — not nested inside the main course `<Link>`,
  * which would be invalid HTML and break keyboard/screen-reader navigation.
- * Mirrors the treatment in CourseCardGrid (home) for consistency.
+ *
+ * ADDITIVE props (Stage: the living manifest — the home's featured grid
+ * reuses THIS card so home and /formations stay one design):
+ *   - `rating`: a real `RatingSummary` renders a star row (count > 0 only —
+ *     no reviews, no claim). Omitted (every pre-existing call site) ⇒
+ *     byte-identical card.
+ *   - `teacher`: overrides the static-registry attribution (a DB-owned
+ *     course by a 2nd+ real teacher). Omitted ⇒ the original
+ *     `getCourseTeacher` fallback.
  */
-export function CourseCatalogCard({ course }: { course: Course }) {
+export function CourseCatalogCard({
+  course,
+  rating,
+  teacher: teacherProp,
+}: {
+  course: Course;
+  rating?: RatingSummary | null;
+  teacher?: { name: string; slug: string } | null;
+}) {
   const locale = useLocale();
   const t = useTranslations('catalog');
   const tCourse = useTranslations('course');
   const learn = courseLearn(course, locale).slice(0, 3);
-  const teacher = getCourseTeacher(course.slug);
+  const staticTeacher = getCourseTeacher(course.slug);
+  const teacher =
+    teacherProp ??
+    (staticTeacher ? { name: staticTeacher.displayName, slug: staticTeacher.slug } : null);
+  const showStars = Boolean(rating && rating.count > 0 && rating.avg !== null);
   // Honesty in the UI (Task: course-language): a monolingual course must say
   // so before a learner clicks through expecting the ht/fr pair every other
   // course has.
@@ -84,6 +106,15 @@ export function CourseCatalogCard({ course }: { course: Course }) {
           ))}
         </ul>
 
+        {showStars && (
+          <span className="mt-3 flex items-center gap-1.5">
+            <Stars value={rating!.avg!} size={13} />
+            <span className="font-mono text-[11px] text-ink/55">
+              {rating!.avg!.toFixed(1)} ({rating!.count})
+            </span>
+          </span>
+        )}
+
         <div className="mt-5 flex items-end justify-between gap-3 border-t border-ink/10 pt-4">
           <div>
             <Price
@@ -106,7 +137,7 @@ export function CourseCatalogCard({ course }: { course: Course }) {
           href={`/prof/${teacher.slug}`}
           className="rounded-b-xl border-t border-ink/10 px-5 py-3 font-mono text-[11px] text-ink/60 transition-colors hover:text-ochre"
         >
-          {t('teacherLine', { name: teacher.displayName })}
+          {t('teacherLine', { name: teacher.name })}
         </Link>
       )}
     </div>

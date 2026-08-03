@@ -1,66 +1,62 @@
+import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { Section, Container, Eyebrow } from '@/components/ui/Section';
-import { Link } from '@/i18n/routing';
-import { buttonClasses } from '@/components/ui/Button';
-import { CourseCardGrid } from '@/components/courses/CourseCardGrid';
 import { getPublishedCourses } from '@/lib/courses/source';
+import { getHomeTeachers } from '@/lib/home/source';
 import { Hero } from '@/components/home/Hero';
-import { MarketplaceBar } from '@/components/home/MarketplaceBar';
-import { Blockers } from '@/components/home/Blockers';
-import { TeacherSpotlight } from '@/components/home/TeacherSpotlight';
-import { HowMarketplace } from '@/components/home/HowMarketplace';
-import { TeachTeaser } from '@/components/home/TeachTeaser';
+import { ManifestBar } from '@/components/home/ManifestBar';
+import { TeachersRail } from '@/components/home/TeachersRail';
+import { FeaturedCourses } from '@/components/home/FeaturedCourses';
+import { PricingTriptych } from '@/components/home/PricingTriptych';
+import { TeachRecruit } from '@/components/home/TeachRecruit';
 import { Founder } from '@/components/home/Founder';
 import { Testimonials } from '@/components/home/Testimonials';
-// `Pricing` (the old global "$79 unlocks the whole catalog" table) was
-// replaced by TeacherSpotlight ($79 as PNICE Academy's own pass) +
-// HowMarketplace (teacher-agnostic mechanics) per the marketplace pivot
-// (docs/superpowers/plans/2026-07-23-marketplace-homepage.md, M1). The
-// component was removed in M2 (dead since M1, confirmed unimported).
 import { Faq } from '@/components/home/Faq';
 import { FinalCta } from '@/components/home/FinalCta';
 
-// Dynamic so admin edits (testimonials, site texts) reflect live on the home
-// page (Phase C Lot 2). Other public pages stay static (Option B).
+// Dynamic so admin edits (testimonials, prices, provider toggles, site
+// texts) reflect live on the home page (Phase C Lot 2). Other public pages
+// stay static (Option B).
 export const dynamic = 'force-dynamic';
 
+// Page-level, per-locale truthful marketplace metadata (Stage: the living
+// manifest — the root-layout metadata overhaul happens in a later stage).
+export async function generateMetadata({
+  params: { locale },
+}: {
+  params: { locale: string };
+}): Promise<Metadata> {
+  const t = await getTranslations({ locale, namespace: 'home.meta' });
+  return { title: t('title'), description: t('description') };
+}
+
+/**
+ * The homepage as the marketplace's living manifest (Stage: the living
+ * manifest, rebuilt A-Z). Every section states something REAL: the hero's
+ * manifest card lists the actual catalogue, the manifest bar tallies real
+ * counts, the teachers rail and featured grid are DB-backed, the pricing
+ * triptych reads the same sources checkout charges from, and testimonials
+ * render only when real ones exist. `courses` and the teacher roster are
+ * fetched ONCE here and passed down to every section that needs them.
+ */
 export default async function Home({
   params: { locale },
 }: {
   params: { locale: string };
 }) {
   setRequestLocale(locale);
-  const tm = await getTranslations('home.manifest');
-  const tc = await getTranslations('common');
-  const courses = await getPublishedCourses();
+  const [courses, teachers] = await Promise.all([
+    getPublishedCourses(),
+    getHomeTeachers(locale),
+  ]);
 
   return (
     <>
-      <Hero />
-      <MarketplaceBar courses={courses} />
-      <Blockers />
-
-      <Section id="fomasyon">
-        <Container>
-          <Eyebrow>{tm('eyebrow')}</Eyebrow>
-          <h2 className="mt-3 max-w-2xl font-display text-3xl font-extrabold leading-tight text-ink md:text-4xl">
-            {tm('title', { count: courses.length })}
-          </h2>
-          <p className="mt-3 max-w-xl text-graphite">{tm('subtitle')}</p>
-          <div className="mt-10">
-            <CourseCardGrid courses={courses} />
-          </div>
-          <div className="mt-8 text-center">
-            <Link href="/formations" className={buttonClasses('ghost', 'md')}>
-              {tc('seeAll')}
-            </Link>
-          </div>
-        </Container>
-      </Section>
-
-      <TeacherSpotlight />
-      <HowMarketplace />
-      <TeachTeaser />
+      <Hero courses={courses} />
+      <ManifestBar />
+      <TeachersRail teachers={teachers} />
+      <FeaturedCourses courses={courses} />
+      <PricingTriptych teachers={teachers} courses={courses} />
+      <TeachRecruit />
       <Founder />
       <Testimonials />
       <Faq />

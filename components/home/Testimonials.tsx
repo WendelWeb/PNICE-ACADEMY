@@ -6,10 +6,16 @@ import { SmartImage } from '@/components/ui/SmartImage';
 import { siteImageSrc } from '@/lib/courseImage';
 import { getHomeTestimonials } from '@/lib/admin/site/ops';
 
+/**
+ * Testimonials (Stage: the living manifest, section 8) — ONLY real,
+ * PUBLISHED testimonials from the DB-backed store ever render here; zero
+ * published ⇒ the whole section renders nothing. The placeholder personas
+ * that used to ship on the public path are gone for good (they remain
+ * admin-only examples in /admin/temoignages).
+ */
 export async function Testimonials() {
   const t = await getTranslations('home.testimonials');
   const locale = await getLocale();
-  // Published (real) testimonials replace the example placeholders once they exist.
   const testimonials = await getHomeTestimonials();
   if (testimonials.length === 0) return null;
 
@@ -24,12 +30,7 @@ export async function Testimonials() {
         <div className="mt-10 grid gap-5 md:grid-cols-3">
           {testimonials.map((tm, i) => (
             <Reveal key={tm.id} delay={i * 70}>
-              <figure className="relative h-full rounded-lg border border-ink/10 bg-paper-light p-6">
-                {tm.status === 'placeholder' && (
-                  <span className="absolute right-4 top-4 rounded bg-ink/5 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-ink/45">
-                    {t('exampleTag')}
-                  </span>
-                )}
+              <figure className="h-full rounded-lg border border-ink/10 bg-paper-light p-6">
                 <IconQuote size={22} className="text-ochre" />
                 <blockquote className="mt-3 text-[15px] leading-relaxed text-graphite">
                   {locale === 'ht' ? tm.quote_ht : tm.quote_fr}
@@ -51,17 +52,14 @@ export async function Testimonials() {
                     </span>
                   )}
                   <span className="font-mono text-xs text-ink/60">
-                    {tm.name}{tm.location ? ` · ${tm.location}` : ''}
+                    {tm.name}
+                    {tm.location ? ` · ${tm.location}` : ''}
                   </span>
                 </figcaption>
               </figure>
             </Reveal>
           ))}
         </div>
-
-        {testimonials.some((tm) => tm.status === 'placeholder') && (
-          <p className="mt-5 font-mono text-[11px] text-graphite/55">{t('note')}</p>
-        )}
       </Container>
     </Section>
   );

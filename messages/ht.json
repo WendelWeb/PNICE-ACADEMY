@@ -3,6 +3,7 @@
     "formations": "Fòmasyon",
     "teach": "Anseye",
     "pricing": "Pri",
+    "dashboard": "Tablo debò",
     "login": "Konekte",
     "cta": "Kòmanse",
     "openMenu": "Louvri meni",
@@ -26,17 +27,20 @@
       "learn": {
         "title": "Aprann",
         "formations": "Katalòg fòmasyon",
-        "pricing": "Pri ak abònman"
+        "pricing": "Pri ak pass yo",
+        "dashboard": "Tablo debò mwen"
       },
       "teach": {
         "title": "Anseye",
-        "teaser": "Ou metrize yon konesans? Vin anseye l sou platfòm nan."
+        "become": "Vin anseyan",
+        "example": "Wè yon pwofil anseyan"
       },
       "help": {
         "title": "Èd",
         "account": "Kont mwen",
-        "support": "Sipò",
-        "verify": "Verifye yon sètifika"
+        "verify": "Verifye yon sètifika",
+        "email": "Ekri nou pa imèl",
+        "whatsapp": "Ekri nou sou WhatsApp"
       },
       "legal": {
         "title": "Legal"
@@ -49,12 +53,21 @@
     "rights": "Tout dwa rezève"
   },
   "home": {
+    "meta": {
+      "title": "PNICE Academy — mache ayisyen pou konesans pratik",
+      "description": "Aprann ak anseyan ayisyen ki metrize sa y ap anseye. Achte yon fòmasyon apa, pran pass yon anseyan, oswa Pass PNICE pou tout katalòg la — an kreyòl ak an franse, ak sètifika."
+    },
     "hero": {
-      "eyebrow": "Platfòm ayisyen pou konesans pratik",
+      "eyebrow": "Mache ayisyen pou konesans pratik",
       "title": "Konesans pratik ki fè lajan.",
-      "subtitle": "Aprann ak anseyan ki metrize sa y ap anseye a. Peye an goud ak MonCash, pratike ak vrè zouti, epi fini ak yon sètifika nan men w.",
-      "ctaPrimary": "Kòmanse aprann",
-      "ctaSecondary": "Gade katalòg la",
+      "subtitle": "Aprann ak anseyan ki metrize sa y ap anseye a. Chak pri an dola ak ekivalan li an goud, ou pratike ak vrè zouti, epi w fini ak yon sètifika nan men w.",
+      "ctaPrimary": "Dekouvri fòmasyon yo",
+      "ctaSecondary": "Vin anseye",
+      "search": {
+        "label": "Chèche yon fòmasyon",
+        "placeholder": "Ki konesans w vle metrize?",
+        "cta": "Chèche"
+      },
       "manifest": {
         "docTitle": "Manifès · PNICE Academy",
         "docNo": "Nº PA-2026",
@@ -65,120 +78,98 @@
         "sealBottom": "Ofisyèl"
       },
       "trust": {
-        "courses": "{count} fòmasyon",
-        "languages": "2 lang",
+        "secure": "Peye ak {providers}",
         "certificate": "Sètifika enkli",
-        "moncash": "MonCash ✓"
+        "languages": "Kreyòl + Franse"
       }
     },
-    "marketplace": {
-      "eyebrow": "Katalòg la",
-      "title": "Kisa w vle aprann jodi a?",
-      "searchLabel": "Chèche yon fòmasyon",
-      "searchPlaceholder": "Ki konesans w vle metrize?",
-      "searchCta": "Chèche",
-      "categoriesLabel": "Oswa navige pa kategori",
-      "categoryCount": "{count, plural, one {1 fòmasyon} other {# fòmasyon}}"
+    "stats": {
+      "label": "Rejis la",
+      "courses": "{count, plural, one {1 fòmasyon} other {# fòmasyon}}",
+      "teachers": "{count, plural, one {1 anseyan} other {# anseyan}}",
+      "students": "{count, plural, one {1 elèv} other {# elèv}}",
+      "certificates": "{count, plural, one {1 sètifika delivre} other {# sètifika delivre}}"
     },
-    "blockers": {
-      "eyebrow": "Poukisa ou rete dèyè",
-      "title": "Twa bagay k ap bare wout ou — nou wete yo youn pa youn",
-      "items": [
-        {
-          "title": "Ou pa ka peye sou entènèt",
-          "text": "Amazon, Netflix, ChatGPT Plus, yon senp abònman — tout mande yon kat ou pa genyen. Lajan an la, se kanal la ki manke."
-        },
-        {
-          "title": "Ou pa konn kòmanse vann sou entènèt",
-          "text": "Ou wè lòt moun ap vann sou Facebook ak TikTok. Ou pa konn ki sit pou itilize, ki founisè fè konfyans, ki pri pou mande."
-        },
-        {
-          "title": "Zouti IA yo sanble twò teknik",
-          "text": "Kreye yon sit, yon bot oswa yon otomatizasyon sanble rezève pou pwogramè. Ak bon fòmasyon, se pa ka a ankò."
-        }
-      ]
-    },
-    "teachTeaser": {
-      "eyebrow": "Sou PNICE Academy",
-      "title": "Ou metrize yon konesans? Ou ka anseye l isit la.",
-      "body": "Nenpòt moun ki gen yon konpetans ka kreye pwòp fòmasyon pa yo sou platfòm nan. Ou fikse pri w, ou touche 70% chak vant, epi lajan an rive dirèk nan MonCash ou.",
-      "facts": ["Fikse pri w", "70% pou ou", "Peye an MonCash"],
-      "ctaLearnMore": "Aprann plis",
-      "interestCta": "Vin Anseyan",
-      "sealTop": "Anseyan",
-      "sealBottom": "Louvri"
+    "teachersRail": {
+      "eyebrow": "Anseyan yo",
+      "title": "{count, plural, one {Premye anseyan yo — e plas yo louvri} other {# anseyan, chak ak pwòp katalòg pa l}}",
+      "courseCount": "{count, plural, one {1 fòmasyon} other {# fòmasyon}}",
+      "rating": "{avg} ({count})",
+      "viewProfile": "Wè pwofil la",
+      "recruitKicker": "Plas ou a la",
+      "recruitTitle": "Pwochen anseyan an ka se ou",
+      "recruitBody": "Ou metrize yon konesans moun bezwen? Kreye fòmasyon w sou platfòm nan — ou fikse pri w, ou touche 70% sou chak vant.",
+      "recruitCta": "Vin anseyan"
     },
     "manifest": {
       "eyebrow": "Manifès la",
       "title": "{count} fòmasyon, chak se yon konpetans ou ka vann",
-      "subtitle": "Chak liy se yon konpetans ki anbake sou non ou. Pran yo youn pa youn, oswa jwenn tout ak abònman anseyan an.",
-      "teacherLine": "Anseyan: {name}"
+      "subtitle": "Chak liy se yon konpetans ki anbake sou non ou. Pran yo youn pa youn, oswa louvri tout yon katalòg ak yon pass."
     },
-    "spotlight": {
-      "eyebrow": "Anseyan vedèt",
-      "title": "Fè konesans ak premye anseyan platfòm nan",
-      "kicker": "Anseyan #1",
-      "statLine": "Anseyan #1 · {count, plural, one {1 fòmasyon} other {# fòmasyon}} · Nòt —",
-      "profileLink": "Wè pwofil li",
-      "sub": {
-        "eyebrow": "Abònman",
-        "title": "Pass PNICE — tout kou yo",
-        "body": "Louvri TOUT fòmasyon sou platfòm PNICE la — chak anseyan — ak yon sèl abònman.",
-        "cta": "Pran Pass PNICE la"
-      }
-    },
-    "how": {
-      "eyebrow": "Kijan pou aprann",
-      "title": "De fason pou aprann",
-      "philosophy": "Chak anseyan fikse pwòp pri li — yon sèl pri pou tout moun, an dola tankou an goud. Pa gen frè kache.",
-      "ways": {
-        "sub": {
-          "badge": "Abònman",
-          "title": "Pran abònman ak yon anseyan",
-          "text": "Yon sèl pri chak mwa: aksè a tout fòmasyon anseyan an pibliye yo, ansanm ak nouvo yo, otomatikman.",
-          "cta": "Wè abònman ki disponib"
-        },
-        "unit": {
-          "badge": "A linite",
-          "title": "Achte yon fòmasyon apa",
-          "text": "Peye yon sèl fwa pou yon fòmasyon, epi gade l a vi — san abònman.",
-          "cta": "Gade tout fòmasyon yo"
-        }
+    "pricing": {
+      "eyebrow": "Pri yo",
+      "title": "Twa fason pou aprann",
+      "philosophy": "Chak anseyan fikse pwòp pri li — yon sèl pri pou tout moun, Ayiti kou dyaspora. Pa gen frè kache.",
+      "unit": {
+        "badge": "A linite",
+        "title": "Achte yon fòmasyon apa",
+        "text": "Peye yon sèl fwa pou yon fòmasyon, epi li rete pou ou a vi — san okenn abònman.",
+        "from": "Depi",
+        "cta": "Gade fòmasyon yo"
       },
-      "steps": {
-        "eyebrow": "An 3 etap",
-        "title": "Kijan tout sa mache",
-        "items": [
-          { "title": "Chwazi", "text": "Chwazi yon fòmasyon oswa yon anseyan ki enterese w." },
-          { "title": "Peye", "text": "Peye an MonCash, NatCash oswa ak kat — an dola tankou an goud." },
-          { "title": "Aprann", "text": "Swiv leson yo nan pwòp rit ou, epi resevwa sètifika w lè w fini." }
-        ]
-      }
+      "teacher": {
+        "badge": "Pass anseyan",
+        "title": "Pass yon anseyan",
+        "text": "Yon abònman chak mwa ki louvri tout fòmasyon YON anseyan — ansanm ak chak nouvo kou li pibliye. Se anseyan an ki fikse pri pass li.",
+        "scopeGeneric": "Aksè sèlman a kou anseyan sa a — pa gen aksè a lòt pwofesè.",
+        "example": "Egzanp: pass {name}",
+        "cta": "Wè pass anseyan an"
+      },
+      "platform": {
+        "badge": "Pass PNICE",
+        "title": "Pass PNICE — tout platfòm nan",
+        "text": "Yon sèl abònman ki louvri TOUT fòmasyon sou PNICE Academy — chak anseyan, chak nouvo kou ki pibliye.",
+        "cta": "Pran Pass PNICE la"
+      },
+      "details": "Tout detay yo"
+    },
+    "teach": {
+      "eyebrow": "Anseye sou PNICE",
+      "title": "Ou metrize yon konesans? Aplikasyon yo louvri.",
+      "body": "Kreye pwòp fòmasyon w sou platfòm nan. Ou fikse pri w, ou touche 70% sou chak vant, ou mande retrè w depi $25 (MonCash, NatCash, PayPal oswa bank), epi yon admin revize chak kou anvan li parèt an piblik.",
+      "facts": ["70% pou ou", "Ou fikse pri w", "Retrè depi $25", "Revizyon anvan piblikasyon"],
+      "cta": "Kòmanse aplikasyon w",
+      "interestCta": "Vin Anseyan",
+      "sealTop": "Anseyan",
+      "sealBottom": "Louvri"
     },
     "founder": {
-      "eyebrow": "Istwa nou",
-      "title": "Poukisa PNICE Academy egziste",
-      "body": "PNICE te kòmanse kòm yon biznis senp: pote pakè ant Miami ak Ayiti. Chak jou, nou te wè menm baryè a repete — moun ki gen talan, men san aksè: pa gen kat pou peye sou entènèt, pa gen fason pou vann konpetans yo, pa gen konfyans nan zouti dijital. Academy a se repons nou: menm jan nou konekte machandiz ant de peyi, kounye a n ap konekte moun ak konesans ki fè lajan an dola — an kreyòl, adapte pou reyalite Ayiti a.",
+      "eyebrow": "Moun ki dèyè platfòm nan",
+      "title": "Kreyatè platfòm nan — e anseyan #1 li",
+      "body": "PNICE te kòmanse kòm yon biznis senp: pote pakè ant Miami ak Ayiti. Chak jou, menm baryè a te repete — moun ki gen talan, men san aksè pou vann konesans yo. Academy a se repons nou: yon mache kote anseyan ayisyen vann konesans pratik yo an kreyòl. Fondatè a bati platfòm nan — epi li anseye sou li tou, kòm anseyan #1, ak menm règ tout lòt anseyan yo: menm revizyon, menm pataj 70/30, menm paj piblik.",
       "points": [
         "Konesans ki soti nan vrè biznis, pa nan teyori",
         "Egzanp konkrè ki fèt pou mache Ayisyen an",
         "Tout bagay disponib an kreyòl ak an franse"
       ],
-      "imgCaption": "PNICE Shipping · Miami ⇄ Ayiti"
+      "imgCaption": "PNICE Shipping · Miami ⇄ Ayiti",
+      "profileLink": "Wè pwofil anseyan li a"
     },
     "testimonials": {
       "eyebrow": "Sa moun ap di",
-      "title": "Premye rezilta yo",
-      "exampleTag": "Egzanp",
-      "note": "Egzanp estrikti — n ap ranplase yo ak vrè temwayaj anvan lansman an."
+      "title": "Premye rezilta yo"
     },
     "faq": {
       "eyebrow": "Kesyon",
       "title": "Kesyon moun konn poze",
       "items": [
         {
+          "q": "Kijan pou m peye jodi a?",
+          "a": "Jodi a ou peye ak kat Visa oswa Mastercard, an tout sekirite. Chak pri parèt an dola ansanm ak ekivalan li an goud."
+        },
+        {
           "q": "Èske m ka peye ak MonCash oswa NatCash?",
-          "a": "Wi. Ou ka peye ak MonCash, NatCash, PayPal, kat Visa/Mastercard oswa kripto. Montan an parèt an dola ak ekivalan li an goud."
+          "a": "Poko — men y ap vini byento. Kou MonCash ak NatCash pare, w ap wè yo parèt otomatikman nan paj peman an."
         },
         {
           "q": "Èske se yon sèl pri pou Ayiti ak dyaspora?",
@@ -186,7 +177,15 @@
         },
         {
           "q": "Èske m ka kòmanse ak yon sèl fòmasyon?",
-          "a": "Wi. Ou ka achte yon fòmasyon apa pou w genyen l a vi, oswa pran abònman yon anseyan pou jwenn aksè a tout fòmasyon li yo."
+          "a": "Wi. Ou ka achte yon fòmasyon apa pou w genyen l a vi, san okenn abònman — epi ajoute yon pass pita si w vle plis."
+        },
+        {
+          "q": "Ki diferans ant pass yon anseyan ak Pass PNICE la?",
+          "a": "Pass yon anseyan louvri tout fòmasyon YON sèl anseyan, nan pri anseyan sa a fikse. Pass PNICE la louvri TOUT fòmasyon sou tout platfòm nan — chak anseyan. Toude renouvle chak mwa."
+        },
+        {
+          "q": "Kijan pou m kanpe yon abònman?",
+          "a": "Ekri nou nenpòt lè — nan paj Kont ou oswa pa imèl — epi n ap kanpe renouvèlman an. Ou kenbe aksè jiska fen peryòd ou peye a, epi fòmasyon ou te achte a linite yo rete pou ou a vi."
         },
         {
           "q": "Èske kontni an an kreyòl?",
@@ -198,18 +197,14 @@
         },
         {
           "q": "Èske m ka anseye sou PNICE Academy?",
-          "a": "Byento. N ap louvri yon fason pou moun ki metrize yon konpetans kreye pwòp fòmasyon pa yo — gade paj Anseye a pou montre enterè w kounye a."
-        },
-        {
-          "q": "Kijan pou m peye?",
-          "a": "Ou peye ak MonCash, NatCash, PayPal, kat Visa/Mastercard oswa an kripto. Chak pri parèt an dola ansanm ak ekivalan li an goud."
+          "a": "Wi — aplikasyon yo louvri. Ale sou paj Anseye a, ranpli aplikasyon w, epi yon admin ap revize li. Ou fikse pwòp pri w epi ou touche 70% sou chak vant."
         }
       ]
     },
     "finalCta": {
       "title": "Chak jou san konpetans se yon jou san lajan anplis",
-      "subtitle": "Ou pa bezwen tann pou w kòmanse. Chwazi yon fòmasyon oswa pran abònman yon anseyan, epi kòmanse aprann kounye a — an kreyòl, sou telefòn ou, peye an MonCash.",
-      "cta": "Kòmanse kounye a"
+      "subtitle": "Ou pa bezwen tann pou w kòmanse. Chwazi yon fòmasyon, oswa pran yon pass ki louvri tout yon katalòg — an kreyòl, sou telefòn ou, nan pwòp rit ou.",
+      "cta": "Kòmanse vwayaj ou"
     }
   },
   "catalog": {

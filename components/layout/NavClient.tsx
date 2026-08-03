@@ -8,7 +8,7 @@ import { buttonClasses } from '@/components/ui/Button';
 import { cn } from '@/lib/cn';
 
 type NavLinkItem = {
-  href: '/formations' | '/enseigner' | '/#pri';
+  href: '/formations' | '/enseigner' | '/pri';
   label: string;
 };
 
@@ -25,12 +25,16 @@ export function NavClient({
   links,
   cta,
   authSlot,
+  menuExtra,
   openMenuLabel,
   closeMenuLabel,
 }: {
   links: NavLinkItem[];
   cta: string;
   authSlot: React.ReactNode;
+  /** Extra, already-rendered entries for the MOBILE panel only (e.g. the
+   *  signed-in « Tablo debò » link, whose top-bar badge is sm-gated). */
+  menuExtra?: React.ReactNode;
   openMenuLabel: string;
   closeMenuLabel: string;
 }) {
@@ -83,7 +87,8 @@ export function NavClient({
                     (link.href === '/formations' &&
                       (pathname === '/formations' ||
                         pathname.startsWith('/formations/'))) ||
-                    (link.href === '/enseigner' && pathname === '/enseigner');
+                    (link.href === '/enseigner' && pathname === '/enseigner') ||
+                    (link.href === '/pri' && pathname === '/pri');
                   return (
                     <Link
                       key={link.href}
@@ -144,6 +149,7 @@ export function NavClient({
                   {link.label}
                 </Link>
               ))}
+              {menuExtra}
               <Link
                 href="/formations"
                 tabIndex={open ? undefined : -1}

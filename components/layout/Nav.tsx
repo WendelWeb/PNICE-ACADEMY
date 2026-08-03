@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { SignedIn, SignedOut } from '@clerk/nextjs';
+import { IconSchool } from '@tabler/icons-react';
 import { Link } from '@/i18n/routing';
 import { AvatarLink } from '@/components/auth/AvatarLink';
 import { AdminLink } from '@/components/admin/AdminLink';
@@ -21,12 +22,26 @@ export async function Nav() {
   const links = [
     { href: '/formations' as const, label: t('formations') },
     { href: '/enseigner' as const, label: t('teach') },
-    { href: '/#pri' as const, label: t('pricing') },
+    // The /pri pricing page ships next stage — the nav entry lands now
+    // (Stage: the living manifest); the home triptych keeps the historic
+    // /#pri anchor alive in the meantime.
+    { href: '/pri' as const, label: t('pricing') },
   ];
 
-  // Unchanged from the previous nav: LangToggle/AdminLink/AvatarLink keep
-  // their existing visibility — NavClient only adds mobile reach for the
-  // nav links + CTA, which were already sm:-gated before this task.
+  // Stage: the living manifest — a signed-in learner can finally reach
+  // their dashboard from the nav: a mono badge next to Studio/Admin on
+  // ≥sm, mirrored into the mobile menu panel via `menuExtra` (the top-bar
+  // badge is sm-gated so 360px stays uncrowded).
+  const dashboardBadge = (
+    <Link
+      href="/tableau-de-bord"
+      className="hidden items-center gap-1 rounded bg-ink/[0.06] px-2.5 py-1 font-mono text-[11px] font-medium uppercase tracking-wide text-ink/70 transition-colors hover:bg-ink/10 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ochre sm:inline-flex"
+    >
+      <IconSchool size={14} />
+      {t('dashboard')}
+    </Link>
+  );
+
   const authSlot = clerkEnabled ? (
     <>
       <SignedOut>
@@ -38,6 +53,7 @@ export async function Nav() {
         </Link>
       </SignedOut>
       <SignedIn>
+        {dashboardBadge}
         <StudioLink isApprovedTeacher={approvedTeacher} />
         <AdminLink />
         <AvatarLink />
@@ -52,11 +68,26 @@ export async function Nav() {
     </Link>
   );
 
+  // The mobile-menu mirror of the dashboard entry — the panel closes on
+  // route change (NavClient's pathname effect), so a plain server-rendered
+  // link works here.
+  const menuExtra = clerkEnabled ? (
+    <SignedIn>
+      <Link
+        href="/tableau-de-bord"
+        className="rounded px-2 py-2.5 text-[15px] text-ink/80 transition-colors hover:bg-ink/5 hover:text-ink"
+      >
+        {t('dashboard')}
+      </Link>
+    </SignedIn>
+  ) : null;
+
   return (
     <NavClient
       links={links}
       cta={t('cta')}
       authSlot={authSlot}
+      menuExtra={menuExtra}
       openMenuLabel={t('openMenu')}
       closeMenuLabel={t('closeMenu')}
     />

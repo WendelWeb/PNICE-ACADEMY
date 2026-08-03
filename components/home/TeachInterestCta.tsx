@@ -6,8 +6,8 @@ import { buttonClasses, type ButtonVariant } from '@/components/ui/Button';
 import { cn } from '@/lib/cn';
 
 /**
- * The « Devenir enseignant » CTA (home `TeachTeaser`, reused by U4bis
- * /enseigner's fallback for signed-out visitors) — Task C3-T2 REPLACES the
+ * The « Devenir enseignant » CTA (/enseigner's signed-out entry; the home
+ * recruit panel now links /enseigner directly) — Task C3-T2 REPLACES the
  * old interest-capture ticket (`registerTeachInterestAction`) for signed-in
  * users now that applications are actually open: a signed-in user just
  * navigates straight to /enseigner, where the real wizard (or their
@@ -23,7 +23,7 @@ export function TeachInterestCta({
   /** `ghost` on the home teaser (default); `primary` where it is THE action (/enseigner). */
   variant?: ButtonVariant;
 }) {
-  const t = useTranslations('home.teachTeaser');
+  const t = useTranslations('home.teach');
 
   return (
     <AuthCta href="/enseigner" className={cn(buttonClasses(variant, 'lg'), className)}>

@@ -3,6 +3,7 @@
     "formations": "Formations",
     "teach": "Enseigner",
     "pricing": "Tarifs",
+    "dashboard": "Tableau de bord",
     "login": "Connexion",
     "cta": "Commencer",
     "openMenu": "Ouvrir le menu",
@@ -26,17 +27,20 @@
       "learn": {
         "title": "Apprendre",
         "formations": "Catalogue de formations",
-        "pricing": "Tarifs et abonnement"
+        "pricing": "Tarifs et pass",
+        "dashboard": "Mon tableau de bord"
       },
       "teach": {
         "title": "Enseigner",
-        "teaser": "Tu maîtrises un savoir-faire ? Viens l'enseigner sur la plateforme."
+        "become": "Devenir enseignant",
+        "example": "Voir un profil d'enseignant"
       },
       "help": {
         "title": "Aide",
         "account": "Mon compte",
-        "support": "Support",
-        "verify": "Vérifier un certificat"
+        "verify": "Vérifier un certificat",
+        "email": "Nous écrire par e-mail",
+        "whatsapp": "Nous écrire sur WhatsApp"
       },
       "legal": {
         "title": "Légal"
@@ -49,12 +53,21 @@
     "rights": "Tous droits réservés"
   },
   "home": {
+    "meta": {
+      "title": "PNICE Academy — le marché haïtien des savoir-faire pratiques",
+      "description": "Apprends avec des enseignants haïtiens qui maîtrisent ce qu'ils enseignent. Achète une formation à l'unité, prends le pass d'un enseignant ou le Pass PNICE pour tout le catalogue — en créole et en français, avec certificat."
+    },
     "hero": {
-      "eyebrow": "La plateforme haïtienne des savoir-faire pratiques",
+      "eyebrow": "Le marché haïtien des savoir-faire pratiques",
       "title": "Des savoir-faire concrets qui rapportent.",
-      "subtitle": "Apprends avec des enseignants qui maîtrisent ce qu'ils enseignent. Paie en gourdes via MonCash, pratique avec de vrais outils, et termine avec un certificat en main.",
-      "ctaPrimary": "Commencer à apprendre",
-      "ctaSecondary": "Voir le catalogue",
+      "subtitle": "Apprends avec des enseignants qui maîtrisent ce qu'ils enseignent. Chaque prix en dollars avec son équivalent en gourdes, tu pratiques avec de vrais outils, et tu termines avec un certificat en main.",
+      "ctaPrimary": "Découvrir les formations",
+      "ctaSecondary": "Devenir enseignant",
+      "search": {
+        "label": "Rechercher une formation",
+        "placeholder": "Quel savoir-faire veux-tu maîtriser ?",
+        "cta": "Chercher"
+      },
       "manifest": {
         "docTitle": "Manifeste · PNICE Academy",
         "docNo": "Nº PA-2026",
@@ -65,120 +78,98 @@
         "sealBottom": "Officiel"
       },
       "trust": {
-        "courses": "{count} formations",
-        "languages": "2 langues",
+        "secure": "Paiement par {providers}",
         "certificate": "Certificat inclus",
-        "moncash": "MonCash ✓"
+        "languages": "Créole + Français"
       }
     },
-    "marketplace": {
-      "eyebrow": "Le catalogue",
-      "title": "Qu'est-ce que tu veux apprendre aujourd'hui ?",
-      "searchLabel": "Rechercher une formation",
-      "searchPlaceholder": "Quel savoir-faire veux-tu maîtriser ?",
-      "searchCta": "Chercher",
-      "categoriesLabel": "Ou parcours par catégorie",
-      "categoryCount": "{count, plural, one {1 formation} other {# formations}}"
+    "stats": {
+      "label": "Le registre",
+      "courses": "{count, plural, one {1 formation} other {# formations}}",
+      "teachers": "{count, plural, one {1 enseignant} other {# enseignants}}",
+      "students": "{count, plural, one {1 apprenant} other {# apprenants}}",
+      "certificates": "{count, plural, one {1 certificat délivré} other {# certificats délivrés}}"
     },
-    "blockers": {
-      "eyebrow": "Pourquoi tu restes à la traîne",
-      "title": "Trois choses qui bloquent ta route — on les enlève une par une",
-      "items": [
-        {
-          "title": "Tu ne peux pas payer en ligne",
-          "text": "Amazon, Netflix, ChatGPT Plus, un simple abonnement — tout demande une carte que tu n'as pas. L'argent est là, c'est le canal qui manque."
-        },
-        {
-          "title": "Tu ne sais pas comment commencer à vendre en ligne",
-          "text": "Tu vois les autres vendre sur Facebook et TikTok. Tu ne sais pas quel site utiliser, quel fournisseur est fiable, quel prix demander."
-        },
-        {
-          "title": "Les outils IA semblent trop techniques",
-          "text": "Créer un site, un bot ou une automatisation semble réservé aux programmeurs. Avec la bonne formation, ce n'est plus le cas."
-        }
-      ]
-    },
-    "teachTeaser": {
-      "eyebrow": "Sur PNICE Academy",
-      "title": "Tu maîtrises un savoir-faire ? Tu peux l'enseigner ici.",
-      "body": "Toute personne qui maîtrise une compétence peut créer sa propre formation sur la plateforme. Tu fixes ton prix, tu gardes 70 % de chaque vente, et l'argent arrive directement sur ton MonCash.",
-      "facts": ["Fixe ton prix", "70 % pour toi", "Payé via MonCash"],
-      "ctaLearnMore": "En savoir plus",
-      "interestCta": "Devenir enseignant",
-      "sealTop": "Formateur",
-      "sealBottom": "Ouvert"
+    "teachersRail": {
+      "eyebrow": "Les enseignants",
+      "title": "{count, plural, one {Les premiers enseignants — et les places sont ouvertes} other {# enseignants, chacun avec son propre catalogue}}",
+      "courseCount": "{count, plural, one {1 formation} other {# formations}}",
+      "rating": "{avg} ({count})",
+      "viewProfile": "Voir le profil",
+      "recruitKicker": "Ta place est là",
+      "recruitTitle": "Le prochain enseignant, c'est peut-être toi",
+      "recruitBody": "Tu maîtrises un savoir-faire recherché ? Crée tes formations sur la plateforme — tu fixes ton prix, tu gardes 70 % de chaque vente.",
+      "recruitCta": "Devenir enseignant"
     },
     "manifest": {
       "eyebrow": "Le manifeste",
       "title": "{count} formations, chacune une compétence que tu peux vendre",
-      "subtitle": "Chaque ligne est une compétence embarquée à ton nom. Prends-les une par une, ou débloque-les toutes avec l'abonnement de l'enseignant.",
-      "teacherLine": "Enseignant : {name}"
+      "subtitle": "Chaque ligne est une compétence embarquée à ton nom. Prends-les une par une, ou débloque tout un catalogue avec un pass."
     },
-    "spotlight": {
-      "eyebrow": "Enseignant vedette",
-      "title": "Fais connaissance avec le premier enseignant de la plateforme",
-      "kicker": "Enseignant nº1",
-      "statLine": "Enseignant nº1 · {count, plural, one {1 formation} other {# formations}} · Note —",
-      "profileLink": "Voir son profil",
-      "sub": {
-        "eyebrow": "Abonnement",
-        "title": "Pass PNICE — toutes les formations",
-        "body": "Débloque TOUTES les formations de la plateforme PNICE — tous les enseignants confondus — avec un seul abonnement.",
-        "cta": "Prendre le Pass PNICE"
-      }
-    },
-    "how": {
-      "eyebrow": "Comment apprendre",
-      "title": "Deux façons d'apprendre",
-      "philosophy": "Chaque enseignant fixe son propre prix — un seul prix pour tout le monde, en dollars comme en gourdes. Pas de frais cachés.",
-      "ways": {
-        "sub": {
-          "badge": "Abonnement",
-          "title": "Prendre l'abonnement d'un enseignant",
-          "text": "Un seul prix par mois : accès à toutes les formations publiées par l'enseignant, plus les nouvelles, automatiquement.",
-          "cta": "Voir les abonnements disponibles"
-        },
-        "unit": {
-          "badge": "À l'unité",
-          "title": "Acheter une formation seule",
-          "text": "Paye une seule fois pour une formation, et garde-la à vie — sans abonnement.",
-          "cta": "Voir toutes les formations"
-        }
+    "pricing": {
+      "eyebrow": "Les tarifs",
+      "title": "Trois façons d'apprendre",
+      "philosophy": "Chaque enseignant fixe son propre prix — un seul prix pour tout le monde, Haïti comme diaspora. Pas de frais cachés.",
+      "unit": {
+        "badge": "À l'unité",
+        "title": "Acheter une formation seule",
+        "text": "Paye une seule fois pour une formation, et elle reste à toi à vie — sans aucun abonnement.",
+        "from": "Dès",
+        "cta": "Voir les formations"
       },
-      "steps": {
-        "eyebrow": "En 3 étapes",
-        "title": "Comment tout ça fonctionne",
-        "items": [
-          { "title": "Choisis", "text": "Choisis une formation ou un enseignant qui t'intéresse." },
-          { "title": "Paie", "text": "Paie avec MonCash, NatCash ou par carte — en dollars comme en gourdes." },
-          { "title": "Apprends", "text": "Suis les leçons à ton rythme, et reçois ton certificat une fois terminé." }
-        ]
-      }
+      "teacher": {
+        "badge": "Pass enseignant",
+        "title": "Le pass d'un enseignant",
+        "text": "Un abonnement mensuel qui débloque toutes les formations d'UN enseignant — y compris chaque nouveau cours qu'il publie. C'est l'enseignant qui fixe le prix de son pass.",
+        "scopeGeneric": "Accès uniquement aux cours de cet enseignant — pas d'accès aux autres professeurs.",
+        "example": "Exemple : le pass de {name}",
+        "cta": "Voir le pass enseignant"
+      },
+      "platform": {
+        "badge": "Pass PNICE",
+        "title": "Pass PNICE — toute la plateforme",
+        "text": "Un seul abonnement qui débloque TOUTES les formations de PNICE Academy — tous les enseignants, chaque nouveau cours publié.",
+        "cta": "Prendre le Pass PNICE"
+      },
+      "details": "Tous les détails"
+    },
+    "teach": {
+      "eyebrow": "Enseigner sur PNICE",
+      "title": "Tu maîtrises un savoir-faire ? Les candidatures sont ouvertes.",
+      "body": "Crée tes propres formations sur la plateforme. Tu fixes ton prix, tu gardes 70 % de chaque vente, tu demandes ton retrait dès 25 $ (MonCash, NatCash, PayPal ou banque), et un admin relit chaque cours avant sa mise en ligne.",
+      "facts": ["70 % pour toi", "Tu fixes ton prix", "Retrait dès 25 $", "Relecture avant publication"],
+      "cta": "Commencer ma candidature",
+      "interestCta": "Devenir enseignant",
+      "sealTop": "Formateur",
+      "sealBottom": "Ouvert"
     },
     "founder": {
-      "eyebrow": "Notre histoire",
-      "title": "Pourquoi PNICE Academy existe",
-      "body": "PNICE a commencé comme un business simple : transporter des colis entre Miami et Haïti. Chaque jour, nous voyions la même barrière se répéter — des gens pleins de talent, mais sans accès : pas de carte pour payer en ligne, pas de moyen de vendre leurs compétences, pas de confiance dans les outils numériques. L'Academy est notre réponse : comme nous connectons des marchandises entre deux pays, nous connectons maintenant des gens à des savoir-faire qui rapportent en dollars — en créole, adaptés à la réalité haïtienne.",
+      "eyebrow": "Celui derrière la plateforme",
+      "title": "Le créateur de la plateforme — et son enseignant nº1",
+      "body": "PNICE a commencé comme un business simple : transporter des colis entre Miami et Haïti. Chaque jour, la même barrière se répétait — des gens pleins de talent, mais sans accès pour vendre leur savoir. L'Academy est notre réponse : un marché où des enseignants haïtiens vendent leurs savoir-faire pratiques en créole. Le fondateur a bâti la plateforme — et il y enseigne aussi, comme enseignant nº1, avec les mêmes règles que tous les autres : même relecture, même partage 70/30, même page publique.",
       "points": [
         "Un savoir issu d'un vrai business, pas de la théorie",
         "Des exemples concrets pensés pour le marché haïtien",
         "Tout est disponible en créole et en français"
       ],
-      "imgCaption": "PNICE Shipping · Miami ⇄ Ayiti"
+      "imgCaption": "PNICE Shipping · Miami ⇄ Ayiti",
+      "profileLink": "Voir son profil d'enseignant"
     },
     "testimonials": {
       "eyebrow": "Ce qu'ils en disent",
-      "title": "Les premiers résultats",
-      "exampleTag": "Exemple",
-      "note": "Exemples de structure — à remplacer par de vrais témoignages avant le lancement."
+      "title": "Les premiers résultats"
     },
     "faq": {
       "eyebrow": "Questions",
       "title": "Questions fréquentes",
       "items": [
         {
+          "q": "Comment est-ce que je paie aujourd'hui ?",
+          "a": "Aujourd'hui tu paies par carte Visa ou Mastercard, en toute sécurité. Chaque prix s'affiche en dollars avec son équivalent en gourdes."
+        },
+        {
           "q": "Puis-je payer avec MonCash ou NatCash ?",
-          "a": "Oui. Tu peux payer avec MonCash, NatCash, PayPal, carte Visa/Mastercard ou en crypto. Le montant s'affiche en dollars avec son équivalent en gourdes."
+          "a": "Pas encore — mais ça arrive bientôt. Dès que MonCash et NatCash seront prêts, tu les verras apparaître automatiquement sur la page de paiement."
         },
         {
           "q": "Le prix est-il le même pour Haïti et la diaspora ?",
@@ -186,7 +177,15 @@
         },
         {
           "q": "Puis-je commencer avec une seule formation ?",
-          "a": "Oui. Tu peux acheter une formation seule pour la garder à vie, ou prendre l'abonnement d'un enseignant pour accéder à toutes ses formations."
+          "a": "Oui. Tu peux acheter une formation seule pour la garder à vie, sans aucun abonnement — et ajouter un pass plus tard si tu en veux plus."
+        },
+        {
+          "q": "Quelle différence entre le pass d'un enseignant et le Pass PNICE ?",
+          "a": "Le pass d'un enseignant débloque toutes les formations d'UN seul enseignant, au prix que cet enseignant fixe. Le Pass PNICE débloque TOUTES les formations de toute la plateforme — tous les enseignants. Les deux se renouvellent chaque mois."
+        },
+        {
+          "q": "Comment arrêter un abonnement ?",
+          "a": "Écris-nous à tout moment — depuis ta page Compte ou par e-mail — et nous arrêtons le renouvellement. Tu gardes l'accès jusqu'à la fin de la période payée, et les formations achetées à l'unité restent à toi à vie."
         },
         {
           "q": "Le contenu est-il en créole ?",
@@ -198,18 +197,14 @@
         },
         {
           "q": "Puis-je enseigner sur PNICE Academy ?",
-          "a": "Bientôt. Nous ouvrons un moyen pour que toute personne qui maîtrise une compétence crée sa propre formation — va sur la page Enseigner pour signaler ton intérêt dès maintenant."
-        },
-        {
-          "q": "Comment est-ce que je paie ?",
-          "a": "Tu payes avec MonCash, NatCash, PayPal, carte Visa/Mastercard ou en crypto. Chaque prix s'affiche en dollars avec son équivalent en gourdes."
+          "a": "Oui — les candidatures sont ouvertes. Va sur la page Enseigner, remplis ta candidature, et un admin la relira. Tu fixes ton propre prix et tu gardes 70 % de chaque vente."
         }
       ]
     },
     "finalCta": {
       "title": "Chaque jour sans compétence est un jour sans revenu en plus",
-      "subtitle": "Tu n'as pas besoin d'attendre pour commencer. Choisis une formation ou prends l'abonnement d'un enseignant, et commence à apprendre maintenant — en créole, depuis ton téléphone, payé via MonCash.",
-      "cta": "Commencer maintenant"
+      "subtitle": "Tu n'as pas besoin d'attendre pour commencer. Choisis une formation, ou prends un pass qui débloque tout un catalogue — en créole, depuis ton téléphone, à ton rythme.",
+      "cta": "Commencer ton voyage"
     }
   },
   "catalog": {

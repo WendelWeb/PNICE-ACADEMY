@@ -1,20 +1,23 @@
 import { getTranslations } from 'next-intl/server';
+import { Link } from '@/i18n/routing';
 import { Section, Container, Eyebrow } from '@/components/ui/Section';
 import { Reveal } from '@/components/ui/Reveal';
-import { Link } from '@/i18n/routing';
 import { buttonClasses } from '@/components/ui/Button';
 import { Sceau } from '@/components/ui/Sceau';
-import { TeachInterestCta } from '@/components/home/TeachInterestCta';
 
 /**
- * « Byento w ap ka anseye » — the marketplace teaser (U3/A2). A kraft panel
- * previewing the future teacher path: the money facts as mono "document
- * data", the persuasive pitch, a straight link to /enseigner (built in
- * U4bis) plus the interest capture (`TeachInterestCta`). id="anseye" is the
- * anchor the nav/footer already point at (U1).
+ * The teach-recruit panel (Stage: the living manifest, section 6 — replaces
+ * TeachTeaser). Every fact chip is a claim the product actually backs
+ * today: 70/30 split (lib/teacher/profile.ts's commission default), the
+ * teacher sets their own price (studio), payouts to MonCash/NatCash/PayPal/
+ * bank from $25 (lib/teacher/apply-validation.ts's PAYOUT_METHODS + the
+ * $25 threshold), and admin review before anything goes public
+ * (lib/courses/review-actions.ts). Applications are OPEN — the CTA goes
+ * straight to /enseigner. `id="anseye"` keeps the anchor nav/footer
+ * historically pointed at.
  */
-export async function TeachTeaser() {
-  const t = await getTranslations('home.teachTeaser');
+export async function TeachRecruit() {
+  const t = await getTranslations('home.teach');
   const facts = t.raw('facts') as string[];
 
   return (
@@ -45,11 +48,10 @@ export async function TeachTeaser() {
                   ))}
                 </ul>
 
-                <div className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+                <div className="mt-8">
                   <Link href="/enseigner" className={buttonClasses('primary', 'lg')}>
-                    {t('ctaLearnMore')}
+                    {t('cta')}
                   </Link>
-                  <TeachInterestCta />
                 </div>
               </div>
 

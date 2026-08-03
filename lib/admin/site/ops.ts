@@ -91,11 +91,15 @@ export async function unpublishTestimonial(id: string): Promise<boolean> {
   return patchTestimonial(id, { status: 'real' });
 }
 
-/** For the public home: published real ones, else the example placeholders. */
+/**
+ * For the public home: PUBLISHED testimonials only (Stage: the living
+ * manifest — the homepage states only what is real). Zero published ⇒ `[]`
+ * and the section renders nothing; the code-side placeholder personas stay
+ * admin-only material (visible in /admin/temoignages as unpublishable
+ * examples) and never reach a public surface again.
+ */
 export async function getHomeTestimonials(): Promise<SiteTestimonial[]> {
-  const all = await loadTestimonials();
-  const published = all.filter((t) => t.status === 'published');
-  return published.length ? published : all.filter((t) => t.status === 'placeholder');
+  return (await loadTestimonials()).filter((t) => t.status === 'published');
 }
 
 /**

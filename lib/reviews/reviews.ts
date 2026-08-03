@@ -111,6 +111,42 @@ export async function getCourseRating(courseSlug: string): Promise<RatingSummary
 }
 
 /**
+ * Batched `getCourseRating` for a set of courses in ONE query (Stage: the
+ * living manifest — the homepage's featured grid shows real stars without N
+ * round-trips). Same published-only rule, same math, keyed by course slug;
+ * a course with no published reviews simply has no entry (the caller
+ * renders nothing — never a fake rating). GATED + FALLBACK: no
+ * DATABASE_URL, no slugs, or a failed query ⇒ `{}`, never throws.
+ */
+export async function getCourseRatings(
+  courseSlugs: string[],
+): Promise<Record<string, RatingSummary>> {
+  if (!dbConfigured() || courseSlugs.length === 0) return {};
+  try {
+    const rows = await db
+      .select({ courseSlug: T.courseReviews.courseSlug, stars: T.courseReviews.stars })
+      .from(T.courseReviews)
+      .where(
+        and(inArray(T.courseReviews.courseSlug, courseSlugs), eq(T.courseReviews.status, 'published')),
+      );
+    const grouped = new Map<string, number[]>();
+    for (const r of rows) {
+      const arr = grouped.get(r.courseSlug) ?? [];
+      arr.push(r.stars);
+      grouped.set(r.courseSlug, arr);
+    }
+    const out: Record<string, RatingSummary> = {};
+    for (const [slug, stars] of grouped) {
+      out[slug] = { avg: stars.reduce((a, b) => a + b, 0) / stars.length, count: stars.length };
+    }
+    return out;
+  } catch (err) {
+    console.error('[reviews] getCourseRatings DB read failed, falling back to {}:', err);
+    return {};
+  }
+}
+
+/**
  * Recent PUBLISHED reviews for a course, newest first, with the reviewer's
  * display name resolved. GATED + FALLBACK: no DATABASE_URL or a failed query
  * ⇒ `[]`, never throws.

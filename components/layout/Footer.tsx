@@ -1,9 +1,28 @@
 import { getTranslations } from 'next-intl/server';
+import {
+  IconBrandFacebook,
+  IconBrandInstagram,
+  IconBrandTiktok,
+  IconBrandWhatsapp,
+  IconBrandYoutube,
+  IconMail,
+} from '@tabler/icons-react';
 import { Link } from '@/i18n/routing';
 import { LangToggle } from '@/components/LangToggle';
 import { Sceau } from '@/components/ui/Sceau';
 import { activeProviderLabels } from '@/lib/payments/providers';
+import { whatsAppHref, safeSocialUrl } from '@/lib/site/links';
+import { teachers } from '@/data/teachers';
 
+/**
+ * The footer rebuilt as real link groups (Stage: the living manifest):
+ * Aprann / Anseye / Èd / Legal, a mailto: contact that actually opens a
+ * mail client, an optional WhatsApp line (NEXT_PUBLIC_WHATSAPP_NUMBER —
+ * hidden when unset), optional social icons (NEXT_PUBLIC_SOCIAL_* — each
+ * hidden when unset), payment badges from the ONE payment-truth source,
+ * and the locale switch. All env links are validated (lib/site/links.ts)
+ * so a typo degrades to "no link", never a broken one.
+ */
 export async function Footer() {
   const t = await getTranslations('footer');
   const tLegal = await getTranslations('admin.settings.legal.page');
@@ -11,11 +30,24 @@ export async function Footer() {
   // implemented rails — the footer never claims a rail we can't charge.
   const payments = await activeProviderLabels();
 
+  const contactEmail = t('contactEmail');
+  const whatsapp = whatsAppHref(process.env.NEXT_PUBLIC_WHATSAPP_NUMBER);
+  const socials = [
+    { key: 'Facebook', href: safeSocialUrl(process.env.NEXT_PUBLIC_SOCIAL_FACEBOOK), Icon: IconBrandFacebook },
+    { key: 'Instagram', href: safeSocialUrl(process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM), Icon: IconBrandInstagram },
+    { key: 'YouTube', href: safeSocialUrl(process.env.NEXT_PUBLIC_SOCIAL_YOUTUBE), Icon: IconBrandYoutube },
+    { key: 'TikTok', href: safeSocialUrl(process.env.NEXT_PUBLIC_SOCIAL_TIKTOK), Icon: IconBrandTiktok },
+  ].filter((s): s is { key: string; href: string; Icon: typeof IconBrandFacebook } =>
+    Boolean(s.href),
+  );
+
   const legalLinks: Array<{ slug: 'cgu' | 'confidentialite' | 'remboursement' }> = [
     { slug: 'cgu' },
     { slug: 'confidentialite' },
     { slug: 'remboursement' },
   ];
+
+  const linkCls = 'text-paper-light/85 transition-colors hover:text-ochre';
 
   return (
     <footer className="relative z-10 mt-8 border-t border-ink/10 bg-ink text-paper-light">
@@ -35,6 +67,23 @@ export async function Footer() {
               {t('tagline')}
             </p>
             <p className="mt-3 text-sm text-paper-light/60">{t('madeFor')}</p>
+            {socials.length > 0 && (
+              <ul className="mt-5 flex items-center gap-3">
+                {socials.map(({ key, href, Icon }) => (
+                  <li key={key}>
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={key}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-paper-light/15 text-paper-light/70 transition-colors hover:border-ochre hover:text-ochre focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ochre"
+                    >
+                      <Icon size={18} />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {/* Aprann */}
@@ -44,52 +93,80 @@ export async function Footer() {
             </h3>
             <ul className="mt-4 space-y-2.5 text-sm">
               <li>
-                <Link href="/formations" className="text-paper-light/85 hover:text-ochre">
+                <Link href="/formations" className={linkCls}>
                   {t('columns.learn.formations')}
                 </Link>
               </li>
               <li>
-                <Link href="/#pri" className="text-paper-light/85 hover:text-ochre">
+                <Link href="/pri" className={linkCls}>
                   {t('columns.learn.pricing')}
+                </Link>
+              </li>
+              <li>
+                <Link href="/tableau-de-bord" className={linkCls}>
+                  {t('columns.learn.dashboard')}
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Anseye — applications open (Task C3-T2) */}
+          {/* Anseye */}
           <div>
             <h3 className="font-mono text-xs uppercase tracking-[0.16em] text-paper-light/50">
               {t('columns.teach.title')}
             </h3>
-            <Link
-              href="/enseigner"
-              className="mt-4 inline-block text-sm leading-relaxed text-paper-light/70 transition-colors hover:text-ochre"
-            >
-              {t('columns.teach.teaser')}
-            </Link>
+            <ul className="mt-4 space-y-2.5 text-sm">
+              <li>
+                <Link href="/enseigner" className={linkCls}>
+                  {t('columns.teach.become')}
+                </Link>
+              </li>
+              <li>
+                <Link href={`/prof/${teachers[0].slug}`} className={linkCls}>
+                  {t('columns.teach.example')}
+                </Link>
+              </li>
+            </ul>
           </div>
 
-          {/* Èd */}
+          {/* Èd — real contact channels, no auth wall */}
           <div>
             <h3 className="font-mono text-xs uppercase tracking-[0.16em] text-paper-light/50">
               {t('columns.help.title')}
             </h3>
             <ul className="mt-4 space-y-2.5 text-sm">
               <li>
-                <Link href="/kont" className="text-paper-light/85 hover:text-ochre">
+                <Link href="/kont" className={linkCls}>
                   {t('columns.help.account')}
                 </Link>
               </li>
               <li>
-                <Link href="/kont?tab=support" className="text-paper-light/85 hover:text-ochre">
-                  {t('columns.help.support')}
-                </Link>
-              </li>
-              <li>
-                <Link href="/certificats/verifier" className="text-paper-light/85 hover:text-ochre">
+                <Link href="/certificats/verifier" className={linkCls}>
                   {t('columns.help.verify')}
                 </Link>
               </li>
+              <li>
+                <a
+                  href={`mailto:${contactEmail}`}
+                  className={`${linkCls} inline-flex items-center gap-1.5`}
+                >
+                  <IconMail size={15} className="shrink-0" />
+                  {t('columns.help.email')}
+                </a>
+              </li>
+              {whatsapp && (
+                <li>
+                  <a
+                    href={whatsapp}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`${linkCls} inline-flex items-center gap-1.5`}
+                  >
+                    <IconBrandWhatsapp size={15} className="shrink-0" />
+                    {t('columns.help.whatsapp')}
+                  </a>
+                </li>
+              )}
             </ul>
           </div>
 
@@ -101,7 +178,7 @@ export async function Footer() {
             <ul className="mt-4 space-y-2.5 text-sm">
               {legalLinks.map(({ slug }) => (
                 <li key={slug}>
-                  <Link href={`/legal/${slug}`} className="text-paper-light/85 hover:text-ochre">
+                  <Link href={`/legal/${slug}`} className={linkCls}>
                     {tLegal(slug)}
                   </Link>
                 </li>
@@ -136,9 +213,9 @@ export async function Footer() {
 
         <div className="mt-8 flex flex-col gap-2 border-t border-paper-light/10 pt-6 font-mono text-[11px] text-paper-light/45 sm:flex-row sm:items-center sm:justify-between">
           <span>© {new Date().getFullYear()} PNICE Academy — {t('rights')}.</span>
-          <span>
-            {t('contact')} · {t('contactEmail')}
-          </span>
+          <a href={`mailto:${contactEmail}`} className="transition-colors hover:text-ochre">
+            {t('contact')} · {contactEmail}
+          </a>
         </div>
       </div>
     </footer>

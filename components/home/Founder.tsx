@@ -1,16 +1,19 @@
 import { getTranslations } from 'next-intl/server';
-import { IconCheck } from '@tabler/icons-react';
+import { IconArrowRight, IconCheck } from '@tabler/icons-react';
+import { Link } from '@/i18n/routing';
 import { Section, Container, Eyebrow } from '@/components/ui/Section';
 import { Reveal } from '@/components/ui/Reveal';
 import { CourseSlideshow } from '@/components/courses/CourseSlideshow';
 import { siteImages } from '@/lib/courseImage';
+import { teachers } from '@/data/teachers';
 
 /**
- * « Istwa nou » — reframed from a personal-app story into the institution's
- * origin story (U3/A2): why PNICE Academy exists, not who runs it. The
- * slideshow merges the old hero photos (now unused since U2's manifest hero)
- * with the founder gallery, so the frame spans shipping → digital skills —
- * the same arc the copy tells.
+ * « Moun ki dèyè platfòm nan » (Stage: the living manifest, section 7) —
+ * the founder reframed to the marketplace truth: the platform's CREATOR and
+ * its teacher #1, not "the" teacher. Same shipping-origin story, tightened;
+ * the mono link at the end goes to the founder's own /prof page — the same
+ * teacher sheet every other teacher gets, because the founder plays by the
+ * marketplace's own rules.
  */
 export async function Founder() {
   const t = await getTranslations('home.founder');
@@ -48,6 +51,16 @@ export async function Founder() {
                 </li>
               ))}
             </ul>
+            <Link
+              href={`/prof/${teachers[0].slug}`}
+              className="group mt-6 inline-flex items-center gap-1.5 font-mono text-xs uppercase tracking-[0.12em] text-ink/60 transition-colors hover:text-ochre"
+            >
+              {t('profileLink')}
+              <IconArrowRight
+                size={14}
+                className="transition-transform duration-150 group-hover:translate-x-0.5"
+              />
+            </Link>
           </Reveal>
         </div>
       </Container>
