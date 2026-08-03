@@ -26,7 +26,7 @@ import { VideoUpload } from '@/components/content/VideoUpload';
 import { ResourcesEditor } from '@/components/content/ResourcesEditor';
 import { inputCls, MONO_LOCALE_NAME } from '../fields';
 import { focusRing, secToMmss, mmssToSec, EditPanelSection } from './shared';
-import type { LessonActions } from './types';
+import type { LessonActions, LessonUploadPhaseHandler } from './types';
 
 function hasText(v: string): boolean {
   return v.trim() !== '';
@@ -75,6 +75,7 @@ export function LessonEditPanel({
   primaryLocale,
   uploadEnabled,
   onAct,
+  onUploadPhase,
 }: {
   slug: string;
   lesson: AdminLesson;
@@ -88,6 +89,10 @@ export function LessonEditPanel({
    *  like `bilingual`/`primaryLocale`, handed to `ResourcesEditor`. */
   uploadEnabled: boolean;
   onAct: (fn: () => Promise<{ ok: boolean }>) => void;
+  /** Stage 5 (optional, additive) — bubbles `VideoUpload`'s phase changes up
+   *  to `PlanEditor`'s lifted per-lesson upload map so an in-flight upload
+   *  survives the accordion collapsing this panel. See types.ts. */
+  onUploadPhase?: LessonUploadPhaseHandler;
 }) {
   const t = useTranslations('admin.cms.lessons');
   const tEditor = useTranslations('admin.cms.editor');
@@ -157,8 +162,20 @@ export function LessonEditPanel({
           initialVideoId={lesson.bunnyVideoId}
           createUpload={(title) => actions.createUpload(slug, lesson.id, title)}
           validateBunnyVideo={(videoId) => actions.validateBunnyVideo(videoId)}
-          onUploaded={(guid) => commit({ bunnyVideoId: guid })}
+          onUploaded={(guid, durationSeconds) => {
+            // Stage 5 — auto duration: the upload hands back the client-read,
+            // rounded video length; commit it WITH the guid (one save) and
+            // prefill the manual mm:ss field, which stays as the correction/
+            // fallback path when the browser couldn't read the metadata.
+            if (typeof durationSeconds === 'number' && durationSeconds > 0) {
+              setDur(secToMmss(durationSeconds));
+              commit({ bunnyVideoId: guid, durationSeconds });
+            } else {
+              commit({ bunnyVideoId: guid });
+            }
+          }}
           onManualIdCommit={(guid) => commit({ bunnyVideoId: guid })}
+          onPhaseChange={(phase, pct) => onUploadPhase?.(lesson.id, phase, pct)}
         />
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <label className="flex items-center gap-1.5 font-mono text-[10px] text-ink/55" title={t('hints.duration')}>

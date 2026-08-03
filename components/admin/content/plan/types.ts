@@ -8,6 +8,25 @@
  */
 import type { AdminLesson, AdminChapter, LessonPatch, ChapterPatch } from '@/lib/courses/write';
 import type { BunnyUploadResult } from '@/lib/bunny/upload';
+import type { VideoUploadPhase } from '@/components/content/VideoUpload';
+
+export type { VideoUploadPhase };
+
+/**
+ * Stage 5 (video robustness) — what `PlanEditor`'s lifted per-lesson upload
+ * map remembers about a lesson whose video upload is IN FLIGHT (or failed
+ * without being resolved): enough for `LessonRow` to (a) keep the collapsed
+ * lesson's edit panel MOUNTED (hidden) so the upload survives accordion
+ * navigation, and (b) draw the slim collapsed-row progress strip. Lessons
+ * with nothing in flight simply have no entry — 'idle'/'done' phases clear
+ * it. `pct` is the last seen upload percentage (0–100).
+ */
+export type LessonUploadInfo = { phase: 'creating' | 'uploading' | 'error'; pct: number };
+
+/** Stage 5 — how a `VideoUpload` phase change bubbles (via `LessonEditPanel`
+ *  → `LessonRow`) up to `PlanEditor`'s lifted map. Plain data/callback props
+ *  threaded like `bilingual`, NOT part of the `LessonActions` DI contract. */
+export type LessonUploadPhaseHandler = (lessonId: string, phase: VideoUploadPhase, pct: number) => void;
 
 export type ContentResult = { ok: boolean; message?: string; slug?: string; count?: number; lessonId?: string };
 

@@ -8,7 +8,7 @@ import type { AdminChapter, AdminLesson, ChapterPatch } from '@/lib/courses/writ
 import { Field, inputCls, MONO_LOCALE_NAME } from '../fields';
 import { focusRing, iconBtn } from './shared';
 import { LessonRow } from './LessonRow';
-import type { LessonActions } from './types';
+import type { LessonActions, LessonUploadInfo, LessonUploadPhaseHandler } from './types';
 
 function hasText(v: string): boolean {
   return v.trim() !== '';
@@ -33,6 +33,8 @@ export function ChapterGroup({
   uploadEnabled,
   expandedId,
   onToggleExpand,
+  uploads,
+  onUploadPhase,
 }: {
   slug: string;
   chapter: AdminChapter;
@@ -54,6 +56,11 @@ export function ChapterGroup({
   uploadEnabled: boolean;
   expandedId: string | null;
   onToggleExpand: (lessonId: string) => void;
+  /** Stage 5 (optional, additive) — the plan-wide per-lesson upload map +
+   *  phase callback, threaded straight through to each `LessonRow` exactly
+   *  like `bilingual`. See types.ts's `LessonUploadInfo`. */
+  uploads?: Record<string, LessonUploadInfo>;
+  onUploadPhase?: LessonUploadPhaseHandler;
 }) {
   const t = useTranslations('admin.cms.lessons');
   // Task: chapter-language — same `mono` convention `LessonEditPanel` uses
@@ -272,6 +279,8 @@ export function ChapterGroup({
                   uploadEnabled={uploadEnabled}
                   expandedId={expandedId}
                   onToggleExpand={onToggleExpand}
+                  uploadInfo={uploads?.[l.id]}
+                  onUploadPhase={onUploadPhase}
                 />
               ))}
             </ul>

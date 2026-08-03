@@ -12,21 +12,30 @@ import {
   IconChevronRight,
 } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
-import type { BunnyUploadResult } from '@/lib/bunny/upload';
+import type { BunnyUploadInit, BunnyUploadResult } from '@/lib/bunny/upload';
+import { tusUpload } from '@/lib/bunny/tus-client';
 
 type SessionState =
   | { phase: 'idle' }
   | { phase: 'creating' }
   | { phase: 'uploading'; pct: number }
   | { phase: 'done'; fileName: string }
-  | { phase: 'error'; message: string };
+  /** `resumable` (Stage 5): the connection died mid-upload but the video
+   *  object + partial bytes still exist on Bunny — "Eseye ankò" RESUMES
+   *  from the last server-acked offset instead of restarting at 0%. */
+  | { phase: 'error'; message: string; resumable?: boolean };
+
+/** The component's lifecycle phases, mirrored to the optional
+ *  `onPhaseChange` callback (Stage 5) so `PlanEditor` can keep an in-flight
+ *  lesson's panel mounted across accordion collapse — see that component. */
+export type VideoUploadPhase = SessionState['phase'];
 
 type View =
   | { kind: 'dropzone' }
   | { kind: 'creating' }
   | { kind: 'uploading'; pct: number }
   | { kind: 'ready'; fileName: string | null }
-  | { kind: 'error'; message: string };
+  | { kind: 'error'; message: string; resumable: boolean };
 
 /**
  * Resolves what to actually show: `session` (this browser tab's own upload
@@ -40,7 +49,7 @@ type View =
 function resolveView(session: SessionState, hasExisting: boolean, forceDropzone: boolean): View {
   if (session.phase === 'creating') return { kind: 'creating' };
   if (session.phase === 'uploading') return { kind: 'uploading', pct: session.pct };
-  if (session.phase === 'error') return { kind: 'error', message: session.message };
+  if (session.phase === 'error') return { kind: 'error', message: session.message, resumable: Boolean(session.resumable) };
   if (session.phase === 'done') return { kind: 'ready', fileName: session.fileName };
   // session.phase === 'idle'
   if (forceDropzone) return { kind: 'dropzone' };
@@ -60,38 +69,94 @@ function toBase64Utf8(input: string): string {
   return btoa(binary);
 }
 
+/**
+ * Auto duration (Stage 5): reads the picked file's duration CLIENT-SIDE
+ * (object URL + `HTMLVideoElement` `loadedmetadata`) so lessons stop
+ * shipping as 0:00 unless the teacher hand-types mm:ss. Resolves the
+ * ROUNDED whole seconds, or `undefined` when the browser can't read the
+ * metadata (odd codec, timeout) — NEVER rejects, and an `undefined` simply
+ * leaves the manual duration field as the (pre-existing) fallback.
+ */
+function readVideoDurationSeconds(file: File): Promise<number | undefined> {
+  return new Promise((resolve) => {
+    try {
+      if (typeof document === 'undefined' || typeof URL.createObjectURL !== 'function') return resolve(undefined);
+      const url = URL.createObjectURL(file);
+      const video = document.createElement('video');
+      let settled = false;
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const finish = (duration?: number) => {
+        if (settled) return;
+        settled = true;
+        if (timer !== undefined) clearTimeout(timer);
+        video.removeAttribute('src');
+        URL.revokeObjectURL(url);
+        resolve(typeof duration === 'number' && Number.isFinite(duration) && duration > 0 ? Math.round(duration) : undefined);
+      };
+      timer = setTimeout(() => finish(undefined), 10_000);
+      video.preload = 'metadata';
+      video.muted = true;
+      video.onloadedmetadata = () => finish(video.duration);
+      video.onerror = () => finish(undefined);
+      video.src = url;
+    } catch {
+      resolve(undefined);
+    }
+  });
+}
+
+/** Everything a paused/failed upload needs to CONTINUE without starting
+ *  over: the file (bytes), the still-valid signed init payload, the TUS
+ *  upload URL (once created — where the acked offset lives, server-side)
+ *  and the already-started duration read. Held in a ref, not state: it must
+ *  survive re-renders but never cause one. */
+type ResumeContext = {
+  file: File;
+  init: BunnyUploadInit;
+  uploadUrl: string | null;
+  durationPromise: Promise<number | undefined>;
+};
+
 const focusRing =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ochre focus-visible:ring-offset-1 focus-visible:ring-offset-paper-light';
 
 /**
- * Autonomous, direct-to-Bunny video upload control (no new dependency: TUS
- * is implemented by hand with a single XHR POST — Bunny's "creation with
- * upload" extension lets one request both create the upload resource AND
- * carry the full file body, so there is no separate create+PATCH round
- * trip). The file goes straight from THIS BROWSER to Bunny's servers; this
- * component never talks to our own server for the bytes and never sees a
- * Bunny API key — `createUpload` (injected by the caller, studio vs admin
- * CMS) already ran the ownership/capability gate server-side and handed
- * back only a short-lived, single-video upload signature.
+ * Autonomous, direct-to-Bunny video upload control. The file goes straight
+ * from THIS BROWSER to Bunny's servers; this component never talks to our
+ * own server for the bytes and never sees a Bunny API key — `createUpload`
+ * (injected by the caller, studio vs admin CMS) already ran the
+ * ownership/capability gate server-side and handed back only a short-lived,
+ * single-video upload signature.
  *
- * Task A2 rework — the most-criticised part of the old editor: this is now a
- * large, obvious drag & drop dropzone with explicit states (idle → envoi X %
- * → ✓ prête), and the old "coller un ID Bunny à la main" input + validate
- * button move here too, behind a small "Avancé" disclosure — still fully
- * functional (it's the fallback path, and how an existing guid gets pasted
- * onto a lesson), just no longer competing visually with the primary
- * drag-and-drop flow. Reusable across BOTH call sites (admin CMS + teacher
- * studio) the exact same way it always was — every Bunny-touching action
- * (`createUpload`, `validateBunnyVideo`) is still injected by the caller.
+ * Stage 5 — VIDEO ROBUSTNESS (this rework):
+ *  1. RESUMABLE CHUNKED TUS: the old single-shot "creation-with-upload"
+ *     POST (a dropped connection on a big file restarted from 0%) is now a
+ *     true TUS 1.0.0 client — create, then sequential 8 MB PATCH chunks,
+ *     progress from server-acked offsets, 5 backoff retries with HEAD
+ *     resync — see lib/bunny/tus-client.ts. Same endpoint, same signed
+ *     headers, same server-computed title metadata (it must still override
+ *     the raw file name). If the endpoint rejects the chunked protocol
+ *     outright, `singleShotUpload` below (the pre-Stage-5 path, kept fully
+ *     functional) takes over so nothing regresses.
+ *  2. AUTO DURATION: `readVideoDurationSeconds` above; `onUploaded` now
+ *     also receives the rounded seconds (optional second arg — additive).
+ *  3. `onPhaseChange` (optional, additive): mirrors the session phase out
+ *     so `PlanEditor` can keep this panel mounted while an upload is in
+ *     flight even when the lesson row is collapsed.
+ *  4. A network-exhausted failure keeps its `ResumeContext`: "Eseye ankò"
+ *     RESUMES from the last acked offset instead of restarting at zero.
  *
- * KNOWN LIMITATION (documented, acceptable for v1): this is a single-shot
- * upload, not a resumable/chunked one — if the connection drops mid-upload
- * on a large file, the teacher must re-select the file and start over
- * (Cancel does the same, via `xhr.abort()`). Real resumable chunking is a
- * v2 follow-up if large uploads over flaky connections turn out to matter.
- * A second, narrower limitation: the "Avancé" manual-id field seeds its
- * local value from `initialVideoId` once, at mount, so a guid changed by
- * some OTHER tab/session between this component's mount and now would not
+ * Task A2 (unchanged): large drag & drop dropzone with explicit states
+ * (idle → envoi X % → ✓ prête); the manual-ID input + validate button live
+ * behind the small "Avancé" disclosure — the admin/technical fallback path,
+ * no longer competing visually with the primary flow. Reusable across BOTH
+ * call sites (admin CMS + teacher studio) the exact same way it always was —
+ * every Bunny-touching action (`createUpload`, `validateBunnyVideo`) is
+ * still injected by the caller.
+ *
+ * KNOWN LIMITATION (narrow): the "Avancé" manual-id field seeds its local
+ * value from `initialVideoId` once, at mount, so a guid changed by some
+ * OTHER tab/session between this component's mount and now would not
  * retroactively update an already-open advanced field — acceptable for a
  * single-editor-at-a-time internal tool.
  */
@@ -102,6 +167,7 @@ export function VideoUpload({
   onManualIdCommit,
   createUpload,
   validateBunnyVideo,
+  onPhaseChange,
 }: {
   /** Used as the Bunny video's title; falls back to the file name if blank. */
   lessonTitle: string;
@@ -110,8 +176,11 @@ export function VideoUpload({
    *  already has a video (Task A2 #5). */
   initialVideoId: string;
   /** Called with the new Bunny video guid once the drag&drop/pick upload
-   *  finishes — UNCHANGED shape/contract from before this task. */
-  onUploaded: (guid: string) => void;
+   *  finishes. `durationSeconds` (Stage 5, ADDITIVE — optional second arg)
+   *  is the auto-detected, rounded video length, `undefined` when the
+   *  browser couldn't read it; existing `(guid) => …` callers keep
+   *  compiling and working unchanged. */
+  onUploaded: (guid: string, durationSeconds?: number) => void;
   /** Called when the "avancé" manual-ID field is blurred with a changed,
    *  non-empty-vs-previous value — a distinct callback from `onUploaded`
    *  even though both usually end up calling the same `updateLesson`, so
@@ -126,6 +195,11 @@ export function VideoUpload({
   /** Same shape as `LessonActions.validateBunnyVideo` — moved in here from
    *  the row that used to render this control (Task A2). */
   validateBunnyVideo: (videoId: string) => Promise<{ ok: boolean; message?: string }>;
+  /** Stage 5, ADDITIVE + optional: mirrors every session-phase change
+   *  (`pct` is only meaningful while `phase === 'uploading'`) so the plan
+   *  editor can show a collapsed lesson's progress strip and keep the
+   *  in-flight panel mounted. Omitting it changes nothing. */
+  onPhaseChange?: (phase: VideoUploadPhase, pct: number) => void;
 }) {
   const t = useTranslations('admin.cms.lessons');
   const [session, setSession] = useState<SessionState>({ phase: 'idle' });
@@ -136,54 +210,144 @@ export function VideoUpload({
   const [validating, setValidating] = useState(false);
   const [validateResult, setValidateResult] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const xhrRef = useRef<XMLHttpRequest | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const resumeRef = useRef<ResumeContext | null>(null);
 
   const view = resolveView(session, Boolean(initialVideoId), forceDropzone);
 
+  /** Single choke point for session changes so `onPhaseChange` can never
+   *  drift out of sync with what this component actually shows. */
+  const update = (next: SessionState) => {
+    setSession(next);
+    onPhaseChange?.(next.phase, next.phase === 'uploading' ? next.pct : 0);
+  };
+
   const handleFile = async (file: File) => {
     if (!file.type.startsWith('video/')) {
-      setSession({ phase: 'error', message: t('uploadUnsupportedFormat') });
+      update({ phase: 'error', message: t('uploadUnsupportedFormat') });
       return;
     }
     if (file.size > MAX_UPLOAD_BYTES) {
-      setSession({ phase: 'error', message: t('uploadTooLarge') });
+      update({ phase: 'error', message: t('uploadTooLarge') });
       return;
     }
 
-    setSession({ phase: 'creating' });
+    // Start reading the duration NOW (parallel with the server round-trip) —
+    // it's awaited only at the very end, when the upload finishes.
+    const durationPromise = readVideoDurationSeconds(file);
+
+    update({ phase: 'creating' });
     const init = await createUpload(lessonTitle.trim() || file.name);
     if (!init.ok) {
-      setSession({ phase: 'error', message: init.message === 'not_configured' ? t('uploadNotConfigured') : t('uploadError') });
+      update({ phase: 'error', message: init.message === 'not_configured' ? t('uploadNotConfigured') : t('uploadError') });
       return;
     }
 
-    setSession({ phase: 'uploading', pct: 0 });
+    resumeRef.current = { file, init, uploadUrl: null, durationPromise };
+    await runUpload();
+  };
+
+  /** The resumable chunked upload (Stage 5). Reads its inputs from
+   *  `resumeRef` so "Eseye ankò" after a network-exhausted failure re-enters
+   *  HERE with the same context — `existingUploadUrl` makes `tusUpload`
+   *  skip creation and HEAD-resync to the last server-acked offset. */
+  const runUpload = async () => {
+    const ctx = resumeRef.current;
+    if (!ctx) return;
+    const { file, init } = ctx;
+    const controller = new AbortController();
+    abortRef.current = controller;
+    update({ phase: 'uploading', pct: 0 });
+
+    const outcome = await tusUpload({
+      file,
+      endpoint: init.tusEndpoint,
+      // Bunny's TUS auth headers — a signature scoped to this one video +
+      // expiry window, never the API key itself (computed server-side in
+      // lib/bunny/upload.ts's createBunnyVideo). Sent on every request.
+      headers: {
+        AuthorizationSignature: init.signature,
+        AuthorizationExpire: String(init.expire),
+        VideoId: init.guid,
+        LibraryId: init.libraryId,
+      },
+      // Bunny lets this metadata OVERWRITE the title set when the video was
+      // created, so we echo the server's authoritative structured title
+      // ("PA-03 · Pati 2 · <chapitre> · Leson 3 · <leçon>") — sending the raw
+      // file name here would leave every video named "IMG_1234.mp4".
+      metadata: `filetype ${toBase64Utf8(file.type || 'video/mp4')},title ${toBase64Utf8(init.title)}`,
+      existingUploadUrl: ctx.uploadUrl,
+      signal: controller.signal,
+      onProgress: (sent, total) =>
+        update({ phase: 'uploading', pct: total > 0 ? Math.min(100, Math.round((sent / total) * 100)) : 0 }),
+    });
+
+    abortRef.current = null;
+    ctx.uploadUrl = outcome.uploadUrl;
+
+    if (outcome.ok) {
+      await finishUpload(ctx);
+      return;
+    }
+    switch (outcome.reason) {
+      case 'aborted':
+        resumeRef.current = null;
+        update({ phase: 'idle' });
+        if (inputRef.current) inputRef.current.value = '';
+        return;
+      case 'unsupported':
+        // Endpoint rejected the chunked protocol — nothing regresses: the
+        // pre-Stage-5 single-shot path takes over with the same context.
+        await singleShotUpload(ctx);
+        return;
+      case 'too_large':
+        resumeRef.current = null;
+        update({ phase: 'error', message: t('uploadTooLarge') });
+        return;
+      case 'gone':
+        // The upload resource / signature no longer exists — resuming is
+        // impossible, so this is a plain (restart-from-scratch) error.
+        resumeRef.current = null;
+        update({ phase: 'error', message: t('uploadError') });
+        return;
+      case 'network_exhausted':
+        // KEEP resumeRef — "Eseye ankò" re-enters runUpload() and resumes
+        // from the last acked offset (the whole point of Stage 5 #1/#4).
+        update({ phase: 'error', message: t('uploadConnectionLost'), resumable: true });
+        return;
+    }
+  };
+
+  /** FALLBACK path — Bunny's single-shot "creation with upload" POST (one
+   *  request both creates the upload resource AND carries the full body),
+   *  exactly what this component shipped before Stage 5. Only used when the
+   *  endpoint rejects the chunked TUS protocol (`'unsupported'`); a dropped
+   *  connection here restarts the file, as before. */
+  const singleShotUpload = async (ctx: ResumeContext) => {
+    const { file, init } = ctx;
+    const controller = new AbortController();
+    abortRef.current = controller;
+    update({ phase: 'uploading', pct: 0 });
     try {
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
-        xhrRef.current = xhr;
         xhr.open('POST', init.tusEndpoint, true);
-        // Bunny's TUS auth headers — a signature scoped to this one video +
-        // expiry window, never the API key itself (computed server-side in
-        // lib/bunny/upload.ts's createBunnyVideo).
         xhr.setRequestHeader('AuthorizationSignature', init.signature);
         xhr.setRequestHeader('AuthorizationExpire', String(init.expire));
         xhr.setRequestHeader('VideoId', init.guid);
         xhr.setRequestHeader('LibraryId', init.libraryId);
         xhr.setRequestHeader('Tus-Resumable', '1.0.0');
         xhr.setRequestHeader('Upload-Length', String(file.size));
-        // Bunny lets this metadata OVERWRITE the title set when the video was
-        // created, so we echo the server's authoritative structured title
-        // ("PA-03 · Pati 2 · <chapitre> · Leson 3 · <leçon>") — sending the raw
-        // file name here would leave every video named "IMG_1234.mp4".
+        // Same title-override note as the chunked path above.
         xhr.setRequestHeader(
           'Upload-Metadata',
           `filetype ${toBase64Utf8(file.type || 'video/mp4')},title ${toBase64Utf8(init.title)}`,
         );
         xhr.setRequestHeader('Content-Type', 'application/offset+octet-stream');
 
+        controller.signal.addEventListener('abort', () => xhr.abort());
         xhr.upload.onprogress = (e) => {
-          if (e.lengthComputable) setSession({ phase: 'uploading', pct: Math.round((e.loaded / e.total) * 100) });
+          if (e.lengthComputable) update({ phase: 'uploading', pct: Math.round((e.loaded / e.total) * 100) });
         };
         xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) resolve();
@@ -193,21 +357,32 @@ export function VideoUpload({
         xhr.onabort = () => reject(new Error('aborted'));
         xhr.send(file);
       });
-      setSession({ phase: 'done', fileName: file.name });
-      setManualId(init.guid);
-      onUploaded(init.guid);
+      await finishUpload(ctx);
     } catch (e) {
+      resumeRef.current = null;
       if (e instanceof Error && e.message === 'aborted') {
-        setSession({ phase: 'idle' });
+        update({ phase: 'idle' });
         if (inputRef.current) inputRef.current.value = '';
       } else if (e instanceof Error && e.message === 'too_large') {
-        setSession({ phase: 'error', message: t('uploadTooLarge') });
+        update({ phase: 'error', message: t('uploadTooLarge') });
       } else {
-        setSession({ phase: 'error', message: t('uploadError') });
+        update({ phase: 'error', message: t('uploadError') });
       }
     } finally {
-      xhrRef.current = null;
+      abortRef.current = null;
     }
+  };
+
+  /** Shared success tail for both upload paths: await the (long-finished)
+   *  duration read, hand BOTH values to the caller in ONE commit, then show
+   *  ✓ — `onUploaded` runs before the 'done' phase-change so the caller's
+   *  state settles while this panel is guaranteed still mounted. */
+  const finishUpload = async (ctx: ResumeContext) => {
+    const durationSeconds = await ctx.durationPromise;
+    resumeRef.current = null;
+    setManualId(ctx.init.guid);
+    onUploaded(ctx.init.guid, durationSeconds);
+    update({ phase: 'done', fileName: ctx.file.name });
   };
 
   const openPicker = () => inputRef.current?.click();
@@ -280,7 +455,7 @@ export function VideoUpload({
             <span className="flex items-center gap-1.5"><IconLoader2 size={13} className="animate-spin text-ochre" aria-hidden /> {t('uploadUploading', { percent: view.pct })}</span>
             <button
               type="button"
-              onClick={() => xhrRef.current?.abort()}
+              onClick={() => abortRef.current?.abort()}
               className={cn('inline-flex shrink-0 items-center gap-1 text-ink/45 hover:text-stampred', focusRing)}
             >
               <IconX size={12} /> {t('uploadCancel')}
@@ -314,7 +489,7 @@ export function VideoUpload({
           <button
             type="button"
             onClick={() => {
-              setSession({ phase: 'idle' });
+              update({ phase: 'idle' });
               setForceDropzone(true);
             }}
             aria-label={t('uploadReplace')}
@@ -337,8 +512,16 @@ export function VideoUpload({
           <button
             type="button"
             onClick={() => {
-              setSession({ phase: 'idle' });
-              setForceDropzone(true);
+              // Resumable (connection died mid-upload): re-enter the chunked
+              // upload with the SAME context — it HEAD-resyncs and continues
+              // from the last acked offset, not from zero. Otherwise: back
+              // to the dropzone for a fresh pick.
+              if (view.resumable && resumeRef.current) {
+                void runUpload();
+              } else {
+                update({ phase: 'idle' });
+                setForceDropzone(true);
+              }
             }}
             className={cn('font-mono text-[11px] text-ink/60 underline hover:no-underline', focusRing)}
           >
@@ -347,8 +530,9 @@ export function VideoUpload({
         </div>
       )}
 
-      {/* Avancé — the manual Bunny ID field (fallback + how an existing guid
-          gets pasted onto a lesson), secondary to the dropzone above. */}
+      {/* Avancé — the manual Bunny ID field, an admin/technical fallback
+          (how an existing guid gets pasted onto a lesson), tucked behind a
+          disclosure so it never competes with the dropzone above. */}
       <div>
         <button
           type="button"

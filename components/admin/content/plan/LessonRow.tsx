@@ -1,13 +1,13 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import { IconChevronUp, IconChevronDown, IconChevronRight, IconVideo, IconPaperclip } from '@tabler/icons-react';
+import { IconChevronUp, IconChevronDown, IconChevronRight, IconVideo, IconPaperclip, IconAlertTriangle } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
 import type { AdminLesson, AdminChapter } from '@/lib/courses/write';
 import { jumpToAnchor } from '@/components/teacher/studio/jump';
 import { focusRing, iconBtn, secToMmss } from './shared';
 import { LessonEditPanel } from './LessonEditPanel';
-import type { LessonActions } from './types';
+import type { LessonActions, LessonUploadInfo, LessonUploadPhaseHandler } from './types';
 
 /**
  * A single lesson in the plan editor (Task A2 #3/#4 — split out of the old
@@ -31,6 +31,8 @@ export function LessonRow({
   uploadEnabled,
   expandedId,
   onToggleExpand,
+  uploadInfo,
+  onUploadPhase,
 }: {
   slug: string;
   lesson: AdminLesson;
@@ -50,6 +52,12 @@ export function LessonRow({
   uploadEnabled: boolean;
   expandedId: string | null;
   onToggleExpand: (lessonId: string) => void;
+  /** Stage 5 (optional, additive) — THIS lesson's in-flight video upload,
+   *  from `PlanEditor`'s lifted map. While present, the edit panel stays
+   *  MOUNTED even when collapsed (hidden, so the upload keeps running) and
+   *  the collapsed row grows a slim progress strip that reopens the panel. */
+  uploadInfo?: LessonUploadInfo;
+  onUploadPhase?: LessonUploadPhaseHandler;
 }) {
   const t = useTranslations('admin.cms.lessons');
   const locale = useLocale();
@@ -83,7 +91,7 @@ export function LessonRow({
       <div
         className={cn(
           'flex items-center gap-2 p-2.5 transition-colors hover:bg-ink/[0.03] motion-reduce:transition-none',
-          expanded ? 'rounded-t-lg' : 'rounded-lg',
+          expanded || uploadInfo ? 'rounded-t-lg' : 'rounded-lg',
         )}
       >
         <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-ink/[0.06] font-mono text-[10px] text-ink/50">{index + 1}</span>
@@ -150,8 +158,61 @@ export function LessonRow({
         </span>
       </div>
 
-      {expanded && (
-        <div className="border-t border-ink/10 px-2.5 pb-2.5">
+      {/* Stage 5 — the collapsed-row upload strip: while this lesson's video
+          upload is in flight (or stopped on an error awaiting "Eseye ankò"),
+          a collapsed row shows a slim ochre "Ap voye… X%" progress strip;
+          clicking it reopens the panel (where cancel/retry live). */}
+      {!expanded && uploadInfo && (
+        <button
+          type="button"
+          onClick={() => onToggleExpand(lesson.id)}
+          aria-label={
+            uploadInfo.phase === 'error'
+              ? `${t('uploadError')} — ${t('uploadRetry')}`
+              : uploadInfo.phase === 'creating'
+                ? t('uploadPreparing')
+                : t('uploadUploading', { percent: uploadInfo.pct })
+          }
+          className={cn(
+            'flex w-full items-center gap-2 rounded-b-lg border-t border-ink/10 px-2.5 py-1.5 text-left hover:bg-ink/[0.03]',
+            focusRing,
+          )}
+        >
+          {uploadInfo.phase === 'error' ? (
+            <>
+              <IconAlertTriangle size={12} className="shrink-0 text-stampred" aria-hidden />
+              <span className="min-w-0 truncate font-mono text-[10px] text-stampred">
+                {t('uploadError')} — {t('uploadRetry')}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="shrink-0 font-mono text-[10px] tabular-nums text-ochre">
+                {uploadInfo.phase === 'creating' ? t('uploadPreparing') : t('uploadUploading', { percent: uploadInfo.pct })}
+              </span>
+              <span
+                className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-ochre/15"
+                role="progressbar"
+                aria-valuenow={uploadInfo.pct}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              >
+                <span
+                  className="block h-full rounded-full bg-ochre transition-[width] duration-300 motion-reduce:transition-none"
+                  style={{ width: `${uploadInfo.pct}%` }}
+                />
+              </span>
+            </>
+          )}
+        </button>
+      )}
+
+      {/* Stage 5 — the panel stays MOUNTED (hidden) while an upload is in
+          flight so collapsing the accordion no longer kills the XHR/state
+          ("ou ka kontinye travay" is finally true). `hidden` = display:none,
+          which also removes the hidden fields from the a11y tree/tab order. */}
+      {(expanded || Boolean(uploadInfo)) && (
+        <div className={cn('border-t border-ink/10 px-2.5 pb-2.5', !expanded && 'hidden')}>
           <LessonEditPanel
             slug={slug}
             lesson={lesson}
@@ -162,6 +223,7 @@ export function LessonRow({
             primaryLocale={primaryLocale}
             uploadEnabled={uploadEnabled}
             onAct={onAct}
+            onUploadPhase={onUploadPhase}
           />
         </div>
       )}

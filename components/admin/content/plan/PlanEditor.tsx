@@ -22,7 +22,7 @@ import type { AdminLesson, AdminChapter } from '@/lib/courses/write';
 import { focusRing } from './shared';
 import { ChapterGroup } from './ChapterGroup';
 import { LessonRow } from './LessonRow';
-import type { LessonActions } from './types';
+import type { LessonActions, LessonUploadInfo, VideoUploadPhase } from './types';
 
 export type { LessonActions } from './types';
 
@@ -109,6 +109,35 @@ export function PlanEditor({
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const act = (fn: () => Promise<{ ok: boolean }>) => start(async () => { if ((await fn()).ok) router.refresh(); });
   const toggleExpand = (lessonId: string) => setExpandedId((cur) => (cur === lessonId ? null : lessonId));
+
+  /**
+   * Stage 5 — progress that survives navigation within the plan. LIFTED
+   * per-lesson upload state (no global store, no context provider): each
+   * `VideoUpload` reports its phase up (`onUploadPhase`, threaded down as a
+   * plain callback prop), and any lesson present in this map keeps its edit
+   * panel MOUNTED when its accordion row collapses (`LessonRow` hides it
+   * with `display:none` instead of unmounting) — so the in-flight XHR and
+   * its retry/resume state live on, and the collapsed row can show the slim
+   * "Ap voye… X%" strip. 'idle'/'done' clear the entry; 'error' keeps it,
+   * because the panel's resume-from-last-offset context must not be thrown
+   * away by a collapse. The identical-state bailout matters: progress
+   * events fire per integer percent, and returning `prev` unchanged lets
+   * React skip re-rendering the whole plan for repeats.
+   */
+  const [uploads, setUploads] = useState<Record<string, LessonUploadInfo>>({});
+  const onUploadPhase = (lessonId: string, phase: VideoUploadPhase, pct: number) =>
+    setUploads((prev) => {
+      if (phase === 'creating' || phase === 'uploading' || phase === 'error') {
+        const cur = prev[lessonId];
+        const nextPct = phase === 'uploading' ? pct : cur?.pct ?? 0;
+        if (cur && cur.phase === phase && cur.pct === nextPct) return prev;
+        return { ...prev, [lessonId]: { phase, pct: nextPct } };
+      }
+      if (!(lessonId in prev)) return prev;
+      const next = { ...prev };
+      delete next[lessonId];
+      return next;
+    });
 
   /**
    * The studio bon-de-contrôle rail's jump-to-field (Task D1 — le
@@ -209,6 +238,8 @@ export function PlanEditor({
               uploadEnabled={uploadEnabled}
               expandedId={expandedId}
               onToggleExpand={toggleExpand}
+              uploads={uploads}
+              onUploadPhase={onUploadPhase}
             />
           ))}
 
@@ -236,6 +267,8 @@ export function PlanEditor({
                     uploadEnabled={uploadEnabled}
                     expandedId={expandedId}
                     onToggleExpand={toggleExpand}
+                    uploadInfo={uploads[l.id]}
+                    onUploadPhase={onUploadPhase}
                   />
                 ))}
               </ul>
