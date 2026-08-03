@@ -11,7 +11,7 @@ export default async function TestimonialsPage({ params: { locale } }: { params:
   setRequestLocale(locale);
   if (!(await hasCap('courses.read'))) return <Forbidden />;
   const t = await getTranslations('admin.testimonials');
-  const items = listTestimonials();
+  const items = await listTestimonials();
   const catalog = courses.map((c) => ({ slug: c.slug, title: locale === 'ht' ? c.title_ht : c.title_fr }));
 
   return (

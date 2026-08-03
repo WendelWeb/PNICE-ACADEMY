@@ -26,7 +26,7 @@ export default async function PlatformPage({ params: { locale } }: { params: { l
   if (!me || resolveAdminRole(me) !== 'super-admin') return <Forbidden />;
 
   const t = await getTranslations('admin.platform');
-  const platform = getPlatform();
+  const platform = await getPlatform();
   const rate = await getFxRate();
   const lastFx = await getAuditLog({ action: 'set_fx_rate', pageSize: 1 });
   const lastFxAdmin = lastFx.rows[0]?.adminName ?? null;

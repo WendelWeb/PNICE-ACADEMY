@@ -446,6 +446,56 @@ export const platformSettings = pgTable('platform_settings', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
+/* -------------------------------------------------------------------------- */
+/* Stage: durable site content — DB-backed site store (lib/admin/site/store). */
+/*                                                                            */
+/* These three tables replace the in-memory module cache that used to hold    */
+/* everything an admin wrote on /admin/contenu and /admin/temoignages         */
+/* (evaporated per deploy, diverged per serverless instance). Empty tables    */
+/* mean "fall back to the code defaults": data/legal.ts for legal pages,      */
+/* data/testimonials.ts placeholders for testimonials. The payment-provider   */
+/* toggles + maintenance flag need NO new columns — platform_settings has     */
+/* carried providers_json / maintenance_enabled / maintenance_message_ht/fr   */
+/* since migration 0001; lib/admin/platform/store.ts now actually reads and   */
+/* writes them (lib/fx.ts's gated read / upsert-singleton write pattern).     */
+/* -------------------------------------------------------------------------- */
+
+/** Legal pages (CGU / confidentialité / remboursement) — one CURRENT version
+ *  per slug. Empty or missing row (or one whose content is blank) ⇒ the
+ *  code-shipped default from data/legal.ts renders instead, per language. */
+export const siteLegalPages = pgTable('site_legal_pages', {
+  slug: text('slug').primaryKey().$type<'cgu' | 'confidentialite' | 'remboursement'>(),
+  contentHt: text('content_ht').default('').notNull(),
+  contentFr: text('content_fr').default('').notNull(),
+  adminName: text('admin_name').default('').notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+/** Real testimonials (the shape lib/admin/site/store.ts already used). The
+ *  'placeholder' status NEVER reaches this table — placeholders stay virtual
+ *  code-side rows (data/testimonials.ts) that can never be published. */
+export const siteTestimonials = pgTable('site_testimonials', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  location: text('location').default('').notNull(),
+  courseSlug: text('course_slug'),
+  quoteHt: text('quote_ht').default('').notNull(),
+  quoteFr: text('quote_fr').default('').notNull(),
+  photo: text('photo'),
+  status: text('status').$type<'real' | 'published'>().default('real').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+/** Single-use testimonial-request tokens (the /temoignage/[token] form). */
+export const siteReviewTokens = pgTable('site_review_tokens', {
+  token: text('token').primaryKey(),
+  userId: text('user_id').notNull(),
+  userName: text('user_name').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  used: boolean('used').default(false).notNull(),
+});
+
 export const referrals = pgTable('referrals', {
   id: uuid('id').primaryKey().defaultRandom(),
   referrerUserId: uuid('referrer_user_id')

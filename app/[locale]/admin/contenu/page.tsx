@@ -33,11 +33,13 @@ export default async function SiteContentPage({ params: { locale } }: { params: 
     htMessages as unknown as Record<string, unknown>,
     frMessages as unknown as Record<string, unknown>,
   );
-  const legalPages = LEGAL_SLUGS.map((slug) => {
-    const p = getLegal(slug)!;
-    const cur = p.versions[0];
-    return { slug, content_ht: cur.content_ht, content_fr: cur.content_fr, versions: p.versions };
-  });
+  const legalPages = await Promise.all(
+    LEGAL_SLUGS.map(async (slug) => {
+      const p = (await getLegal(slug))!;
+      const cur = p.versions[0];
+      return { slug, content_ht: cur.content_ht, content_fr: cur.content_fr, versions: p.versions };
+    }),
+  );
 
   return (
     <div className="mx-auto max-w-[1180px] space-y-4">

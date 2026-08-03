@@ -9,7 +9,13 @@ import { auth, clerkClient } from '@clerk/nextjs/server';
 import { resolveAdminRole, isAdminSuspended } from '@/lib/admin/access';
 import { isAdminRole, type AdminRole } from '@/lib/admin/roles';
 import { recordAudit, type AdminActor } from '@/lib/admin/data';
-import { getPlatform, type ProviderKey, PROVIDER_KEYS } from '@/lib/admin/platform/store';
+import {
+  getPlatform,
+  setProviderEnabled,
+  setMaintenance,
+  type ProviderKey,
+  PROVIDER_KEYS,
+} from '@/lib/admin/platform/store';
 
 export type PlatformResult = { ok: boolean; message?: string };
 
@@ -97,11 +103,11 @@ export async function setAdminSuspendedAction(targetUserId: string, suspended: b
 export async function toggleProviderAction(provider: ProviderKey, enabled: boolean): Promise<PlatformResult> {
   try {
     const { actor } = await requireSuperAdmin();
-    const p = getPlatform().providers;
+    const p = (await getPlatform()).providers;
     if (!enabled && PROVIDER_KEYS.filter((k) => p[k]).length <= 1) {
       return { ok: false, message: 'last_provider' };
     }
-    p[provider] = enabled;
+    await setProviderEnabled(provider, enabled);
     await recordAudit({ action: 'toggle_provider', userId: actor.id, admin: actor, detail: `${provider}:${enabled}` });
     return { ok: true };
   } catch (e) {
@@ -112,10 +118,7 @@ export async function toggleProviderAction(provider: ProviderKey, enabled: boole
 export async function setMaintenanceAction(enabled: boolean, messageHt: string, messageFr: string): Promise<PlatformResult> {
   try {
     const { actor } = await requireSuperAdmin();
-    const m = getPlatform().maintenance;
-    m.enabled = enabled;
-    m.message_ht = messageHt;
-    m.message_fr = messageFr;
+    await setMaintenance(enabled, messageHt, messageFr);
     await recordAudit({ action: 'toggle_maintenance', userId: actor.id, admin: actor, detail: enabled ? 'on' : 'off' });
     return { ok: true };
   } catch (e) {

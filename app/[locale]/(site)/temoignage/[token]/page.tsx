@@ -15,7 +15,7 @@ export default async function SubmitReviewPage({
 }) {
   setRequestLocale(locale);
   const t = await getTranslations('review');
-  const tok = getReviewToken(token);
+  const tok = await getReviewToken(token);
 
   return (
     <Section>

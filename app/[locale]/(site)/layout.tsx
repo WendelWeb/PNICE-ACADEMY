@@ -27,7 +27,9 @@ export default async function SiteLayout({
 }) {
   setRequestLocale(locale);
 
-  const maintenance = getPlatform().maintenance;
+  // DB-backed since the durable-site-content stage (platform_settings) —
+  // gated + never-throw, so no DB simply means "not in maintenance".
+  const maintenance = (await getPlatform()).maintenance;
   if (maintenance.enabled) {
     const t = await getTranslations('admin.platform.maintenance');
     const message = locale === 'ht' ? maintenance.message_ht : maintenance.message_fr;

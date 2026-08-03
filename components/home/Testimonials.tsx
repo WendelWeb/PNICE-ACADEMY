@@ -10,7 +10,7 @@ export async function Testimonials() {
   const t = await getTranslations('home.testimonials');
   const locale = await getLocale();
   // Published (real) testimonials replace the example placeholders once they exist.
-  const testimonials = getHomeTestimonials();
+  const testimonials = await getHomeTestimonials();
   if (testimonials.length === 0) return null;
 
   return (

@@ -7,7 +7,9 @@ import { IconCreditCard, IconTool, IconLoader2 } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
 import { buttonClasses } from '@/components/ui/Button';
 import { toggleProviderAction, setMaintenanceAction } from '@/lib/admin/platform-actions';
-import { PROVIDER_KEYS, type ProviderKey } from '@/lib/admin/platform/store';
+// keys.ts, not ./store: the store is DB-backed now (durable site content) and
+// its drizzle/Neon imports must never reach this 'use client' bundle.
+import { PROVIDER_KEYS, type ProviderKey } from '@/lib/admin/platform/keys';
 
 const inputCls = 'rounded-lg border border-ink/15 bg-paper px-2.5 py-1.5 text-sm text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ochre';
 

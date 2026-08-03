@@ -66,7 +66,7 @@ export default async function AdminLayout({
   }
 
   return (
-    <AdminShell role={role} maintenance={isMaintenance()}>
+    <AdminShell role={role} maintenance={await isMaintenance()}>
       {children}
     </AdminShell>
   );

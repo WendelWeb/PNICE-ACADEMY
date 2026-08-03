@@ -18,7 +18,9 @@ export default async function LegalPage({
   setRequestLocale(locale);
   if (!SLUGS.includes(slug as LegalSlug)) notFound();
   const t = await getTranslations('admin.settings.legal');
-  const page = getLegal(slug as LegalSlug);
+  // DB content if non-empty (per language), else the complete code-shipped
+  // default from data/legal.ts — a payments site never shows an empty policy.
+  const page = await getLegal(slug as LegalSlug);
   const version = page?.versions[0];
   const content = version ? (locale === 'ht' ? version.content_ht : version.content_fr) : '';
   const hasContent = content.trim().length > 0;

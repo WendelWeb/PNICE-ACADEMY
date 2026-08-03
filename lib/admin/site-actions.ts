@@ -34,7 +34,7 @@ export async function createTestimonialAction(input: site.NewTestimonial): Promi
   try {
     await requireCap('courses.edit');
     if (!input.name?.trim()) return { ok: false, message: 'name_required' };
-    site.createTestimonial(input);
+    await site.createTestimonial(input);
     return { ok: true };
   } catch (e) {
     return fail(e);
@@ -43,7 +43,7 @@ export async function createTestimonialAction(input: site.NewTestimonial): Promi
 export async function updateTestimonialAction(id: string, patch: Partial<SiteTestimonial>): Promise<SiteResult> {
   try {
     await requireCap('courses.edit');
-    return { ok: site.updateTestimonial(id, patch) };
+    return { ok: await site.updateTestimonial(id, patch) };
   } catch (e) {
     return fail(e);
   }
@@ -51,7 +51,7 @@ export async function updateTestimonialAction(id: string, patch: Partial<SiteTes
 export async function deleteTestimonialAction(id: string): Promise<SiteResult> {
   try {
     await requireCap('courses.edit');
-    return { ok: site.deleteTestimonial(id) };
+    return { ok: await site.deleteTestimonial(id) };
   } catch (e) {
     return fail(e);
   }
@@ -59,7 +59,7 @@ export async function deleteTestimonialAction(id: string): Promise<SiteResult> {
 export async function publishTestimonialAction(id: string): Promise<SiteResult> {
   try {
     await requireCap('courses.edit');
-    const r = site.publishTestimonial(id);
+    const r = await site.publishTestimonial(id);
     return { ok: r.ok, message: r.reason };
   } catch (e) {
     return fail(e);
@@ -68,7 +68,7 @@ export async function publishTestimonialAction(id: string): Promise<SiteResult> 
 export async function unpublishTestimonialAction(id: string): Promise<SiteResult> {
   try {
     await requireCap('courses.edit');
-    return { ok: site.unpublishTestimonial(id) };
+    return { ok: await site.unpublishTestimonial(id) };
   } catch (e) {
     return fail(e);
   }
@@ -78,7 +78,7 @@ export async function unpublishTestimonialAction(id: string): Promise<SiteResult
 export async function requestTestimonialAction(userId: string, userName: string): Promise<SiteResult> {
   try {
     const actor = await requireCap('courses.edit');
-    const tok = site.createReviewToken(userId, userName);
+    const tok = await site.createReviewToken(userId, userName);
     // Production: email the user a link to /temoignage/{token} (Resend template).
     await recordAudit({ action: 'review_request', userId, admin: actor });
     return { ok: true, token: tok.token };
@@ -96,7 +96,7 @@ export async function submitReviewAction(
 ): Promise<SiteResult> {
   try {
     if (!quote.trim()) return { ok: false, message: 'empty' };
-    const r = site.submitReview(token, quote.trim(), lang, photo);
+    const r = await site.submitReview(token, quote.trim(), lang, photo);
     return { ok: r.ok, message: r.reason };
   } catch (e) {
     return fail(e);
@@ -127,7 +127,7 @@ export async function resetTextOverrideAction(key: string): Promise<SiteResult> 
 export async function saveLegalAction(slug: LegalSlug, ht: string, fr: string): Promise<SiteResult> {
   try {
     const actor = await requireCap('courses.edit');
-    return { ok: site.saveLegalVersion(slug, ht, fr, actor.name) };
+    return { ok: await site.saveLegalVersion(slug, ht, fr, actor.name) };
   } catch (e) {
     return fail(e);
   }

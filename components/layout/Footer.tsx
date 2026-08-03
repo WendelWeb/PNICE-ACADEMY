@@ -2,12 +2,14 @@ import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/routing';
 import { LangToggle } from '@/components/LangToggle';
 import { Sceau } from '@/components/ui/Sceau';
-
-const PAYMENTS = ['MonCash', 'NatCash', 'Visa', 'PayPal'];
+import { activeProviderLabels } from '@/lib/payments/providers';
 
 export async function Footer() {
   const t = await getTranslations('footer');
   const tLegal = await getTranslations('admin.settings.legal.page');
+  // ONE payment-truth source (lib/payments/providers.ts): admin toggles ∩
+  // implemented rails — the footer never claims a rail we can't charge.
+  const payments = await activeProviderLabels();
 
   const legalLinks: Array<{ slug: 'cgu' | 'confidentialite' | 'remboursement' }> = [
     { slug: 'cgu' },
@@ -114,7 +116,7 @@ export async function Footer() {
               {t('payments')}
             </h3>
             <ul className="mt-3 flex flex-wrap gap-2">
-              {PAYMENTS.map((p) => (
+              {payments.map((p) => (
                 <li
                   key={p}
                   className="rounded border border-paper-light/15 px-2.5 py-1 font-mono text-[11px] text-paper-light/80"

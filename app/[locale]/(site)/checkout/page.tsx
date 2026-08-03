@@ -14,19 +14,11 @@ import { courseTitle } from '@/lib/courseFields';
 import { PaymentMethods } from '@/components/checkout/PaymentMethods';
 import { PromoCodeField } from '@/components/checkout/PromoCodeField';
 import { activeProviders } from '@/lib/admin/platform/store';
+import { activeProviderLabels } from '@/lib/payments/providers';
 import { resolveProduct } from '@/lib/payments/products';
 import { getPublicTeacher } from '@/lib/teacher/public';
 
 export const metadata: Metadata = { title: 'Peman — PNICE Academy' };
-
-// Map provider keys to display labels for trust badges.
-const PROVIDER_LABELS: Record<string, string> = {
-  card: 'Visa',
-  paypal: 'PayPal',
-  moncash: 'MonCash',
-  natcash: 'NatCash',
-  crypto: 'Crypto',
-};
 
 // Dynamic so admin provider toggles take effect on checkout immediately.
 export const dynamic = 'force-dynamic';
@@ -86,10 +78,13 @@ export default async function CheckoutPage({
   const sealCode = isSub ? teacherForDisplay?.initials ?? 'PA' : course!.code;
   const perLabel = isSub ? tc('perMonth') : '';
 
-  // Derive accepted payment badges from active providers.
-  const acceptedBadges = activeProviders()
-    .map((k) => PROVIDER_LABELS[k])
-    .filter(Boolean);
+  // The "we accept" trust badges come from the ONE payment-truth source
+  // (lib/payments/providers.ts): admin toggles ∩ actually-implemented rails
+  // — never a rail we can't really charge yet. The method SELECTOR below
+  // keeps showing every toggled rail (demo ones included, clearly marked),
+  // so the two lists are intentionally different sources.
+  const acceptedBadges = await activeProviderLabels();
+  const toggledProviders = await activeProviders();
 
   return (
     <Section>
@@ -171,7 +166,7 @@ export default async function CheckoutPage({
             <div className="rounded-2xl border border-ink/15 bg-paper p-7">
               <PaymentMethods
                 payLabel={`${t('pay')} ${formatUsd(amountUsd)}`}
-                active={activeProviders()}
+                active={toggledProviders}
                 productType={isSub ? 'subscription' : 'course'}
                 courseSlug={course ? course.slug : null}
                 teacherSlug={isSub ? teacherSlug ?? null : null}

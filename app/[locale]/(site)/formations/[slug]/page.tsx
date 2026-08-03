@@ -164,7 +164,7 @@ export default async function CourseDetail({
   const teacherRating = teacherOwnerUserId
     ? await getTeacherRating(teacherOwnerUserId)
     : { avg: null, count: 0 };
-  const testimonial = getCourseTestimonial(course.slug);
+  const testimonial = await getCourseTestimonial(course.slug);
   const testimonialQuote = testimonial
     ? locale === 'ht'
       ? testimonial.quote_ht
