@@ -1,4 +1,24 @@
 {
+  "metadata": {
+    "title": "PNICE Academy — Mache fòmasyon pou fè lajan ak konpetans reyèl",
+    "description": "Plizyè pwofesè ayisyen anseye biznis, teknoloji ak lajan sou yon sèl platfòm. Achte yon fòmasyon apa oswa pran yon pass pou aprann san limit — an kreyòl ak an franse, ak sètifika."
+  },
+  "notFound": {
+    "eyebrow": "Erè 404",
+    "title": "Paj sa a pa egziste",
+    "body": "Nou pa jwenn paj w ap chèche a — li kapab deplase, oswa li pa janm egziste.",
+    "ctaFormations": "Gade katalòg fòmasyon",
+    "ctaContact": "Kontakte nou"
+  },
+  "errorPage": {
+    "eyebrow": "Erè",
+    "title": "Yon bagay pa mache",
+    "body": "Gen yon erè ki pase bò kote nou. Eseye ankò, oswa tounen sou paj akèy la.",
+    "retry": "Eseye ankò",
+    "home": "Tounen lakay",
+    "formations": "Gade fòmasyon yo",
+    "contact": "Kontakte nou"
+  },
   "nav": {
     "formations": "Fòmasyon",
     "teach": "Anseye",

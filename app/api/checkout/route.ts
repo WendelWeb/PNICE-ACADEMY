@@ -15,6 +15,10 @@
  *     clear 400, never a silent full charge. Discounts only apply when the
  *     promo store is the real DB (`ADMIN_DATA_SOURCE=real`) — mock-seeded
  *     codes must never discount real charges (the original guard, upheld).
+ *   - RATE-LIMITED per IP (Stage 8 — launch hygiene): lib/rate-limit.ts's
+ *     shared in-memory sliding window, bucket 'checkout' — a caller past the
+ *     window gets a plain 429, never a Stripe call. Same honest per-instance
+ *     limitation documented there.
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
@@ -28,6 +32,7 @@ import { parseCheckoutBody } from '@/lib/payments/checkout-body';
 import { hasCourseAccess, hasSubscriptionConflict } from '@/lib/learner/access';
 import { validatePromo } from '@/lib/admin/data';
 import { applyPromo } from '@/lib/payments/promo';
+import { rateLimit, ipFromHeaders, RATE_LIMITS } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -35,6 +40,9 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   if (!clerkEnabled || !stripeConfigured() || !process.env.DATABASE_URL) {
     return NextResponse.json({ error: 'not_configured' }, { status: 503 });
+  }
+  if (!rateLimit('checkout', ipFromHeaders(req.headers), RATE_LIMITS.checkout)) {
+    return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
   }
   const { userId: clerkId } = await auth();
   if (!clerkId) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });

@@ -1,4 +1,24 @@
 {
+  "metadata": {
+    "title": "PNICE Academy — La marketplace haïtienne des formations pratiques",
+    "description": "Plusieurs professeurs haïtiens enseignent le business, la tech et l'argent sur une seule plateforme. Achetez une formation ou prenez un pass pour apprendre sans limite — en créole et en français, avec certificat."
+  },
+  "notFound": {
+    "eyebrow": "Erreur 404",
+    "title": "Cette page n'existe pas",
+    "body": "Nous n'avons pas trouvé la page que vous cherchez — elle a peut-être été déplacée, ou n'a jamais existé.",
+    "ctaFormations": "Voir le catalogue de formations",
+    "ctaContact": "Nous contacter"
+  },
+  "errorPage": {
+    "eyebrow": "Erreur",
+    "title": "Quelque chose s'est mal passé",
+    "body": "Une erreur est survenue de notre côté. Réessayez, ou retournez à l'accueil.",
+    "retry": "Réessayer",
+    "home": "Retour à l'accueil",
+    "formations": "Voir les formations",
+    "contact": "Nous contacter"
+  },
   "nav": {
     "formations": "Formations",
     "teach": "Enseigner",

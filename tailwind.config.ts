@@ -16,9 +16,13 @@ export default {
         graphite: '#2B2B28',
       },
       fontFamily: {
-        display: ['"Big Shoulders Display"', 'Impact', 'sans-serif'],
-        body: ['"Work Sans"', 'system-ui', 'sans-serif'],
-        mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
+        // Stage 8 — next/font/google (app/fonts.ts) exposes each family as a
+        // CSS variable on <html>; the quoted literal stays as a same-order
+        // fallback for the rare render before the variable is set (e.g. the
+        // noscript path) or a font that fails to load.
+        display: ['var(--font-display)', '"Big Shoulders Display"', 'Impact', 'sans-serif'],
+        body: ['var(--font-body)', '"Work Sans"', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono)', '"IBM Plex Mono"', 'ui-monospace', 'monospace'],
       },
       maxWidth: {
         page: '1120px',

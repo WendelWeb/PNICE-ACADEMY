@@ -9,46 +9,22 @@
  * worst case is a few extra support tickets; anything stronger needs shared
  * state (a DB table / KV) this stage deliberately doesn't add.
  *
- * Pure core (`allowHit`) exported for unit tests; the module-level default
- * map + `allowContactSubmission` are what the action itself uses.
+ * Stage 8: the pure sliding-window core moved to lib/rate-limit.ts (the same
+ * primitive now also guards /api/checkout and /api/upload/course-asset) —
+ * `allowHit` is re-exported here unchanged so existing imports keep working,
+ * and `allowContactSubmission` is now a thin wrapper over the shared,
+ * bucket-keyed `rateLimit()` (bucket `'contact'`), so the contact form still
+ * gets its own independent quota, never shared with the other two guards.
  */
+import { allowHit, rateLimit, type RateWindow } from '@/lib/rate-limit';
 
-export type RateWindow = { max: number; windowMs: number };
+export type { RateWindow };
+export { allowHit };
 
 /** Default: at most 3 messages per IP per 10 minutes (per instance). */
 export const CONTACT_RATE: RateWindow = { max: 3, windowMs: 10 * 60_000 };
 
-/**
- * Pure sliding-window check-and-record: prunes hits older than `windowMs`,
- * then either records `now` and allows (true) or refuses (false) when the
- * key already has `max` live hits. Mutates `hits` — the caller owns the map.
- */
-export function allowHit(
-  hits: Map<string, number[]>,
-  key: string,
-  now: number,
-  { max, windowMs }: RateWindow,
-): boolean {
-  const live = (hits.get(key) ?? []).filter((t) => now - t < windowMs);
-  if (live.length >= max) {
-    hits.set(key, live);
-    return false;
-  }
-  live.push(now);
-  hits.set(key, live);
-  return true;
-}
-
-const contactHits = new Map<string, number[]>();
-
 /** The /kontak action's entry point — one shared per-instance window. */
 export function allowContactSubmission(key: string, now = Date.now()): boolean {
-  // Bound the map so a rotating-IP flood can't grow memory forever: once it
-  // gets large, drop entries whose window has fully expired.
-  if (contactHits.size > 1000) {
-    for (const [k, times] of contactHits) {
-      if (times.every((t) => now - t >= CONTACT_RATE.windowMs)) contactHits.delete(k);
-    }
-  }
-  return allowHit(contactHits, key, now, CONTACT_RATE);
+  return rateLimit('contact', key, CONTACT_RATE, now);
 }

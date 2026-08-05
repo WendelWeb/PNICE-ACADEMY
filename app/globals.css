@@ -326,6 +326,26 @@ html[data-reduce-motion='true'] .formations-skeleton-card {
   }
 }
 
+/* Generic paper-toned loading skeleton (Stage 8 — launch hygiene): shared by
+   every route's loading.tsx (components/ui/Skeleton.tsx). Reuses the exact
+   pulse keyframe/timing `.formations-skeleton-card` pioneered — one visual
+   language for "this is still loading" sitewide — with the same two
+   reduced-motion kill switches (OS-level media query + the user-level
+   `data-reduce-motion` toggle). */
+.skeleton-pulse {
+  animation: formations-skeleton-pulse 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-pulse {
+    animation: none;
+    opacity: 0.7;
+  }
+}
+html[data-reduce-motion='true'] .skeleton-pulse {
+  animation: none;
+  opacity: 0.7;
+}
+
 /* Lesson-preview modal (Stage 4 — watchable previews): gentle entrance.
    Both reduced-motion kill switches below (OS-level and the user-level
    data-reduce-motion preference) neutralize this automatically — the dialog

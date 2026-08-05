@@ -33,6 +33,11 @@
  * (lib/uploads/course-asset.ts) so it's unit-tested without this route. The
  * stored path is built by `buildCourseAssetPath` — never from raw client
  * input (traversal-proof, extension forced from the VALIDATED MIME).
+ *
+ * RATE-LIMITED per IP (Stage 8 — launch hygiene): lib/rate-limit.ts's shared
+ * in-memory sliding window, bucket 'upload' — checked BEFORE auth/Bunny so a
+ * flood never even reaches those. Same honest per-instance limitation
+ * documented there.
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { auth, clerkClient } from '@clerk/nextjs/server';
@@ -54,6 +59,7 @@ import {
   ASSET_MAX_BYTES,
   ASSET_SNIFF_HEAD_BYTES,
 } from '@/lib/uploads/course-asset';
+import { rateLimit, ipFromHeaders, RATE_LIMITS } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -112,6 +118,9 @@ async function authorizeUpload(clerkId: string, slug: string): Promise<Gate> {
 export async function POST(req: NextRequest) {
   try {
     if (!bunnyStorageConfigured() || !clerkEnabled) return respond({ ok: false, message: 'not_configured' });
+    if (!rateLimit('upload', ipFromHeaders(req.headers), RATE_LIMITS.upload)) {
+      return respond({ ok: false, message: 'rate_limited' });
+    }
 
     const { userId: clerkId } = await auth();
     if (!clerkId) return respond({ ok: false, message: 'unauthorized' });

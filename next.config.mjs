@@ -26,6 +26,30 @@ function cdnRemotePatterns() {
   return patterns;
 }
 
+/**
+ * Baseline security headers (Stage 8 — launch hygiene). Deliberately NOT a
+ * full Content-Security-Policy: this app embeds Bunny Stream iframes, redirects
+ * to Stripe Checkout, and (env-gated) loads Clerk — a real CSP needs a careful,
+ * tested allowlist for all three plus next/font's inlined `<style>` and every
+ * inline `<script>` this codebase already ships (e.g. the /formations
+ * pending-filters guard). Shipping a half-right CSP would silently break one
+ * of those instead of adding safety, so it's deferred; these four headers are
+ * the safe, unconditional wins that need no allowlist.
+ *
+ * `X-Frame-Options: SAMEORIGIN` only restricts THIS site being framed by
+ * someone else — it says nothing about Bunny's iframe embedded INSIDE this
+ * site (that's an outbound frame, unaffected) and nothing about the redirect
+ * to checkout.stripe.com (a navigation, not a frame).
+ */
+function securityHeaders() {
+  return [
+    { key: 'X-Content-Type-Options', value: 'nosniff' },
+    { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+    { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+    { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+  ];
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -36,6 +60,9 @@ const nextConfig = {
     contentDispositionType: 'inline',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     remotePatterns: cdnRemotePatterns(),
+  },
+  async headers() {
+    return [{ source: '/:path*', headers: securityHeaders() }];
   },
 };
 

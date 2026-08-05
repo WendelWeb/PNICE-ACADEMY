@@ -14,7 +14,8 @@ import { AuthCta } from '@/components/auth/AuthCta';
 import { CourseCatalogCard } from '@/components/courses/CourseCatalogCard';
 import { teachers } from '@/data/teachers';
 import { SUBSCRIPTION_USD, teacherPassPerks } from '@/data/pricing';
-import { siteImageSrc } from '@/lib/courseImage';
+import { absoluteImageUrl, siteImageSrc } from '@/lib/courseImage';
+import { SITE_URL } from '@/lib/email/layout';
 import { getPublicTeacher, getApprovedTeacherSlugs } from '@/lib/teacher/public';
 
 // The static data/teachers.ts registry (teacher #1) PLUS every approved
@@ -40,12 +41,21 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const teacher = await getPublicTeacher(slug, locale);
   if (!teacher) return {};
+  const title = teacher.displayName.includes('PNICE Academy')
+    ? teacher.displayName
+    : `${teacher.displayName} — PNICE Academy`;
+  // Stage 8 — the teacher's real photo when they have one (same validated
+  // http(s)-only `photoUrl` the page body renders), the branded placeholder
+  // otherwise — never a broken/relative og:image (WhatsApp/Facebook require
+  // an absolute URL, hence `absoluteImageUrl` + `SITE_URL`, same helper the
+  // course sales page already uses for its own og:image).
+  const image = absoluteImageUrl(teacher.photoUrl ?? siteImageSrc(teacher.imageName), SITE_URL);
   return {
     // Teacher #1 IS the platform — avoid « PNICE Academy — PNICE Academy ».
-    title: teacher.displayName.includes('PNICE Academy')
-      ? teacher.displayName
-      : `${teacher.displayName} — PNICE Academy`,
+    title,
     description: teacher.bio,
+    openGraph: { title, description: teacher.bio, images: [image] },
+    twitter: { card: 'summary_large_image', title, description: teacher.bio, images: [image] },
   };
 }
 
