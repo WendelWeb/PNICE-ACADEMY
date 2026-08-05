@@ -8,6 +8,18 @@
  *     already has access to, or a subscription an active one already covers
  *     (lib/learner/access.ts) — the page shows a friendly state first; this
  *     is the server-side backstop so nobody can ever be charged twice.
+ *   - PENDING-CHECKOUT GUARD (launch review fix): the repurchase guard above
+ *     only reads enrollments/subscriptions — rows only written by the
+ *     webhook, AFTER Stripe redirects the buyer, so it alone can't stop two
+ *     tabs / a retried POST / a slow webhook from minting TWO live Stripe
+ *     sessions for the same item first. Before creating a new session, this
+ *     route looks for the user's own most recent not-yet-completed
+ *     `checkout_sessions` row for the SAME product and asks Stripe directly
+ *     whether it's still live (lib/payments/checkout-guard.ts's pure
+ *     decision + lib/payments/stripe.ts's `getStripeCheckoutSessionStatus`)
+ *     — still open ⇒ hand back that SAME session instead of a second one;
+ *     already paid (webhook not landed yet) ⇒ refuse rather than charge
+ *     twice; expired/unknown ⇒ proceed exactly as before this fix.
  *   - PROMO CODES ARE REAL: the submitted code is re-validated here with the
  *     SAME `validatePromo` the checkout field's preview uses, and the Stripe
  *     session is created at the DISCOUNTED unit_amount
@@ -24,15 +36,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { db } from '@/db';
 import { users, checkoutSessions } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { and, desc, eq, gte, isNull, isNotNull } from 'drizzle-orm';
 import { clerkEnabled } from '@/lib/clerk';
-import { stripeConfigured, createStripeCheckout } from '@/lib/payments/stripe';
+import { stripeConfigured, createStripeCheckout, getStripeCheckoutSessionStatus } from '@/lib/payments/stripe';
 import { resolveProduct } from '@/lib/payments/products';
 import { parseCheckoutBody } from '@/lib/payments/checkout-body';
 import { hasCourseAccess, hasSubscriptionConflict } from '@/lib/learner/access';
 import { validatePromo } from '@/lib/admin/data';
 import { applyPromo } from '@/lib/payments/promo';
 import { rateLimit, ipFromHeaders, RATE_LIMITS } from '@/lib/rate-limit';
+import { decidePendingCheckout } from '@/lib/payments/checkout-guard';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -76,6 +89,7 @@ export async function POST(req: NextRequest) {
   // stage removes.
   let amountCents = product.amountCents;
   let promoCode: string | null = null;
+  let discountCents = 0;
   if (body.promoCode) {
     if (process.env.ADMIN_DATA_SOURCE !== 'real') {
       // The promo store is the in-memory mock — its seeded codes must never
@@ -93,6 +107,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'promo_invalid', reason: applied.reason }, { status: 400 });
     }
     amountCents = applied.amountCents;
+    discountCents = applied.discountCents;
     promoCode = validation.code;
   }
 
@@ -116,6 +131,49 @@ export async function POST(req: NextRequest) {
     )[0];
   }
 
+  // Pending-checkout guard (launch review fix) — see file header. Bounded to
+  // the last 24h (Stripe's own default Checkout Session TTL): an older row
+  // can only resolve to 'expired' below anyway, so this just avoids a wasted
+  // Stripe round-trip for ancient/abandoned carts. NOT filtered on
+  // `abandonedAt` — the abandoned-cart cron flags a row at 2h purely for
+  // relance email purposes, well before Stripe's own session actually
+  // expires, so an "abandoned" row can still be a live, payable session.
+  // Known coarseness: `checkout_sessions` carries no `teacherPlanId`, so a
+  // pending PLATFORM subscription checkout and a pending TEACHER subscription
+  // checkout are indistinguishable here (both have `courseSlug: null`) — a
+  // user who starts subscribing to teacher A then immediately tries teacher
+  // B before finishing gets A's session handed back, not a new one for B.
+  // Never a double charge either way (the whole point of this guard); worst
+  // case is "wrong pending checkout resumed", recoverable by cancelling it.
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const pendingRow = (
+    await db
+      .select({ sessionId: checkoutSessions.sessionId })
+      .from(checkoutSessions)
+      .where(
+        and(
+          eq(checkoutSessions.userId, row.id),
+          eq(checkoutSessions.productType, product.productType),
+          product.courseSlug ? eq(checkoutSessions.courseSlug, product.courseSlug) : isNull(checkoutSessions.courseSlug),
+          isNull(checkoutSessions.completedAt),
+          isNotNull(checkoutSessions.sessionId),
+          gte(checkoutSessions.startedAt, oneDayAgo),
+        ),
+      )
+      .orderBy(desc(checkoutSessions.startedAt))
+      .limit(1)
+  )[0];
+  const pendingStatus = pendingRow?.sessionId
+    ? await getStripeCheckoutSessionStatus(pendingRow.sessionId)
+    : null;
+  const decision = decidePendingCheckout(pendingStatus);
+  if (decision.action === 'block') {
+    return NextResponse.json({ error: 'checkout_processing' }, { status: 409 });
+  }
+  if (decision.action === 'reuse') {
+    return NextResponse.json({ url: decision.url });
+  }
+
   const cs = (
     await db
       .insert(checkoutSessions)
@@ -133,9 +191,14 @@ export async function POST(req: NextRequest) {
   const origin = req.nextUrl.origin;
   const result = await createStripeCheckout({
     mode: product.productType === 'subscription' ? 'subscription' : 'payment',
-    // The discounted amount IS the session amount — for a subscription this
-    // is the recurring monthly price the buyer saw and accepted on the page.
-    product: { ...product, amountCents },
+    // `product` is passed UNCHANGED (full gross) — launch review fix:
+    // baking a promo discount straight into a subscription's recurring
+    // unit_amount used to discount EVERY renewal forever. `discountCents`
+    // below is what the buyer actually saw and accepted on the page; for a
+    // subscription lib/payments/stripe.ts applies it as a one-time coupon
+    // instead so only the first invoice is discounted.
+    product,
+    discountCents,
     promoCode,
     userDbId: row.id,
     checkoutRowId: cs.id,

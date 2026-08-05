@@ -603,20 +603,44 @@ type SubscriptionUpdated = Extract<StripeAction, { kind: 'subscription_updated' 
  * fresh remote state, so an early-arriving update has nothing to fix, and a
  * genuinely foreign id has nothing to do with us. Naturally idempotent — the
  * same event maps to the same UPDATE … SET every time.
+ *
+ * Fix (launch review pass): Stripe's ORDINARY cancellation flow sends
+ * `customer.subscription.updated` (status → 'canceled') and THEN
+ * `customer.subscription.deleted` for the very same cancellation — not two
+ * deliveries of one event. That makes THIS handler the one that actually
+ * observes the active → canceled transition; `fulfillSubscriptionDeleted`
+ * below almost always finds the row already canceled and is a pure
+ * idempotent ack with no notification of its own. So the 'sub_canceled'
+ * admin bell is raised HERE, the first time (and only the first time) a
+ * delivery flips this row into 'canceled' — gated on the OLD status read
+ * before the update, so a redelivered event, or one arriving after
+ * `fulfillSubscriptionDeleted` already canceled the row, never double-fires.
  */
 async function fulfillSubscriptionUpdated(a: SubscriptionUpdated): Promise<'processed' | 'ignored'> {
   if (!a.subscriptionId) return 'ignored';
   const sub = await selectSubscriptionByProviderRef(a.subscriptionId);
   if (!sub) return 'ignored';
+  const newStatus = mapStripeSubscriptionStatus(a.status);
+  const isNewCancellation = newStatus === 'canceled' && sub.status !== 'canceled';
   await db
     .update(subscriptions)
     .set({
-      status: mapStripeSubscriptionStatus(a.status),
+      status: newStatus,
       cancelAtPeriodEnd: a.cancelAtPeriodEnd,
       ...(a.periodEnd ? { currentPeriodEnd: new Date(a.periodEnd * 1000) } : {}),
       updatedAt: new Date(),
     })
     .where(eq(subscriptions.id, sub.id));
+  if (isNewCancellation) {
+    await db.insert(adminNotifications).values({
+      kind: 'sub_canceled',
+      severity: 'info',
+      userId: sub.userId,
+      userName: null,
+      amountCents: null,
+      detail: 'Abonnement annulé (Stripe)',
+    });
+  }
   return 'processed';
 }
 
@@ -626,14 +650,22 @@ type SubscriptionDeleted = Extract<StripeAction, { kind: 'subscription_deleted' 
  * Stage: learner account — a subscription cancelled OUTSIDE our app (billing
  * portal, Stripe dashboard, final dunning failure) finally reaches the DB —
  * before this handler the row stayed 'active' forever (zombie access).
- * Idempotent: an already-'canceled' row is acked without a second admin
- * notification (same duplicate discipline as fulfillChargeRefunded).
+ *
+ * Fix (launch review pass): in Stripe's ordinary flow the sibling
+ * `customer.subscription.updated` event (status → 'canceled') arrives FIRST
+ * and already flips the row + raises the 'sub_canceled' notification
+ * (`fulfillSubscriptionUpdated` above) — so THIS handler almost always finds
+ * `sub.status === 'canceled'` already and is a pure idempotent ack (covers
+ * both a genuine redelivery of `.deleted` itself AND the ordinary
+ * updated-then-deleted pair). It still does the real cancel + notify work
+ * itself for the out-of-order/edge case where `.deleted` arrives BEFORE (or
+ * without) the `.updated` transition ever landing.
  */
 async function fulfillSubscriptionDeleted(a: SubscriptionDeleted): Promise<'processed' | 'ignored'> {
   if (!a.subscriptionId) return 'ignored';
   const sub = await selectSubscriptionByProviderRef(a.subscriptionId);
   if (!sub) return 'ignored';
-  if (sub.status === 'canceled') return 'processed'; // duplicate delivery
+  if (sub.status === 'canceled') return 'processed'; // already canceled — by .updated above, or a genuine redelivery
   await db
     .update(subscriptions)
     .set({ status: 'canceled', cancelAtPeriodEnd: false, updatedAt: new Date() })

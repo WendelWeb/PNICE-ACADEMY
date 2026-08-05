@@ -319,7 +319,18 @@ export default async function ProfPage({
             {t('cta.body')}
           </p>
           <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <AuthCta href="/checkout" className={buttonClasses('primary', 'lg')}>
+            {/* Fix (launch review pass): this used to be a bare `/checkout`,
+                which silently resolved to the platform-wide "Pass PNICE"
+                instead of THIS teacher's own catalogue/pass — contradicting
+                the promise in `cta.body` just above. Mirrors the pattern
+                already used by the subscription block above and by
+                formations/[slug]'s own final-CTA band. `resolveProduct`
+                already falls back to the platform price for a teacher with
+                no plan, so always threading the slug is safe. */}
+            <AuthCta
+              href={`/checkout?teacher=${encodeURIComponent(teacher.slug)}`}
+              className={buttonClasses('primary', 'lg')}
+            >
               {t('cta.primary')}
             </AuthCta>
             <Link

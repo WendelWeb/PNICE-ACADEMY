@@ -58,6 +58,9 @@ async function stripeRequest<T>(
 
 export type StripeCheckoutInput = {
   mode: 'payment' | 'subscription';
+  /** ALWAYS the full, undiscounted gross — a promo discount is applied via
+   *  `discountCents` below, never by pre-subtracting it from this amount
+   *  (launch review fix; see `discountCents`'s own doc for why). */
   product: ResolvedProduct;
   /** Our users.id (uuid) — round-trips via client_reference_id + metadata. */
   userDbId: string;
@@ -67,18 +70,70 @@ export type StripeCheckoutInput = {
   locale: 'fr' | 'ht';
   successUrl: string;
   cancelUrl: string;
-  /** Stage: checkout honesty — the promo code /api/checkout validated and
-   *  ALREADY applied to `product.amountCents` before calling here. Carried
-   *  as metadata only (never re-priced in this module) so fulfillment
-   *  (lib/payments/fulfill.ts → lib/payments/promo-redemption.ts) can mark
-   *  the redemption against the real payment. Absent = no code applied. */
+  /** Stage: checkout honesty — the promo code /api/checkout validated.
+   *  Carried as metadata only (never re-priced in this module) so
+   *  fulfillment (lib/payments/fulfill.ts → lib/payments/promo-redemption.ts)
+   *  can mark the redemption against the real payment. Absent = no code
+   *  applied. */
   promoCode?: string | null;
+  /** Launch review fix — the promo discount /api/checkout validated and
+   *  computed (lib/payments/promo.ts), pre-clamped to
+   *  [0, product.amountCents]. Absent/0 = no discount, both modes behave
+   *  exactly as before this fix.
+   *  `mode: 'payment'`: subtracted straight from the single one-off
+   *  `unit_amount` — a one-time charge has no renewal to protect.
+   *  `mode: 'subscription'`: the recurring Price line item is created at the
+   *  FULL `product.amountCents` instead — baking a discount into it would
+   *  otherwise repeat on EVERY future renewal forever (the bug this fixes).
+   *  The discount is applied via a freshly-minted `duration: 'once'` Stripe
+   *  Coupon, so only the first invoice is discounted and every renewal
+   *  bills the plan's real price. */
+  discountCents?: number;
 };
+
+/**
+ * A single-use Stripe Coupon minted for exactly ONE subscription checkout's
+ * promo discount — `duration: 'once'` so Stripe applies it to that
+ * subscription's FIRST invoice only, never a renewal (launch review fix:
+ * the bug was baking the discount straight into a recurring
+ * `price_data.unit_amount`, which discounted every renewal forever).
+ * `max_redemptions: 1` is an extra Stripe-side belt on top of our own
+ * `promo_redemptions` ledger. A fresh coupon per checkout carries no
+ * cross-customer state to leak or collide.
+ */
+async function createOneTimeCoupon(
+  amountOffCents: number,
+  currency: string,
+  label: string | null,
+): Promise<{ id: string } | { error: string }> {
+  const res = await stripeRequest<{ id: string }>('POST', '/coupons', {
+    amount_off: amountOffCents,
+    currency: currency.toLowerCase(),
+    duration: 'once',
+    max_redemptions: 1,
+    ...(label ? { name: `Promo ${label}`.slice(0, 40) } : {}),
+  });
+  return res.ok ? { id: res.data.id } : { error: res.error };
+}
 
 export async function createStripeCheckout(
   input: StripeCheckoutInput,
 ): Promise<{ id: string; url: string } | { error: string }> {
   const name = input.locale === 'fr' ? input.product.nameFr : input.product.nameHt;
+  const isSubscription = input.mode === 'subscription';
+  const discountCents = Math.max(0, Math.min(Math.round(input.discountCents ?? 0), input.product.amountCents));
+  // Subscription: the recurring Price is always the FULL price (see
+  // `discountCents`'s doc on `StripeCheckoutInput`). One-off purchase: the
+  // discount is baked straight into the single charge, same as always.
+  const unitAmount = isSubscription ? input.product.amountCents : input.product.amountCents - discountCents;
+
+  let couponId: string | null = null;
+  if (isSubscription && discountCents > 0) {
+    const coupon = await createOneTimeCoupon(discountCents, 'usd', input.promoCode ?? null);
+    if ('error' in coupon) return { error: coupon.error };
+    couponId = coupon.id;
+  }
+
   const params: Record<string, string | number | boolean> = {
     mode: input.mode,
     client_reference_id: input.userDbId,
@@ -89,17 +144,18 @@ export async function createStripeCheckout(
     locale: 'fr',
     'line_items[0][quantity]': 1,
     'line_items[0][price_data][currency]': 'usd',
-    'line_items[0][price_data][unit_amount]': input.product.amountCents,
+    'line_items[0][price_data][unit_amount]': unitAmount,
     'line_items[0][price_data][product_data][name]': name,
     'metadata[checkoutRowId]': input.checkoutRowId,
     'metadata[userDbId]': input.userDbId,
     'metadata[productType]': input.product.productType,
   };
+  if (couponId) params['discounts[0][coupon]'] = couponId;
   if (input.product.courseSlug) params['metadata[courseSlug]'] = input.product.courseSlug;
   // Stage: checkout honesty — the validated promo code rides along so the
   // webhook can record the redemption (promo_redemptions + used_count) against
-  // the real payment. The AMOUNT was already discounted by the caller
-  // (/api/checkout via lib/payments/promo.ts) — this is bookkeeping only.
+  // the real payment. The DISCOUNT is applied above (unit_amount subtraction
+  // or a one-time coupon) — this is bookkeeping only.
   if (input.promoCode) params['metadata[promoCode]'] = input.promoCode;
   // Task: per-teacher subscription checkout — carry the resolved plan/owner
   // through Stripe so lib/payments/fulfill.ts can store it on the local
@@ -170,6 +226,37 @@ export async function getStripeCheckoutSession(id: string): Promise<StripeSessio
     currency: (s.currency ?? 'usd').toUpperCase(),
     itemName: s.line_items?.data?.[0]?.description ?? null,
   };
+}
+
+export type StripeCheckoutSessionStatus = {
+  status: 'open' | 'complete' | 'expired' | 'unknown';
+  /** The session's own hosted-checkout URL — present while `status` is
+   *  'open'. Absent otherwise (no point resuming a paid or expired one). */
+  url: string | null;
+};
+
+/**
+ * Lightweight LIVE status check for one of OUR `checkout_sessions` rows —
+ * open (still awaiting payment), complete (paid — a webhook may still be in
+ * flight) or expired (Stripe's own ~24h TTL passed). Launch review fix: the
+ * pending-checkout guard (app/api/checkout/route.ts +
+ * lib/payments/checkout-guard.ts) uses this to stop two tabs / a retried
+ * POST from minting a SECOND live Stripe session for the same item. No
+ * `expand` — deliberately lighter than `getStripeCheckoutSession` above,
+ * which the merci page uses for full purchase details. GATED + NEVER-THROW:
+ * no key, a malformed id, or any API/network failure resolves to 'unknown'
+ * — the guard treats that the same as "nothing to reuse or block".
+ */
+export async function getStripeCheckoutSessionStatus(id: string): Promise<StripeCheckoutSessionStatus> {
+  if (!/^cs_[A-Za-z0-9_]{8,240}$/.test(id)) return { status: 'unknown', url: null };
+  const res = await stripeRequest<{ status?: string | null; url?: string | null }>(
+    'GET',
+    `/checkout/sessions/${id}`,
+  );
+  if (!res.ok) return { status: 'unknown', url: null };
+  const raw = res.data.status;
+  const status = raw === 'open' || raw === 'complete' || raw === 'expired' ? raw : 'unknown';
+  return { status, url: typeof res.data.url === 'string' ? res.data.url : null };
 }
 
 /**

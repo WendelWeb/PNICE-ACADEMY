@@ -760,6 +760,7 @@
     "secure": "Peman ou an sekirize",
     "secureNote": "Peman sekirize pa Stripe. Aksè w ap aktive otomatikman apre konfimasyon.",
     "payErr": "Peman an pa t ka kòmanse. Eseye ankò talè.",
+    "payPending": "Nou wè yon peman ki fèk fèt pou sa a — n ap konfime l. Tann kèk segond epi tcheke tablodbò w.",
     "redirect": "N ap voye w sou paj peman sekirize a…",
     "noMethods": "Peman pa disponib kounye a. Eseye ankò talè, oswa kontakte sipò a.",
     "comingSoonTitle": "Lòt mwayen k ap vini",

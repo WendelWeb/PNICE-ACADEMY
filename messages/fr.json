@@ -760,6 +760,7 @@
     "secure": "Ton paiement est sécurisé",
     "secureNote": "Paiement sécurisé par Stripe. Ton accès s'active automatiquement après confirmation.",
     "payErr": "Le paiement n'a pas pu démarrer. Réessaie dans un instant.",
+    "payPending": "On voit un paiement tout juste effectué pour ceci — on le confirme. Patiente quelques secondes puis vérifie ton tableau de bord.",
     "redirect": "Redirection vers le paiement sécurisé…",
     "noMethods": "Le paiement n'est pas disponible pour le moment. Réessaie bientôt, ou contacte le support.",
     "comingSoonTitle": "D'autres moyens arrivent",

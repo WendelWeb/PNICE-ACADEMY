@@ -106,6 +106,12 @@ export function PaymentMethods({
       // Honest failure messages: the server says exactly WHY it refused.
       if (data.error === 'already_owned') {
         setErrorMsg(t('owned.payRefused'));
+      } else if (data.error === 'checkout_processing') {
+        // Pending-checkout guard (launch review fix): a payment for this
+        // exact item already landed on Stripe's side and the webhook just
+        // hasn't caught up yet — never a silent generic "try again" that
+        // would invite a genuine second charge attempt.
+        setErrorMsg(t('payPending'));
       } else if (data.error === 'promo_invalid') {
         setErrorMsg(
           data.reason && PROMO_REASONS.has(data.reason)

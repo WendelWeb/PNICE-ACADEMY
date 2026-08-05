@@ -3,6 +3,11 @@
  * updated/deleted (lib/payments/fulfill.ts). DB-mocked (the write.resources
  * pattern: a queue of select results + recorders for update/insert), proving:
  *  - updated maps Stripe's status onto ours and writes cancel flag + period;
+ *  - updated raises the 'sub_canceled' notification itself the FIRST time it
+ *    transitions a row into canceled (launch review fix — Stripe's ordinary
+ *    cancellation flow delivers .updated BEFORE .deleted for the SAME
+ *    cancellation), and never re-notifies a redelivery/out-of-order update
+ *    that finds the row already canceled;
  *  - deleted cancels once, notifies once, and a REDELIVERY is a pure ack
  *    (no second status write, no second admin notification) — idempotency;
  *  - an unknown subscription id is 'ignored' for both, never a throw.
@@ -158,6 +163,30 @@ describe('fulfillAction — customer.subscription.updated', () => {
     const outcome = await fulfillAction(updated());
     expect(outcome).toBe('ignored');
     expect(dbState.updates).toHaveLength(0);
+  });
+
+  // Fix (launch review pass): Stripe's ordinary cancellation flow sends
+  // .updated (status → canceled) BEFORE .deleted for the SAME cancellation —
+  // so .updated must be the one that actually notifies, or the admin bell
+  // never fires for the mainstream path (fulfillSubscriptionDeleted finds
+  // the row already canceled and stays silent).
+  it("raises the 'sub_canceled' admin notification the FIRST time it transitions a row into canceled", async () => {
+    dbState.selectQueue = [[SUB_ROW]]; // was 'active'
+    const outcome = await fulfillAction(updated({ status: 'canceled', cancelAtPeriodEnd: false }));
+    expect(outcome).toBe('processed');
+    expect(dbState.updates).toHaveLength(1);
+    expect(dbState.updates[0].set.status).toBe('canceled');
+    expect(dbState.inserts).toHaveLength(1);
+    expect(dbState.inserts[0].values.kind).toBe('sub_canceled');
+    expect(dbState.inserts[0].values.userId).toBe('user-1');
+  });
+
+  it('does NOT re-notify when a redelivered/out-of-order update finds the row already canceled', async () => {
+    dbState.selectQueue = [[{ ...SUB_ROW, status: 'canceled' }]];
+    const outcome = await fulfillAction(updated({ status: 'canceled', cancelAtPeriodEnd: false }));
+    expect(outcome).toBe('processed');
+    expect(dbState.updates).toHaveLength(1); // status write still happens (idempotent SET)
+    expect(dbState.inserts).toHaveLength(0); // but no second notification
   });
 });
 
