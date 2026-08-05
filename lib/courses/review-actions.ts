@@ -50,3 +50,15 @@ export async function rejectCourseAction(slug: string, note: string): Promise<Re
     return fail(e);
   }
 }
+
+/** Sidebar badge: count of courses `pending_review` (Stage 7). Mirrors
+ *  `getSupportBadgeAction`'s shape — any auth/capability failure degrades to
+ *  0, never throws, so the sidebar renders with no badge instead of crashing. */
+export async function getCourseReviewBadgeAction(): Promise<number> {
+  try {
+    await requireReviewer();
+    return await writeOps.countCoursesPendingReview();
+  } catch {
+    return 0;
+  }
+}

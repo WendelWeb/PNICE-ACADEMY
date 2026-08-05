@@ -18,6 +18,10 @@ import { visibleSections, firstReachableHref, ADMIN_NAV_ICONS } from './nav';
 import { RoleBadge } from './ui';
 import { NotificationBell } from './support/NotificationBell';
 import { SupportNavBadge } from './support/SupportNavBadge';
+import { AdminNavBadge } from './AdminNavBadge';
+import { getTeacherApplicationsBadgeAction } from '@/lib/teacher/admin-actions';
+import { getWithdrawalsBadgeAction } from '@/lib/teacher/payout-actions';
+import { getCourseReviewBadgeAction } from '@/lib/courses/review-actions';
 
 const focusRing =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ochre focus-visible:ring-offset-1 focus-visible:ring-offset-paper-light';
@@ -124,6 +128,9 @@ export function AdminShell({
                         <Icon size={18} className={cn('shrink-0', isActive && 'text-ochre')} />
                         <span className="truncate">{label}</span>
                         {item.key === 'support' && <SupportNavBadge />}
+                        {item.key === 'teachers' && <AdminNavBadge fetchCount={getTeacherApplicationsBadgeAction} />}
+                        {item.key === 'payouts' && <AdminNavBadge fetchCount={getWithdrawalsBadgeAction} />}
+                        {item.key === 'courses' && <AdminNavBadge fetchCount={getCourseReviewBadgeAction} />}
                       </Link>
                     </li>
                   );

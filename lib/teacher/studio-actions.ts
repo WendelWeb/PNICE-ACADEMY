@@ -696,6 +696,23 @@ export async function requestWithdrawalAction(amountCents: number): Promise<With
       return { ok: false, message: 'pending_exists' };
     }
 
+    // Stage 7 — admin inbound signal: best-effort, AFTER the pending row is
+    // already durably inserted, so a notification-write hiccup can never
+    // fail (or double-run) the request itself.
+    try {
+      await db.insert(T.adminNotifications).values({
+        kind: 'withdrawal_request',
+        severity: 'info',
+        userId,
+        userName: profile.displayName,
+        amountCents,
+        detail: profile.payoutMethod,
+        read: false,
+      });
+    } catch (notifErr) {
+      console.error('[teacher/studio-actions] requestWithdrawalAction notification insert failed (request already recorded):', notifErr);
+    }
+
     // Stage 6: payout-requested confirmation to the teacher — best-effort
     // AFTER the pending row is durably inserted; an email failure must never
     // fail the request (sendEmail is env-gated + never-throws).

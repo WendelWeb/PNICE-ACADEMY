@@ -4,6 +4,7 @@ import { getFxRate } from '@/lib/fx';
 import { fmtInt, fmtUsdCents, fmtHtgFromCents, fmtPct } from '@/lib/admin/format';
 import { KpiGroup, KpiCard, KpiSplitCard, MockNote } from '@/components/admin/ui';
 import { SpacesHub } from '@/components/admin/SpacesHub';
+import { getDataSource } from '@/lib/admin/integrations';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +31,10 @@ export default async function AdminOverviewPage({
       <SpacesHub />
 
       <p className="text-sm text-graphite/70">{t('subtitle')}</p>
-      <MockNote>{t('note.mock')}</MockNote>
+      {/* Stage 7 fix: this disclaimer used to render unconditionally, even
+          once ADMIN_DATA_SOURCE=real was live — telling the owner every real
+          number was "sample (mock) data" on their actual platform. */}
+      {getDataSource() === 'mock' && <MockNote>{t('note.mock')}</MockNote>}
 
       {/* Task 5 — volumes & revenue */}
       <KpiGroup title={t('groups.volumes')}>

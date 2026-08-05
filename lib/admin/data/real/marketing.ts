@@ -56,7 +56,8 @@
  */
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import { db, schema } from '@/db';
-import { courses } from '@/data/courses';
+import { getCourseMap } from '@/lib/courses/source';
+import type { Course } from '@/data/courses';
 import { SUBSCRIPTION_USD } from '@/data/pricing';
 import { recordAudit } from './users';
 import type {
@@ -82,7 +83,6 @@ import type {
 
 const T = schema;
 const SUB_CENTS = SUBSCRIPTION_USD * 100;
-const courseBySlug = new Map(courses.map((c) => [c.slug, c]));
 
 type DbPromo = typeof T.promoCodes.$inferSelect;
 type DbRedemption = typeof T.promoRedemptions.$inferSelect;
@@ -411,7 +411,7 @@ function cartReminderStatus(s: DbCheckout): CartReminderStatus {
   if (s.remindedAt) return 'reminded';
   return 'never';
 }
-function toAbandonedRow(s: DbCheckout, userById: Map<string, DbUser>): AbandonedCartRow {
+function toAbandonedRow(s: DbCheckout, userById: Map<string, DbUser>, courseBySlug: Map<string, Course>): AbandonedCartRow {
   const u = s.userId ? userById.get(s.userId) : undefined;
   const c = s.courseSlug ? courseBySlug.get(s.courseSlug) : undefined;
   const isSub = s.productType === 'subscription';
@@ -433,23 +433,25 @@ function toAbandonedRow(s: DbCheckout, userById: Map<string, DbUser>): Abandoned
 }
 
 export async function getAbandonedCarts(): Promise<AbandonedCartRow[]> {
-  const [sessions, users] = await Promise.all([
+  const [sessions, users, courseBySlug] = await Promise.all([
     db.select().from(T.checkoutSessions).where(sql`${T.checkoutSessions.abandonedAt} is not null`),
     db.select().from(T.users),
+    getCourseMap(),
   ]);
   const userById = new Map(users.map((u) => [u.id, u]));
   return sessions
-    .map((s) => toAbandonedRow(s, userById))
+    .map((s) => toAbandonedRow(s, userById, courseBySlug))
     .sort((a, b) => (b.abandonedAt ?? '').localeCompare(a.abandonedAt ?? ''));
 }
 
 export async function getOpenCarts(): Promise<OpenCartRow[]> {
-  const [sessions, users] = await Promise.all([
+  const [sessions, users, courseBySlug] = await Promise.all([
     db
       .select()
       .from(T.checkoutSessions)
       .where(and(isNull(T.checkoutSessions.abandonedAt), isNull(T.checkoutSessions.completedAt))),
     db.select().from(T.users),
+    getCourseMap(),
   ]);
   const userById = new Map(users.map((u) => [u.id, u]));
   return sessions

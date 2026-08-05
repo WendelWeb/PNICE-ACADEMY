@@ -11,7 +11,7 @@
  */
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { db, schema } from '@/db';
-import { courses } from '@/data/courses';
+import { getCourseMap } from '@/lib/courses/source';
 import { SUBSCRIPTION_USD } from '@/data/pricing';
 import type {
   AdminActor,
@@ -37,8 +37,6 @@ const DAY = 86_400_000;
 const PAGE_SIZE = 25;
 const SUB_CENTS = SUBSCRIPTION_USD * 100;
 
-const courseBySlug = new Map(courses.map((c) => [c.slug, c]));
-
 /* ----------------------------- mappers ----------------------------------- */
 const payStatus = (s: string): PaymentStatus => (s === 'completed' ? 'succeeded' : (s as PaymentStatus));
 const methodOf = (p: string): PaymentMethod => (p === 'stripe' ? 'card' : (p as PaymentMethod));
@@ -54,15 +52,16 @@ type DbEnroll = typeof T.enrollments.$inferSelect;
 type DbProgress = typeof T.progress.$inferSelect;
 
 async function loadAll() {
-  const [u, p, s, e, pr, cl] = await Promise.all([
+  const [u, p, s, e, pr, cl, courseBySlug] = await Promise.all([
     db.select().from(T.users),
     db.select().from(T.payments),
     db.select().from(T.subscriptions),
     db.select().from(T.enrollments),
     db.select().from(T.progress),
     db.select().from(T.creditLedger),
+    getCourseMap(),
   ]);
-  return { u, p, s, e, pr, cl };
+  return { u, p, s, e, pr, cl, courseBySlug };
 }
 
 function iso(d: Date | string | null): string | null {
@@ -76,6 +75,12 @@ function enrichUser(
   subs: DbSub[],
   enrolls: DbEnroll[],
   prog: DbProgress[],
+  /** Total course count (DB-first, static-fallback — see `getCourseMap`),
+   *  what an all-access subscriber has access to. Stage 7 fix: this used to
+   *  be the STATIC catalog's fixed length, so a subscriber's "courses
+   *  access" count silently ignored every DB-authored course beyond the 9
+   *  static ones. */
+  totalCourseCount: number,
 ): UserRow {
   const myPays = pays.filter((p) => p.userId === user.id);
   const succeeded = myPays.filter((p) => p.status === 'completed');
@@ -88,7 +93,7 @@ function enrichUser(
     succeeded.filter((p) => p.productType === 'course' && p.courseSlug).map((p) => p.courseSlug),
   ).size;
   const myEnrolls = enrolls.filter((e) => e.userId === user.id);
-  const coursesAccess = isSubscriber ? courses.length : new Set(myEnrolls.map((e) => e.courseSlug)).size;
+  const coursesAccess = isSubscriber ? totalCourseCount : new Set(myEnrolls.map((e) => e.courseSlug)).size;
 
   const type: UserType = subscriptionStatus === 'active' ? 'active_subscriber' : succeeded.length > 0 ? 'one_off' : 'free';
 
@@ -157,9 +162,9 @@ function sortRows(rows: UserRow[], q: UsersQuery): UserRow[] {
 }
 
 async function selectUsers(q: UsersQuery) {
-  const { u, p, s, e, pr } = await loadAll();
+  const { u, p, s, e, pr, courseBySlug } = await loadAll();
   const now = Date.now();
-  const all = u.map((user) => enrichUser(user, p, s, e, pr));
+  const all = u.map((user) => enrichUser(user, p, s, e, pr, courseBySlug.size));
   const base = all.filter((r) => matchesBase(r, q));
   let filtered = base.filter((r) => {
     if (q.type && r.type !== q.type) return false;
@@ -203,8 +208,8 @@ export async function exportUsers(query: UsersQuery): Promise<UserRow[]> {
 export async function getUserById(id: string): Promise<UserDetail | null> {
   const [user] = await db.select().from(T.users).where(eq(T.users.id, id)).limit(1);
   if (!user) return null;
-  const { p, s, e, pr } = await loadAll();
-  const row = enrichUser(user, p, s, e, pr);
+  const { p, s, e, pr, courseBySlug } = await loadAll();
+  const row = enrichUser(user, p, s, e, pr, courseBySlug.size);
 
   const myPays = p
     .filter((x) => x.userId === id)

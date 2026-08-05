@@ -32,7 +32,8 @@
  * throws.
  */
 import { db, schema } from '@/db';
-import { courses } from '@/data/courses';
+import { getAllCourses } from '@/lib/courses/source';
+import type { Course } from '@/data/courses';
 import type {
   ActiveLearnerRow,
   CourseCompletionRow,
@@ -45,7 +46,6 @@ import type {
 
 const T = schema;
 const DAY = 86_400_000;
-const courseBySlug = new Map(courses.map((c) => [c.slug, c]));
 
 type DbEnroll = typeof T.enrollments.$inferSelect;
 type DbProgress = typeof T.progress.$inferSelect;
@@ -64,14 +64,18 @@ function median(nums: number[]): number {
 }
 
 async function loadBase() {
-  const [users, payments, subs, enrolls, prog] = await Promise.all([
+  const [users, payments, subs, enrolls, prog, courses] = await Promise.all([
     db.select().from(T.users),
     db.select().from(T.payments),
     db.select().from(T.subscriptions),
     db.select().from(T.enrollments),
     db.select().from(T.progress),
+    // DB-first, static-fallback (Stage 7 fix: this used to be the static
+    // `data/courses.ts` array, so a DB-authored teacher course was silently
+    // absent from every course-level engagement report below).
+    getAllCourses(),
   ]);
-  return { users, payments, subs, enrolls, prog };
+  return { users, payments, subs, enrolls, prog, courses };
 }
 
 /** Distinct userIds with an active per-course enrollment for `slug` — see the
@@ -107,7 +111,7 @@ function doneCount(m: Map<string, Map<string, number>>, userId: string, slug: st
 /* -------------------------------------------------------------------------- */
 
 export async function getCourseCompletion(): Promise<CourseCompletionRow[]> {
-  const { enrolls, prog } = await loadBase();
+  const { enrolls, prog, courses } = await loadBase();
   const doneMap = buildDoneMap(prog);
   return courses.map((c) => {
     const enrolledIds = enrolledIdsFor(c.slug, enrolls);
@@ -131,7 +135,7 @@ export async function getCourseCompletion(): Promise<CourseCompletionRow[]> {
 }
 
 export async function getCourseTimes(): Promise<CourseTimeRow[]> {
-  const { enrolls, prog } = await loadBase();
+  const { enrolls, prog, courses } = await loadBase();
   return courses.map((c) => {
     const enrolledAtByUser = new Map<string, string>();
     for (const e of enrolls) {
@@ -169,7 +173,7 @@ export async function getCourseTimes(): Promise<CourseTimeRow[]> {
 }
 
 export async function getLessonViews(): Promise<{ top: LessonViewRow[]; bottom: LessonViewRow[] }> {
-  const { enrolls, prog } = await loadBase();
+  const { enrolls, prog, courses } = await loadBase();
   const doneMap = buildDoneMap(prog);
   const all: LessonViewRow[] = [];
   for (const c of courses) {
@@ -199,7 +203,7 @@ export async function getLessonViews(): Promise<{ top: LessonViewRow[]; bottom: 
 }
 
 export async function getAggregateDropoff(): Promise<DropoffPoint[]> {
-  const { enrolls, prog } = await loadBase();
+  const { enrolls, prog, courses } = await loadBase();
   const doneMap = buildDoneMap(prog);
   const maxLessons = Math.max(...courses.map((c) => c.lessons.length));
   const perCourse = courses.map((c) => ({ c, enrolledIds: enrolledIdsFor(c.slug, enrolls) }));
@@ -230,7 +234,7 @@ type ProgGroup = { courseSlug: string; lessonsDone: number; lessonsTotal: number
  *  real/users.ts's enrichUser uses for `lastActiveAt`. A user with NO entry
  *  here has never been active on any course (mirrors mock's
  *  `lastActiveAt === null`). */
-function buildProgressGroups(prog: DbProgress[]): Map<string, ProgGroup[]> {
+function buildProgressGroups(prog: DbProgress[], courseBySlug: Map<string, Course>): Map<string, ProgGroup[]> {
   const byUserCourse = new Map<string, { done: number; last: string }>();
   for (const p of prog) {
     const isActivity = Boolean(p.completedAt) || p.lastPositionSeconds > 0;
@@ -258,10 +262,11 @@ function overallLastActive(groups: ProgGroup[]): string | null {
 }
 
 export async function getActiveLearners(query: EngagementQuery): Promise<ActiveLearnerRow[]> {
-  const { users, prog } = await loadBase();
+  const { users, prog, courses } = await loadBase();
+  const courseBySlug = new Map(courses.map((c) => [c.slug, c]));
   const now = Date.now();
   const days = query.days ?? 7;
-  const groups = buildProgressGroups(prog);
+  const groups = buildProgressGroups(prog, courseBySlug);
   const out: ActiveLearnerRow[] = [];
 
   for (const u of users) {
@@ -301,8 +306,9 @@ export async function getActiveLearners(query: EngagementQuery): Promise<ActiveL
 }
 
 export async function getStuckUsers(): Promise<StuckUserRow[]> {
-  const { users, payments, subs, enrolls, prog } = await loadBase();
-  const groups = buildProgressGroups(prog);
+  const { users, payments, subs, enrolls, prog, courses } = await loadBase();
+  const courseBySlug = new Map(courses.map((c) => [c.slug, c]));
+  const groups = buildProgressGroups(prog, courseBySlug);
 
   const paidByUser = new Map<string, number>();
   for (const p of payments) {

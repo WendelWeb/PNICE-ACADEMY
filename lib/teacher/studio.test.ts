@@ -24,6 +24,7 @@ describe('lib/teacher/studio.ts — gated reads, no DATABASE_URL', () => {
       thresholdCents: 2500,
       ledger: [],
       videoQuotaMinutes: null,
+      withdrawals: [],
     });
   });
 

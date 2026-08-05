@@ -119,8 +119,10 @@ async function TeachersQueue({
                 return (
                   <tr key={r.id} className="border-b border-ink/8 last:border-0">
                     <td className="px-3 py-2.5">
-                      <span className="block text-[13px] font-medium text-ink">{r.displayName || r.name || r.email}</span>
-                      <span className="block font-mono text-[10px] text-ink/45">{r.email}</span>
+                      <Link href={`${BASE}/${r.userId}`} className="group block min-w-0">
+                        <span className="block text-[13px] font-medium text-ink group-hover:text-ochre">{r.displayName || r.name || r.email}</span>
+                        <span className="block font-mono text-[10px] text-ink/45">{r.email}</span>
+                      </Link>
                     </td>
                     <td className="max-w-[280px] px-3 py-2.5 text-[12px] text-graphite/70">{bioSnippet || t('noBio')}</td>
                     <td className="px-3 py-2.5 font-mono text-[11px] text-ink/70">
@@ -128,7 +130,12 @@ async function TeachersQueue({
                     </td>
                     <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[11px] text-ink/60">{fmtDate(r.appliedAt, locale)}</td>
                     <td className="px-3 py-2.5 text-right">
-                      <TeacherActions userId={r.userId} status={r.status} />
+                      <div className="flex flex-col items-end gap-1.5">
+                        <Link href={`${BASE}/${r.userId}`} className="font-mono text-[11px] text-ink/55 hover:text-ink">
+                          {t('viewDetail')}
+                        </Link>
+                        <TeacherActions userId={r.userId} status={r.status} />
+                      </div>
                     </td>
                   </tr>
                 );

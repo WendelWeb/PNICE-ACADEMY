@@ -111,6 +111,7 @@ export default async function StudioPage({
             pendingWithdrawalCents={summary.pendingWithdrawalCents}
             videoQuotaMinutes={summary.videoQuotaMinutes}
             ledger={summary.ledger}
+            withdrawals={summary.withdrawals}
             locale={locale}
           />
         </Reveal>

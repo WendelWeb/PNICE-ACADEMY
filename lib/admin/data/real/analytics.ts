@@ -61,7 +61,7 @@
  * this never throws.
  */
 import { db, schema } from '@/db';
-import { courses } from '@/data/courses';
+import { getCourseMap } from '@/lib/courses/source';
 import type {
   AnalyticsData,
   AnalyticsQuery,
@@ -93,8 +93,6 @@ function countryLabel(raw: string | null): string {
   return raw === 'HT' ? HT_LABEL : raw;
 }
 
-const courseBySlug = new Map(courses.map((c) => [c.slug, c]));
-
 type DbSub = typeof T.subscriptions.$inferSelect;
 type DbProgress = typeof T.progress.$inferSelect;
 
@@ -109,7 +107,7 @@ function isActivity(p: DbProgress): boolean {
 }
 
 async function loadAll() {
-  const [u, p, s, e, pr, cert] = await Promise.all([
+  const [u, p, s, e, pr, cert, courseBySlug] = await Promise.all([
     db.select().from(T.users),
     db.select().from(T.payments),
     db.select().from(T.subscriptions),
@@ -118,8 +116,9 @@ async function loadAll() {
     // Only `userId` is needed (the funnel's "has a certificate" test) — a
     // narrow select, not a full row load like the other tables here.
     db.select({ userId: T.certificates.userId }).from(T.certificates),
+    getCourseMap(),
   ]);
-  return { u, p, s, e, pr, cert };
+  return { u, p, s, e, pr, cert, courseBySlug };
 }
 
 /* --------------------------- bucket helpers ------------------------------- */
@@ -168,7 +167,7 @@ function bucketIndex(buckets: Bucket[], ms: number): number {
 
 /* ============================== analytics ================================= */
 export async function getAnalytics(q: AnalyticsQuery): Promise<AnalyticsData> {
-  const { u, p, s, e, pr, cert } = await loadAll();
+  const { u, p, s, e, pr, cert, courseBySlug } = await loadAll();
   const fromMs = Date.parse(q.from);
   const toMs = Date.parse(q.to);
   const inRange = (ms: number) => ms >= fromMs && ms <= toMs;
@@ -251,7 +250,7 @@ export async function getAnalytics(q: AnalyticsQuery): Promise<AnalyticsData> {
     acc.enr++;
     revByCourse.set(pay.courseSlug, acc);
   }
-  const revenueByCourse: CourseRevenue[] = courses
+  const revenueByCourse: CourseRevenue[] = [...courseBySlug.values()]
     .map((c) => {
       const acc = revByCourse.get(c.slug) ?? { rev: 0, enr: 0 };
       return {

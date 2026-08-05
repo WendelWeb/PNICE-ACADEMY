@@ -329,6 +329,25 @@ function mapRowToAdminCourse(
 
 /* --------------------------------- reads ---------------------------------- */
 
+/**
+ * Count of `courses` rows with `status = 'pending_review'` — Stage 7's
+ * sidebar badge for the "À valider" review queue (mirrors
+ * `lib/teacher/admin.ts`'s `countTeacherProfilesByStatus` / `lib/teacher/
+ * payouts.ts`'s `countWithdrawalsByStatus`: a lightweight count, no full row
+ * load). GATED + FALLBACK: no DATABASE_URL or a failed query ⇒ 0, never
+ * throws.
+ */
+export async function countCoursesPendingReview(): Promise<number> {
+  if (!dbConfigured()) return 0;
+  try {
+    const rows = await selectCourseRows();
+    return rows.filter((r) => r.status === 'pending_review').length;
+  } catch (err) {
+    console.error('[courses/write] countCoursesPendingReview DB read failed, falling back to 0:', err);
+    return 0;
+  }
+}
+
 /** Every course regardless of status — the /admin/cours list. `[]` with no live DB. */
 export async function getAdminCourses(): Promise<AdminCourseListRow[]> {
   if (!dbConfigured()) return [];
@@ -816,13 +835,35 @@ export async function setCourseBunnyCollectionId(slug: string, collectionId: str
 
 export async function submitForReview(slug: string, actor: AdminActor): Promise<CourseWriteResult> {
   if (!dbConfigured()) return dbRequired();
-  const [current] = await db.select({ status: T.courses.status }).from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
+  const [current] = await db
+    .select({ status: T.courses.status, titleHt: T.courses.titleHt, titleFr: T.courses.titleFr })
+    .from(T.courses)
+    .where(eq(T.courses.slug, slug))
+    .limit(1);
   if (!current) return { ok: false, message: 'not_found' };
   await db
     .update(T.courses)
     .set({ status: 'pending_review', submittedAt: new Date(), updatedAt: new Date() })
     .where(eq(T.courses.slug, slug));
   await recordAudit({ action: 'submit_course_review', userId: actor.id, admin: actor, detail: slug });
+
+  // Admin inbound signal (Stage 7 — the review queue used to be silent):
+  // best-effort, AFTER the status flip is already durably recorded, so a
+  // notification-write hiccup can never fail (or double-run) the submission
+  // itself.
+  try {
+    await db.insert(T.adminNotifications).values({
+      kind: 'course_review',
+      severity: 'info',
+      userId: actor.id,
+      userName: actor.name,
+      amountCents: null,
+      detail: current.titleHt || current.titleFr || slug,
+      read: false,
+    });
+  } catch (err) {
+    console.error('[courses/write] submitForReview notification insert failed (submission already recorded):', err);
+  }
   return { ok: true };
 }
 

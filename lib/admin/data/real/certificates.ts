@@ -24,12 +24,12 @@
  */
 import { and, eq, sql } from 'drizzle-orm';
 import { db, schema } from '@/db';
-import { courses } from '@/data/courses';
+import { getCourseMap } from '@/lib/courses/source';
+import type { Course } from '@/data/courses';
 import type { AdminActor, CertPage, CertQuery, CertRow, CertVerification } from '../types';
 import { recordAudit } from './users';
 
 const T = schema;
-const courseBySlug = new Map(courses.map((c) => [c.slug, c]));
 
 // Unambiguous base32 (no 0/O/1/I/L) — same alphabet/format as the L1
 // auto-issuance path (lib/learner/progress-actions.ts) so codes generated
@@ -52,7 +52,7 @@ function iso(d: Date | string | null): string | null {
   return typeof d === 'string' ? d : d.toISOString();
 }
 
-function toCertRow(c: DbCert, userById: Map<string, DbUser>): CertRow {
+function toCertRow(c: DbCert, userById: Map<string, DbUser>, courseBySlug: Map<string, Course>): CertRow {
   const u = userById.get(c.userId);
   const co = courseBySlug.get(c.courseSlug);
   return {
@@ -72,12 +72,13 @@ function toCertRow(c: DbCert, userById: Map<string, DbUser>): CertRow {
 /* ------------------------------- reads ------------------------------------ */
 
 export async function getCertificates(query: CertQuery): Promise<CertPage> {
-  const [certs, users] = await Promise.all([
+  const [certs, users, courseBySlug] = await Promise.all([
     db.select().from(T.certificates),
     db.select().from(T.users),
+    getCourseMap(),
   ]);
   const userById = new Map(users.map((u) => [u.id, u]));
-  let rows = certs.map((c) => toCertRow(c, userById));
+  let rows = certs.map((c) => toCertRow(c, userById, courseBySlug));
 
   if (query.search) {
     const s = query.search.trim().toLowerCase();
@@ -118,7 +119,10 @@ export async function getCertificateByCode(code: string): Promise<CertVerificati
     .limit(1);
   if (!row) return { found: false, revoked: false, code: trimmed };
 
-  const [user] = await db.select().from(T.users).where(eq(T.users.id, row.userId)).limit(1);
+  const [user, courseBySlug] = await Promise.all([
+    db.select().from(T.users).where(eq(T.users.id, row.userId)).limit(1).then((r) => r[0]),
+    getCourseMap(),
+  ]);
   const co = courseBySlug.get(row.courseSlug);
   return {
     found: true,

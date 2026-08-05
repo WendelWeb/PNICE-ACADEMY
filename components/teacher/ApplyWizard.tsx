@@ -16,6 +16,7 @@ import { buttonClasses } from '@/components/ui/Button';
 import { Sceau } from '@/components/ui/Sceau';
 import { Stamp } from '@/components/ui/Stamp';
 import { applyAsTeacherAction } from '@/lib/teacher/actions';
+import { ApplyPhotoUpload } from './ApplyPhotoUpload';
 import {
   BIO_MIN_LENGTH,
   BIO_MAX_LENGTH,
@@ -59,7 +60,17 @@ type FieldErrors = Partial<
  * `initial` prefills the form when a REJECTED applicant re-applies (their
  * previous answers are worth keeping — only `termsAccepted` always resets).
  */
-export function ApplyWizard({ initial }: { initial?: ApplyWizardInitial }) {
+export function ApplyWizard({
+  initial,
+  uploadEnabled = false,
+}: {
+  initial?: ApplyWizardInitial;
+  /** Bunny Storage configured server-side (Stage 7) — gates whether the
+   *  photo field shows the real upload rail or degrades straight to the URL
+   *  paste field. Defaults to `false` (URL-only) so any call site that
+   *  hasn't threaded this through yet keeps working unchanged. */
+  uploadEnabled?: boolean;
+}) {
   const t = useTranslations('teach.apply');
   const router = useRouter();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -264,17 +275,7 @@ export function ApplyWizard({ initial }: { initial?: ApplyWizardInitial }) {
           </div>
 
           <div>
-            <label htmlFor="apply-photoUrl" className={labelCls}>
-              {t('profile.photoUrl')}
-            </label>
-            <input
-              id="apply-photoUrl"
-              value={photoUrl}
-              onChange={(e) => setPhotoUrl(e.target.value)}
-              placeholder={t('profile.photoUrlPlaceholder')}
-              inputMode="url"
-              className={inputCls}
-            />
+            <ApplyPhotoUpload value={photoUrl} onChange={setPhotoUrl} uploadEnabled={uploadEnabled} />
             {errors.photoUrl && <FieldError message={errors.photoUrl} />}
           </div>
         </div>

@@ -32,6 +32,9 @@ import { buildDailyDigestHtml } from '@/lib/email/templates';
 import { getSupportSettings, getTickets, getWebhookLogs } from '@/lib/admin/data';
 import { bootstrapEmails } from '@/lib/admin/access';
 import { checkCronAuth, cronAuthStatus } from '@/lib/cron/auth';
+import { countTeacherProfilesByStatus } from '@/lib/teacher/admin';
+import { countPendingWithdrawals } from '@/lib/teacher/payouts';
+import { countCoursesPendingReview } from '@/lib/courses/write';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -47,7 +50,16 @@ export async function GET(req: Request): Promise<Response> {
   const status = cronAuthStatus(authResult);
   if (status) return Response.json({ error: authResult }, { status });
 
-  const empty = { signupsToday: 0, enrollmentsToday: 0, revenueTodayCents: 0, openTickets: 0, failedWebhooks: 0 };
+  const empty = {
+    signupsToday: 0,
+    enrollmentsToday: 0,
+    revenueTodayCents: 0,
+    openTickets: 0,
+    failedWebhooks: 0,
+    pendingApplications: 0,
+    pendingCourseReviews: 0,
+    pendingWithdrawals: 0,
+  };
   if (!process.env.DATABASE_URL) {
     return Response.json({ ...empty, sent: false, skipped: true, reason: 'not_configured' });
   }
@@ -56,7 +68,17 @@ export async function GET(req: Request): Promise<Response> {
   try {
     const since = startOfTodayUtc();
 
-    const [settings, ticketPage, failedWebhooks, newUsers, newEnrollments, todaysPayments] = await Promise.all([
+    const [
+      settings,
+      ticketPage,
+      failedWebhooks,
+      newUsers,
+      newEnrollments,
+      todaysPayments,
+      teacherCounts,
+      pendingCourseReviews,
+      pendingWithdrawals,
+    ] = await Promise.all([
       getSupportSettings(),
       getTickets({ pageSize: 1 }),
       getWebhookLogs({ status: 'failed' }),
@@ -66,6 +88,9 @@ export async function GET(req: Request): Promise<Response> {
         .select({ amountCents: T.payments.amountCents })
         .from(T.payments)
         .where(and(gte(T.payments.createdAt, since), eq(T.payments.status, 'completed'))),
+      countTeacherProfilesByStatus(),
+      countCoursesPendingReview(),
+      countPendingWithdrawals(),
     ]);
 
     const summary = {
@@ -74,6 +99,12 @@ export async function GET(req: Request): Promise<Response> {
       revenueTodayCents: todaysPayments.reduce((s, p) => s + p.amountCents, 0),
       openTickets: ticketPage.counts.open,
       failedWebhooks: failedWebhooks.length,
+      // Stage 7 — backstage: the same three queue counts the sidebar badges
+      // show, so the digest email is a complete "what needs my attention
+      // today" summary, not just sales/support.
+      pendingApplications: teacherCounts.pending,
+      pendingCourseReviews,
+      pendingWithdrawals,
     };
 
     if (!settings.dailyDigestEnabled) {

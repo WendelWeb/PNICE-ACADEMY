@@ -1,10 +1,12 @@
 import { notFound } from 'next/navigation';
 import { setRequestLocale, getTranslations } from 'next-intl/server';
-import { IconArrowLeft, IconCheck, IconEye } from '@tabler/icons-react';
+import { IconArrowLeft, IconCheck, IconEye, IconFileText, IconNotes, IconLink } from '@tabler/icons-react';
 import { hasCap } from '@/lib/admin/guard';
-import { getAdminCourse } from '@/lib/courses/write';
+import { getAdminCourse, type AdminLesson } from '@/lib/courses/write';
 import { getFxRate } from '@/lib/fx';
 import { fmtUsdCents, fmtHtgFromCents } from '@/lib/admin/format';
+import { bunnyConfigured, bunnyEmbedUrl } from '@/lib/bunny/embed';
+import { LessonPreviewButton } from '@/components/courses/LessonPreview';
 import { Link } from '@/i18n/routing';
 import { Forbidden } from '@/components/admin/Forbidden';
 
@@ -27,6 +29,26 @@ export default async function CoursePreviewPage({
   const learn = locale === 'ht' ? c.learn_ht : c.learn_fr;
   const deliverables = locale === 'ht' ? c.deliverables_ht : c.deliverables_fr;
   const requirements = locale === 'ht' ? c.requirements_ht : c.requirements_fr;
+
+  // Real content preview (Stage 7 — a reviewer used to see lesson TITLES
+  // only, approving videos sight-unseen): group the flat `lessons` list by
+  // `chapterId` under each chapter (ordered by `sortOrder`), with every
+  // ungrouped lesson trailing in its own bucket — same shape
+  // lib/courses/source.ts's `mapDbCourseToDetail` groups the public
+  // CourseDetail into (chapters + ungroupedLessons), rebuilt here from
+  // `AdminCourse`'s flat shape since the CMS/studio editors need every
+  // status, not just published.
+  const chaptersSorted = [...c.chapters].sort((a, b) => a.sortOrder - b.sortOrder);
+  const lessonsSorted = [...c.lessons].sort((a, b) => a.sortOrder - b.sortOrder);
+  const ungrouped = lessonsSorted.filter((l) => !l.chapterId);
+  const groups: { key: string; title: string | null; lessons: AdminLesson[] }[] = [
+    ...chaptersSorted.map((ch) => ({
+      key: ch.id,
+      title: L(ch.title_ht, ch.title_fr),
+      lessons: lessonsSorted.filter((l) => l.chapterId === ch.id),
+    })),
+    ...(ungrouped.length > 0 ? [{ key: 'ungrouped', title: chaptersSorted.length > 0 ? t('chapterless') : null, lessons: ungrouped }] : []),
+  ].filter((g) => g.lessons.length > 0);
 
   return (
     <div className="mx-auto max-w-[820px] space-y-4">
@@ -74,16 +96,95 @@ export default async function CoursePreviewPage({
           </Block>
         )}
 
-        {c.lessons.length > 0 && (
+        {groups.length > 0 && (
           <Block title={t('lessons')}>
-            <ol className="space-y-1.5">
-              {c.lessons.map((l, i) => (
-                <li key={l.id} className="flex items-center justify-between gap-2 rounded-lg border border-ink/10 bg-paper px-3 py-2 text-sm">
-                  <span><span className="font-mono text-[11px] text-ink/40">{i + 1}.</span> {L(l.title_ht, l.title_fr)}</span>
-                  {l.isPreview && <span className="rounded bg-teal/15 px-1.5 py-0.5 font-mono text-[9px] uppercase text-teal">{t('previewLesson')}</span>}
+            <div className="space-y-4">
+              {groups.map((g) => (
+                <div key={g.key}>
+                  {g.title && <p className="mb-1.5 font-mono text-[10px] uppercase tracking-wide text-ink/45">{g.title}</p>}
+                  <ol className="space-y-2">
+                    {g.lessons.map((l, i) => {
+                      const embedUrl = bunnyConfigured() ? bunnyEmbedUrl(l.bunnyVideoId) : null;
+                      const desc = L(l.desc_ht, l.desc_fr);
+                      const notes = L(l.notes_ht, l.notes_fr);
+                      return (
+                        <li key={l.id} className="rounded-lg border border-ink/10 bg-paper px-3 py-2.5 text-sm">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="min-w-0">
+                              <span className="font-mono text-[11px] text-ink/40">{i + 1}.</span> {L(l.title_ht, l.title_fr)}
+                            </span>
+                            {l.isPreview && <span className="shrink-0 rounded bg-teal/15 px-1.5 py-0.5 font-mono text-[9px] uppercase text-teal">{t('previewLesson')}</span>}
+                          </div>
+
+                          <div className="mt-1.5">
+                            {embedUrl ? (
+                              <LessonPreviewButton
+                                title={L(l.title_ht, l.title_fr)}
+                                embedUrl={embedUrl}
+                                openLabel={t('watchVideo')}
+                                closeLabel={t('closeVideo')}
+                              />
+                            ) : (
+                              <span className="font-mono text-[10px] uppercase tracking-wide text-ink/35">{t('noVideo')}</span>
+                            )}
+                          </div>
+
+                          {desc && <p className="mt-2 text-[13px] leading-relaxed text-graphite/80">{desc}</p>}
+
+                          {notes && (
+                            <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-ink/[0.03] p-2 text-xs leading-relaxed text-graphite/75">
+                              <IconNotes size={13} className="mt-0.5 shrink-0 text-ink/35" />
+                              <span>
+                                <span className="block font-mono text-[9px] uppercase tracking-wide text-ink/40">{t('notesLabel')}</span>
+                                {notes}
+                              </span>
+                            </p>
+                          )}
+
+                          {l.resources.length > 0 && (
+                            <ul className="mt-2 space-y-1">
+                              {l.resources.map((r, ri) => (
+                                <li key={ri}>
+                                  <a
+                                    href={r.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 font-mono text-[11px] text-teal underline decoration-teal/40 underline-offset-2 hover:decoration-teal"
+                                  >
+                                    {r.kind === 'file' ? <IconFileText size={12} /> : <IconLink size={12} />}
+                                    {L(r.label_ht, r.label_fr) || r.url}
+                                  </a>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </div>
+              ))}
+            </div>
+          </Block>
+        )}
+
+        {c.resources.length > 0 && (
+          <Block title={t('courseResourcesLabel')}>
+            <ul className="space-y-1.5">
+              {c.resources.map((r, ri) => (
+                <li key={ri}>
+                  <a
+                    href={r.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 font-mono text-[12px] text-teal underline decoration-teal/40 underline-offset-2 hover:decoration-teal"
+                  >
+                    {r.kind === 'file' ? <IconFileText size={13} /> : <IconLink size={13} />}
+                    {L(r.label_ht, r.label_fr) || r.url}
+                  </a>
                 </li>
               ))}
-            </ol>
+            </ul>
           </Block>
         )}
 

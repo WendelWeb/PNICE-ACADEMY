@@ -8,8 +8,8 @@
  * `db_required` gate — this test env has no DATABASE_URL (see
  * lib/teacher/profile.test.ts's header for the same reasoning).
  */
-import { describe, it, expect } from 'vitest';
-import { slugifyTeacherName } from './admin';
+import { describe, it, expect, afterEach } from 'vitest';
+import { slugifyTeacherName, countTeacherProfilesByStatus } from './admin';
 
 describe('slugifyTeacherName — pure kebab-case ASCII slug', () => {
   it('lowercases and hyphenates spaces', () => {
@@ -36,5 +36,24 @@ describe('slugifyTeacherName — pure kebab-case ASCII slug', () => {
   it('caps length at 60 characters', () => {
     const long = 'a'.repeat(100);
     expect(slugifyTeacherName(long)).toHaveLength(60);
+  });
+});
+
+describe('countTeacherProfilesByStatus — gated count (Stage 7 sidebar badge)', () => {
+  const ORIGINAL_DB = process.env.DATABASE_URL;
+
+  afterEach(() => {
+    if (ORIGINAL_DB === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = ORIGINAL_DB;
+  });
+
+  it('falls back to an all-zero record with no DATABASE_URL, never throws', async () => {
+    delete process.env.DATABASE_URL;
+    expect(await countTeacherProfilesByStatus()).toEqual({
+      pending: 0,
+      approved: 0,
+      suspended: 0,
+      rejected: 0,
+    });
   });
 });

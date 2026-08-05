@@ -73,3 +73,15 @@ export async function reactivateTeacherAction(userId: string): Promise<TeacherAc
     return fail(e);
   }
 }
+
+/** Sidebar badge: count of `pending` teacher applications (Stage 7). Mirrors
+ *  `getSupportBadgeAction`'s shape — any auth/capability failure degrades to
+ *  0, never throws, so the sidebar renders with no badge instead of crashing. */
+export async function getTeacherApplicationsBadgeAction(): Promise<number> {
+  try {
+    await requireAdmin();
+    return (await adminOps.countTeacherProfilesByStatus()).pending;
+  } catch {
+    return 0;
+  }
+}

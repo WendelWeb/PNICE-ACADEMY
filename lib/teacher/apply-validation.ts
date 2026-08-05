@@ -110,6 +110,23 @@ export function validatePlanPrice(priceCentsMonthly: number): string | null {
 }
 
 /**
+ * Admin-notification idempotence (Stage 7 — the ONE decision that gates
+ * `applyAsTeacherAction`'s `adminNotifications` insert): a genuinely NEW
+ * submission needing review (no profile yet, or a rejected applicant
+ * re-applying) raises a notification; a still-pending applicant merely
+ * amending their answers does NOT — they're already sitting in the review
+ * queue, so a second notification would just be noise for the same one
+ * thing an admin still needs to act on. Kept here (not lib/teacher/
+ * actions.ts) for the same 'use server' reason as every other pure helper in
+ * this file — see the file header.
+ */
+export function isNewTeacherApplication(
+  existingStatus: 'pending' | 'approved' | 'suspended' | 'rejected' | undefined,
+): boolean {
+  return !existingStatus || existingStatus === 'rejected';
+}
+
+/**
  * Validate that a URL is http(s) and well-formed. Exported: also reused as
  * the RENDER-time protocol allowlist for a teacher's public `photo_url`
  * (`lib/teacher/public.ts`'s `isSafePhotoUrl`) — the same rule enforced here

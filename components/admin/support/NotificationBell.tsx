@@ -11,6 +11,9 @@ import {
   IconPlugConnectedX,
   IconChecks,
   IconX,
+  IconUserCheck,
+  IconBook,
+  IconCashBanknote,
 } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
 import { fmtUsdCents, fmtDateTime } from '@/lib/admin/format';
@@ -27,6 +30,9 @@ const KIND_ICON: Record<AdminNotifKind, typeof IconBell> = {
   refund_request: IconReceiptRefund,
   sub_canceled: IconCircleMinus,
   webhook_error: IconPlugConnectedX,
+  teacher_application: IconUserCheck,
+  course_review: IconBook,
+  withdrawal_request: IconCashBanknote,
 };
 
 export function NotificationBell() {

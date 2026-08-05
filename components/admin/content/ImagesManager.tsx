@@ -24,13 +24,8 @@ import {
   moveSecondaryImageAction,
 } from '@/lib/admin/content-actions';
 import type { AdminImage } from '@/lib/courses/write';
-import {
-  IMAGE_ENCODE_QUALITY,
-  IMAGE_SOURCE_MAX_BYTES,
-  deriveAutoAlt,
-  fitWithin,
-  uploadBlobName,
-} from '@/lib/uploads/image-prep';
+import { IMAGE_SOURCE_MAX_BYTES, deriveAutoAlt, uploadBlobName } from '@/lib/uploads/image-prep';
+import { resizeImageFile } from '@/lib/uploads/resize-client';
 import { postCourseAsset } from '@/components/content/courseAssetUpload';
 import { Field, inputCls } from './fields';
 
@@ -64,45 +59,6 @@ type UploadState =
 const focusRing =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ochre focus-visible:ring-offset-1 focus-visible:ring-offset-paper-light';
 
-function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number): Promise<Blob | null> {
-  return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
-}
-
-/**
- * Client-side resize (Stage 3 — replaces any need for server-side sharp):
- * decode via a plain <img> (applies EXIF rotation everywhere, so a phone
- * photo never lands sideways), draw to a canvas capped at IMAGE_MAX_SIDE on
- * the longest side, encode webp — falling back to jpeg 0.85 where the
- * browser can't produce real webp (canvas.toBlob silently hands back a png
- * there, hence the type check). `null` = the file couldn't be decoded (not
- * actually an image) or couldn't be encoded — the caller shows a plain
- * message, nothing was sent over the network.
- */
-async function fileToResizedBlob(file: File): Promise<Blob | null> {
-  const url = URL.createObjectURL(file);
-  try {
-    const img = document.createElement('img');
-    img.decoding = 'async';
-    img.src = url;
-    await img.decode();
-    const { width, height } = fitWithin(img.naturalWidth, img.naturalHeight);
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return null;
-    ctx.drawImage(img, 0, 0, width, height);
-    const webp = await canvasToBlob(canvas, 'image/webp', IMAGE_ENCODE_QUALITY);
-    if (webp && webp.type === 'image/webp') return webp;
-    const jpeg = await canvasToBlob(canvas, 'image/jpeg', IMAGE_ENCODE_QUALITY);
-    return jpeg && jpeg.type === 'image/jpeg' ? jpeg : null;
-  } catch {
-    return null;
-  } finally {
-    URL.revokeObjectURL(url);
-  }
-}
-
 /**
  * Stage 3 rebuild — "Foto kou a" as a real photo gallery. What changed from
  * the URL-paste-only version (the audit's bloquant finding):
@@ -113,8 +69,8 @@ async function fileToResizedBlob(file: File): Promise<Blob | null> {
  *    `accept="image/*"`) cloning VideoUpload's explicit state machine —
  *    idle → progress % (cancellable) → "✓ Foto a anrejistre" / error+retry —
  *    never a silent success or failure;
- *  - photos are resized IN THE BROWSER before upload (fileToResizedBlob
- *    above) and auto-saved on success: first photo → setMain, the rest →
+ *  - photos are resized IN THE BROWSER before upload (`resizeImageFile`,
+ *    lib/uploads/resize-client.ts) and auto-saved on success: first photo → setMain, the rest →
  *    addSecondary with an auto-derived alt — no "Tèks alt" jargon in the
  *    primary path (it lives in the "Avanse" disclosure, next to the demoted
  *    URL-paste fields);
@@ -236,7 +192,7 @@ export function ImagesManager({
     }
 
     setUpload({ phase: 'preparing' });
-    const blob = await fileToResizedBlob(file);
+    const blob = await resizeImageFile(file);
     if (!blob) {
       setUpload({ phase: 'error', message: t('errorNotImage') });
       return;

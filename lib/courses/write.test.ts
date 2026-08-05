@@ -12,7 +12,7 @@
  * teachers.review-gated moderation queue. `toAdminStatus` must now be a
  * pass-through: every DB status is exposed as-is.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import {
   toAdminStatus,
   validateResource,
@@ -25,6 +25,7 @@ import {
   COURSE_BILINGUAL_PAIR_COLUMNS,
   LESSON_BILINGUAL_PAIR_COLUMNS,
   CHAPTER_BILINGUAL_PAIR_COLUMNS,
+  countCoursesPendingReview,
   type DbCourseStatus,
 } from './write';
 import type { CourseResource } from '@/db/schema';
@@ -489,5 +490,19 @@ describe('mirrorBilingualFields(CHAPTER_BILINGUAL_PAIR_COLUMNS) — chapter titl
     expect(out.summaryFr).toBe('Nouvo rezime');
     expect(out).not.toHaveProperty('titleHt');
     expect(out).not.toHaveProperty('titleFr');
+  });
+});
+
+describe('countCoursesPendingReview — gated count (Stage 7 sidebar badge)', () => {
+  const ORIGINAL_DB = process.env.DATABASE_URL;
+
+  afterEach(() => {
+    if (ORIGINAL_DB === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = ORIGINAL_DB;
+  });
+
+  it('falls back to 0 with no DATABASE_URL, never throws', async () => {
+    delete process.env.DATABASE_URL;
+    expect(await countCoursesPendingReview()).toBe(0);
   });
 });

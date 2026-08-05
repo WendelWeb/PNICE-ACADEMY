@@ -452,6 +452,23 @@
         "bioHelp": "Au moins {min} caractères.",
         "photoUrl": "Photo de profil (lien, optionnel)",
         "photoUrlPlaceholder": "https://…",
+        "photoUpload": {
+          "label": "Ta photo de profil (optionnel)",
+          "dropHint": "Glisse une photo ici ou clique pour la choisir",
+          "dropTap": "Sur mobile : appuie ici pour ouvrir ta galerie photo.",
+          "dropFormats": "JPG, PNG, WebP — nous ajustons la taille automatiquement",
+          "preparing": "Préparation de la photo…",
+          "uploading": "Envoi… {percent}%",
+          "uploaded": "Photo enregistrée",
+          "cancel": "Annuler l'envoi",
+          "retry": "Réessayer",
+          "remove": "Retirer la photo",
+          "errorNotImage": "Ce fichier n'est pas une photo — choisis une image (JPG, PNG…).",
+          "errorTooLarge": "La photo est trop lourde — choisis une photo plus petite.",
+          "errorUpload": "La photo n'a pas pu être envoyée — vérifie ta connexion et réessaie.",
+          "notConfigured": "L'envoi de photo n'est pas encore activé — colle un lien d'image à la place.",
+          "advanced": "Coller un lien d'image à la place"
+        },
         "errorDisplayName": "Indique ton nom.",
         "errorBioHt": "Écris au moins {min} caractères en créole.",
         "errorBioFr": "Écris au moins {min} caractères en français.",
@@ -501,7 +518,9 @@
       "status": {
         "pending": {
           "title": "Ta candidature est en cours d'examen",
-          "body": "Notre équipe examine ta candidature pour maintenir le niveau de la plateforme. On te répond vite — en créole ou en français."
+          "body": "Notre équipe examine ta candidature pour maintenir le niveau de la plateforme. On te répond vite — en créole ou en français.",
+          "appliedAt": "Candidature soumise le {date}",
+          "eta": "Révision sous 48 à 72 heures en général."
         },
         "approved": {
           "title": "Ta candidature est approuvée",
@@ -538,6 +557,7 @@
       "submittedAt": "Soumis le {date}",
       "reviewNoteLabel": "Note de l'équipe",
       "pendingReviewNote": "En cours de validation par notre équipe.",
+      "reviewEta": "Révision sous 48 à 72 heures en général.",
       "col": {
         "price": "Prix",
         "sales": "Ventes",
@@ -566,6 +586,18 @@
         "submit": "Envoyer la demande",
         "cancel": "Annuler",
         "success": "Ta demande de retrait a été envoyée. Elle sera traitée bientôt.",
+        "history": {
+          "viewCta": "Voir l'historique des retraits",
+          "title": "Historique des retraits",
+          "empty": "Tu n'as pas encore demandé de retrait.",
+          "status": {
+            "pending": "En attente",
+            "paid": "Payé",
+            "rejected": "Rejeté"
+          },
+          "noteLabel": "Note de l'équipe",
+          "referenceLabel": "Référence"
+        },
         "error": {
           "below_threshold": "Le montant est inférieur au minimum de retrait.",
           "insufficient_balance": "Le montant dépasse ton solde disponible.",
@@ -1637,6 +1669,7 @@
       "empty": "Aucun enseignant dans cette file.",
       "noBio": "(pas de bio)",
       "noPayout": "Non renseigné",
+      "viewDetail": "Voir la fiche",
       "actions": {
         "approve": "Approuver",
         "reject": "Rejeter",
@@ -1648,6 +1681,24 @@
         "confirm": "Confirmer",
         "done": "Fait.",
         "error": "Une erreur est survenue."
+      },
+      "detail": {
+        "back": "Retour à la liste",
+        "notFound": "Cet enseignant est introuvable.",
+        "bioHt": "Biographie (créole)",
+        "bioFr": "Biographie (français)",
+        "noBio": "Pas encore de biographie.",
+        "payoutMethod": "Moyen de paiement",
+        "payoutDestination": "Détails du compte",
+        "noPayout": "Aucun moyen de paiement enregistré.",
+        "appliedAt": "Candidature soumise le",
+        "videoQuota": "Quota vidéo",
+        "reviewNoteLabel": "Note de la dernière révision",
+        "links": "Liens",
+        "emailLink": "Envoyer un e-mail",
+        "publicProfileLink": "Voir la page publique",
+        "noPublicProfile": "La page publique n'est pas encore disponible (activée après approbation).",
+        "photoAlt": "Photo de profil"
       }
     },
     "reviews": {
@@ -2251,9 +2302,16 @@
         "badge": "Aperçu admin",
         "learn": "Tu sauras faire",
         "deliverables": "Livrables",
-        "lessons": "Programme",
+        "lessons": "Programme complet du cours",
         "requirements": "Prérequis",
-        "previewLesson": "Gratuit"
+        "previewLesson": "Gratuit",
+        "chapterless": "Sans chapitre",
+        "watchVideo": "Regarder la vidéo",
+        "closeVideo": "Fermer la vidéo",
+        "noVideo": "Pas encore de vidéo",
+        "notesLabel": "Notes de l'enseignant",
+        "resourcesLabel": "Ressources",
+        "courseResourcesLabel": "Ressources du cours"
       },
       "resources": {
         "title": "Ressources",
@@ -3052,7 +3110,10 @@
         "payment_failed": "Paiement échoué",
         "refund_request": "Demande de remboursement",
         "sub_canceled": "Abonnement annulé",
-        "webhook_error": "Erreur de webhook"
+        "webhook_error": "Erreur de webhook",
+        "teacher_application": "Nouvelle candidature enseignant",
+        "course_review": "Cours à valider",
+        "withdrawal_request": "Demande de retrait"
       }
     }
   },

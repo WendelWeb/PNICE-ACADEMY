@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import {
   IconBan,
   IconClockHour4,
@@ -13,6 +13,7 @@ import { cn } from '@/lib/cn';
 import { buttonClasses } from '@/components/ui/Button';
 import { Sceau } from '@/components/ui/Sceau';
 import { Link } from '@/i18n/routing';
+import { fmtDate } from '@/lib/admin/format';
 import { ApplyWizard } from './ApplyWizard';
 import type { TeacherProfile } from '@/lib/teacher/profile';
 
@@ -24,7 +25,15 @@ import type { TeacherProfile } from '@/lib/teacher/profile';
  * plan's exact state machine. `profile` is `null` for a signed-in user who
  * has never applied (or whose only row hasn't landed yet, e.g. no DB).
  */
-export function TeacherApplyEntry({ profile }: { profile: TeacherProfile | null }) {
+export function TeacherApplyEntry({
+  profile,
+  uploadEnabled = false,
+}: {
+  profile: TeacherProfile | null;
+  /** Bunny Storage configured server-side (Stage 7) — passed straight
+   *  through to `ApplyWizard`'s photo field. */
+  uploadEnabled?: boolean;
+}) {
   const [wizardOpen, setWizardOpen] = useState(false);
 
   // No profile yet → either the "start" prompt, or (once clicked) the wizard.
@@ -32,13 +41,14 @@ export function TeacherApplyEntry({ profile }: { profile: TeacherProfile | null 
     if (!wizardOpen) {
       return <StartCard onStart={() => setWizardOpen(true)} />;
     }
-    return <ApplyWizard />;
+    return <ApplyWizard uploadEnabled={uploadEnabled} />;
   }
 
   // Rejected → a re-apply button reveals the SAME wizard, prefilled.
   if (profile.status === 'rejected' && wizardOpen) {
     return (
       <ApplyWizard
+        uploadEnabled={uploadEnabled}
         initial={{
           displayName: profile.displayName,
           bioHt: profile.bioHt,
@@ -53,7 +63,7 @@ export function TeacherApplyEntry({ profile }: { profile: TeacherProfile | null 
 
   switch (profile.status) {
     case 'pending':
-      return <PendingCard />;
+      return <PendingCard appliedAt={profile.createdAt} />;
     case 'approved':
       return <ApprovedCard />;
     case 'suspended':
@@ -110,15 +120,21 @@ function StatusShell({
   );
 }
 
-function PendingCard() {
+function PendingCard({ appliedAt }: { appliedAt: string }) {
   const t = useTranslations('teach.apply');
+  const locale = useLocale() as 'ht' | 'fr';
   return (
     <StatusShell
       icon={<IconClockHour4 size={20} />}
       tone="ink"
       title={t('status.pending.title')}
       body={t('status.pending.body')}
-    />
+    >
+      <div className="mx-auto mt-4 max-w-md rounded-lg border border-ink/10 bg-paper p-3 text-left">
+        <p className="font-mono text-[11px] text-ink/60">{t('status.pending.appliedAt', { date: fmtDate(appliedAt, locale) })}</p>
+        <p className="mt-1 text-xs leading-relaxed text-graphite/75">{t('status.pending.eta')}</p>
+      </div>
+    </StatusShell>
   );
 }
 

@@ -237,6 +237,32 @@ function sanitizeSlugSegment(slug: string): string {
   return safe || 'kou';
 }
 
+/** Same whitelist as `sanitizeSlugSegment`, but allows `_` too (Clerk user
+ *  ids look like `user_2abc…`) — the user-scoped path segment below. */
+function sanitizeUserSegment(id: string): string {
+  const safe = String(id || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
+  return safe || 'anseyan';
+}
+
+/**
+ * Builds a Bunny Storage path for a teacher APPLICANT's profile photo
+ * (Stage 7 — the apply wizard's upload rail): USER-scoped, not course-scoped
+ * (`buildCourseAssetPath`'s shape doesn't fit — this upload happens before
+ * any course, sometimes before any `teacher_profiles` row, exists at all):
+ * `profiles/<userId>/<stamp>-<safe-file-name>`. Same anti-traversal/stamp
+ * reasoning as `buildCourseAssetPath` — see that function's doc comment.
+ */
+export function buildProfileAssetPath(input: { userId: string; fileName: string; mime: string; now?: number }): string {
+  const stamp = `${(input.now ?? Date.now()).toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+  const safe = sanitizeAssetFileName(input.fileName, input.mime);
+  return `profiles/${sanitizeUserSegment(input.userId)}/${stamp}-${safe}`;
+}
+
 /**
  * Builds the full Bunny Storage object path:
  * `courses/<slug>/<purpose>/<stamp>-<safe-file-name>`. The stamp

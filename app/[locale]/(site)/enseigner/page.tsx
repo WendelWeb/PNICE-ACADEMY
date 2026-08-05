@@ -13,6 +13,7 @@ import { clerkEnabled } from '@/lib/clerk';
 import { dbConfigured } from '@/lib/courses/source';
 import { resolveUserId } from '@/lib/learner/access';
 import { getTeacherProfile, type TeacherProfile } from '@/lib/teacher/profile';
+import { bunnyStorageConfigured } from '@/lib/bunny/storage';
 import { cn } from '@/lib/cn';
 
 export async function generateMetadata({
@@ -200,7 +201,7 @@ export default async function EnseignerPage({
         <Container>
           <Reveal className="mx-auto max-w-2xl">
             {signedIn ? (
-              <TeacherApplyEntry profile={profile} />
+              <TeacherApplyEntry profile={profile} uploadEnabled={bunnyStorageConfigured()} />
             ) : (
               <div className="rounded-2xl border border-ink/15 bg-paper p-8 text-center shadow-[0_20px_48px_-32px_rgba(16,32,74,0.35)] md:p-12">
                 {openBadge}

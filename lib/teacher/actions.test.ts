@@ -13,6 +13,7 @@ import {
   validateApplyInput,
   validatePayoutSettings,
   validatePlanPrice,
+  isNewTeacherApplication,
   BIO_MIN_LENGTH,
   PAYOUT_DESTINATION_MAX_LENGTH,
   PLAN_PRICE_MIN_CENTS,
@@ -159,6 +160,25 @@ describe('validatePlanPrice — pure field validation (Task: per-teacher plan pr
 
   it('rejects a non-integer amount', () => {
     expect(validatePlanPrice(79.5)).toBe('invalid_price');
+  });
+});
+
+describe('isNewTeacherApplication — admin-notification idempotence (Stage 7)', () => {
+  it('is a new application when there is no existing profile', () => {
+    expect(isNewTeacherApplication(undefined)).toBe(true);
+  });
+
+  it('is a new application when a rejected applicant re-applies', () => {
+    expect(isNewTeacherApplication('rejected')).toBe(true);
+  });
+
+  it('is NOT a new application when a still-pending applicant amends their answers (no duplicate notification)', () => {
+    expect(isNewTeacherApplication('pending')).toBe(false);
+  });
+
+  it('is NOT a new application for approved/suspended (those are blocked before this check runs, but the helper itself stays false either way)', () => {
+    expect(isNewTeacherApplication('approved')).toBe(false);
+    expect(isNewTeacherApplication('suspended')).toBe(false);
   });
 });
 

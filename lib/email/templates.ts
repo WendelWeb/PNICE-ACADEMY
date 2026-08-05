@@ -898,10 +898,18 @@ export function buildDailyDigestHtml(input: {
   revenueTodayCents: number;
   openTickets: number;
   failedWebhooks: number;
+  /** Stage 7 — the three moderation-queue counts (optional/additive: default
+   *  0 so pre-existing callers/tests that omit them keep working unchanged). */
+  pendingApplications?: number;
+  pendingCourseReviews?: number;
+  pendingWithdrawals?: number;
 }): { subject: string; html: string; text: string } {
   const fr = input.locale === 'fr';
   const date = new Date(input.dateIso).toLocaleDateString(fr ? 'fr-FR' : 'fr-HT');
   const subject = fr ? `Résumé quotidien — ${date}` : `Rezime jodi a — ${date}`;
+  const pendingApplications = input.pendingApplications ?? 0;
+  const pendingCourseReviews = input.pendingCourseReviews ?? 0;
+  const pendingWithdrawals = input.pendingWithdrawals ?? 0;
   const lines = fr
     ? {
         heading: 'Résumé quotidien',
@@ -911,6 +919,9 @@ export function buildDailyDigestHtml(input: {
         revenue: 'Revenu du jour',
         tickets: 'Tickets ouverts',
         webhooks: 'Webhooks en échec',
+        applications: 'Candidatures enseignant en attente',
+        courseReviews: 'Cours à valider',
+        withdrawals: 'Retraits en attente',
         cta: 'Ouvrir la console admin',
       }
     : {
@@ -921,6 +932,9 @@ export function buildDailyDigestHtml(input: {
         revenue: 'Revni jodi a',
         tickets: 'Tikè ouvè',
         webhooks: 'Webhook ki echwe',
+        applications: 'Kandidati anseyan k ap tann',
+        courseReviews: 'Kou pou revize',
+        withdrawals: 'Retrè k ap tann',
         cta: 'Ouvè konsòl admin nan',
       };
 
@@ -930,6 +944,9 @@ export function buildDailyDigestHtml(input: {
     emailRow(lines.revenue, usd(input.revenueTodayCents)),
     emailRow(lines.tickets, String(input.openTickets), { alert: input.openTickets > 0 }),
     emailRow(lines.webhooks, String(input.failedWebhooks), { alert: input.failedWebhooks > 0 }),
+    emailRow(lines.applications, String(pendingApplications), { alert: pendingApplications > 0 }),
+    emailRow(lines.courseReviews, String(pendingCourseReviews), { alert: pendingCourseReviews > 0 }),
+    emailRow(lines.withdrawals, String(pendingWithdrawals), { alert: pendingWithdrawals > 0 }),
   ].join('');
 
   const bodyHtml = `
@@ -958,6 +975,9 @@ export function buildDailyDigestHtml(input: {
     `${lines.revenue}: ${usd(input.revenueTodayCents)}`,
     `${lines.tickets}: ${input.openTickets}`,
     `${lines.webhooks}: ${input.failedWebhooks}`,
+    `${lines.applications}: ${pendingApplications}`,
+    `${lines.courseReviews}: ${pendingCourseReviews}`,
+    `${lines.withdrawals}: ${pendingWithdrawals}`,
     '',
     `${lines.cta}: ${adminUrl}`,
   ].join('\n');

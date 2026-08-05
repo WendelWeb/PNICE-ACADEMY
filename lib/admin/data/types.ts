@@ -780,7 +780,15 @@ export type SupportTemplate = {
   createdAt: string;
 };
 
-export type AdminNotifKind = 'sale' | 'payment_failed' | 'refund_request' | 'sub_canceled' | 'webhook_error';
+export type AdminNotifKind =
+  | 'sale'
+  | 'payment_failed'
+  | 'refund_request'
+  | 'sub_canceled'
+  | 'webhook_error'
+  | 'teacher_application'
+  | 'course_review'
+  | 'withdrawal_request';
 
 export type AdminNotification = {
   id: string;

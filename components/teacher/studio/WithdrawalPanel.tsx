@@ -8,7 +8,7 @@ import { cn } from '@/lib/cn';
 import { buttonClasses } from '@/components/ui/Button';
 import { fmtUsdCents, fmtDate, fmtPeriodLabel } from '@/lib/admin/format';
 import { requestWithdrawalAction } from '@/lib/teacher/studio-actions';
-import type { LedgerRow } from '@/lib/teacher/profile';
+import type { LedgerRow, WithdrawalRow } from '@/lib/teacher/profile';
 
 const KNOWN_ERRORS = [
   'below_threshold',
@@ -33,12 +33,19 @@ function errorLabel(t: ReturnType<typeof useTranslations>, message?: string): st
  * guards `requestWithdrawalAction` re-checks server-side), and the recent
  * earnings ledger.
  */
+const WITHDRAWAL_STATUS_TONE: Record<WithdrawalRow['status'], string> = {
+  pending: 'bg-ochre/15 text-ochre',
+  paid: 'bg-teal/15 text-teal',
+  rejected: 'bg-stampred/15 text-stampred',
+};
+
 export function WithdrawalPanel({
   balanceCents,
   thresholdCents,
   pendingWithdrawalCents,
   videoQuotaMinutes,
   ledger,
+  withdrawals,
   locale,
 }: {
   balanceCents: number;
@@ -46,6 +53,11 @@ export function WithdrawalPanel({
   pendingWithdrawalCents: number | null;
   videoQuotaMinutes: number | null;
   ledger: LedgerRow[];
+  /** Every withdrawal request this teacher has made, newest first (Task
+   *  Stage 7 — money visibility: a rejected payout, and the admin's note
+   *  explaining why, used to vanish with no trace once the pending amount
+   *  cleared). */
+  withdrawals: WithdrawalRow[];
   locale: string;
 }) {
   const t = useTranslations('teach.studio');
@@ -83,6 +95,11 @@ export function WithdrawalPanel({
           <p className="mt-1 font-mono text-[11px] text-ink/45">{t('balance.threshold', { amount: fmtUsdCents(thresholdCents) })}</p>
           {videoQuotaMinutes != null && (
             <p className="mt-1 font-mono text-[11px] text-ink/45">{t('balance.quota', { minutes: videoQuotaMinutes })}</p>
+          )}
+          {withdrawals.length > 0 && (
+            <a href="#istorik-retrait" className="mt-1.5 inline-block font-mono text-[11px] text-teal underline decoration-teal/40 underline-offset-2 hover:decoration-teal">
+              {t('balance.history.viewCta')}
+            </a>
           )}
         </div>
 
@@ -153,6 +170,41 @@ export function WithdrawalPanel({
                   {row.netCents < 0 ? '-' : '+'}
                   {fmtUsdCents(Math.abs(row.netCents))}
                 </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div id="istorik-retrait" className="mt-6 scroll-mt-24 border-t border-ink/10 pt-4">
+        <p className="font-mono text-[11px] uppercase tracking-wide text-ink/50">{t('balance.history.title')}</p>
+        {withdrawals.length === 0 ? (
+          <p className="mt-2 font-mono text-xs text-graphite/55">{t('balance.history.empty')}</p>
+        ) : (
+          <ul className="mt-2 space-y-2">
+            {withdrawals.map((w) => (
+              <li key={w.id} className="rounded-lg border border-ink/10 bg-paper p-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-mono text-[11px] text-ink/60">{fmtDate(w.createdAt, locale as 'ht' | 'fr')}</span>
+                  <span className="flex items-center gap-2">
+                    <span className="font-mono text-[12px] font-medium tabular-nums text-ink">{fmtUsdCents(w.amountCents)}</span>
+                    <span className={cn('rounded px-1.5 py-0.5 font-mono text-[9px] font-medium uppercase tracking-wide', WITHDRAWAL_STATUS_TONE[w.status])}>
+                      {t(`balance.history.status.${w.status}`)}
+                    </span>
+                  </span>
+                </div>
+                {w.status === 'rejected' && w.note && (
+                  <p className="mt-1.5 rounded border border-stampred/25 bg-stampred/5 p-2 text-xs leading-relaxed text-graphite/80">
+                    <span className="font-mono text-[10px] uppercase tracking-wide text-stampred">{t('balance.history.noteLabel')}</span>
+                    <br />
+                    {w.note}
+                  </p>
+                )}
+                {w.status === 'paid' && w.reference && (
+                  <p className="mt-1.5 font-mono text-[11px] text-ink/50">
+                    {t('balance.history.referenceLabel')}: {w.reference}
+                  </p>
+                )}
               </li>
             ))}
           </ul>

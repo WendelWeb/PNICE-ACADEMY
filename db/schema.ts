@@ -346,7 +346,16 @@ export const supportTemplates = pgTable('support_templates', {
 export const adminNotifications = pgTable('admin_notifications', {
   id: uuid('id').primaryKey().defaultRandom(),
   kind: text('kind')
-    .$type<'sale' | 'payment_failed' | 'refund_request' | 'sub_canceled' | 'webhook_error'>()
+    .$type<
+      | 'sale'
+      | 'payment_failed'
+      | 'refund_request'
+      | 'sub_canceled'
+      | 'webhook_error'
+      | 'teacher_application'
+      | 'course_review'
+      | 'withdrawal_request'
+    >()
     .notNull(),
   severity: text('severity').$type<'info' | 'critical'>().notNull(),
   userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),

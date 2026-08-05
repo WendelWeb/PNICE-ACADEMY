@@ -229,6 +229,21 @@ export async function getCourseBySlug(slug: string): Promise<Course | undefined>
 }
 
 /**
+ * Every course keyed by slug, DB-first with static fallback (same read as
+ * `getAllCourses`) — for the `lib/admin/data/real/*.ts` modules that need an
+ * O(1) title/lesson-count lookup by slug without importing the static
+ * `data/courses.ts` catalog directly (Stage 7 fix: a DB-authored teacher
+ * course has no entry in that static array at all, so resolving titles from
+ * it made every such course show up as a raw slug — or, worse, silently
+ * uncountable — across admin analytics/certificates/marketing/users/
+ * engagement).
+ */
+export async function getCourseMap(): Promise<Map<string, Course>> {
+  const all = await getAllCourses();
+  return new Map(all.map((c) => [c.slug, c]));
+}
+
+/**
  * Only `status = 'published'` courses — what the public catalog/sales pages
  * show (Task C2-T3). With no DB (fallback), the static catalog IS today's
  * live/published set, so every static course is returned.

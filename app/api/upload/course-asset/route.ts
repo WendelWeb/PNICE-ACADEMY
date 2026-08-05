@@ -47,7 +47,13 @@ import { can } from '@/lib/admin/permissions';
 import { recordAudit } from '@/lib/admin/data/real/users';
 import type { AdminActor } from '@/lib/admin/data/types';
 import { bunnyStorageConfigured, uploadToBunnyStorage } from '@/lib/bunny/storage';
-import { validateCourseAsset, buildCourseAssetPath, ASSET_MAX_BYTES, ASSET_SNIFF_HEAD_BYTES } from '@/lib/uploads/course-asset';
+import {
+  validateCourseAsset,
+  buildCourseAssetPath,
+  buildProfileAssetPath,
+  ASSET_MAX_BYTES,
+  ASSET_SNIFF_HEAD_BYTES,
+} from '@/lib/uploads/course-asset';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -115,30 +121,49 @@ export async function POST(req: NextRequest) {
     const file = form.get('file');
     const slug = String(form.get('slug') ?? '').trim();
     const purpose = String(form.get('purpose') ?? '').trim();
-    if (!(file instanceof Blob) || !slug) return respond({ ok: false, message: 'bad_request' });
+    // Stage 7 — the apply wizard's profile-photo purpose is USER-scoped, not
+    // course-scoped: an applicant uploading a profile photo has no course
+    // (sometimes no `teacher_profiles` row) yet, so `slug` doesn't apply.
+    const isProfile = purpose === 'profile';
+    if (!(file instanceof Blob) || (!isProfile && !slug)) return respond({ ok: false, message: 'bad_request' });
 
     // Absolute cap before anything else — nobody, admin included, streams
     // more than the largest allowed asset through this route.
     if (file.size > ASSET_MAX_BYTES.resource) return respond({ ok: false, message: 'too_large' });
 
-    const gate = await authorizeUpload(clerkId, slug);
+    // Profile-photo gate: any SIGNED-IN user, scoped to their own Clerk id —
+    // no admin role, no approved-teacher status, no course ownership check
+    // (see file header's dual gate; this is a THIRD, deliberately simpler
+    // arm, only reachable for purpose='profile'). No DB touch needed either:
+    // the path is scoped by the Clerk id itself.
+    const gate = isProfile
+      ? ({ ok: true, actor: { id: clerkId, name: clerkId }, targetUserId: clerkId } as Gate)
+      : await authorizeUpload(clerkId, slug);
     if (!gate.ok) return respond({ ok: false, message: gate.message });
 
     const bytes = await file.arrayBuffer();
     const checked = validateCourseAsset({
-      purpose,
+      // A profile photo is validated exactly like a course image (same MIME/
+      // size/magic-byte rules) — only the STORED PATH differs (see below).
+      purpose: isProfile ? 'image' : purpose,
       mime: file.type,
       size: file.size,
       head: new Uint8Array(bytes.slice(0, ASSET_SNIFF_HEAD_BYTES)),
     });
     if (!checked.ok) return respond({ ok: false, message: checked.message });
 
-    const path = buildCourseAssetPath({
-      slug,
-      purpose: checked.purpose,
-      fileName: file instanceof File ? file.name : '',
-      mime: checked.mime,
-    });
+    const path = isProfile
+      ? buildProfileAssetPath({
+          userId: gate.targetUserId,
+          fileName: file instanceof File ? file.name : '',
+          mime: checked.mime,
+        })
+      : buildCourseAssetPath({
+          slug,
+          purpose: checked.purpose,
+          fileName: file instanceof File ? file.name : '',
+          mime: checked.mime,
+        });
 
     const uploaded = await uploadToBunnyStorage(path, bytes, checked.mime);
     if (!uploaded.ok) return respond(uploaded);
@@ -148,7 +173,7 @@ export async function POST(req: NextRequest) {
     if (dbConfigured()) {
       try {
         await recordAudit({
-          action: 'upload_course_asset',
+          action: isProfile ? 'upload_profile_photo' : 'upload_course_asset',
           userId: gate.targetUserId,
           admin: gate.actor,
           detail: `${checked.purpose}:${path}`,

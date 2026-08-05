@@ -48,7 +48,7 @@ import { resolveUserId } from '@/lib/learner/access';
 import { sendEmail } from '@/lib/email/resend';
 import { buildTeacherApplicationReceivedHtml } from '@/lib/email/templates';
 import { getTeacherProfile } from './profile';
-import { validateApplyInput, type ApplyAsTeacherInput } from './apply-validation';
+import { validateApplyInput, isNewTeacherApplication, type ApplyAsTeacherInput } from './apply-validation';
 
 const T = schema;
 
@@ -105,6 +105,9 @@ export async function applyAsTeacherAction(
     if (existing && (existing.status === 'approved' || existing.status === 'suspended')) {
       return { ok: false, status: existing.status, message: 'already_active' };
     }
+    // Computed BEFORE the upsert below since that's the last point
+    // `existing.status` still reflects the pre-write state.
+    const isNewSubmission = isNewTeacherApplication(existing?.status);
 
     const now = new Date();
     const fields = {
@@ -128,6 +131,26 @@ export async function applyAsTeacherAction(
         .where(eq(T.teacherProfiles.userId, userId));
     } else {
       await db.insert(T.teacherProfiles).values({ userId, ...fields });
+    }
+
+    // Stage 7 — admin inbound signal: only for a genuinely new submission
+    // (see `isNewSubmission` above), best-effort AFTER the profile write is
+    // already durably recorded, so a notification-write hiccup can never
+    // fail (or double-run) the application itself.
+    if (isNewSubmission) {
+      try {
+        await db.insert(T.adminNotifications).values({
+          kind: 'teacher_application',
+          severity: 'info',
+          userId,
+          userName: input.displayName.trim(),
+          amountCents: null,
+          detail: null,
+          read: false,
+        });
+      } catch (err) {
+        console.error('[teacher/actions] applyAsTeacherAction notification insert failed (application already recorded):', err);
+      }
     }
 
     // Stage 6: application-received confirmation — best-effort AFTER the

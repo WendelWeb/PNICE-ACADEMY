@@ -452,6 +452,23 @@
         "bioHelp": "Omwen {min} karaktè.",
         "photoUrl": "Foto pwofil (lyen, opsyonèl)",
         "photoUrlPlaceholder": "https://…",
+        "photoUpload": {
+          "label": "Foto pwofil w (opsyonèl)",
+          "dropHint": "Trennen yon foto isit la oswa klike pou chwazi l",
+          "dropTap": "Sou telefòn : peze la a pou ouvri galri foto w la.",
+          "dropFormats": "JPG, PNG, WebP — nou ajiste gwosè a otomatikman",
+          "preparing": "N ap prepare foto a…",
+          "uploading": "Ap voye… {percent}%",
+          "uploaded": "Foto a anrejistre",
+          "cancel": "Anile voye a",
+          "retry": "Eseye ankò",
+          "remove": "Retire foto a",
+          "errorNotImage": "Fichye sa a pa yon foto — chwazi yon imaj (JPG, PNG…).",
+          "errorTooLarge": "Foto a twò lou — chwazi yon foto ki pi piti.",
+          "errorUpload": "Foto a pa t rive monte — tcheke koneksyon w epi eseye ankò.",
+          "notConfigured": "Telechajman foto poko aktive — kole yon lyen imaj pito.",
+          "advanced": "Kole yon lyen imaj pito"
+        },
         "errorDisplayName": "Antre non ou.",
         "errorBioHt": "Ekri omwen {min} karaktè an kreyòl.",
         "errorBioFr": "Ekri omwen {min} karaktè an franse.",
@@ -501,7 +518,9 @@
       "status": {
         "pending": {
           "title": "N ap revize kandidati w",
-          "body": "Ekip nou an ap gade kandidati w pou kenbe bon nivo platfòm nan. Nou reponn ou vit — an kreyòl oswa an franse."
+          "body": "Ekip nou an ap gade kandidati w pou kenbe bon nivo platfòm nan. Nou reponn ou vit — an kreyòl oswa an franse.",
+          "appliedAt": "Kandidati soumèt {date}",
+          "eta": "Revizyon nan 48-72 èdtan an jeneral."
         },
         "approved": {
           "title": "Kandidati w apwouve",
@@ -538,6 +557,7 @@
       "submittedAt": "Soumèt {date}",
       "reviewNoteLabel": "Nòt ekip la",
       "pendingReviewNote": "Ekip nou an ap revize l kounye a.",
+      "reviewEta": "Revizyon nan 48-72 èdtan an jeneral.",
       "col": {
         "price": "Pri",
         "sales": "Vant",
@@ -566,6 +586,18 @@
         "submit": "Voye demand lan",
         "cancel": "Anile",
         "success": "Demand retrè w voye. L ap trete talè.",
+        "history": {
+          "viewCta": "Wè istorik retrè yo",
+          "title": "Istorik retrè yo",
+          "empty": "Ou poko mande okenn retrè.",
+          "status": {
+            "pending": "K ap tann",
+            "paid": "Peye",
+            "rejected": "Rejte"
+          },
+          "noteLabel": "Nòt ekip la",
+          "referenceLabel": "Referans"
+        },
         "error": {
           "below_threshold": "Kantite a pi piti pase minimòm retrè a.",
           "insufficient_balance": "Kantite a depase balans ou genyen.",
@@ -1637,6 +1669,7 @@
       "empty": "Pa gen pwofesè nan fil sa a.",
       "noBio": "(pa gen bio)",
       "noPayout": "Pa ranpli",
+      "viewDetail": "Wè fich la",
       "actions": {
         "approve": "Apwouve",
         "reject": "Rejte",
@@ -1648,6 +1681,24 @@
         "confirm": "Konfime",
         "done": "Fèt.",
         "error": "Gen yon erè ki fèt."
+      },
+      "detail": {
+        "back": "Tounen nan lis la",
+        "notFound": "Pwofesè sa a pa jwenn.",
+        "bioHt": "Byografi (kreyòl)",
+        "bioFr": "Biographie (franse)",
+        "noBio": "Poko gen byografi.",
+        "payoutMethod": "Mwayen peman",
+        "payoutDestination": "Detay kont lan",
+        "noPayout": "Pa gen mwayen peman anrejistre.",
+        "appliedAt": "Kandidati soumèt",
+        "videoQuota": "Kota videyo",
+        "reviewNoteLabel": "Nòt dènye revizyon an",
+        "links": "Lyen",
+        "emailLink": "Voye yon imèl",
+        "publicProfileLink": "Wè paj piblik la",
+        "noPublicProfile": "Paj piblik la poko disponib (aktive apre apwobasyon).",
+        "photoAlt": "Foto pwofil"
       }
     },
     "reviews": {
@@ -2251,9 +2302,16 @@
         "badge": "Apèsi admin",
         "learn": "W ap konn fè",
         "deliverables": "Liv",
-        "lessons": "Pwogram",
+        "lessons": "Plan konplè kou a",
         "requirements": "Prerekwi",
-        "previewLesson": "Gratis"
+        "previewLesson": "Gratis",
+        "chapterless": "San chapit",
+        "watchVideo": "Gade videyo a",
+        "closeVideo": "Fèmen videyo a",
+        "noVideo": "Poko gen videyo",
+        "notesLabel": "Nòt pwofesè a",
+        "resourcesLabel": "Resous",
+        "courseResourcesLabel": "Resous kou a"
       },
       "resources": {
         "title": "Resous",
@@ -3052,7 +3110,10 @@
         "payment_failed": "Peman echwe",
         "refund_request": "Demann ranbousman",
         "sub_canceled": "Abònman anile",
-        "webhook_error": "Erè webhook"
+        "webhook_error": "Erè webhook",
+        "teacher_application": "Nouvo kandidati anseyan",
+        "course_review": "Kou pou revize",
+        "withdrawal_request": "Demann retrè"
       }
     }
   },

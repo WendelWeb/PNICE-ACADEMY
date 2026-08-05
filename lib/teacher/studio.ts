@@ -25,6 +25,7 @@ import {
   getTeacherProfile,
   sumNetCents,
   type LedgerRow,
+  type WithdrawalRow,
 } from './profile';
 
 const T = schema;
@@ -161,6 +162,14 @@ export type StudioSummary = {
   /** Most recent ledger rows (newest first), capped for the dashboard panel. */
   ledger: LedgerRow[];
   videoQuotaMinutes: number | null;
+  /**
+   * Every withdrawal request this teacher has ever made, newest first
+   * (Stage 7 — a teacher used to have NO way to see a payout's outcome: a
+   * rejected withdrawal, and the admin's note explaining why, silently
+   * vanished the moment `pendingWithdrawalCents` went back to `null`). The
+   * studio's payout panel renders this as a history list.
+   */
+  withdrawals: WithdrawalRow[];
 };
 
 /**
@@ -178,6 +187,7 @@ export async function getMyStudioSummary(userId: string): Promise<StudioSummary>
     thresholdCents: 2500,
     ledger: [],
     videoQuotaMinutes: null,
+    withdrawals: [],
   };
   if (!dbConfigured()) return empty;
   try {
@@ -194,6 +204,7 @@ export async function getMyStudioSummary(userId: string): Promise<StudioSummary>
       thresholdCents,
       ledger: ledger.slice(0, 10),
       videoQuotaMinutes: profile?.videoQuotaMinutes ?? null,
+      withdrawals,
     };
   } catch (err) {
     console.error('[teacher/studio] getMyStudioSummary DB read failed, falling back to empty:', err);

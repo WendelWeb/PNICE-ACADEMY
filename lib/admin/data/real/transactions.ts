@@ -11,7 +11,8 @@
 import { and, asc, desc, eq, gte, ilike, lte, or, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { payments, users } from '@/db/schema';
-import { getCourse } from '@/data/courses';
+import { getCourseMap } from '@/lib/courses/source';
+import type { Course } from '@/data/courses';
 import type {
   MethodVolume,
   PaymentMethod,
@@ -37,9 +38,9 @@ const methodToProvider = (m: PaymentMethod): DbProvider =>
 const STALE_MS = 24 * 60 * 60 * 1000;
 
 /** Mirrors mock's selectTx row-building: same string literals + fallback chain. */
-function toRow(p: DbPayment, u: { name: string | null; email: string }): TxRow {
+function toRow(p: DbPayment, u: { name: string | null; email: string }, courseBySlug: Map<string, Course>): TxRow {
   const isSub = p.productType === 'subscription';
-  const course = !isSub && p.courseSlug ? getCourse(p.courseSlug) : undefined;
+  const course = !isSub && p.courseSlug ? courseBySlug.get(p.courseSlug) : undefined;
   const uiStatus = statusToUi(p.status);
   return {
     id: p.id,
@@ -132,8 +133,9 @@ export async function getTransactions(q: TxQuery): Promise<TxPage> {
     .innerJoin(users, eq(payments.userId, users.id))
     .where(baseWhere);
 
+  const courseBySlug = await getCourseMap();
   return {
-    rows: rows.map((r) => toRow(r.p, { name: r.name, email: r.email })),
+    rows: rows.map((r) => toRow(r.p, { name: r.name, email: r.email }, courseBySlug)),
     total,
     page,
     pageSize,
@@ -159,7 +161,8 @@ export async function exportTransactions(q: TxQuery): Promise<TxRow[]> {
     .where(where)
     .orderBy(orderBy, asc(payments.id));
 
-  return rows.map((r) => toRow(r.p, { name: r.name, email: r.email }));
+  const courseBySlug = await getCourseMap();
+  return rows.map((r) => toRow(r.p, { name: r.name, email: r.email }, courseBySlug));
 }
 
 export async function getMethodVolumes(): Promise<MethodVolume[]> {

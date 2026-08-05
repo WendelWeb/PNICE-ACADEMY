@@ -79,7 +79,10 @@ export function CourseCard({ course, locale }: { course: MyCourseRow; locale: st
       </dl>
 
       {course.status === 'pending_review' && course.submittedAt && (
-        <p className="mt-2 font-mono text-[11px] text-ink/50">{t('submittedAt', { date: fmtDate(course.submittedAt, locale as 'ht' | 'fr') })}</p>
+        <div className="mt-2 rounded-lg border border-ochre/25 bg-ochre/5 p-2.5">
+          <p className="font-mono text-[11px] text-ink/60">{t('submittedAt', { date: fmtDate(course.submittedAt, locale as 'ht' | 'fr') })}</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-graphite/75">{t('reviewEta')}</p>
+        </div>
       )}
       {course.status === 'rejected' && course.reviewNote && (
         <p className="mt-2 rounded-lg border border-stampred/25 bg-stampred/5 p-2.5 text-xs leading-relaxed text-graphite/80">
