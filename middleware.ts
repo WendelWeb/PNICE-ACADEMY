@@ -4,18 +4,17 @@ import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { routing } from './i18n/routing';
 import { clerkEnabled } from './lib/clerk';
 import { isAdminRole } from './lib/admin/roles';
+import { PROTECTED_ROUTE_PATTERNS, ADMIN_ROUTE_PATTERNS } from './lib/route-protection';
 
 const intlMiddleware = createIntlMiddleware(routing);
 
-// Routes that require a signed-in user (locale-prefixed).
-const isProtectedRoute = createRouteMatcher([
-  '/(ht|fr)/tableau-de-bord(.*)',
-  '/(ht|fr)/kont(.*)',
-  '/(ht|fr)/checkout(.*)',
-]);
+// Patterns live in lib/route-protection.ts so they can be unit-tested without
+// booting this module (see route-protection.test.ts — it guards the /kontak
+// regression these exact-plus-sub-path shapes exist to prevent).
+const isProtectedRoute = createRouteMatcher([...PROTECTED_ROUTE_PATTERNS]);
 
 // Admin area — requires sign-in AND an admin role.
-const isAdminRoute = createRouteMatcher(['/(ht|fr)/admin(.*)']);
+const isAdminRoute = createRouteMatcher([...ADMIN_ROUTE_PATTERNS]);
 
 function localeOf(pathname: string): string {
   const seg = pathname.split('/')[1];

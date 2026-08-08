@@ -25,3 +25,5 @@ next-env.d.ts
 
 # brainstorming companion
 /.superpowers/
+
+.vercel
