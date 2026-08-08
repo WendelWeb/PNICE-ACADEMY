@@ -44,7 +44,17 @@ export default clerkEnabled
       if (isApiRequest(req)) return NextResponse.next();
 
       if (isProtectedRoute(req) || isAdminRoute(req)) {
-        await auth.protect();
+        // `auth.protect()` with no options answers a bare 404 to a signed-out
+        // visitor — so clicking "Kont mwen" or "Tablo debò" while logged out
+        // used to dead-end on an error page instead of the sign-in form. The
+        // ClerkProvider's signInUrl prop only steers the React components, not
+        // the middleware, so the destination has to be spelled out here too.
+        // Locale-aware, and `redirect_url` brings them back to where they were
+        // headed once signed in.
+        const locale = localeOf(req.nextUrl.pathname);
+        const signIn = new URL(`/${locale}/sign-in`, req.url);
+        signIn.searchParams.set('redirect_url', req.url);
+        await auth.protect({ unauthenticatedUrl: signIn.toString() });
       }
 
       if (isAdminRoute(req)) {
