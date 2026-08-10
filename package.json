@@ -16,7 +16,8 @@
     "db:seed-courses": "tsx scripts/seed-courses.ts",
     "db:check-payments": "tsx scripts/check-payments.ts",
     "db:check-learner": "tsx scripts/check-learner.ts",
-    "check:i18n": "tsx scripts/check-i18n.ts"
+    "check:i18n": "tsx scripts/check-i18n.ts",
+    "push": "node scripts/push.mjs"
   },
   "dependencies": {
     "@clerk/localizations": "^3.37.7",
