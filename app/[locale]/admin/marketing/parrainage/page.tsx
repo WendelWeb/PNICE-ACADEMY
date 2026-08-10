@@ -1,5 +1,5 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
-import { IconUsersGroup, IconChevronRight } from '@tabler/icons-react';
+import { IconUsersGroup, IconChevronRight, IconAlertTriangle } from '@tabler/icons-react';
 import { getReferrers, getReferrerDetail, getReferralCreditCents } from '@/lib/admin/data';
 import { hasCap } from '@/lib/admin/guard';
 import { Forbidden } from '@/components/admin/Forbidden';
@@ -40,6 +40,16 @@ export default async function ParrainagePage({
     <div className="mx-auto max-w-[1180px] space-y-5">
       <MarketingTabs />
       <p className="text-sm text-graphite/70">{t('subtitle')}</p>
+
+      {/* Production hardening pass — there is no learner-facing referral link
+          or signup/checkout capture anywhere in the product yet (only
+          `users.referral_code` + this admin read exist), so this table can
+          never have real rows. An honest notice beats a silent "no referrers
+          yet" that reads as a working, just-quiet growth channel. Remove
+          this once the capture path (a /kont tab + `?ref=` handling) ships. */}
+      <p className="flex items-start gap-1.5 rounded-lg bg-ochre/[0.08] px-3 py-2 font-mono text-[11px] leading-relaxed text-ochre">
+        <IconAlertTriangle size={14} className="mt-0.5 shrink-0" /> {t('notWired')}
+      </p>
 
       <ReferralCreditPanel currentUsd={creditCents / 100} canEdit />
 

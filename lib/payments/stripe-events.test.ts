@@ -10,6 +10,7 @@ describe('mapStripeEvent', () => {
         metadata: { checkoutRowId: 'row-uuid', productType: 'course', courseSlug: 'zouti-finansye-dijital', userDbId: 'user-uuid' },
         amount_total: 900, currency: 'usd', payment_intent: 'pi_1',
         subscription: null, customer_details: { email: 'x@y.com' },
+        payment_status: 'paid',
       } },
     });
     expect(a).toEqual({
@@ -18,8 +19,45 @@ describe('mapStripeEvent', () => {
       productType: 'course', courseSlug: 'zouti-finansye-dijital',
       amountCents: 900, currency: 'USD', paymentIntentId: 'pi_1',
       subscriptionId: null, customerEmail: 'x@y.com', teacherPlanId: null,
-      subscriptionKind: 'platform', promoCode: null,
+      subscriptionKind: 'platform', promoCode: null, paymentStatus: 'paid',
     });
+  });
+
+  // Production hardening pass — Stripe warns against fulfilling purely off
+  // checkout.session.completed: for an async payment method that event can
+  // fire while `payment_status` is still 'unpaid'. The mapper must surface
+  // it (never silently drop it), and `checkout.session.async_payment_succeeded`
+  // must map to the SAME action shape once the real outcome lands, while
+  // `checkout.session.async_payment_failed` must fall through to `ignored`
+  // (nothing was ever granted on an unpaid session, so there's nothing to
+  // unwind on a later failure).
+  it('surfaces payment_status, and maps async_payment_succeeded identically to completed', () => {
+    const unpaid = mapStripeEvent({
+      id: 'evt_1u', type: 'checkout.session.completed',
+      data: { object: {
+        id: 'cs_1u', mode: 'payment', client_reference_id: 'user-uuid',
+        metadata: { productType: 'course', courseSlug: 'x' },
+        amount_total: 900, currency: 'usd', payment_status: 'unpaid',
+      } },
+    });
+    if (unpaid.kind === 'checkout_completed') expect(unpaid.paymentStatus).toBe('unpaid');
+
+    const asyncSucceeded = mapStripeEvent({
+      id: 'evt_1s', type: 'checkout.session.async_payment_succeeded',
+      data: { object: {
+        id: 'cs_1s', mode: 'payment', client_reference_id: 'user-uuid',
+        metadata: { productType: 'course', courseSlug: 'x' },
+        amount_total: 900, currency: 'usd', payment_status: 'paid',
+      } },
+    });
+    expect(asyncSucceeded.kind).toBe('checkout_completed');
+    if (asyncSucceeded.kind === 'checkout_completed') expect(asyncSucceeded.paymentStatus).toBe('paid');
+
+    const asyncFailed = mapStripeEvent({
+      id: 'evt_1f', type: 'checkout.session.async_payment_failed',
+      data: { object: { id: 'cs_1f' } },
+    });
+    expect(asyncFailed).toEqual({ kind: 'ignored', eventId: 'evt_1f', type: 'checkout.session.async_payment_failed' });
   });
 
   // Stage: checkout honesty — `metadata[promoCode]` (written by
@@ -153,12 +191,41 @@ describe('mapStripeEvent', () => {
     expect(a).toEqual({ kind: 'invoice_failed', eventId: 'evt_4', subscriptionId: 'sub_1', amountCents: 7900, attemptCount: 2 });
   });
 
-  it('maps charge.refunded via payment_intent', () => {
+  it('maps charge.refunded via payment_intent (full refund)', () => {
     const a = mapStripeEvent({
       id: 'evt_5', type: 'charge.refunded',
+      data: { object: { payment_intent: 'pi_1', amount_refunded: 4900, refunded: true } },
+    });
+    expect(a).toEqual({
+      kind: 'charge_refunded', eventId: 'evt_5', paymentIntentId: 'pi_1',
+      amountRefundedCents: 4900, fullyRefunded: true,
+    });
+  });
+
+  // Production hardening pass — a Stripe PARTIAL refund carries `refunded:
+  // false` and an `amount_refunded` smaller than the original charge; the
+  // mapper must surface both so fulfillment can tell it apart from a full
+  // refund instead of treating every refund as total.
+  it('maps charge.refunded as a PARTIAL refund (refunded: false, smaller amount_refunded)', () => {
+    const a = mapStripeEvent({
+      id: 'evt_5b', type: 'charge.refunded',
+      data: { object: { payment_intent: 'pi_1', amount_refunded: 1000, refunded: false } },
+    });
+    expect(a).toEqual({
+      kind: 'charge_refunded', eventId: 'evt_5b', paymentIntentId: 'pi_1',
+      amountRefundedCents: 1000, fullyRefunded: false,
+    });
+  });
+
+  it('maps charge.refunded with no amount fields to a safe zero/false default', () => {
+    const a = mapStripeEvent({
+      id: 'evt_5c', type: 'charge.refunded',
       data: { object: { payment_intent: 'pi_1' } },
     });
-    expect(a).toEqual({ kind: 'charge_refunded', eventId: 'evt_5', paymentIntentId: 'pi_1' });
+    expect(a).toEqual({
+      kind: 'charge_refunded', eventId: 'evt_5c', paymentIntentId: 'pi_1',
+      amountRefundedCents: 0, fullyRefunded: false,
+    });
   });
 
   it('ignores unknown event types and malformed events', () => {

@@ -51,6 +51,7 @@ import type { AdminActor } from '@/lib/admin/data/types';
 import { isValidHttpUrl } from '@/lib/teacher/apply-validation';
 import type { CourseResource } from '@/db/schema';
 import { deleteBunnyVideo, bunnyUploadConfigured } from '@/lib/bunny/upload';
+import { computeCourseReadiness } from './readiness';
 
 const T = schema;
 
@@ -868,6 +869,37 @@ export async function submitForReview(slug: string, actor: AdminActor): Promise<
 }
 
 /**
+ * Production hardening pass — the ONE enforced precondition for a course to
+ * actually go (or STAY) live: at least one lesson, and EVERY lesson has a
+ * real video attached. Before this, `lib/courses/readiness.ts`'s checklist
+ * was DELIBERATELY only cosmetic (see that module's own header — "nothing
+ * here blocks a save or a submit-for-review click") — nothing stopped
+ * `publishCourse`/`approveCourse` from putting a videoless course in front
+ * of a paying buyer. Reuses `computeCourseReadiness` (the SAME check the
+ * studio/admin checklist UI already renders) instead of duplicating the
+ * logic, so the UI and this gate can never drift apart.
+ *
+ * Deliberately narrow: only the lesson/video items block. The rest of the
+ * checklist (promise text, main image, FAQ, chapter titles…) stays exactly
+ * what it always was — a warning, not a gate — since none of those can
+ * result in a buyer paying for a lesson that literally doesn't exist yet.
+ * `!course` fails CLOSED (`not_ready`, not `ok: true`) — the caller already
+ * confirmed the row exists moments earlier, so a `null` here only happens on
+ * a genuine read failure, and refusing to publish is the safe direction.
+ */
+async function assertCourseSellable(
+  slug: string,
+): Promise<{ ok: true } | { ok: false; message: 'not_ready' }> {
+  const course = await getAdminCourse(slug);
+  if (!course) return { ok: false, message: 'not_ready' };
+  const readiness = computeCourseReadiness(course);
+  const sellable =
+    readiness.find((r) => r.key === 'hasLesson')?.ok === true &&
+    readiness.find((r) => r.key === 'allLessonsHaveVideo')?.ok === true;
+  return sellable ? { ok: true } : { ok: false, message: 'not_ready' };
+}
+
+/**
  * Task C3 fix: requires `current.status === 'draft'` — this is the
  * generic, courses.edit-gated CMS path (any editeur-contenu can reach it),
  * NOT the moderation queue. Before this guard, it could publish a
@@ -885,6 +917,8 @@ export async function publishCourse(slug: string, actor: AdminActor): Promise<Co
   const [current] = await db.select({ status: T.courses.status }).from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
   if (!current) return { ok: false, message: 'not_found' };
   if (current.status !== 'draft') return { ok: false, message: 'invalid_status' };
+  const sellable = await assertCourseSellable(slug);
+  if (!sellable.ok) return sellable;
   const now = new Date();
   await db
     .update(T.courses)
@@ -911,6 +945,8 @@ export async function approveCourse(slug: string, actor: AdminActor): Promise<Co
     .limit(1);
   if (!current) return { ok: false, message: 'not_found' };
   if (current.status !== 'pending_review') return { ok: false, message: 'invalid_status' };
+  const sellable = await assertCourseSellable(slug);
+  if (!sellable.ok) return sellable;
   const now = new Date();
   await db
     .update(T.courses)

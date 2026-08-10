@@ -27,13 +27,36 @@ export type StripeAction =
        *  `metadata[promoCode]`. `null` when no code was applied (every
        *  session created before this stage included). Fulfillment marks the
        *  redemption (lib/payments/promo-redemption.ts). */
-      promoCode: string | null }
+      promoCode: string | null;
+      /** Production hardening pass — Stripe's own Checkout Session
+       *  `payment_status` ('paid' | 'unpaid' | 'no_payment_required').
+       *  Stripe explicitly warns against fulfilling purely off
+       *  `checkout.session.completed`: for an ASYNCHRONOUS payment method
+       *  (US bank debit/ACH, SEPA…) that event can fire while this is still
+       *  'unpaid' — the real outcome arrives later on
+       *  `checkout.session.async_payment_succeeded`/`_failed` (the former
+       *  maps to this SAME action kind, so it re-delivers here with
+       *  `payment_status: 'paid'` once the debit actually clears).
+       *  `fulfillCheckoutCompleted` gates on this before granting anything.
+       *  Every synchronous method (card — the only one this app has ever
+       *  actually offered) already reports 'paid' by the time this event
+       *  fires, so this changes nothing for the mainstream flow. */
+      paymentStatus: string | null }
   | { kind: 'invoice_paid'; eventId: string; subscriptionId: string | null;
       paymentIntentId: string | null; amountCents: number; currency: string;
       billingReason: string | null; periodEnd: number | null }
   | { kind: 'invoice_failed'; eventId: string; subscriptionId: string | null;
       amountCents: number; attemptCount: number }
-  | { kind: 'charge_refunded'; eventId: string; paymentIntentId: string | null }
+  /* Production hardening pass — this used to carry only `paymentIntentId`,
+   * so fulfillChargeRefunded treated EVERY refund (including a Stripe
+   * partial/goodwill refund) as a full one: full ledger reversal, full
+   * enrollment revocation, and an email claiming the whole charge was
+   * refunded. `amountRefundedCents`/`fullyRefunded` come straight off the
+   * charge object (`amount_refunded`/`refunded` — Stripe's own cumulative-
+   * total-so-far + "is this now fully refunded" fields) so fulfillment can
+   * tell the two cases apart. */
+  | { kind: 'charge_refunded'; eventId: string; paymentIntentId: string | null;
+      amountRefundedCents: number; fullyRefunded: boolean }
   /* Stage: learner account — Stripe billing-portal cancellations (and any
    * other external change) now reach the DB instead of leaving zombie
    * access. Additive: two new actions, handled by fulfill.ts alongside the
@@ -81,7 +104,15 @@ export function mapStripeEvent(evt: unknown): StripeAction {
   const type = str(e?.type) ?? 'unknown';
   const o = e?.data?.object ?? {};
 
-  if (type === 'checkout.session.completed') {
+  // Production hardening pass — `checkout.session.async_payment_succeeded`
+  // carries the SAME Checkout Session object shape as `.completed` (Stripe's
+  // own contract), so it's mapped identically: the real fulfillment gate is
+  // `paymentStatus` below, not which of these two event types delivered it.
+  // `checkout.session.async_payment_failed` is deliberately left unmapped
+  // (falls through to the default `ignored` branch at the bottom) — nothing
+  // is ever granted on an 'unpaid' session, so a later failure has nothing
+  // to unwind.
+  if (type === 'checkout.session.completed' || type === 'checkout.session.async_payment_succeeded') {
     const meta = o.metadata ?? {};
     const mode: 'payment' | 'subscription' = o.mode === 'subscription' ? 'subscription' : 'payment';
     return {
@@ -101,6 +132,7 @@ export function mapStripeEvent(evt: unknown): StripeAction {
       teacherPlanId: str(meta.teacherPlanId),
       subscriptionKind: meta.kind === 'teacher' ? 'teacher' : 'platform',
       promoCode: str(meta.promoCode),
+      paymentStatus: str(o.payment_status),
     };
   }
   if (type === 'invoice.paid') {
@@ -125,7 +157,13 @@ export function mapStripeEvent(evt: unknown): StripeAction {
     };
   }
   if (type === 'charge.refunded') {
-    return { kind: 'charge_refunded', eventId, paymentIntentId: str(o.payment_intent) };
+    return {
+      kind: 'charge_refunded',
+      eventId,
+      paymentIntentId: str(o.payment_intent),
+      amountRefundedCents: num(o.amount_refunded),
+      fullyRefunded: o.refunded === true,
+    };
   }
   if (type === 'customer.subscription.updated') {
     return {

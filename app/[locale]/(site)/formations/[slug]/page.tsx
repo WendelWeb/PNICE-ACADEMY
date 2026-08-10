@@ -25,7 +25,6 @@ import { RatingSummary } from '@/components/reviews/RatingSummary';
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { categoryTone } from '@/lib/courseCategory';
 import {
-  getPublishedCourses,
   getPublishedCourseBySlug,
   getCourseDetail,
 } from '@/lib/courses/source';
@@ -52,16 +51,19 @@ import { formatUsd } from '@/lib/money';
 import { Price, PriceSecondary } from '@/components/ui/Price';
 import { cn } from '@/lib/cn';
 
-// Only PUBLISHED courses get a pre-rendered sales page — an unpublished/draft
-// course must 404 for public visitors (see the page body below).
-export async function generateStaticParams() {
-  const courses = await getPublishedCourses();
-  return courses.map((c) => ({ slug: c.slug }));
-}
-
-// Course + sales-page content is DB-backed (Task C2-T3, gated + fallback to
-// static data) — revalidate periodically instead of staying purely static.
-export const revalidate = 300;
+// Fix (launch hardening pass): this page used to combine generateStaticParams
+// with `revalidate` (ISR). That pairing has a confirmed Next 14.2.35 App
+// Router bug — a slug NOT in the pre-rendered list renders the correct
+// branded notFound() content but the HTTP response status stays 200 (soft
+// 404 — bad for SEO/crawlers and for any caller checking the status code).
+// Reproduced locally against a production build before this fix; verified
+// gone after it. `dynamic = 'force-dynamic'` makes this route render fresh
+// per-request (same pattern already used by legal/[slug], temoignage/[token],
+// certificats/verifier/[code] elsewhere in this app) so `notFound()` sends a
+// real 404 status, and it has the side benefit of a brand-new course's page
+// being reachable immediately — no more waiting on the old 300s revalidate
+// window (still additive to `publishCourse`'s own `revalidatePath` call).
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({
   params: { slug, locale },
@@ -69,7 +71,7 @@ export async function generateMetadata({
   params: { slug: string; locale: string };
 }): Promise<Metadata> {
   const c = await getPublishedCourseBySlug(slug);
-  if (!c) return {};
+  if (!c) notFound();
   const title = `${locale === 'ht' ? c.title_ht : c.title_fr} — PNICE Academy`;
   // Stage 3 — WhatsApp is how Haiti shares links: og/twitter image is the
   // course's resolved main photo (teacher-set DB image first, static file
@@ -118,7 +120,19 @@ export default async function CourseDetail({
   const problem = locale === 'ht' ? detail.problem_ht : detail.problem_fr;
   const level = locale === 'ht' ? detail.level_ht : detail.level_fr;
 
-  const totalMin = detail.lessonDetails.reduce((s, l) => s + l.minutes, 0);
+  // Production hardening pass — `lessonDetails[i].minutes` is authored sales
+  // copy, independent of whether that lesson actually has a video yet
+  // (`course.lessons[i].bunnyVideoId`). Before this, the total duration and
+  // every per-lesson duration below were shown regardless — a falsifiable
+  // "12 min" promise next to a lesson that's a 0-second placeholder. Only
+  // count/display a lesson's duration once it actually has a video; the
+  // readiness gate (lib/courses/write.ts's `assertCourseSellable`) stops
+  // this from happening on any NEW publish, but this is the honest interim
+  // (and permanent defense-in-depth) safety net for the sales page itself.
+  const totalMin = detail.lessonDetails.reduce(
+    (s, l, i) => (course.lessons[i]?.bunnyVideoId ? s + l.minutes : s),
+    0,
+  );
   const duration = formatDuration(totalMin, t('hourShort'), t('minShort'));
 
   // Honesty in the UI (Task: course-language) — a monolingual course gets a
@@ -139,7 +153,8 @@ export default async function CourseDetail({
     return {
       title: lessonTitle(l, locale),
       desc: ld ? (locale === 'ht' ? ld.desc_ht : ld.desc_fr) : undefined,
-      duration: ld ? `${ld.minutes} ${t('minShort')}` : undefined,
+      // No video yet ⇒ no duration claim (see the header note on `totalMin` above).
+      duration: ld && l.bunnyVideoId ? `${ld.minutes} ${t('minShort')}` : undefined,
     };
   });
 
@@ -154,7 +169,8 @@ export default async function CourseDetail({
   const curriculumRow = (l: (typeof ungroupedLessons)[number]): ManifestRow => ({
     title: lessonTitle(l, locale),
     desc: locale === 'ht' ? l.desc_ht : l.desc_fr,
-    duration: `${l.minutes} ${t('minShort')}`,
+    // No video yet ⇒ no duration claim (see the header note on `totalMin` above).
+    duration: l.bunnyVideoId ? `${l.minutes} ${t('minShort')}` : undefined,
     preview: l.isPreview,
     number: l.index,
     // Stage 4 — watchable previews: a flagged lesson with a video gets its

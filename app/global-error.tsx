@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import './globals.css';
+import { logClientErrorAction } from '@/lib/observability/actions';
 
 /**
  * The ROOT error boundary (Stage 8 — launch hygiene) — only fires when
@@ -26,6 +27,15 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     console.error('[global-error-boundary]', error);
+    // Production hardening pass — real writer for /admin/sante's error-logs
+    // panel (previously dead: nothing ever inserted into `error_logs`). Best
+    // effort: the action itself never throws, and this call must never block
+    // or affect the fallback UI either way.
+    void logClientErrorAction({
+      message: error.message || 'global-error-boundary',
+      route: typeof window !== 'undefined' ? window.location.pathname : 'global-error',
+      stack: error.stack,
+    }).catch(() => {});
   }, [error]);
 
   return (

@@ -2069,7 +2069,8 @@
         "cancel": "Anile",
         "confirm": "Konfime",
         "done": "Fèt.",
-        "error": "Gen yon erè ki fèt."
+        "error": "Gen yon erè ki fèt.",
+        "notReady": "Pa ka apwouve : gen omwen yon leson ki manke, oswa yon leson ki poko gen videyo."
       },
       "editor": {
         "back": "Tounen nan kou yo",
@@ -2311,6 +2312,7 @@
         "hasEnrollments": "{count} elèv enskri — efasman bloke. Depibliye pito.",
         "codeMismatch": "Kòd la pa koresponn.",
         "invalidStatus": "Aksyon sa a pa posib nan eta kou a kounye a.",
+        "notReady": "Pa ka pibliye : gen omwen yon leson ki manke, oswa yon leson ki poko gen videyo. Konplete pwogram nan anvan.",
         "inReview": "L ap tann validasyon yon administratè — ni pwofesè a ni CMS la pa ka pibliye l toutotan revizyon an poko fini.",
         "rejectedNote": "Kou sa a rejte. Pwofesè a dwe korije l epi soumèt li ankò nan studio l ; li pa ka pibliye dirèkteman.",
         "reviewNoteLabel": "Nòt ekip la",
@@ -2656,6 +2658,7 @@
       },
       "referrals": {
         "subtitle": "Paren, fiyèl ak kredi yo genyen.",
+        "notWired": "Parennaj la poko disponib pou elèv yo — pa gen lyen pou pataje toujou. Tablo sa a ap rete vid toutotan sa pa chanje, se pa paske pa gen paren.",
         "config": {
           "title": "Kredi parennaj",
           "note": "Kredi yo bay paren an pou chak fiyèl konfime (premye acha). Modifyab san redeplwaman ; li pa afekte kredi ki deja bay.",

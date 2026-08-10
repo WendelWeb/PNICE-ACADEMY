@@ -92,7 +92,9 @@ export function PublishBar({
               ? t('codeMismatch')
               : res.message === 'invalid_status'
                 ? t('invalidStatus')
-                : t('error');
+                : res.message === 'not_ready'
+                  ? t('notReady')
+                  : t('error');
         setMsg({ type: 'err', text });
       }
     });

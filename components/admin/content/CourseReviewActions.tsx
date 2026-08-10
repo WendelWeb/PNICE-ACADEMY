@@ -17,12 +17,14 @@ export function CourseReviewActions({ slug }: { slug: string }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [feedback, setFeedback] = useState<'ok' | 'err' | null>(null);
+  const [errText, setErrText] = useState<string | null>(null);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [note, setNote] = useState('');
 
   const run = (fn: () => Promise<ReviewResult>) =>
     start(async () => {
       setFeedback(null);
+      setErrText(null);
       const res = await fn();
       if (res.ok) {
         setFeedback('ok');
@@ -31,6 +33,11 @@ export function CourseReviewActions({ slug }: { slug: string }) {
         router.refresh();
       } else {
         setFeedback('err');
+        // Production hardening pass — a videoless/lesson-less course refuses
+        // with 'not_ready' (lib/courses/write.ts's assertCourseSellable);
+        // say so instead of a generic error so the admin knows to check the
+        // course's readiness checklist rather than retry.
+        setErrText(res.message === 'not_ready' ? t('notReady') : null);
       }
     });
 
@@ -57,7 +64,7 @@ export function CourseReviewActions({ slug }: { slug: string }) {
       </div>
       {feedback && (
         <p className={cn('font-mono text-[11px]', feedback === 'ok' ? 'text-teal' : 'text-stampred')} role="status">
-          {feedback === 'ok' ? t('done') : t('error')}
+          {feedback === 'ok' ? t('done') : (errText ?? t('error'))}
         </p>
       )}
 

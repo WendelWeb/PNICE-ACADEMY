@@ -34,13 +34,20 @@
  *    insert uses `.onConflictDoNothing()` against it, so a duplicate
  *    delivery (or fulfill.ts's own retry-duplicate paths, which don't even
  *    call this — see that file) is a silent, harmless no-op either way.
- *  - Refund rows: `fulfillChargeRefunded` already short-circuits BEFORE
- *    reaching this code on every redelivery (`payment.status === 'refunded'`
- *    ⇒ returns early) — normal Stripe retries never call
- *    `recordRefundReversal` twice. As a second, belt-and-suspenders layer
- *    against a genuine concurrent delivery racing that status update,
- *    `recordRefundReversal` ALSO checks for an existing 'refund' row for the
- *    payment before inserting.
+ *  - Refund rows (production hardening pass — now AMOUNT-AWARE, not just
+ *    existence-based): `fulfillChargeRefunded` already short-circuits BEFORE
+ *    reaching this code once `payments.status` is 'refunded' — normal Stripe
+ *    retries of a completed full refund never reach here again. As a second,
+ *    belt-and-suspenders layer (and the ONLY layer for a partial refund,
+ *    which never flips that status), both `recordRefundReversal` (full) and
+ *    `recordPartialRefundReversal` (partial — a Stripe `charge.refunded`
+ *    with `refunded: false`) route through the shared `reverseSaleUpTo`:
+ *    it sums whatever 'refund' rows already exist for the payment and
+ *    writes a new row for only the remainder up to the requested target
+ *    (capped at the sale's own `grossCents`). This makes a redelivered
+ *    event, a second larger partial, and a full refund arriving after an
+ *    earlier partial all reconcile to exactly the right total — never a
+ *    double reversal, never an under-reversal.
  *
  * TEACHER RESOLUTION: a course payment's teacher is `courses.owner_user_id`
  * for `payment.courseSlug` (read directly off the `courses` table — NOT via
@@ -307,55 +314,108 @@ async function sendTeacherSaleEmail(p: {
 }
 
 /**
- * Writes the negative 'refund' earnings_ledger row reversing a payment's
- * ORIGINAL 'sale' row, exactly (see `reverseSale`). NEVER THROWS. Idempotent:
- * bails if a 'refund' row already exists for this payment, or if no 'sale'
- * row exists to reverse (a payment recorded before this task shipped, or a
- * sale whose ledger write itself was skipped/failed — nothing to reverse,
- * so nothing is written, rather than guessing an amount).
+ * Shared engine behind `recordRefundReversal` (full) and
+ * `recordPartialRefundReversal` (production hardening pass — partial Stripe
+ * refunds). AMOUNT-AWARE idempotency, not existence-based: sums whatever
+ * 'refund' rows already exist for this payment and writes a NEW row for only
+ * the remainder up to `targetCents` (capped at the sale's own `grossCents` —
+ * Stripe's numbers are trusted, but never trusted to reverse MORE than was
+ * actually charged). This is what makes a partial refund followed later by a
+ * second (possibly completing) refund correct: the second call's delta is
+ * whatever hasn't been reversed yet, never the whole amount again, and a
+ * pure redelivery of the same cumulative total is a true no-op (delta ⇐ 0).
+ *
+ * For a single full refund (the ONLY case that existed before this pass,
+ * `recordRefundReversal` below still calls this with an unbounded target)
+ * this reproduces the exact prior output: `splitEarnings(grossCents, pct)`
+ * is the SAME computation `recordSaleEarning` used to derive the original
+ * sale row's `commissionCents`/`netCents` in the first place, so reversing
+ * 100% of `grossCents` recomputes those exact numbers, just negated.
+ *
+ * Returns the cents actually reversed by THIS call (0 ⇒ nothing new to do).
+ */
+async function reverseSaleUpTo(paymentId: string, targetCents: number): Promise<number> {
+  const [sale] = await db
+    .select()
+    .from(T.earningsLedger)
+    .where(and(eq(T.earningsLedger.paymentId, paymentId), eq(T.earningsLedger.kind, 'sale')))
+    .limit(1);
+  if (!sale) {
+    console.warn(
+      `[teacher/earnings] no sale ledger row for payment ${paymentId} — skipping refund reversal`,
+    );
+    return 0;
+  }
+
+  const existingRefunds = await db
+    .select({ grossCents: T.earningsLedger.grossCents })
+    .from(T.earningsLedger)
+    .where(and(eq(T.earningsLedger.paymentId, paymentId), eq(T.earningsLedger.kind, 'refund')));
+  const alreadyReversedCents = existingRefunds.reduce((sum, r) => sum + Math.abs(r.grossCents), 0);
+
+  const cappedTargetCents = Math.min(Math.max(targetCents, 0), sale.grossCents);
+  const deltaCents = cappedTargetCents - alreadyReversedCents;
+  if (deltaCents <= 0) return 0; // already fully covered by prior reversal row(s) — pure redelivery/no-op
+
+  const split = splitEarnings(deltaCents, sale.commissionPctApplied);
+  await db.insert(T.earningsLedger).values({
+    teacherUserId: sale.teacherUserId,
+    paymentId,
+    kind: 'refund',
+    grossCents: -deltaCents,
+    commissionPctApplied: sale.commissionPctApplied,
+    commissionCents: -split.commissionCents,
+    netCents: -split.netCents,
+    currency: sale.currency,
+  });
+  return deltaCents;
+}
+
+/**
+ * Writes the negative 'refund' earnings_ledger row(s) reversing a payment's
+ * ORIGINAL 'sale' row IN FULL. NEVER THROWS. Idempotent (amount-aware — see
+ * `reverseSaleUpTo`): a redelivery, or a call that lands after
+ * `recordPartialRefundReversal` already reversed part of the same payment,
+ * writes only whatever remainder is left, never double-reverses. No-ops if
+ * no 'sale' row exists to reverse (a payment recorded before this task
+ * shipped, or a sale whose ledger write itself was skipped/failed — nothing
+ * to reverse, so nothing is written, rather than guessing an amount).
  */
 export async function recordRefundReversal(payment: { id: string }): Promise<void> {
   try {
-    const [existingRefund] = await db
-      .select({ id: T.earningsLedger.id })
-      .from(T.earningsLedger)
-      .where(and(eq(T.earningsLedger.paymentId, payment.id), eq(T.earningsLedger.kind, 'refund')))
-      .limit(1);
-    if (existingRefund) return;
-
-    const [sale] = await db
-      .select()
-      .from(T.earningsLedger)
-      .where(and(eq(T.earningsLedger.paymentId, payment.id), eq(T.earningsLedger.kind, 'sale')))
-      .limit(1);
-    if (!sale) {
-      console.warn(
-        `[teacher/earnings] no sale ledger row for payment ${payment.id} — skipping refund reversal`,
-      );
-      return;
-    }
-
-    const reversed = reverseSale({
-      grossCents: sale.grossCents,
-      commissionCents: sale.commissionCents,
-      netCents: sale.netCents,
-      commissionPctApplied: sale.commissionPctApplied,
-    });
-
-    await db.insert(T.earningsLedger).values({
-      teacherUserId: sale.teacherUserId,
-      paymentId: payment.id,
-      kind: 'refund',
-      grossCents: reversed.grossCents,
-      commissionPctApplied: reversed.commissionPctApplied,
-      commissionCents: reversed.commissionCents,
-      netCents: reversed.netCents,
-      currency: sale.currency,
-    });
+    await reverseSaleUpTo(payment.id, Number.MAX_SAFE_INTEGER);
   } catch (err) {
     console.error(
       `[teacher/earnings] recordRefundReversal failed for payment ${payment.id} (refund already processed, ledger row skipped):`,
       err,
     );
+  }
+}
+
+/**
+ * Production hardening pass — a Stripe PARTIAL refund (charge.refunded with
+ * `refunded: false`) must reverse only the fraction actually refunded, not
+ * the teacher's entire sale. `amountRefundedCents` is Stripe's own
+ * CUMULATIVE total-refunded-so-far on the charge (not a delta), so this
+ * hands straight off to the same amount-aware engine `recordRefundReversal`
+ * uses — see `reverseSaleUpTo`'s header for exactly why that makes both a
+ * redelivery AND a later second (possibly completing) refund correct.
+ *
+ * NEVER THROWS. Returns the cents actually newly reversed by THIS call — the
+ * caller (fulfill.ts) uses `> 0` to decide whether this delivery is new
+ * enough to warrant a fresh notification/email, vs. a pure redelivery.
+ */
+export async function recordPartialRefundReversal(
+  payment: { id: string },
+  amountRefundedCents: number,
+): Promise<number> {
+  try {
+    return await reverseSaleUpTo(payment.id, amountRefundedCents);
+  } catch (err) {
+    console.error(
+      `[teacher/earnings] recordPartialRefundReversal failed for payment ${payment.id}:`,
+      err,
+    );
+    return 0;
   }
 }

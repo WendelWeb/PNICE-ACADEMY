@@ -25,7 +25,7 @@ import { buildReceiptPdf } from '@/lib/pdf/receipt';
 import { htgLabelAt } from '@/lib/money';
 import { getFxRate } from '@/lib/fx';
 import { getCourseBySlug } from '@/lib/courses/source';
-import { recordSaleEarning, recordRefundReversal } from '@/lib/teacher/earnings';
+import { recordSaleEarning, recordRefundReversal, recordPartialRefundReversal } from '@/lib/teacher/earnings';
 import { recordPromoRedemption } from './promo-redemption';
 import { mapStripeSubscriptionStatus, type StripeAction } from './stripe-events';
 
@@ -209,6 +209,22 @@ async function ensureCourseEnrollment(
 type CheckoutCompleted = Extract<StripeAction, { kind: 'checkout_completed' }>;
 
 async function fulfillCheckoutCompleted(a: CheckoutCompleted): Promise<'processed' | 'ignored'> {
+  // Production hardening pass — Stripe explicitly warns against fulfilling
+  // purely off checkout.session.completed: for an ASYNCHRONOUS payment
+  // method that event can fire while `payment_status` is still 'unpaid'.
+  // Every card checkout (the only method this app has ever actually
+  // offered) already reports 'paid' here, so this changes nothing for the
+  // real flow — it only refuses to grant anything for a genuinely unpaid
+  // session. `null` (a payload from before this field existed, or a
+  // malformed test event) is treated the SAME as 'unpaid' — safer to wait
+  // for a clearer signal than to guess "paid". Nothing is written before
+  // this check, so 'ignored' here is a true no-op: Stripe's own
+  // `checkout.session.async_payment_succeeded` maps to this identical
+  // action kind and re-delivers once the payment actually clears (see
+  // lib/payments/stripe-events.ts).
+  if (a.paymentStatus !== 'paid' && a.paymentStatus !== 'no_payment_required') {
+    return 'ignored';
+  }
   if (!a.userDbId) throw new Error('checkout.session.completed without client_reference_id');
   const userDbId = a.userDbId;
   const providerRef = a.paymentIntentId ?? a.sessionId;
@@ -682,6 +698,62 @@ async function fulfillSubscriptionDeleted(a: SubscriptionDeleted): Promise<'proc
 }
 
 type ChargeRefunded = Extract<StripeAction, { kind: 'charge_refunded' }>;
+type RefundedPayment = typeof payments.$inferSelect;
+
+/**
+ * Best-effort refund confirmation email — shared by the full- and partial-
+ * refund branches below (production hardening pass split this in two so a
+ * partial refund can honestly report the ACTUAL amount refunded and never
+ * claim access has ended). NEVER THROWS — the refund/reversal is already
+ * durably recorded by the time this runs.
+ */
+async function sendRefundConfirmationEmail(
+  payment: RefundedPayment,
+  opts: { amountCents: number; fullRefund: boolean },
+): Promise<void> {
+  try {
+    const user = (
+      await db.select().from(users).where(eq(users.id, payment.userId)).limit(1)
+    )[0];
+    if (!user?.email) return;
+    const locale = user.localePref === 'fr' ? 'fr' : 'ht';
+    let itemName: string;
+    if (payment.productType === 'course' && payment.courseSlug) {
+      const course = await getCourseBySlug(payment.courseSlug);
+      itemName = course
+        ? locale === 'fr'
+          ? course.title_fr
+          : course.title_ht
+        : payment.courseSlug;
+    } else {
+      const relatedSub = payment.relatedSubscriptionId
+        ? (
+            await db
+              .select({ kind: subscriptions.kind, teacherPlanId: subscriptions.teacherPlanId })
+              .from(subscriptions)
+              .where(eq(subscriptions.id, payment.relatedSubscriptionId))
+              .limit(1)
+          )[0]
+        : undefined;
+      const naming = await resolveSubscriptionNaming({
+        // Unknown ⇒ the neutral "Abònman chak mwa" label, not "Pass PNICE".
+        kind: relatedSub?.kind ?? 'teacher',
+        teacherPlanId: relatedSub?.teacherPlanId ?? null,
+      });
+      itemName = locale === 'fr' ? naming.nameFr : naming.nameHt;
+    }
+    const email = buildRefundConfirmationHtml({
+      locale,
+      name: user.name,
+      itemName,
+      amountCents: opts.amountCents,
+      fullRefund: opts.fullRefund,
+    });
+    await sendEmail({ to: user.email, subject: email.subject, html: email.html, text: email.text });
+  } catch (err) {
+    console.error('[fulfill] refund confirmation email failed (refund already recorded):', err);
+  }
+}
 
 async function fulfillChargeRefunded(a: ChargeRefunded): Promise<'processed' | 'ignored'> {
   if (!a.paymentIntentId) return 'ignored';
@@ -693,7 +765,31 @@ async function fulfillChargeRefunded(a: ChargeRefunded): Promise<'processed' | '
       .limit(1)
   )[0];
   if (!payment) return 'ignored'; // refund of a charge we never recorded
-  if (payment.status === 'refunded') return 'processed'; // duplicate
+  if (payment.status === 'refunded') return 'processed'; // already fully refunded — nothing left any branch below could do
+
+  // Production hardening pass — Stripe's `refunded` boolean is the ONLY
+  // reliable "is the ENTIRE charge refunded" signal (a partial refund's
+  // `amount_refunded` is simply smaller than the charge, not zero, so it
+  // can't be inferred from the amount alone). A partial/goodwill refund
+  // must NEVER flip `payments.status`, revoke enrollment/subscription
+  // access, fully reverse the teacher's earnings, or tell the buyer the
+  // whole charge came back — that used to happen unconditionally here.
+  if (a.fullyRefunded !== true) {
+    const deltaCents = await recordPartialRefundReversal({ id: payment.id }, a.amountRefundedCents);
+    if (deltaCents <= 0) return 'processed'; // redelivery of an amount already recorded — true no-op
+
+    await db.insert(adminNotifications).values({
+      kind: 'refund_request',
+      severity: 'info',
+      userId: payment.userId,
+      userName: null,
+      amountCents: deltaCents,
+      detail: 'Remboursement partiel Stripe confirmé',
+    });
+    await sendRefundConfirmationEmail(payment, { amountCents: deltaCents, fullRefund: false });
+    return 'processed';
+  }
+
   await db.update(payments).set({ status: 'refunded' }).where(eq(payments.id, payment.id));
 
   // Additive: reverse the teacher's earnings-ledger 'sale' row for this
@@ -720,47 +816,6 @@ async function fulfillChargeRefunded(a: ChargeRefunded): Promise<'processed' | '
   // flipped access with no word to the person refunded. Only reached on the
   // FIRST processing (`payment.status === 'refunded'` short-circuits every
   // redelivery above). NEVER THROWS — the refund is already durably recorded.
-  try {
-    const user = (
-      await db.select().from(users).where(eq(users.id, payment.userId)).limit(1)
-    )[0];
-    if (user?.email) {
-      const locale = user.localePref === 'fr' ? 'fr' : 'ht';
-      let itemName: string;
-      if (payment.productType === 'course' && payment.courseSlug) {
-        const course = await getCourseBySlug(payment.courseSlug);
-        itemName = course
-          ? locale === 'fr'
-            ? course.title_fr
-            : course.title_ht
-          : payment.courseSlug;
-      } else {
-        const relatedSub = payment.relatedSubscriptionId
-          ? (
-              await db
-                .select({ kind: subscriptions.kind, teacherPlanId: subscriptions.teacherPlanId })
-                .from(subscriptions)
-                .where(eq(subscriptions.id, payment.relatedSubscriptionId))
-                .limit(1)
-            )[0]
-          : undefined;
-        const naming = await resolveSubscriptionNaming({
-          // Unknown ⇒ the neutral "Abònman chak mwa" label, not "Pass PNICE".
-          kind: relatedSub?.kind ?? 'teacher',
-          teacherPlanId: relatedSub?.teacherPlanId ?? null,
-        });
-        itemName = locale === 'fr' ? naming.nameFr : naming.nameHt;
-      }
-      const email = buildRefundConfirmationHtml({
-        locale,
-        name: user.name,
-        itemName,
-        amountCents: payment.amountCents,
-      });
-      await sendEmail({ to: user.email, subject: email.subject, html: email.html, text: email.text });
-    }
-  } catch (err) {
-    console.error('[fulfill] refund confirmation email failed (refund already recorded):', err);
-  }
+  await sendRefundConfirmationEmail(payment, { amountCents: payment.amountCents, fullRefund: true });
   return 'processed';
 }

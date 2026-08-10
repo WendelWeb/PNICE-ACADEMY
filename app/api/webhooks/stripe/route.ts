@@ -10,6 +10,7 @@ import { webhookLogs } from '@/db/schema';
 import { verifyStripeSignature } from '@/lib/payments/stripe-verify';
 import { mapStripeEvent } from '@/lib/payments/stripe-events';
 import { fulfillAction } from '@/lib/payments/fulfill';
+import { logAppError } from '@/lib/observability/errorLog';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -65,6 +66,12 @@ export async function POST(req: NextRequest) {
   }
 
   if (outcome === 'failed') {
+    // Production hardening pass — real writer for /admin/sante's error-logs
+    // panel: the highest-value server-side error source (the money path).
+    // AWAITED (this route runs on a serverless function — an un-awaited
+    // promise can be killed once the response below is returned); never
+    // throws, must never change the response below.
+    await logAppError({ message: errorMessage ?? 'stripe webhook processing failed', route: `webhook:stripe:${eventType}` });
     // 500 → Stripe retries later.
     return NextResponse.json({ error: 'processing_failed' }, { status: 500 });
   }

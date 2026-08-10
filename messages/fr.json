@@ -2069,7 +2069,8 @@
         "cancel": "Annuler",
         "confirm": "Confirmer",
         "done": "Fait.",
-        "error": "Une erreur est survenue."
+        "error": "Une erreur est survenue.",
+        "notReady": "Impossible à approuver : il manque au moins une leçon, ou une leçon n'a pas encore de vidéo."
       },
       "editor": {
         "back": "Retour aux cours",
@@ -2311,6 +2312,7 @@
         "hasEnrollments": "{count} élève(s) inscrit(s) — suppression bloquée. Dépublie plutôt.",
         "codeMismatch": "Le code ne correspond pas.",
         "invalidStatus": "Action impossible dans l'état actuel du cours.",
+        "notReady": "Impossible à publier : il manque au moins une leçon, ou une leçon n'a pas encore de vidéo. Complète le programme d'abord.",
         "inReview": "En attente de validation par un administrateur — ni l'enseignant ni le CMS ne peuvent le publier tant que la revue n'est pas terminée.",
         "rejectedNote": "Ce cours a été rejeté. L'enseignant doit le corriger et le soumettre à nouveau depuis son studio ; il ne peut pas être publié directement.",
         "reviewNoteLabel": "Note de l'équipe",
@@ -2656,6 +2658,7 @@
       },
       "referrals": {
         "subtitle": "Parrains, filleuls et crédits gagnés.",
+        "notWired": "Le parrainage n'est pas encore disponible pour les élèves — il n'y a pas encore de lien à partager. Ce tableau restera vide tant que ça n'a pas changé, ce n'est pas le signe d'un manque de parrains.",
         "config": {
           "title": "Crédit de parrainage",
           "note": "Crédit accordé au parrain pour chaque filleul confirmé (premier achat). Modifiable sans redéploiement ; n’affecte pas les crédits déjà accordés.",

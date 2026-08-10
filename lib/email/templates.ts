@@ -527,8 +527,15 @@ export function buildRefundConfirmationHtml(input: {
   name: string | null;
   itemName: string;
   amountCents: number;
+  /** Additive (production hardening pass): a Stripe PARTIAL refund must
+   *  never claim the buyer's access has ended — `fulfillChargeRefunded` only
+   *  revokes enrollment/subscription access on a FULL refund. Defaults to
+   *  `true` so every call site written before this flag existed keeps its
+   *  exact original copy. */
+  fullRefund?: boolean;
 }): BuiltEmail {
   const fr = input.locale === 'fr';
+  const full = input.fullRefund !== false;
   return composeEmail({
     locale: input.locale,
     name: input.name,
@@ -538,20 +545,32 @@ export function buildRefundConfirmationHtml(input: {
       : `Ranbousman ${usd(input.amountCents)} lan konfime`,
     heading: fr ? 'Remboursement confirmé' : 'Ranbousman konfime',
     paragraphs: fr
-      ? ['Nous avons remboursé cet achat. Le montant reviendra sur ta carte d’ici quelques jours, selon ta banque.']
-      : ['Nou ranbouse acha sa a. Lajan an ap tounen sou kat ou nan kèk jou, dapre bank ou.'],
+      ? [
+          full
+            ? 'Nous avons remboursé cet achat. Le montant reviendra sur ta carte d’ici quelques jours, selon ta banque.'
+            : 'Nous avons remboursé une partie de cet achat. Le montant reviendra sur ta carte d’ici quelques jours, selon ta banque.',
+        ]
+      : [
+          full
+            ? 'Nou ranbouse acha sa a. Lajan an ap tounen sou kat ou nan kèk jou, dapre bank ou.'
+            : 'Nou ranbouse yon pati nan acha sa a. Lajan an ap tounen sou kat ou nan kèk jou, dapre bank ou.',
+        ],
     rows: fr
       ? [
           ['Article', input.itemName],
-          ['Montant', usd(input.amountCents)],
+          ['Montant remboursé', usd(input.amountCents)],
         ]
       : [
           ['Atik', input.itemName],
-          ['Montan', usd(input.amountCents)],
+          ['Montan ranbouse', usd(input.amountCents)],
         ],
-    footerNote: fr
-      ? 'L’accès lié à cet achat est terminé. Une question ? Réponds à cet e-mail.'
-      : 'Aksè ki te mache ak acha sa a fèmen. Yon kesyon? Reponn imèl sa a.',
+    footerNote: full
+      ? fr
+        ? 'L’accès lié à cet achat est terminé. Une question ? Réponds à cet e-mail.'
+        : 'Aksè ki te mache ak acha sa a fèmen. Yon kesyon? Reponn imèl sa a.'
+      : fr
+        ? 'Ton accès à cet achat continue normalement. Une question ? Réponds à cet e-mail.'
+        : 'Aksè ou nan acha sa a kontinye nòmalman. Yon kesyon? Reponn imèl sa a.',
   });
 }
 

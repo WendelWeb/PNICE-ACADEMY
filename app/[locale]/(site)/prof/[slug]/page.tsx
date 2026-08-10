@@ -12,27 +12,23 @@ import { buttonClasses } from '@/components/ui/Button';
 import { Price, PriceSecondary } from '@/components/ui/Price';
 import { AuthCta } from '@/components/auth/AuthCta';
 import { CourseCatalogCard } from '@/components/courses/CourseCatalogCard';
-import { teachers } from '@/data/teachers';
 import { SUBSCRIPTION_USD, teacherPassPerks } from '@/data/pricing';
 import { absoluteImageUrl, siteImageSrc } from '@/lib/courseImage';
 import { SITE_URL } from '@/lib/email/layout';
-import { getPublicTeacher, getApprovedTeacherSlugs } from '@/lib/teacher/public';
+import { getPublicTeacher } from '@/lib/teacher/public';
 
-// The static data/teachers.ts registry (teacher #1) PLUS every approved
-// teacher_profiles.slug from the DB (Task: DB-backed teacher slugs) — a 2nd+
-// real teacher is pre-rendered here with no code change. getApprovedTeacherSlugs
-// is gated + never throws (falls back to [] with no DATABASE_URL), so this
-// degrades to exactly today's static-only list pre-migration/no-DB.
-export async function generateStaticParams() {
-  const staticSlugs = teachers.map((t) => t.slug);
-  const dbSlugs = await getApprovedTeacherSlugs();
-  const extraSlugs = dbSlugs.filter((slug) => !staticSlugs.includes(slug));
-  return [...staticSlugs, ...extraSlugs].map((slug) => ({ slug }));
-}
-
-// DB-backed via getPublicTeacher() (Task C3-T7, gated + fallback) — revalidate
-// periodically instead of staying purely static.
-export const revalidate = 300;
+// Fix (launch hardening pass): this page used to combine generateStaticParams
+// with `revalidate` (ISR). That pairing has a confirmed Next 14.2.35 App
+// Router bug — a slug NOT in the pre-rendered list renders the correct
+// branded notFound() content but the HTTP response status stays 200 (soft
+// 404 — bad for SEO/crawlers and for any caller checking the status code).
+// Reproduced locally against a production build before this fix; verified
+// gone after it. `dynamic = 'force-dynamic'` makes this route render fresh
+// per-request (same pattern already used by legal/[slug], temoignage/[token]
+// elsewhere in this app) so `notFound()` sends a real 404 status, and it has
+// the side benefit of a brand-new teacher's page being reachable immediately
+// — no more waiting on the old 300s revalidate window.
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({
   params: { slug, locale },
