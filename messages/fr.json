@@ -2177,7 +2177,6 @@
         "preview": "Aperçu gratuit",
         "noVideoWarn": "Aucune vidéo liée",
         "chipVideoOk": "Vidéo",
-        "chipVideoMissing": "Pas de vidéo",
         "addVideoCta": "Mettre la vidéo",
         "docsChip": "{count, plural, one {1 document} other {# documents}}",
         "moreDetails": "Plus de détails (optionnel)",
