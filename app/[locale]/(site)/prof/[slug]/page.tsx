@@ -17,17 +17,15 @@ import { absoluteImageUrl, siteImageSrc } from '@/lib/courseImage';
 import { SITE_URL } from '@/lib/email/layout';
 import { getPublicTeacher } from '@/lib/teacher/public';
 
-// Fix (launch hardening pass): this page used to combine generateStaticParams
-// with `revalidate` (ISR). That pairing has a confirmed Next 14.2.35 App
-// Router bug — a slug NOT in the pre-rendered list renders the correct
-// branded notFound() content but the HTTP response status stays 200 (soft
-// 404 — bad for SEO/crawlers and for any caller checking the status code).
-// Reproduced locally against a production build before this fix; verified
-// gone after it. `dynamic = 'force-dynamic'` makes this route render fresh
-// per-request (same pattern already used by legal/[slug], temoignage/[token]
-// elsewhere in this app) so `notFound()` sends a real 404 status, and it has
-// the side benefit of a brand-new teacher's page being reachable immediately
-// — no more waiting on the old 300s revalidate window.
+// SOFT-404 TRAP — DO NOT ADD A loading.tsx TO THIS SEGMENT OR ITS PARENT.
+// See the fuller note in formations/[slug]/page.tsx: an unknown slug must
+// answer a real 404, which needs BOTH `dynamic = 'force-dynamic'` (instead of
+// generateStaticParams + ISR `revalidate`, which returns 200 for any slug
+// outside the pre-rendered list) AND no loading.tsx anywhere above this page
+// — a loading.tsx wraps the segment and its children in <Suspense>, streaming
+// the 200 header before `notFound()` can change it. Verify any change by
+// curling a nonsense slug against `next build && next start`; a dev-server
+// check does not reproduce it.
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({

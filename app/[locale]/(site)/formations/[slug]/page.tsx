@@ -51,18 +51,27 @@ import { formatUsd } from '@/lib/money';
 import { Price, PriceSecondary } from '@/components/ui/Price';
 import { cn } from '@/lib/cn';
 
-// Fix (launch hardening pass): this page used to combine generateStaticParams
-// with `revalidate` (ISR). That pairing has a confirmed Next 14.2.35 App
-// Router bug — a slug NOT in the pre-rendered list renders the correct
-// branded notFound() content but the HTTP response status stays 200 (soft
-// 404 — bad for SEO/crawlers and for any caller checking the status code).
-// Reproduced locally against a production build before this fix; verified
-// gone after it. `dynamic = 'force-dynamic'` makes this route render fresh
-// per-request (same pattern already used by legal/[slug], temoignage/[token],
-// certificats/verifier/[code] elsewhere in this app) so `notFound()` sends a
-// real 404 status, and it has the side benefit of a brand-new course's page
-// being reachable immediately — no more waiting on the old 300s revalidate
-// window (still additive to `publishCourse`'s own `revalidatePath` call).
+// SOFT-404 TRAP — DO NOT ADD A loading.tsx TO THIS SEGMENT OR ITS PARENT.
+//
+// An unknown slug must answer a real HTTP 404, not 200-with-404-content:
+// a soft 404 gets ghost course pages indexed by Google and lies to any
+// caller that checks the status. Two things had to be true to get it right,
+// and both were verified by curling a production build (`next build && next
+// start`) with a nonsense slug — the only check that actually proves it:
+//
+//   1. `dynamic = 'force-dynamic'`. The old generateStaticParams + ISR
+//      `revalidate` pairing returned 200 for any slug outside the
+//      pre-rendered list. Same pattern as legal/[slug], temoignage/[token],
+//      certificats/verifier/[code]. Bonus: a newly published course is
+//      reachable at once, no 300s revalidate wait.
+//   2. NO `loading.tsx` on this segment OR on `formations/` above it. A
+//      loading.tsx wraps the segment AND its children in <Suspense>, which
+//      streams the response — the 200 status header is flushed before
+//      `notFound()` ever runs, so the status can no longer be changed.
+//      Deleting only the child's loading.tsx was not enough; the parent's
+//      covered this route too. The catalog keeps its skeleton via an
+//      in-page <Suspense> in formations/page.tsx, which is scoped to that
+//      page and therefore harmless here.
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({
