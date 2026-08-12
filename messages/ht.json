@@ -823,7 +823,8 @@
     "emailNote": "Ou pral resevwa yon resi nan imèl ou.",
     "purchased": "Sa ou achte",
     "amount": "Montan",
-    "reference": "Referans"
+    "reference": "Referans",
+    "method": "Mwayen peman"
   },
   "dashboard": {
     "title": "Tablo debò",

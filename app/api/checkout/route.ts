@@ -46,6 +46,7 @@ import { validatePromo } from '@/lib/admin/data';
 import { applyPromo } from '@/lib/payments/promo';
 import { rateLimit, ipFromHeaders, RATE_LIMITS } from '@/lib/rate-limit';
 import { decidePendingCheckout } from '@/lib/payments/checkout-guard';
+import { isMoncashRef } from '@/lib/payments/moncash-order';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -163,9 +164,15 @@ export async function POST(req: NextRequest) {
       .orderBy(desc(checkoutSessions.startedAt))
       .limit(1)
   )[0];
-  const pendingStatus = pendingRow?.sessionId
-    ? await getStripeCheckoutSessionStatus(pendingRow.sessionId)
-    : null;
+  // A MonCash order also lives in `checkout_sessions`, but its `sessionId` is
+  // a locale marker (`moncash:ht`), never a Stripe id — asking Stripe about it
+  // would burn a round trip to be told "no such session". Skipping it is also
+  // correct behaviour, not just an optimisation: an abandoned MonCash attempt
+  // must not block, or be "resumed" as, a card checkout.
+  const pendingStatus =
+    pendingRow?.sessionId && !isMoncashRef(pendingRow.sessionId)
+      ? await getStripeCheckoutSessionStatus(pendingRow.sessionId)
+      : null;
   const decision = decidePendingCheckout(pendingStatus);
   if (decision.action === 'block') {
     return NextResponse.json({ error: 'checkout_processing' }, { status: 409 });

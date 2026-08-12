@@ -7,6 +7,7 @@ import { Stamp } from '@/components/ui/Stamp';
 import { Link } from '@/i18n/routing';
 import { buttonClasses } from '@/components/ui/Button';
 import { formatUsd } from '@/lib/money';
+import { getCourseBySlug } from '@/lib/courses/source';
 import {
   stripeConfigured,
   getStripeCheckoutSession,
@@ -43,6 +44,20 @@ export default async function MerciPage({
       purchase = s;
     }
   }
+
+  // A MonCash purchase arrives here from /api/payments/moncash/retour, which
+  // has ALREADY verified the payment with Digicel and granted access — it
+  // carries `?moncash=1&course=<slug>` instead of a Stripe session id. Nothing
+  // is re-verified here (that would be a second, slower round trip to prove
+  // something already proved); this only decides which course to name.
+  const paidWithMoncash = searchParams.moncash === '1';
+  const moncashCourseSlug =
+    typeof searchParams.course === 'string' ? searchParams.course : undefined;
+  const moncashCourse =
+    paidWithMoncash && moncashCourseSlug ? await getCourseBySlug(moncashCourseSlug) : null;
+  const moncashItemName = moncashCourse
+    ? (locale === 'fr' ? moncashCourse.title_fr : moncashCourse.title_ht) || moncashCourse.title_ht
+    : null;
 
   // Real, uneventful confirmation date — shown alongside the real Stripe
   // reference when we have one; still no fabricated order number when the
@@ -115,6 +130,28 @@ export default async function MerciPage({
                 <dd className="break-all text-right font-mono text-[11px] text-graphite/70">
                   {purchase.reference}
                 </dd>
+              </div>
+            </dl>
+          )}
+
+          {/* MonCash: the amount and reference live on Digicel's side, and the
+              return URL carries neither. Naming the course is both honest and
+              the only thing the buyer actually needs to see confirmed. */}
+          {paidWithMoncash && moncashItemName && (
+            <dl className="mt-6 space-y-2.5 border-t border-ink/10 pt-5 text-left">
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-ink/45">
+                  {t('purchased')}
+                </dt>
+                <dd className="text-right text-sm font-medium leading-snug text-ink">
+                  {moncashItemName}
+                </dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-ink/45">
+                  {t('method')}
+                </dt>
+                <dd className="text-right text-sm font-medium text-ink">MonCash</dd>
               </div>
             </dl>
           )}

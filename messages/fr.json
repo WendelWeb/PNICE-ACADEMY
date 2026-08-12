@@ -823,7 +823,8 @@
     "emailNote": "Tu vas recevoir un reçu par email.",
     "purchased": "Ton achat",
     "amount": "Montant",
-    "reference": "Référence"
+    "reference": "Référence",
+    "method": "Moyen de paiement"
   },
   "dashboard": {
     "title": "Tableau de bord",
