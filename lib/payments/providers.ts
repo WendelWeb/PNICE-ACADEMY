@@ -20,7 +20,7 @@
  */
 import { activeProviders as toggledProviders } from '@/lib/admin/platform/store';
 import type { ProviderKey } from '@/lib/admin/platform/keys';
-import { moncashConfigured } from './moncash';
+import { moncashConfigured, moncashMode } from './moncash';
 
 /**
  * Rails with a real, live charge path. Card = Stripe checkout, always built.
@@ -35,8 +35,24 @@ import { moncashConfigured } from './moncash';
  */
 export function implementedProviders(): ProviderKey[] {
   const list: ProviderKey[] = ['card'];
-  if (moncashConfigured()) list.push('moncash');
+  if (moncashSellable()) list.push('moncash');
   return list;
+}
+
+/**
+ * MonCash may be OFFERED only when it is configured AND not pointed at the
+ * sandbox on a production deployment.
+ *
+ * That second half is the important one. Sandbox credentials move no real
+ * money, but this app grants course access on MonCash's word — so a sandbox
+ * rail exposed on the live site would hand out paid courses for nothing. The
+ * check is deliberately positive ("live mode, or not a production deploy")
+ * rather than a blocklist, so a missing//misspelled MONCASH_MODE fails closed.
+ */
+export function moncashSellable(): boolean {
+  if (!moncashConfigured()) return false;
+  if (moncashMode() === 'live') return true;
+  return process.env.VERCEL_ENV !== 'production';
 }
 
 /** @deprecated Use `implementedProviders()` — kept so older imports still resolve. */

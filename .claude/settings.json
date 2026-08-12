@@ -13,7 +13,13 @@
       "Bash(cd \"/c/Users/stanl/Desktop/Personal Projects/pnice-academy\" && grep -rn \"splitProviders\\\\|IMPLEMENTED_PROVIDERS\\\\|activeProviders\" --include=\"*.ts\" --include=\"*.tsx\" app components lib | grep -v \"lib/payments/providers.ts\" | head -10)",
       "Bash(sed -i \"s|import type { ProviderKey } from '@/lib/admin/platform/keys';|import type { ProviderKey } from '@/lib/admin/platform/keys';\\\\nimport { moncashConfigured } from './moncash';|\" lib/payments/providers.ts)",
       "Bash(node -e ' *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "WebFetch(domain:moncashbutton.digicelgroup.com)",
+      "Bash(curl -s --max-time 20 \"https://pniceacademy.com/api/webhooks/moncash\")",
+      "Bash(curl -s --max-time 20 \"https://pniceacademy.com/api/webhooks/moncash?orderId=test-123\")",
+      "Bash(curl -s --max-time 20 -X POST \"https://pniceacademy.com/api/webhooks/moncash\" -H \"Content-Type: application/json\" -d '{\"orderId\":\"test-123\"}')",
+      "Bash(npx vitest *)",
+      "Bash(cd \"/c/Users/stanl/Desktop/Personal Projects/pnice-academy\" && grep -n \"MONCASH\" .env.local || echo \"\\(aucune\\)\")"
     ]
   }
 }

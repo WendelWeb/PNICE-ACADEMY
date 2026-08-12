@@ -804,7 +804,14 @@
       "accepted": "Nou aksepte"
     },
     "moncashSubscription": "MonCash pa ka fè peman ki repete. Pou yon abònman, sèvi ak yon kat.",
-    "moncashPromo": "Kòd rabè yo pa mache ak MonCash pou kounye a — sèvi ak yon kat."
+    "moncashPromo": "Kòd rabè yo pa mache ak MonCash pou kounye a — sèvi ak yon kat.",
+    "moncashPhoneLabel": "Nimewo MonCash ou",
+    "moncashPhoneHint": "N ap voye yon demann peman sou telefòn sa a. Se sou li w ap konfime ak kòd sekrè w.",
+    "moncashBadPhone": "Nimewo a pa sanble yon nimewo ayisyen. Egzanp : 3866 2809",
+    "moncashWaitTitle": "Gade telefòn ou",
+    "moncashWaitBody": "Nou voye yon demann {amount} HTG. Louvri MonCash sou telefòn ou epi konfime ak kòd sekrè w. Paj sa a ap kontinye poukont li.",
+    "moncashDeclined": "Peman an pa pase. Ou ka eseye ankò.",
+    "moncashTimeout": "Nou pa jwenn repons ou. Si w konfime peman an, aksè w ap louvri poukont li — tcheke tablodbò w nan kèk minit."
   },
   "merci": {
     "title": "Mèsi! Peman an resevwa",

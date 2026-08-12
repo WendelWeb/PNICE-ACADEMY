@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
   IconBrandPaypal,
@@ -70,6 +70,64 @@ export function PaymentMethods({
   const [selected, setSelected] = useState(methods[0]?.id ?? '');
   const [busy, setBusy] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [phone, setPhone] = useState('');
+  /** Set once a MonCash cash-out request is sitting on the buyer's handset. */
+  const [waiting, setWaiting] = useState<{ orderId: string; amountHtg: number } | null>(null);
+
+  /**
+   * MonCash never redirects and never calls back to this page — the buyer
+   * approves on their phone and nothing here would otherwise know. So while a
+   * request is outstanding we ask our own status endpoint (which re-checks
+   * MonCash and grants access the moment it clears) every 3 seconds.
+   *
+   * Bounded at 3 minutes: MonCash's own prompt expires around there, and an
+   * unbounded poller would hammer the endpoint forever in a tab someone left
+   * open. Timing out only stops the ASKING — if the buyer approves later, the
+   * order still settles through Digicel's callback, so nobody loses access
+   * they paid for.
+   */
+  useEffect(() => {
+    if (!waiting) return;
+    let stop = false;
+    const startedAt = Date.now();
+
+    const tick = async () => {
+      if (stop) return;
+      try {
+        const res = await fetch(
+          `/api/payments/moncash/status?orderId=${encodeURIComponent(waiting.orderId)}`,
+        );
+        const data = (await res.json().catch(() => ({}))) as { status?: string };
+
+        if (data.status === 'granted' || data.status === 'already') {
+          stop = true;
+          window.location.assign(`/${locale}/checkout/merci?moncash=1`);
+          return;
+        }
+        if (data.status === 'unpaid') {
+          stop = true;
+          setWaiting(null);
+          setErrorMsg(t('moncashDeclined'));
+          return;
+        }
+      } catch {
+        // A dropped poll is not a failed payment — keep waiting.
+      }
+      if (!stop && Date.now() - startedAt > 3 * 60 * 1000) {
+        stop = true;
+        setWaiting(null);
+        setErrorMsg(t('moncashTimeout'));
+        return;
+      }
+      if (!stop) timer = setTimeout(tick, 3000);
+    };
+
+    let timer = setTimeout(tick, 3000);
+    return () => {
+      stop = true;
+      clearTimeout(timer);
+    };
+  }, [waiting, locale, t]);
 
   // The applied promo (if any) — the CODE goes to /api/checkout, which
   // re-validates it and prices the Stripe session itself; the netCents here
@@ -85,8 +143,8 @@ export function PaymentMethods({
     try {
       // Each rail has its own endpoint because each speaks a different
       // protocol: Stripe hands back a hosted-checkout URL, MonCash hands back
-      // a gateway redirect carrying a one-payment token. Both answer the same
-      // `{ url }` shape, so everything below this line is rail-agnostic.
+      // MonCash returns an order id and pushes the request to the buyer's
+      // phone — no redirect at all. Both shapes are handled below.
       const endpoint = selected === 'moncash' ? '/api/checkout/moncash' : '/api/checkout';
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -97,16 +155,32 @@ export function PaymentMethods({
           teacherSlug: teacherSlug ?? null,
           promoCode: applied?.code ?? null,
           locale,
+          ...(selected === 'moncash' ? { phone } : {}),
         }),
       });
       const data = (await res.json().catch(() => ({}))) as {
         url?: string;
+        orderId?: string;
+        amountHtg?: number;
         error?: string;
         reason?: string;
       };
+      // Stripe hands back a hosted-checkout URL to send the buyer to…
       if (res.ok && data.url) {
         window.location.assign(data.url);
         return; // keep the spinner while the browser navigates
+      }
+      // …MonCash hands back an order id: the request is now on their phone,
+      // and the poller above takes it from here.
+      if (res.ok && data.orderId) {
+        setWaiting({ orderId: data.orderId, amountHtg: data.amountHtg ?? 0 });
+        setBusy(false);
+        return;
+      }
+      if (data.error === 'bad_phone') {
+        setErrorMsg(t('moncashBadPhone'));
+        setBusy(false);
+        return;
       }
       // Honest failure messages: the server says exactly WHY it refused.
       if (data.error === 'already_owned') {
@@ -208,7 +282,48 @@ export function PaymentMethods({
         </div>
       )}
 
-      {methods.length > 0 && (
+      {/* MonCash asks for the buyer's own wallet number: the cash-out request
+          is pushed to that handset, so a wrong number means a prompt that
+          never arrives. Only shown for the rail that needs it. */}
+      {selected === 'moncash' && waiting === null && (
+        <div className="mt-5">
+          <label
+            htmlFor="moncash-phone"
+            className="block font-mono text-[10px] uppercase tracking-[0.14em] text-ink/60"
+          >
+            {t('moncashPhoneLabel')}
+          </label>
+          <p className="mt-1 text-[11px] leading-snug text-ink/60">{t('moncashPhoneHint')}</p>
+          <input
+            id="moncash-phone"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="3866 2809"
+            className="mt-2 w-full rounded border border-ink/20 bg-paper-light px-3 py-2.5 font-mono text-base text-ink placeholder:text-ink/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ochre"
+          />
+        </div>
+      )}
+
+      {/* Waiting on the handset. The buyer must be told to go look at their
+          phone — nothing on this screen will change until they approve. */}
+      {waiting && (
+        <div
+          className="mt-6 rounded border border-ochre/40 bg-ochre/[0.07] p-4 text-center"
+          role="status"
+          aria-live="polite"
+        >
+          <IconLoader2 size={22} className="mx-auto animate-spin text-ochre" />
+          <p className="mt-2 font-display text-lg font-bold text-ink">{t('moncashWaitTitle')}</p>
+          <p className="mt-1 text-[13px] leading-snug text-ink/70">
+            {t('moncashWaitBody', { amount: waiting.amountHtg.toLocaleString('fr-FR') })}
+          </p>
+        </div>
+      )}
+
+      {methods.length > 0 && !waiting && (
         <button
           type="button"
           onClick={pay}
