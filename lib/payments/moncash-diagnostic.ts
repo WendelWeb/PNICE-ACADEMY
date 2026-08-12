@@ -3,47 +3,48 @@
 /**
  * Owner-only MonCash diagnostic actions, for /admin/moncash.
  *
- * WHY THIS EXISTS: MonCash's sandbox currently refuses every write with
- * `403 "MFS can't process this transaction"` while accepting reads, and no
- * amount of code inspection can tell us whether that is a sandbox
- * provisioning gap or something about a specific wallet. Only a real cash-out
- * request to a real handset settles it — so this page lets the owner fire one
- * at their own number and see MonCash's raw answer at each step.
+ * WHY THIS EXISTS: Digicel ships two different MonCash APIs under one brand,
+ * and a merchant account is provisioned for one or the other with no way to
+ * tell from the outside. Ours turned out to be the "Payment Button" API
+ * (/Api/v1/CreatePayment + a hosted gateway page), while the Merchant API
+ * (/MerChantApi, cash-out straight to a handset) answers
+ * `403 MFS can't process this transaction` for the same credentials. This
+ * page is how that was established, and how a future change is re-established
+ * in a minute instead of a day.
  *
- * IT IS NOT A CHECKOUT. Nothing here grants course access, records a payment,
- * or touches the ledger. It is a probe: initiate, then look. That separation
- * is deliberate — a diagnostic that could also grant access would be a
- * standing temptation to use it as a back door.
+ * IT IS NOT A CHECKOUT. It creates a MonCash order and hands back the payment
+ * link, but grants no course access, records no payment, and never touches the
+ * ledger. That separation is deliberate — a diagnostic that could also grant
+ * access would be a standing temptation to use as a back door.
  *
- * SECURITY: both actions re-check the `roles.manage` capability themselves
- * rather than trusting the page's own gate. This endpoint can push a payment
- * prompt to any phone number, which in the wrong hands is a harassment tool,
- * so it must never be reachable by a non-owner even if a page were ever
- * mis-wired. It is also gated on MonCash being configured at all.
+ * SECURITY: every action re-checks the `roles.manage` capability itself rather
+ * than trusting the page's gate, and is additionally gated on MonCash being
+ * configured at all.
  */
 import { hasCap } from '@/lib/admin/guard';
 import {
   moncashConfigured,
   moncashMode,
   moncashHost,
-  normalizeHaitianMsisdn,
-  initiateMoncashPayment,
-  checkMoncashPaymentByReference,
+  createMoncashOrder,
+  retrieveMoncashOrder,
 } from '@/lib/payments/moncash';
 
 export type DiagResult = {
   ok: boolean;
   /** Short machine reason, shown verbatim so nothing is lost in translation. */
   detail: string;
+  /** The MonCash page to pay on — the whole point of the probe. */
+  payUrl?: string;
   /** What we sent, so the owner can quote it to Digicel support. */
-  sent?: { reference: string; account: string; amountHtg: number; host: string; mode: string };
-  /** Parsed status, when MonCash answered a check. */
+  sent?: { orderId: string; amountHtg: number; host: string; mode: string };
+  /** Parsed status, when MonCash answered a lookup. */
   status?: {
     paid: boolean;
-    pending: boolean;
     message: string;
     transactionId: string | null;
     amountHtg: number | null;
+    payer: string | null;
   };
 };
 
@@ -54,52 +55,46 @@ async function guard(): Promise<DiagResult | null> {
 }
 
 /**
- * Pushes a real cash-out request to `phone`. In sandbox that costs nothing; in
- * live mode this really asks that person for money, which is exactly why the
- * page states the mode in large type before the button.
+ * Creates a real MonCash order and returns its payment link. In sandbox that
+ * link takes fake money; in live mode it takes real money from whoever opens
+ * it, which is why the page states the mode in large type before the button.
  */
-export async function moncashProbeAction(input: {
-  phone: string;
-  amountHtg: number;
-}): Promise<DiagResult> {
+export async function moncashProbeAction(input: { amountHtg: number }): Promise<DiagResult> {
   const denied = await guard();
   if (denied) return denied;
-
-  const account = normalizeHaitianMsisdn(input.phone);
-  if (!account) return { ok: false, detail: 'bad_phone' };
 
   const amountHtg = Math.round(Number(input.amountHtg));
   if (!Number.isFinite(amountHtg) || amountHtg <= 0) return { ok: false, detail: 'bad_amount' };
 
-  // A fresh, unambiguous reference every run — reusing one would make a later
-  // CheckPayment ambiguous about which attempt it is reporting on.
-  const reference = `diag-${Date.now()}`;
-  const sent = { reference, account, amountHtg, host: moncashHost(), mode: moncashMode() };
+  // A fresh reference every run — reusing one would make a later lookup
+  // ambiguous about which attempt it is reporting on.
+  const orderId = `diag-${Date.now()}`;
+  const sent = { orderId, amountHtg, host: moncashHost(), mode: moncashMode() };
 
-  const started = await initiateMoncashPayment({ reference, account, amountHtg });
-  if (!started.ok) return { ok: false, detail: started.message, sent };
+  const created = await createMoncashOrder({ orderId, amountHtg });
+  if (!created.ok) return { ok: false, detail: created.message, sent };
 
-  return { ok: true, detail: started.message || 'pending', sent };
+  return { ok: true, detail: 'order_created', payUrl: created.redirectUrl, sent };
 }
 
-/** Asks MonCash what became of a probe — the buyer approves on their handset. */
-export async function moncashCheckAction(reference: string): Promise<DiagResult> {
+/** Asks MonCash what became of a probe, after the owner paid on the gateway. */
+export async function moncashCheckAction(orderId: string): Promise<DiagResult> {
   const denied = await guard();
   if (denied) return denied;
-  if (!reference.trim()) return { ok: false, detail: 'bad_reference' };
+  if (!orderId.trim()) return { ok: false, detail: 'bad_order_id' };
 
-  const r = await checkMoncashPaymentByReference(reference.trim());
+  const r = await retrieveMoncashOrder(orderId.trim());
   if (!r.ok) return { ok: false, detail: r.message };
 
   return {
     ok: true,
-    detail: r.message || 'unknown',
+    detail: r.paid ? 'successful' : 'not_paid_yet',
     status: {
       paid: r.paid,
-      pending: r.pending,
-      message: r.message,
+      message: r.paid ? 'successful' : 'pas encore payé',
       transactionId: r.transactionId,
-      amountHtg: r.amountHtg,
+      amountHtg: r.costHtg,
+      payer: r.payer,
     },
   };
 }

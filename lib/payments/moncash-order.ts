@@ -16,7 +16,7 @@
 import { db } from '@/db';
 import { checkoutSessions } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { checkMoncashPaymentByReference, moncashConfigured } from './moncash';
+import { retrieveMoncashOrder, moncashConfigured } from './moncash';
 import { fulfillMoncashOrder } from './moncash-fulfill';
 
 /** How the locale is smuggled onto the order row — see `encodeMoncashRef`. */
@@ -50,11 +50,7 @@ export function isMoncashRef(ref: string | null | undefined): boolean {
 
 export type SettleResult =
   | { status: 'granted' | 'already'; locale: 'ht' | 'fr'; courseSlug: string }
-  | {
-      status: 'pending' | 'unpaid' | 'unknown_order' | 'not_configured' | 'error';
-      locale: 'ht' | 'fr';
-      courseSlug?: string;
-    };
+  | { status: 'unpaid' | 'unknown_order' | 'not_configured' | 'error'; locale: 'ht' | 'fr'; courseSlug?: string };
 
 /**
  * Verifies `orderId` against MonCash and, if it really was paid, grants
@@ -86,19 +82,14 @@ export async function settleMoncashOrder(orderId: string): Promise<SettleResult>
     }
     const locale = decodeMoncashLocale(row.sessionId);
 
-    const remote = await checkMoncashPaymentByReference(orderId);
+    const remote = await retrieveMoncashOrder(orderId);
     if (!remote.ok) {
-      console.error('[moncash/order] check failed:', remote.message);
+      console.error('[moncash/order] retrieval failed:', remote.message);
       return { status: 'error', locale, courseSlug: row.courseSlug };
     }
-    if (remote.pending) {
-      // The cash-out request is sitting on the buyer's handset, unanswered.
-      // Deliberately distinct from 'unpaid': the caller should keep waiting,
-      // not tell them the payment failed.
-      return { status: 'pending', locale, courseSlug: row.courseSlug };
-    }
     if (!remote.paid) {
-      // Declined, expired, or never attempted. Nothing granted, nothing recorded.
+      // Abandoned or still pending. Not an error — the buyer may simply have
+      // backed out; nothing is granted and nothing is recorded.
       return { status: 'unpaid', locale, courseSlug: row.courseSlug };
     }
 
@@ -107,7 +98,7 @@ export async function settleMoncashOrder(orderId: string): Promise<SettleResult>
       userDbId: row.userId,
       courseSlug: row.courseSlug,
       // What MonCash says it took, falling back to what we asked for.
-      amountHtg: remote.amountHtg ?? 0,
+      amountHtg: remote.costHtg ?? 0,
       usdCentsEquivalent: row.amountCents,
       transactionId: remote.transactionId,
       locale,
