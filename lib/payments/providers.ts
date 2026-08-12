@@ -35,9 +35,9 @@ import { hasCap } from '@/lib/admin/guard';
  * automatically, everywhere, with no other edit.
  */
 export function implementedProviders(): ProviderKey[] {
-  const list: ProviderKey[] = ['card'];
-  if (moncashSellable()) list.push('moncash');
-  return list;
+  // Same MonCash-first order as `checkoutProviders()` so the badge rows and
+  // the selector agree on which rail leads.
+  return moncashSellable() ? ['moncash', 'card'] : ['card'];
 }
 
 /**
@@ -74,14 +74,18 @@ export function moncashSellable(): boolean {
  * signed in. The exception belongs to the selector, and nowhere else.
  */
 export async function checkoutProviders(): Promise<ProviderKey[]> {
-  const list: ProviderKey[] = ['card'];
-  if (moncashSellable()) {
-    list.push('moncash');
-  } else if (moncashConfigured() && (await hasCap('roles.manage'))) {
-    // Sandbox on production, owner only — a rehearsal, not a sale.
-    list.push('moncash');
-  }
-  return list;
+  // MonCash goes FIRST, so it is the default selection. The checkout selector
+  // pre-selects methods[0], and for a Haitian audience the mobile wallet they
+  // already use should be the path of least resistance — a card is the
+  // fallback here, not the norm. Ordering is the whole mechanism: nothing
+  // else needs to know which rail is "preferred".
+  const moncash: ProviderKey[] =
+    moncashSellable() || (moncashConfigured() && (await hasCap('roles.manage')))
+      ? // …the second branch is sandbox-on-production, owner only: a
+        // rehearsal of the real flow with fake money, never a sale.
+        ['moncash']
+      : [];
+  return [...moncash, 'card'];
 }
 
 /** @deprecated Use `implementedProviders()` — kept so older imports still resolve. */
