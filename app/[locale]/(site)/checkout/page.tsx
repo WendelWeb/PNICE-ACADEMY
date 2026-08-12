@@ -16,7 +16,7 @@ import { PaymentMethods } from '@/components/checkout/PaymentMethods';
 import { PromoCodeField } from '@/components/checkout/PromoCodeField';
 import { CheckoutPromoProvider } from '@/components/checkout/promo-context';
 import { activeProviders as toggledProviderKeys } from '@/lib/admin/platform/store';
-import { activeProviderLabels, splitProviders, checkoutProviders, PROVIDER_LABELS } from '@/lib/payments/providers';
+import { activeProviderLabels, splitProviders, checkoutProviders, moncashSandboxNotice, PROVIDER_LABELS } from '@/lib/payments/providers';
 import { checkoutMode } from '@/lib/payments/checkout-target';
 import { resolveProduct } from '@/lib/payments/products';
 import { getPublicTeacher } from '@/lib/teacher/public';
@@ -112,9 +112,15 @@ export default async function CheckoutPage({
   // badges are the live rails' labels, the method selector gets ONLY live
   // rails, and toggled-but-unbuilt rails become quiet "Byento" chips.
   const acceptedBadges = await activeProviderLabels();
-  // The SELECTOR uses checkoutProviders(): it adds the owner-only sandbox
-  // MonCash rehearsal on top of what the public may be sold. The "we accept"
-  // badges above deliberately do NOT — they must read the same for everyone.
+  // True while MonCash is offered through Digicel's SANDBOX — a simulator that
+  // reports success for money that never moved. A buyer must never be asked to
+  // pay through that without being told, so the page says so plainly.
+  const moncashIsTest = moncashSandboxNotice();
+
+  // The SELECTOR uses checkoutProviders(), which may include a sandbox MonCash
+  // the owner deliberately enabled for testing. The "we accept" badges above
+  // deliberately do NOT — a rail that cannot actually take money must never be
+  // advertised as accepted, whatever the selector is currently offering.
   const { live, comingSoon } = splitProviders(await toggledProviderKeys(), await checkoutProviders());
   const liveMethods = live.map((k) => ({ id: k, label: PROVIDER_LABELS[k] }));
   const comingSoonMethods = comingSoon.map((k) => ({ id: k, label: PROVIDER_LABELS[k] }));
@@ -218,6 +224,14 @@ export default async function CheckoutPage({
                 </div>
               ) : (
                 <div className="rounded-2xl border border-ink/15 bg-paper p-7">
+                  {moncashIsTest && (
+                    <p
+                      role="status"
+                      className="mb-5 rounded border border-stampred/45 bg-stampred/[0.07] px-3.5 py-3 text-[13px] leading-snug text-stampred"
+                    >
+                      {t('moncashTestNotice')}
+                    </p>
+                  )}
                   <PaymentMethods
                     payLabel={`${t('pay')} ${formatUsd(amountUsd)}`}
                     methods={liveMethods}

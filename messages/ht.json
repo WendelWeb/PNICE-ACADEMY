@@ -811,7 +811,8 @@
     "moncashWaitTitle": "Gade telefòn ou",
     "moncashWaitBody": "Nou voye yon demann {amount} HTG. Louvri MonCash sou telefòn ou epi konfime ak kòd sekrè w. Paj sa a ap kontinye poukont li.",
     "moncashDeclined": "Peman an pa pase. Ou ka eseye ankò.",
-    "moncashTimeout": "Nou pa jwenn repons ou. Si w konfime peman an, aksè w ap louvri poukont li — tcheke tablodbò w nan kèk minit."
+    "moncashTimeout": "Nou pa jwenn repons ou. Si w konfime peman an, aksè w ap louvri poukont li — tcheke tablodbò w nan kèk minit.",
+    "moncashTestNotice": "MODE TÈS — MonCash nan mòd similasyon. Peman an pa reyèl: okenn goud p ap kite kont ou. Se pou tès sèlman."
   },
   "merci": {
     "title": "Mèsi! Peman an resevwa",

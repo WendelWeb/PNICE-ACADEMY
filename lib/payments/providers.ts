@@ -21,7 +21,6 @@
 import { activeProviders as toggledProviders } from '@/lib/admin/platform/store';
 import type { ProviderKey } from '@/lib/admin/platform/keys';
 import { moncashConfigured, moncashMode } from './moncash';
-import { hasCap } from '@/lib/admin/guard';
 
 /**
  * Rails with a real, live charge path. Card = Stripe checkout, always built.
@@ -79,13 +78,38 @@ export async function checkoutProviders(): Promise<ProviderKey[]> {
   // already use should be the path of least resistance — a card is the
   // fallback here, not the norm. Ordering is the whole mechanism: nothing
   // else needs to know which rail is "preferred".
-  const moncash: ProviderKey[] =
-    moncashSellable() || (moncashConfigured() && (await hasCap('roles.manage')))
-      ? // …the second branch is sandbox-on-production, owner only: a
-        // rehearsal of the real flow with fake money, never a sale.
-        ['moncash']
-      : [];
-  return [...moncash, 'card'];
+  return moncashOfferable() ? ['moncash', 'card'] : ['card'];
+}
+
+/**
+ * Whether the checkout may offer MonCash at all.
+ *
+ * `moncashSellable()` is the safe rule: live credentials, or any non-production
+ * deploy. Beyond that the owner has DELIBERATELY enabled sandbox MonCash on
+ * production so the full purchase flow can be rehearsed on the real site.
+ *
+ * WHAT THAT COSTS, stated plainly because it is not obvious: the sandbox is a
+ * simulator. It reports "successful" for money that never moved, and this app
+ * grants course access on MonCash's word — so while this is on, anyone who
+ * picks MonCash receives a real course without paying. That is acceptable only
+ * as a short, watched testing window, which is why `moncashSandboxNotice()`
+ * makes it visible on the page instead of letting it run silently.
+ *
+ * It closes by itself: the moment MONCASH_MODE=live with live credentials,
+ * `moncashSellable()` is true and this flag stops mattering.
+ */
+export function moncashOfferable(): boolean {
+  if (moncashSellable()) return true;
+  return moncashConfigured() && process.env.MONCASH_ALLOW_SANDBOX_CHECKOUT === 'true';
+}
+
+/**
+ * True when the checkout is about to offer a MonCash that CANNOT actually take
+ * money. The page shows a plain warning in that case — a buyer must never be
+ * asked to pay through a simulator without being told.
+ */
+export function moncashSandboxNotice(): boolean {
+  return moncashOfferable() && !moncashSellable();
 }
 
 /** @deprecated Use `implementedProviders()` — kept so older imports still resolve. */

@@ -811,7 +811,8 @@
     "moncashWaitTitle": "Regarde ton téléphone",
     "moncashWaitBody": "Nous avons envoyé une demande de {amount} HTG. Ouvre MonCash sur ton téléphone et confirme avec ton code secret. Cette page continuera toute seule.",
     "moncashDeclined": "Le paiement n’est pas passé. Tu peux réessayer.",
-    "moncashTimeout": "Nous n’avons pas reçu ta réponse. Si tu as confirmé le paiement, ton accès s’ouvrira tout seul — vérifie ton tableau de bord dans quelques minutes."
+    "moncashTimeout": "Nous n’avons pas reçu ta réponse. Si tu as confirmé le paiement, ton accès s’ouvrira tout seul — vérifie ton tableau de bord dans quelques minutes.",
+    "moncashTestNotice": "MODE TEST — MonCash est en simulation. Le paiement n’est pas réel : aucune gourde ne quittera ton compte. Réservé aux tests."
   },
   "merci": {
     "title": "Merci ! Paiement reçu",
