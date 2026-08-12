@@ -30,6 +30,7 @@ import { parseCheckoutBody } from '@/lib/payments/checkout-body';
 import { hasCourseAccess } from '@/lib/learner/access';
 import { getFxRate } from '@/lib/fx';
 import { rateLimit, ipFromHeaders, RATE_LIMITS } from '@/lib/rate-limit';
+import { checkoutProviders } from '@/lib/payments/providers';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -43,6 +44,14 @@ export async function POST(req: NextRequest) {
   }
   const { userId: clerkId } = await auth();
   if (!clerkId) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+
+  // The SAME rule the selector renders from — checked here too, because a
+  // page gate is not a security boundary. In sandbox-on-production this
+  // resolves to owner-only, so a visitor who hand-crafts this POST is refused
+  // even though the page never showed them the option.
+  if (!(await checkoutProviders()).includes('moncash')) {
+    return NextResponse.json({ error: 'not_configured' }, { status: 503 });
+  }
 
   const body = parseCheckoutBody(await req.json().catch(() => null));
   if (!body) return NextResponse.json({ error: 'bad_request' }, { status: 400 });

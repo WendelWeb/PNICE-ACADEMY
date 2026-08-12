@@ -16,7 +16,7 @@ import { PaymentMethods } from '@/components/checkout/PaymentMethods';
 import { PromoCodeField } from '@/components/checkout/PromoCodeField';
 import { CheckoutPromoProvider } from '@/components/checkout/promo-context';
 import { activeProviders as toggledProviderKeys } from '@/lib/admin/platform/store';
-import { activeProviderLabels, splitProviders, PROVIDER_LABELS } from '@/lib/payments/providers';
+import { activeProviderLabels, splitProviders, checkoutProviders, PROVIDER_LABELS } from '@/lib/payments/providers';
 import { checkoutMode } from '@/lib/payments/checkout-target';
 import { resolveProduct } from '@/lib/payments/products';
 import { getPublicTeacher } from '@/lib/teacher/public';
@@ -112,7 +112,10 @@ export default async function CheckoutPage({
   // badges are the live rails' labels, the method selector gets ONLY live
   // rails, and toggled-but-unbuilt rails become quiet "Byento" chips.
   const acceptedBadges = await activeProviderLabels();
-  const { live, comingSoon } = splitProviders(await toggledProviderKeys());
+  // The SELECTOR uses checkoutProviders(): it adds the owner-only sandbox
+  // MonCash rehearsal on top of what the public may be sold. The "we accept"
+  // badges above deliberately do NOT — they must read the same for everyone.
+  const { live, comingSoon } = splitProviders(await toggledProviderKeys(), await checkoutProviders());
   const liveMethods = live.map((k) => ({ id: k, label: PROVIDER_LABELS[k] }));
   const comingSoonMethods = comingSoon.map((k) => ({ id: k, label: PROVIDER_LABELS[k] }));
 

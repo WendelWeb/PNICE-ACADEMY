@@ -21,6 +21,7 @@
 import { activeProviders as toggledProviders } from '@/lib/admin/platform/store';
 import type { ProviderKey } from '@/lib/admin/platform/keys';
 import { moncashConfigured, moncashMode } from './moncash';
+import { hasCap } from '@/lib/admin/guard';
 
 /**
  * Rails with a real, live charge path. Card = Stripe checkout, always built.
@@ -40,19 +41,47 @@ export function implementedProviders(): ProviderKey[] {
 }
 
 /**
- * MonCash may be OFFERED only when it is configured AND not pointed at the
- * sandbox on a production deployment.
+ * MonCash may be OFFERED TO THE PUBLIC only when it is configured AND not
+ * pointed at the sandbox on a production deployment.
  *
  * That second half is the important one. Sandbox credentials move no real
  * money, but this app grants course access on MonCash's word — so a sandbox
  * rail exposed on the live site would hand out paid courses for nothing. The
  * check is deliberately positive ("live mode, or not a production deploy")
- * rather than a blocklist, so a missing//misspelled MONCASH_MODE fails closed.
+ * rather than a blocklist, so a missing/misspelled MONCASH_MODE fails closed.
  */
 export function moncashSellable(): boolean {
   if (!moncashConfigured()) return false;
   if (moncashMode() === 'live') return true;
   return process.env.VERCEL_ENV !== 'production';
+}
+
+/**
+ * What the CHECKOUT SELECTOR may offer — `moncashSellable()` plus one
+ * deliberate exception: the owner may pay with a sandbox MonCash on the real
+ * production site.
+ *
+ * WHY THE EXCEPTION EXISTS: without it, the only way to rehearse a complete
+ * MonCash purchase — checkout, Digicel's gateway, the callbacks, enrolment,
+ * the receipt — is to point real credentials at real money. Letting the owner
+ * (and only the owner) walk the flow with fake money on the real site is the
+ * safer of the two, by a wide margin.
+ *
+ * WHY IT IS SEPARATE FROM `activeProviders()`: public trust surfaces — the
+ * footer's "we accept" row, the checkout badges — must say the same thing to
+ * everyone. Folding a per-viewer exception into that source would make the
+ * site claim MonCash is accepted merely because the owner happened to be
+ * signed in. The exception belongs to the selector, and nowhere else.
+ */
+export async function checkoutProviders(): Promise<ProviderKey[]> {
+  const list: ProviderKey[] = ['card'];
+  if (moncashSellable()) {
+    list.push('moncash');
+  } else if (moncashConfigured() && (await hasCap('roles.manage'))) {
+    // Sandbox on production, owner only — a rehearsal, not a sale.
+    list.push('moncash');
+  }
+  return list;
 }
 
 /** @deprecated Use `implementedProviders()` — kept so older imports still resolve. */
