@@ -115,7 +115,16 @@ export async function POST(req: NextRequest) {
   const created = await createMoncashOrder({ orderId: order.id, amountHtg });
   if (!created.ok) {
     console.error('[checkout/moncash] create failed:', created.message);
-    return NextResponse.json({ error: 'moncash_error' }, { status: 502 });
+    // Digicel's own outages are the failure this rail sees most (their sandbox
+    // has stopped answering CreatePayment mid-session while OAuth kept
+    // working). Separating "MonCash is not answering" from every other error
+    // matters: the buyer's own action is different — wait and retry, or pay by
+    // card — and a generic failure would just invite a pointless retry loop.
+    const unreachable = created.message === 'timeout' || created.message.startsWith('HTTP 5');
+    return NextResponse.json(
+      { error: unreachable ? 'moncash_unreachable' : 'moncash_error' },
+      { status: 502 },
+    );
   }
 
   return NextResponse.json({ url: created.redirectUrl, amountHtg, orderId: order.id });

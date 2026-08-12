@@ -123,6 +123,10 @@ export function PaymentMethods({
             ? t(`promo.error.${data.reason}`)
             : t('promo.payInvalid'),
         );
+      } else if (data.error === 'moncash_unreachable') {
+        // Digicel is down, not the buyer's fault and not something retrying
+        // immediately will fix — point them at the rail that still works.
+        setErrorMsg(t('moncashDown'));
       } else if (data.error === 'subscription_unsupported') {
         // MonCash cannot renew anything — say so plainly instead of a generic
         // failure the buyer would just retry.
