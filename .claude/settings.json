@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"/c/Users/stanl/Desktop/Personal Projects/pnice-academy\" && echo \"=== points d'entree de la fulfillment ===\" && grep -nE \"^export \\(async \\)?function\" lib/payments/fulfill.ts && echo \"\" && echo \"=== signature de fulfillCheckoutCompleted ===\" && grep -n \"fulfillCheckoutCompleted\" -A 22 lib/payments/fulfill.ts | head -30)",
+      "Read(//c/Users/stanl/Desktop/Personal Projects/pnice-academy/**)",
+      "Bash(cd \"/c/Users/stanl/Desktop/Personal Projects/pnice-academy\" && echo \"=== table payments ===\" && grep -n \"payments = pgTable\" -A 22 db/schema.ts && echo \"\" && echo \"=== type CheckoutCompleted ===\" && grep -n \"CheckoutCompleted = {\" -A 20 lib/payments/stripe-events.ts)",
+      "Bash(cd \"/c/Users/stanl/Desktop/Personal Projects/pnice-academy\" && grep -nE \"type CheckoutCompleted|CheckoutCompleted =\" -A 24 lib/payments/stripe-events.ts | head -32)",
+      "WebFetch(domain:npmx.dev)",
+      "Bash(npm pack *)",
+      "Bash(tar -xzf digicel-moncash-api-sdk-1.1.4.tgz)",
+      "Bash(cd \"/c/Users/stanl/Desktop/Personal Projects/pnice-academy\" && echo \"=== lib/fx.ts \\(exports\\) ===\" && grep -nE \"^export\" lib/fx.ts && echo \"\" && echo \"=== PaymentMethods : comment le paiement part ===\" && grep -nE \"fetch\\\\\\(|/api/checkout|method|selected\" components/checkout/PaymentMethods.tsx | head -14 && echo \"\" && echo \"=== helpers internes de fulfill.ts ===\" && grep -nE \"^async function|^function\" lib/payments/fulfill.ts | head -14)",
+      "Bash(npx tsc *)",
+      "Bash(cd \"/c/Users/stanl/Desktop/Personal Projects/pnice-academy\" && grep -rn \"splitProviders\\\\|IMPLEMENTED_PROVIDERS\\\\|activeProviders\" --include=\"*.ts\" --include=\"*.tsx\" app components lib | grep -v \"lib/payments/providers.ts\" | head -10)",
+      "Bash(sed -i \"s|import type { ProviderKey } from '@/lib/admin/platform/keys';|import type { ProviderKey } from '@/lib/admin/platform/keys';\\\\nimport { moncashConfigured } from './moncash';|\" lib/payments/providers.ts)",
+      "Bash(node -e ' *)",
+      "Bash(npm run *)"
+    ]
+  }
+}

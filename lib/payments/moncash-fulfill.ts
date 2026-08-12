@@ -1,0 +1,193 @@
+/**
+ * lib/payments/moncash-fulfill.ts — grant access after a VERIFIED MonCash payment.
+ *
+ * WHY IT IS SEPARATE FROM fulfill.ts: that module is shaped around Stripe's
+ * event stream (a `StripeAction` union, subscriptions, invoices, refunds).
+ * MonCash has exactly one shape — a one-off course purchase that either
+ * cleared or didn't — so modelling it as a fake Stripe event would be a lie
+ * that future readers would have to untangle. What it does NOT duplicate is
+ * the part that matters: enrollment goes through fulfill.ts's own exported
+ * `ensureCourseEnrollment`, and the teacher's 70% goes through the same
+ * `recordSaleEarning` as every card sale.
+ *
+ * IDEMPOTENCE IS THE WHOLE POINT. MonCash can reach us twice for one payment:
+ * once on the server-to-server notification and once when the buyer's browser
+ * lands back on the return URL — and the buyer can refresh that page. Every
+ * write below is therefore keyed on `(provider='moncash', providerRef=orderId)`:
+ *   - already recorded ⇒ re-run the idempotent enrollment + earning upserts so
+ *     a half-finished earlier attempt self-heals, then stop. No second payment
+ *     row, no second receipt email, no second ledger entry.
+ *   - not recorded ⇒ record it, enroll, ledger, email.
+ * There is no cross-row transaction available on the neon-http driver (the
+ * same constraint fulfill.ts and payouts.ts already live with), so the order
+ * is chosen so the worst interleaving is a *missing* follow-up write that the
+ * next delivery heals — never a double grant or a double charge.
+ *
+ * MONEY IS RECORDED IN GOURDES. MonCash charges HTG; storing the USD list
+ * price here would make the admin ledger and the buyer's receipt disagree with
+ * their bank. `amountHtg` is what MonCash actually took, and `currency` says
+ * so. `usdCentsEquivalent` is carried separately for the teacher-earnings
+ * split, which the rest of the platform computes in USD cents.
+ */
+import { db } from '@/db';
+import { payments, users } from '@/db/schema';
+import { and, eq } from 'drizzle-orm';
+import { ensureCourseEnrollment } from './fulfill';
+import { recordSaleEarning } from '@/lib/teacher/earnings';
+import { recordPromoRedemption } from './promo-redemption';
+import { sendEmail, emailConfigured } from '@/lib/email/resend';
+import { buildReceiptHtml } from '@/lib/email/templates';
+import { getCourseBySlug } from '@/lib/courses/source';
+import { getFxRate } from '@/lib/fx';
+
+export type MoncashFulfilInput = {
+  /** OUR reference — the checkout_sessions row id we passed to MonCash. */
+  orderId: string;
+  userDbId: string;
+  courseSlug: string;
+  /** Gourdes actually charged, as MonCash reported them. */
+  amountHtg: number;
+  /** The USD-cents price this order was created from — used for the 70/30 split. */
+  usdCentsEquivalent: number;
+  /** MonCash's own transaction id, kept for support/reconciliation. */
+  transactionId: string | null;
+  promoCode?: string | null;
+  locale?: 'ht' | 'fr';
+};
+
+/**
+ * NEVER THROWS. Returns what happened so callers can log it; neither the
+ * notification endpoint nor the buyer's return page should ever 500 because a
+ * follow-up write (email, ledger) had a bad day — the money already moved.
+ */
+export async function fulfillMoncashOrder(
+  input: MoncashFulfilInput,
+): Promise<'processed' | 'already' | 'error'> {
+  try {
+    const existing = (
+      await db
+        .select({ id: payments.id })
+        .from(payments)
+        .where(and(eq(payments.provider, 'moncash'), eq(payments.providerRef, input.orderId)))
+        .limit(1)
+    )[0];
+
+    if (existing) {
+      // Self-heal path: a previous delivery recorded the payment but may have
+      // died before enrolling or ledgering. Both upserts below are idempotent,
+      // so re-running them is free. Deliberately NO receipt email here — the
+      // first delivery already sent it.
+      await ensureCourseEnrollment(input.userDbId, 'course', input.courseSlug, existing.id);
+      await recordSaleEarning({
+        id: existing.id,
+        amountCents: input.usdCentsEquivalent,
+        currency: 'usd',
+        productType: 'course',
+        courseSlug: input.courseSlug,
+        teacherPlanId: null,
+        subscriptionKind: undefined,
+      });
+      return 'already';
+    }
+
+    const inserted = (
+      await db
+        .insert(payments)
+        .values({
+          userId: input.userDbId,
+          provider: 'moncash',
+          providerRef: input.orderId,
+          amountCents: input.amountHtg,
+          currency: 'htg',
+          status: 'completed',
+          productType: 'course',
+          courseSlug: input.courseSlug,
+        })
+        .onConflictDoNothing()
+        .returning({ id: payments.id })
+    )[0];
+
+    // A concurrent delivery won the race between our SELECT and this INSERT.
+    // Its own call is completing the same work, so re-read and take the heal
+    // path rather than inserting a second row.
+    if (!inserted) {
+      const raced = (
+        await db
+          .select({ id: payments.id })
+          .from(payments)
+          .where(and(eq(payments.provider, 'moncash'), eq(payments.providerRef, input.orderId)))
+          .limit(1)
+      )[0];
+      if (raced) {
+        await ensureCourseEnrollment(input.userDbId, 'course', input.courseSlug, raced.id);
+        return 'already';
+      }
+      return 'error';
+    }
+
+    await ensureCourseEnrollment(input.userDbId, 'course', input.courseSlug, inserted.id);
+
+    // Teacher's 70% — computed on the USD price, like every card sale, so a
+    // teacher's balance is one currency and the FX rate of the day can never
+    // change what an old sale was worth to them.
+    await recordSaleEarning({
+      id: inserted.id,
+      amountCents: input.usdCentsEquivalent,
+      currency: 'usd',
+      productType: 'course',
+      courseSlug: input.courseSlug,
+      teacherPlanId: null,
+      subscriptionKind: undefined,
+    });
+
+    if (input.promoCode) {
+      await recordPromoRedemption({
+        paymentId: inserted.id,
+        userDbId: input.userDbId,
+        promoCode: input.promoCode,
+      });
+    }
+
+    await sendMoncashReceipt(input);
+    return 'processed';
+  } catch (e) {
+    console.error('[moncash/fulfill] failed:', e instanceof Error ? e.message : e);
+    return 'error';
+  }
+}
+
+/** Receipt email — best effort, never fails the fulfilment. */
+async function sendMoncashReceipt(input: MoncashFulfilInput): Promise<void> {
+  try {
+    if (!emailConfigured()) return;
+    const user = (await db.select().from(users).where(eq(users.id, input.userDbId)).limit(1))[0];
+    if (!user?.email) return;
+
+    const locale = input.locale ?? 'ht';
+    const course = await getCourseBySlug(input.courseSlug);
+    const itemName =
+      (locale === 'fr' ? course?.title_fr : course?.title_ht) ?? course?.title_ht ?? input.courseSlug;
+
+    const rateHtg = await getFxRate();
+    const receipt = buildReceiptHtml({
+      locale,
+      name: user.name,
+      itemName,
+      // The receipt shows the USD figure the rest of the platform speaks, with
+      // the layout's own "(~X HTG)" line derived from the same live rate the
+      // order was priced at — so it lines up with the gourdes MonCash took.
+      amountCents: input.usdCentsEquivalent,
+      dateIso: new Date().toISOString(),
+      ref: input.transactionId ?? input.orderId,
+      rateHtg,
+    });
+    await sendEmail({
+      to: user.email,
+      subject: receipt.subject,
+      html: receipt.html,
+      text: receipt.text,
+    });
+  } catch (e) {
+    console.error('[moncash/fulfill] receipt email failed (non-fatal):', e instanceof Error ? e.message : e);
+  }
+}

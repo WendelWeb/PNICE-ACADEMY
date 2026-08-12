@@ -83,7 +83,12 @@ export function PaymentMethods({
     setBusy(true);
     setErrorMsg(null);
     try {
-      const res = await fetch('/api/checkout', {
+      // Each rail has its own endpoint because each speaks a different
+      // protocol: Stripe hands back a hosted-checkout URL, MonCash hands back
+      // a gateway redirect carrying a one-payment token. Both answer the same
+      // `{ url }` shape, so everything below this line is rail-agnostic.
+      const endpoint = selected === 'moncash' ? '/api/checkout/moncash' : '/api/checkout';
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -118,6 +123,12 @@ export function PaymentMethods({
             ? t(`promo.error.${data.reason}`)
             : t('promo.payInvalid'),
         );
+      } else if (data.error === 'subscription_unsupported') {
+        // MonCash cannot renew anything — say so plainly instead of a generic
+        // failure the buyer would just retry.
+        setErrorMsg(t('moncashSubscription'));
+      } else if (data.error === 'promo_unsupported') {
+        setErrorMsg(t('moncashPromo'));
       } else {
         setErrorMsg(t('payErr'));
       }

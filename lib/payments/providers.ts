@@ -20,8 +20,26 @@
  */
 import { activeProviders as toggledProviders } from '@/lib/admin/platform/store';
 import type { ProviderKey } from '@/lib/admin/platform/keys';
+import { moncashConfigured } from './moncash';
 
-/** Rails with a real, live charge path today. Card = Stripe checkout. */
+/**
+ * Rails with a real, live charge path. Card = Stripe checkout, always built.
+ *
+ * MonCash is CONDITIONALLY implemented: the code path exists end to end
+ * (lib/payments/moncash.ts + /api/checkout/moncash + both callbacks), but it
+ * can only charge anybody once the owner's Digicel merchant credentials are
+ * set. Advertising it before then would be exactly the "demo rail on the money
+ * page" dishonesty this module exists to prevent — so it joins the list only
+ * when `moncashConfigured()` is true, and the site's claims follow
+ * automatically, everywhere, with no other edit.
+ */
+export function implementedProviders(): ProviderKey[] {
+  const list: ProviderKey[] = ['card'];
+  if (moncashConfigured()) list.push('moncash');
+  return list;
+}
+
+/** @deprecated Use `implementedProviders()` — kept so older imports still resolve. */
 export const IMPLEMENTED_PROVIDERS: ProviderKey[] = ['card'];
 
 /** Canonical display labels — brand names, identical in ht/fr. */
@@ -36,7 +54,7 @@ export const PROVIDER_LABELS: Record<ProviderKey, string> = {
 /** Admin toggles ∩ implemented rails — what the site may claim to accept. */
 export async function activeProviders(): Promise<ProviderKey[]> {
   const toggled = await toggledProviders();
-  return IMPLEMENTED_PROVIDERS.filter((k) => toggled.includes(k));
+  return implementedProviders().filter((k) => toggled.includes(k));
 }
 
 /** The same list as display labels, for badge rows. */
@@ -55,12 +73,18 @@ export async function activeProviderLabels(): Promise<string[]> {
  *                   chips, in the toggles' own order. Toggling a future rail
  *                   OFF removes even its chip.
  */
-export function splitProviders(toggled: ProviderKey[]): {
+export function splitProviders(
+  toggled: ProviderKey[],
+  /** Injected so this stays PURE and testable — callers pass
+   *  `implementedProviders()`, which reads env. Defaults to it for
+   *  convenience at real call sites. */
+  implemented: ProviderKey[] = implementedProviders(),
+): {
   live: ProviderKey[];
   comingSoon: ProviderKey[];
 } {
   return {
-    live: IMPLEMENTED_PROVIDERS.filter((k) => toggled.includes(k)),
-    comingSoon: toggled.filter((k) => !IMPLEMENTED_PROVIDERS.includes(k)),
+    live: implemented.filter((k) => toggled.includes(k)),
+    comingSoon: toggled.filter((k) => !implemented.includes(k)),
   };
 }

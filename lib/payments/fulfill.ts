@@ -178,7 +178,11 @@ async function findPaymentByRef(providerRef: string): Promise<
 // Idempotent enrollment upsert, shared by the first-delivery path (step 3)
 // and every self-heal path (duplicate webhook, concurrent-insert race):
 // skip if already enrolled and active, otherwise insert linked to the payment.
-async function ensureCourseEnrollment(
+//
+// EXPORTED so the MonCash rail (lib/payments/moncash-fulfill.ts) grants access
+// through this exact function rather than a second copy of the rule — "what
+// counts as enrolled" must never drift between payment providers.
+export async function ensureCourseEnrollment(
   userDbId: string,
   productType: 'course' | 'subscription',
   courseSlug: string | null,

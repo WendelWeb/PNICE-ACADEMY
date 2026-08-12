@@ -161,7 +161,12 @@
       "eyebrow": "Enseigner sur PNICE",
       "title": "Tu maîtrises un savoir-faire ? Les candidatures sont ouvertes.",
       "body": "Crée tes propres formations sur la plateforme. Tu fixes ton prix, tu gardes 70 % de chaque vente, tu demandes ton retrait dès 25 $ (MonCash, NatCash, PayPal ou banque), et un admin relit chaque cours avant sa mise en ligne.",
-      "facts": ["70 % pour toi", "Tu fixes ton prix", "Retrait dès 25 $", "Relecture avant publication"],
+      "facts": [
+        "70 % pour toi",
+        "Tu fixes ton prix",
+        "Retrait dès 25 $",
+        "Relecture avant publication"
+      ],
       "cta": "Commencer ma candidature",
       "interestCta": "Devenir enseignant",
       "sealTop": "Formateur",
@@ -398,7 +403,11 @@
     "title": "Tu maîtrises un savoir-faire ? Enseigne-le.",
     "subtitle": "Crée tes propres formations sur PNICE Academy. Tu fixes ton prix, tu touches 70 % sur chaque vente, les élèves paient en MonCash. Les candidatures sont ouvertes maintenant — soumets la tienne plus bas.",
     "exampleCta": "Voir un exemple de page enseignant",
-    "facts": ["70 % pour toi", "Fixe ton prix", "Retrait MonCash"],
+    "facts": [
+      "70 % pour toi",
+      "Fixe ton prix",
+      "Retrait MonCash"
+    ],
     "stepsEyebrow": "Le parcours enseignant",
     "stepsTitle": "4 étapes, de ton savoir-faire à ton argent",
     "steps": [
@@ -793,7 +802,9 @@
       "lock": "Paiement sécurisé",
       "guarantee": "Pas satisfait(e) ? Contacte le support — on peut t'aider à obtenir un remboursement.",
       "accepted": "On accepte"
-    }
+    },
+    "moncashSubscription": "MonCash ne gère pas les paiements récurrents. Pour un abonnement, utilise une carte.",
+    "moncashPromo": "Les codes promo ne fonctionnent pas encore avec MonCash — utilise une carte."
   },
   "merci": {
     "title": "Merci ! Paiement reçu",
@@ -3294,7 +3305,11 @@
         "p": [
           "Simple et public : sur chaque vente, 70 % vont à l'enseignant, 30 % restent à la plateforme — paiements, vidéo, certificats, support. Les paiements se font par carte (Visa/Mastercard) sur une connexion sécurisée ; nous ne stockons jamais ton numéro de carte."
         ],
-        "facts": ["70 % pour l'enseignant", "30 % pour la plateforme", "Paiement sécurisé par carte"]
+        "facts": [
+          "70 % pour l'enseignant",
+          "30 % pour la plateforme",
+          "Paiement sécurisé par carte"
+        ]
       }
     },
     "links": {
@@ -3312,11 +3327,21 @@
     "intro": "Toutes les réponses, classées par thème. Chaque question a son propre lien — facile à partager.",
     "tocLabel": "Les sections",
     "sections": {
-      "aprann": { "title": "Apprendre" },
-      "peye": { "title": "Payer" },
-      "anseye": { "title": "Enseigner" },
-      "retre": { "title": "Retraits" },
-      "setifika": { "title": "Certificats" }
+      "aprann": {
+        "title": "Apprendre"
+      },
+      "peye": {
+        "title": "Payer"
+      },
+      "anseye": {
+        "title": "Enseigner"
+      },
+      "retre": {
+        "title": "Retraits"
+      },
+      "setifika": {
+        "title": "Certificats"
+      }
     },
     "items": {
       "kijan-li-mache": {

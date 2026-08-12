@@ -1,0 +1,113 @@
+/**
+ * POST /api/checkout/moncash — start a MonCash payment for the signed-in user.
+ *
+ * Mirrors /api/checkout's guards deliberately (rate limit, auth, product
+ * resolution, repurchase refusal, users upsert, checkout_sessions row) so the
+ * two rails cannot drift into different rules about who may be charged. What
+ * differs is forced by MonCash itself:
+ *
+ *   - COURSES ONLY. MonCash has no recurring-payment concept, so a
+ *     subscription started here could never renew. Refused outright rather
+ *     than sold as something it isn't.
+ *   - CHARGED IN GOURDES. Prices are USD cents; the charge is converted at the
+ *     live admin-set rate (lib/fx.ts) at this moment, and that gourde figure
+ *     is what the buyer commits to. It is returned to the client so the
+ *     confirmation can show the real amount before the redirect.
+ *   - NO PROMO CODES YET. The discounted-amount plumbing exists for Stripe;
+ *     wiring it through the gourde conversion needs its own pass, so a code is
+ *     refused here instead of being silently ignored at full price.
+ */
+import { NextRequest, NextResponse } from 'next/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
+import { db } from '@/db';
+import { users, checkoutSessions } from '@/db/schema';
+import { eq } from 'drizzle-orm';
+import { clerkEnabled } from '@/lib/clerk';
+import { moncashConfigured, createMoncashOrder, usdCentsToHtg } from '@/lib/payments/moncash';
+import { encodeMoncashRef } from '@/lib/payments/moncash-order';
+import { resolveProduct } from '@/lib/payments/products';
+import { parseCheckoutBody } from '@/lib/payments/checkout-body';
+import { hasCourseAccess } from '@/lib/learner/access';
+import { getFxRate } from '@/lib/fx';
+import { rateLimit, ipFromHeaders, RATE_LIMITS } from '@/lib/rate-limit';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+export async function POST(req: NextRequest) {
+  if (!clerkEnabled || !moncashConfigured() || !process.env.DATABASE_URL) {
+    return NextResponse.json({ error: 'not_configured' }, { status: 503 });
+  }
+  if (!rateLimit('checkout', ipFromHeaders(req.headers), RATE_LIMITS.checkout)) {
+    return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
+  }
+  const { userId: clerkId } = await auth();
+  if (!clerkId) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+
+  const body = parseCheckoutBody(await req.json().catch(() => null));
+  if (!body) return NextResponse.json({ error: 'bad_request' }, { status: 400 });
+  if (body.promoCode) return NextResponse.json({ error: 'promo_unsupported' }, { status: 400 });
+
+  const product = await resolveProduct(body);
+  if (!product) return NextResponse.json({ error: 'unknown_product' }, { status: 400 });
+  if (product.productType !== 'course' || !product.courseSlug) {
+    // Subscriptions cannot renew on MonCash — see the file header.
+    return NextResponse.json({ error: 'subscription_unsupported' }, { status: 400 });
+  }
+
+  // Repurchase guard — gated + never-throw, exactly as on the Stripe route.
+  if (await hasCourseAccess(clerkId, product.courseSlug)) {
+    return NextResponse.json({ error: 'already_owned' }, { status: 409 });
+  }
+
+  // Upsert the users row (the Clerk webhook may not have landed yet).
+  let row = (await db.select().from(users).where(eq(users.clerkId, clerkId)).limit(1))[0];
+  if (!row) {
+    const cu = await currentUser();
+    const primary = cu?.emailAddresses?.find((e) => e.id === cu?.primaryEmailAddressId);
+    const email = primary?.emailAddress ?? cu?.emailAddresses?.[0]?.emailAddress;
+    if (!email) return NextResponse.json({ error: 'no_email' }, { status: 400 });
+    row = (
+      await db
+        .insert(users)
+        .values({
+          clerkId,
+          email,
+          name: [cu?.firstName, cu?.lastName].filter(Boolean).join(' ') || null,
+        })
+        .onConflictDoUpdate({ target: users.clerkId, set: { email } })
+        .returning()
+    )[0];
+  }
+
+  const rate = await getFxRate();
+  const amountHtg = usdCentsToHtg(product.amountCents, rate);
+  if (amountHtg <= 0) {
+    console.error('[checkout/moncash] refusing a zero-gourde charge', { rate, cents: product.amountCents });
+    return NextResponse.json({ error: 'bad_amount' }, { status: 400 });
+  }
+
+  // The order row IS the MonCash orderId — both callbacks resolve the buyer,
+  // the course and the USD price from it. `sessionId` carries the locale (see
+  // encodeMoncashRef) because MonCash's callback URLs are fixed and stateless.
+  const order = (
+    await db
+      .insert(checkoutSessions)
+      .values({
+        userId: row.id,
+        productType: 'course',
+        courseSlug: product.courseSlug,
+        amountCents: product.amountCents,
+        sessionId: encodeMoncashRef(body.locale === 'fr' ? 'fr' : 'ht'),
+      })
+      .returning({ id: checkoutSessions.id })
+  )[0];
+
+  const created = await createMoncashOrder({ orderId: order.id, amountHtg });
+  if (!created.ok) {
+    console.error('[checkout/moncash] create failed:', created.message);
+    return NextResponse.json({ error: 'moncash_error' }, { status: 502 });
+  }
+
+  return NextResponse.json({ url: created.redirectUrl, amountHtg, orderId: order.id });
+}

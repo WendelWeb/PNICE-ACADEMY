@@ -161,7 +161,12 @@
       "eyebrow": "Anseye sou PNICE",
       "title": "Ou metrize yon konesans? Aplikasyon yo louvri.",
       "body": "Kreye pwòp fòmasyon w sou platfòm nan. Ou fikse pri w, ou touche 70% sou chak vant, ou mande retrè w depi $25 (MonCash, NatCash, PayPal oswa bank), epi yon admin revize chak kou anvan li parèt an piblik.",
-      "facts": ["70% pou ou", "Ou fikse pri w", "Retrè depi $25", "Revizyon anvan piblikasyon"],
+      "facts": [
+        "70% pou ou",
+        "Ou fikse pri w",
+        "Retrè depi $25",
+        "Revizyon anvan piblikasyon"
+      ],
       "cta": "Kòmanse aplikasyon w",
       "interestCta": "Vin Anseyan",
       "sealTop": "Anseyan",
@@ -398,7 +403,11 @@
     "title": "Ou metrize yon konesans? Anseye l.",
     "subtitle": "Kreye fòmasyon pa w sou PNICE Academy. Ou fikse pri w, ou touche 70% sou chak vant, elèv yo peye an MonCash. Kandidati yo louvri kounye a — soumèt pa w pi ba a.",
     "exampleCta": "Gade yon egzanp paj anseyan",
-    "facts": ["70% pou ou", "Fikse pri w", "Retrè MonCash"],
+    "facts": [
+      "70% pou ou",
+      "Fikse pri w",
+      "Retrè MonCash"
+    ],
     "stepsEyebrow": "Wout anseyan an",
     "stepsTitle": "4 etap, depi konesans ou rive nan lajan w",
     "steps": [
@@ -793,7 +802,9 @@
       "lock": "Peman sekirize",
       "guarantee": "Pa satisfè? Kontakte sipò a — nou ka ede w jwenn yon ranbousman.",
       "accepted": "Nou aksepte"
-    }
+    },
+    "moncashSubscription": "MonCash pa ka fè peman ki repete. Pou yon abònman, sèvi ak yon kat.",
+    "moncashPromo": "Kòd rabè yo pa mache ak MonCash pou kounye a — sèvi ak yon kat."
   },
   "merci": {
     "title": "Mèsi! Peman an resevwa",
@@ -3294,7 +3305,11 @@
         "p": [
           "Senp epi piblik: sou chak vant, 70% ale jwenn anseyan an, 30% rete pou platfòm nan — peman, videyo, sètifika, sipò. Peman yo fèt ak kat (Visa/Mastercard) sou yon koneksyon sekirize; nou pa janm sere nimewo kat ou."
         ],
-        "facts": ["70% pou anseyan an", "30% pou platfòm nan", "Peman sekirize ak kat"]
+        "facts": [
+          "70% pou anseyan an",
+          "30% pou platfòm nan",
+          "Peman sekirize ak kat"
+        ]
       }
     },
     "links": {
@@ -3312,11 +3327,21 @@
     "intro": "Tout repons yo, klase pa tèm. Chak kesyon gen pwòp lyen li — fasil pou pataje.",
     "tocLabel": "Seksyon yo",
     "sections": {
-      "aprann": { "title": "Aprann" },
-      "peye": { "title": "Peye" },
-      "anseye": { "title": "Anseye" },
-      "retre": { "title": "Retrè" },
-      "setifika": { "title": "Sètifika" }
+      "aprann": {
+        "title": "Aprann"
+      },
+      "peye": {
+        "title": "Peye"
+      },
+      "anseye": {
+        "title": "Anseye"
+      },
+      "retre": {
+        "title": "Retrè"
+      },
+      "setifika": {
+        "title": "Sètifika"
+      }
     },
     "items": {
       "kijan-li-mache": {
