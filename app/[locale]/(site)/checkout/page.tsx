@@ -200,6 +200,7 @@ export default async function CheckoutPage({
                   productType={isSub ? 'subscription' : 'course'}
                   courseSlug={course?.slug ?? null}
                   grossCents={Math.round(amountUsd * 100)}
+                  productKind={isSub ? subProduct!.kind : null}
                 />
               )}
             </div>

@@ -20,6 +20,7 @@ import { EditorStepHeading } from '@/components/teacher/studio/EditorStepHeading
 import { MobileStepBar } from '@/components/teacher/studio/MobileStepBar';
 import { QuickActions } from '@/components/teacher/studio/QuickActions';
 import { STEP_ICONS } from '@/components/teacher/studio/steps';
+import { DeleteCourseControl } from '@/components/teacher/studio/DeleteCourseControl';
 import {
   updateMyCourseAction,
   addMyLessonAction,
@@ -39,6 +40,7 @@ import {
   moveMySecondaryImageAction,
   submitMyCourseForReviewAction,
   unpublishMyCourseAction,
+  deleteMyCourseAction,
 } from '@/lib/teacher/studio-actions';
 
 export const dynamic = 'force-dynamic';
@@ -185,7 +187,10 @@ export default async function EditMyCoursePage({
               />
 
               {activeTab === 'infos' && (
-                <CourseEditor course={course} salesCount={salesCount} priciest={null} updateAction={updateMyCourseAction} />
+                <>
+                  <CourseEditor course={course} salesCount={salesCount} priciest={null} updateAction={updateMyCourseAction} />
+                  <DeleteCourseControl slug={course.slug} code={course.code} deleteAction={deleteMyCourseAction} />
+                </>
               )}
               {activeTab === 'plan' && (
                 <LessonsManager

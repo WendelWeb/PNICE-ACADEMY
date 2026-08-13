@@ -636,10 +636,10 @@ export type NewCourseInput = {
   priceCents?: number;
   /**
    * Optional course translation (Task: course-language). Both optional —
-   * every existing call site (admin CMS's `createCourseAction`) that omits
-   * them creates a bilingual, ht-primary course exactly like before this
-   * task. `bilingual: false` requires a real `primaryLocale` (validated,
-   * defaults to 'ht' if omitted) — see `mirrorBilingualFields`.
+   * a call site that omits them creates a bilingual, ht-primary course
+   * exactly like before this task. `bilingual: false` requires a real
+   * `primaryLocale` (validated, defaults to 'ht' if omitted) — see
+   * `mirrorBilingualFields`.
    */
   bilingual?: boolean;
   primaryLocale?: 'ht' | 'fr';

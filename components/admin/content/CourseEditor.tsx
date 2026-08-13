@@ -24,14 +24,16 @@ import {
 } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
 import { buttonClasses } from '@/components/ui/Button';
-import { updateCourseAction } from '@/lib/admin/content-actions';
 import type { AdminCourse, CoursePatch } from '@/lib/courses/write';
 import { CourseIcon } from '@/components/courses/CourseIcon';
 import { Field, BilingualText, PairedList, FaqEditor, inputCls, type FaqItem } from './fields';
 
 type UpdateResult = { ok: boolean; message?: string };
-/** Same shape as `lib/admin/content-actions.ts`'s `updateCourseAction` — the
- *  studio (Task C3-T4) passes its own owner-scoped action here instead. */
+/** The studio (Task C3-T4) passes its own owner-scoped
+ *  `updateMyCourseAction` (lib/teacher/studio-actions.ts) here — this is the
+ *  ONLY course-authoring surface left; there is no admin equivalent to fall
+ *  back to (Stage 1 — admin/studio boundary), so a call site MUST supply
+ *  this explicitly. */
 type UpdateAction = (slug: string, patch: CoursePatch) => Promise<UpdateResult>;
 
 const ICON_KEYS = [
@@ -45,15 +47,15 @@ export function CourseEditor({
   course,
   salesCount,
   priciest,
-  updateAction = updateCourseAction,
+  updateAction,
 }: {
   course: AdminCourse;
   salesCount: number;
   priciest: { code: string; priceCents: number } | null;
-  /** Injected by the teacher studio (Task C3-T4) as the owner-scoped
-   *  `updateMyCourseAction`; defaults to the admin CMS action so every
-   *  existing `/admin/cours/[slug]/editer` call site is unchanged. */
-  updateAction?: UpdateAction;
+  /** REQUIRED — the studio's owner-scoped `updateMyCourseAction` (Task
+   *  C3-T4). No default: an admin editing surface for this no longer exists
+   *  (Stage 1), so there is nothing safe to fall back to. */
+  updateAction: UpdateAction;
 }) {
   const t = useTranslations('admin.cms.editor');
   const router = useRouter();

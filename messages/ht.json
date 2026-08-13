@@ -587,6 +587,17 @@
       "reviewNoteLabel": "Nòt ekip la",
       "pendingReviewNote": "Ekip nou an ap revize l kounye a.",
       "reviewEta": "Revizyon nan 48-72 èdtan an jeneral.",
+      "delete": {
+        "title": "Zòn danje",
+        "explain": "Efase fòmasyon sa a nèt — pa posib toutotan gen yon elèv enskri ladan.",
+        "cta": "Efase fòmasyon an",
+        "warn": "Efase nèt. Tape {code} pou konfime.",
+        "confirm": "Efase nèt",
+        "cancel": "Anile",
+        "hasEnrollments": "{count} elèv enskri — efasman bloke. Depibliye pito.",
+        "codeMismatch": "Kòd la pa koresponn.",
+        "error": "Yon erè rive."
+      },
       "col": {
         "price": "Pri",
         "sales": "Vant",
@@ -2586,6 +2597,7 @@
           "valuePercent": "Pousantaj (1–100)",
           "valueFixed": "Montan an $",
           "appliesTo": "Sa l aplike sou",
+          "appliesToHint": "« Abònman » ak « Tout » aplike sèlman sou Pass PNICE (abònman platfòm nan) — yo pa janm afekte pwòp abònman yon lòt pwofesè. Yon fòmasyon gen yon sèl pwofesè ki posede l : reflechi anvan ou aplike yon rabè sou li, sa redwi revni pa li.",
           "course": "Fòmasyon",
           "maxUses": "Itilizasyon maks",
           "unlimited": "San limit",

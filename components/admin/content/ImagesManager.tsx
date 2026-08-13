@@ -17,12 +17,6 @@ import {
   IconX,
 } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
-import {
-  setMainImageAction,
-  addSecondaryImageAction,
-  removeSecondaryImageAction,
-  moveSecondaryImageAction,
-} from '@/lib/admin/content-actions';
 import type { AdminImage } from '@/lib/courses/write';
 import { IMAGE_SOURCE_MAX_BYTES, deriveAutoAlt, uploadBlobName } from '@/lib/uploads/image-prep';
 import { resizeImageFile } from '@/lib/uploads/resize-client';
@@ -31,20 +25,14 @@ import { Field, inputCls } from './fields';
 
 type ContentResult = { ok: boolean; message?: string; slug?: string; count?: number };
 
-/** Same shape as `lib/admin/content-actions.ts`'s 4 image actions — the
- *  studio (Task C3-T4) injects its own owner-scoped versions here instead. */
+/** The studio (Task C3-T4) injects its own owner-scoped versions here
+ *  (lib/teacher/studio-actions.ts's 4 image actions) — REQUIRED, no default
+ *  (Stage 1: no admin authoring surface exists to fall back to). */
 export type ImageActions = {
   setMain: (slug: string, url: string) => Promise<ContentResult>;
   addSecondary: (slug: string, url: string, alt: string) => Promise<ContentResult>;
   removeSecondary: (slug: string, imageId: string) => Promise<ContentResult>;
   moveSecondary: (slug: string, imageId: string, dir: 'up' | 'down') => Promise<ContentResult>;
-};
-
-const defaultImageActions: ImageActions = {
-  setMain: setMainImageAction,
-  addSecondary: addSecondaryImageAction,
-  removeSecondary: removeSecondaryImageAction,
-  moveSecondary: moveSecondaryImageAction,
 };
 
 /** Same explicit state machine as VideoUpload (idle → preparing → envoi X % →
@@ -84,17 +72,15 @@ export function ImagesManager({
   slug,
   mainImage,
   secondary,
-  actions = defaultImageActions,
+  actions,
   courseTitle = '',
   uploadEnabled = true,
 }: {
   slug: string;
   mainImage: string | null;
   secondary: AdminImage[];
-  /** Injected by the teacher studio (Task C3-T4); defaults to the admin CMS
-   *  actions so every existing `/admin/cours/[slug]/editer` call site is
-   *  unchanged. */
-  actions?: ImageActions;
+  /** REQUIRED — injected by the teacher studio (Task C3-T4). */
+  actions: ImageActions;
   /** Localized course title, used ONLY to auto-derive alt text for uploaded
    *  photos (Stage 3). Optional/additive — a call site that omits it falls
    *  back to the slug. */

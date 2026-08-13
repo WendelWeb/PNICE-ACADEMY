@@ -587,6 +587,17 @@
       "reviewNoteLabel": "Note de l'équipe",
       "pendingReviewNote": "En cours de validation par notre équipe.",
       "reviewEta": "Révision sous 48 à 72 heures en général.",
+      "delete": {
+        "title": "Zone danger",
+        "explain": "Supprime définitivement cette formation — impossible tant qu'un élève y est inscrit.",
+        "cta": "Supprimer la formation",
+        "warn": "Suppression définitive. Tape {code} pour confirmer.",
+        "confirm": "Supprimer définitivement",
+        "cancel": "Annuler",
+        "hasEnrollments": "{count} élève(s) inscrit(s) — suppression bloquée. Dépublie plutôt.",
+        "codeMismatch": "Le code ne correspond pas.",
+        "error": "Une erreur est survenue."
+      },
       "col": {
         "price": "Prix",
         "sales": "Ventes",
@@ -2586,6 +2597,7 @@
           "valuePercent": "Pourcentage (1–100)",
           "valueFixed": "Montant en $",
           "appliesTo": "S'applique à",
+          "appliesToHint": "« Abonnement » et « Tout » ne s'appliquent qu'au Pass PNICE (l'abonnement de la plateforme) — jamais à l'abonnement propre d'un autre professeur. Une formation a un seul professeur propriétaire : réfléchis avant d'y appliquer une réduction, ça réduit ses revenus à lui.",
           "course": "Formation",
           "maxUses": "Utilisations max",
           "unlimited": "Illimité",

@@ -22,10 +22,11 @@
  * REUSE, NOT DUPLICATION: the actual DB writes are `lib/courses/write.ts`'s
  * existing, already-audited functions (`updateCourse`, `addLesson`,
  * `updateLesson`, `deleteLesson`, `reorderLessons`, `setCourseImages`,
- * `submitForReview`, `unpublishCourse`, `getAdminCourse`) — this module only
- * adds the OWNERSHIP check in front of each call (mirrors
- * `lib/admin/content-actions.ts`'s `requireEditor()` → `writeOps.*` shape,
- * substituting a per-course ownership check for the admin-role check).
+ * `submitForReview`, `unpublishCourse`, `deleteCourse`, `getAdminCourse`) —
+ * this module only adds the OWNERSHIP check (`requireOwnedCourse`) in front
+ * of each call. Course authoring lives EXCLUSIVELY here since Stage 1 — the
+ * admin's former, ownership-blind version of this same `writeOps.*` → action
+ * shape (`lib/admin/content-actions.ts`'s `requireEditor()`) is gone.
  * `createCourse` gained an optional `ownerUserIdOverride` third param
  * (Task C3-T4) specifically so `createMyCourseAction` can own the new row
  * as the SIGNED-IN TEACHER instead of the site owner the admin CMS resolves.
@@ -276,6 +277,31 @@ export async function unpublishMyCourseAction(slug: string): Promise<StudioResul
     if (!current) return { ok: false, message: 'not_found' };
     if (current.status !== 'published') return { ok: false, message: 'invalid_status' };
     return await writeOps.unpublishCourse(slug, actor);
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/**
+ * Stage 1 fix (regression): course deletion had no reachable path anywhere
+ * — the admin CMS's `deleteCourseAction` was the only caller of
+ * `writeOps.deleteCourse` and lived behind the orphaned `PublishBar`, which
+ * this stage removes along with it (see lib/admin/content-actions.ts's file
+ * header). This is the real substitute, OWNER-SCOPED like every other
+ * mutation here: `requireOwnedCourse(slug)` first, then
+ * `writeOps.deleteCourse`'s existing, already-correct guards (blocked while
+ * any enrollment exists, and the course's own CODE must be typed back to
+ * confirm — same "type CODE to delete" pattern the old admin bar used).
+ * A teacher who creates a course by mistake, or wants to remove a
+ * zero-enrollment draft, now has a real way to do it — not from admin
+ * (course deletion was never that; it's the owning teacher's call), from
+ * their own studio.
+ */
+export async function deleteMyCourseAction(slug: string, confirmCode: string): Promise<StudioResult> {
+  if (!dbConfigured()) return dbRequired();
+  try {
+    const { actor } = await requireOwnedCourse(slug);
+    return await writeOps.deleteCourse(slug, confirmCode, actor);
   } catch (e) {
     return fail(e);
   }

@@ -6,19 +6,6 @@ import { useTranslations } from 'next-intl';
 import { IconPlus, IconLoader2, IconBooks, IconInfoCircle, IconAlertTriangle } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
 import { beginUploadActivity, endUploadActivity } from '@/components/content/uploadActivity';
-import {
-  addLessonAction,
-  updateLessonAction,
-  deleteLessonAction,
-  moveLessonAction,
-  validateBunnyVideoAction,
-  createVideoUploadAction,
-  createChapterAction,
-  updateChapterAction,
-  deleteChapterAction,
-  reorderChapterAction,
-  moveLessonToChapterAction,
-} from '@/lib/admin/content-actions';
 import type { AdminLesson, AdminChapter } from '@/lib/courses/write';
 import { focusRing } from './shared';
 import { ChapterGroup } from './ChapterGroup';
@@ -27,20 +14,6 @@ import type { LessonActions, LessonUploadInfo, VideoUploadPhase } from './types'
 
 export type { LessonActions } from './types';
 
-const defaultLessonActions: LessonActions = {
-  addLesson: addLessonAction,
-  updateLesson: updateLessonAction,
-  deleteLesson: deleteLessonAction,
-  moveLesson: moveLessonAction,
-  validateBunnyVideo: validateBunnyVideoAction,
-  createUpload: createVideoUploadAction,
-  createChapter: createChapterAction,
-  updateChapter: updateChapterAction,
-  deleteChapter: deleteChapterAction,
-  reorderChapter: reorderChapterAction,
-  moveLessonToChapter: moveLessonToChapterAction,
-};
-
 /**
  * The course PLAN EDITOR (Task K2 — plan de cours complet; split into
  * focused components under Task A2 — course editor UX overhaul, formerly
@@ -48,10 +21,10 @@ const defaultLessonActions: LessonActions = {
  * lessons, plus an "hors chapitre" bucket for lessons with `chapterId ===
  * null`. Exported as `LessonsManager` from the sibling `../LessonsManager.tsx`
  * shim (Task A2 constraint: keep the existing exported entry point name/props
- * so BOTH existing call sites — the admin CMS's `/admin/cours/[slug]/editer`
- * and the teacher studio's `/enseigner/studio/cours/[slug]/editer` — need no
- * import-path or prop changes, only their own already-injected `actions`
- * object.
+ * for the teacher studio's `/enseigner/studio/cours/[slug]/editer` — the
+ * ONLY call site since Stage 1 (the admin no longer authors course
+ * content) — needing no import-path or prop changes, only its own
+ * already-injected `actions` object.
  *
  * BACKWARD COMPATIBLE BY CONSTRUCTION: a course with zero chapters has every
  * lesson's `chapterId === null` (see db/schema.ts's file header), so it
@@ -73,7 +46,7 @@ export function PlanEditor({
   bilingual = true,
   primaryLocale = 'ht',
   uploadEnabled = true,
-  actions = defaultLessonActions,
+  actions,
 }: {
   slug: string;
   lessons: AdminLesson[];
@@ -99,10 +72,10 @@ export function PlanEditor({
    * dropzone, and a runtime `not_configured` answer still degrades calmly).
    */
   uploadEnabled?: boolean;
-  /** Injected by the teacher studio (Task C3-T4 / K2); defaults to the admin
-   *  CMS actions so every existing `/admin/cours/[slug]/editer` call site is
-   *  unchanged. */
-  actions?: LessonActions;
+  /** REQUIRED — injected by the teacher studio (Task C3-T4 / K2). No
+   *  default: authoring lives only in the studio now (Stage 1), so there is
+   *  no admin fallback to reach for. */
+  actions: LessonActions;
 }) {
   const t = useTranslations('admin.cms.lessons');
   const router = useRouter();

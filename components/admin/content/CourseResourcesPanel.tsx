@@ -6,7 +6,6 @@ import { useTranslations } from 'next-intl';
 import { IconDeviceFloppy, IconLoader2, IconLink, IconArrowRight } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
 import { buttonClasses } from '@/components/ui/Button';
-import { updateCourseAction } from '@/lib/admin/content-actions';
 import type { CoursePatch } from '@/lib/courses/write';
 import type { CourseResource } from '@/db/schema';
 import { ResourcesEditor } from '@/components/content/ResourcesEditor';
@@ -14,7 +13,9 @@ import { MONO_LOCALE_NAME } from './fields';
 
 type UpdateResult = { ok: boolean; message?: string };
 /** Same shape as `CourseEditor`'s injected `updateAction` — the studio
- *  (Task C3-T4) passes its own owner-scoped action here instead. */
+ *  (Task C3-T4) passes its own owner-scoped `updateMyCourseAction` here.
+ *  REQUIRED, no default (Stage 1 — no admin authoring surface exists to
+ *  fall back to). */
 type UpdateAction = (slug: string, patch: CoursePatch) => Promise<UpdateResult>;
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
@@ -33,17 +34,15 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 export function CourseResourcesPanel({
   slug,
   resources,
-  updateAction = updateCourseAction,
+  updateAction,
   bilingual = true,
   primaryLocale = 'ht',
   uploadEnabled = true,
 }: {
   slug: string;
   resources: CourseResource[];
-  /** Injected by the teacher studio (Task C3-T4) as the owner-scoped
-   *  `updateMyCourseAction`; defaults to the admin CMS action so every
-   *  existing `/admin/cours/[slug]/editer` call site is unchanged. */
-  updateAction?: UpdateAction;
+  /** REQUIRED — the studio's owner-scoped `updateMyCourseAction`. */
+  updateAction: UpdateAction;
   /** The course's optional-translation setting (Stage 4 — resources were the
    *  last bilingual exception): monolingual renders ONE 'Tit lyen an' input
    *  per row, the server mirrors the other side on save. Additive defaults

@@ -17,6 +17,7 @@ import {
   updateMyCourseAction,
   submitMyCourseForReviewAction,
   unpublishMyCourseAction,
+  deleteMyCourseAction,
   addMyLessonAction,
   updateMyLessonAction,
   deleteMyLessonAction,
@@ -60,6 +61,11 @@ describe('lib/teacher/studio-actions.ts — env gate (no DATABASE_URL, never rea
   it('unpublishMyCourseAction returns db_required', async () => {
     delete process.env.DATABASE_URL;
     expect(await unpublishMyCourseAction('slug')).toEqual({ ok: false, message: 'db_required' });
+  });
+
+  it('deleteMyCourseAction returns db_required', async () => {
+    delete process.env.DATABASE_URL;
+    expect(await deleteMyCourseAction('slug', 'PA-01')).toEqual({ ok: false, message: 'db_required' });
   });
 
   it('every lesson action returns db_required', async () => {

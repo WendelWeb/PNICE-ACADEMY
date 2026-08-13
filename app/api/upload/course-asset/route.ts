@@ -19,14 +19,19 @@
  * ('unsupported_type', 'too_large', 'content_mismatch', …). No throw, no
  * 500 leak, no technical detail for the UI to accidentally show a teacher.
  *
- * AUTHORIZATION — the same dual gate as autonomous video upload
- * (lib/admin/content-actions.ts `createVideoUploadAction` = admin arm,
- * lib/teacher/studio-actions.ts `createMyVideoUploadAction` = teacher arm):
- * the caller must EITHER hold the admin `courses.edit` capability OR be an
- * APPROVED teacher who OWNS the course `slug` points at
- * (`courses.owner_user_id` equals their internal users.id). A teacher can
- * only ever land files under a course they own; only after the gate passes
- * do we touch Bunny at all.
+ * AUTHORIZATION — Stage 1 fix (admin/studio boundary): this used to be a
+ * DUAL gate, admin-`courses.edit` OR teacher-ownership, mirroring autonomous
+ * video upload's old admin arm (lib/admin/content-actions.ts
+ * `createVideoUploadAction`, deleted alongside the rest of that file's
+ * course-authoring surface). The admin arm asked for a Clerk *role*, never a
+ * course *owner* — any `courses.edit` holder (admin, super-admin,
+ * editeur-contenu) could land a file under ANY teacher's course, no
+ * ownership check, no UI even required (a route handler needs none). With
+ * course authoring retired to the studio, there is no legitimate remaining
+ * caller for that arm, so it's gone: the ONLY gate now is the same one
+ * `lib/teacher/studio-actions.ts` uses everywhere — an APPROVED teacher who
+ * OWNS the course `slug` points at (`courses.owner_user_id` equals their
+ * internal users.id). Only after that passes do we touch Bunny at all.
  *
  * VALIDATION is server-side and content-based: declared MIME + size + magic
  * bytes, all factored into the pure `validateCourseAsset`
@@ -40,15 +45,13 @@
  * documented there.
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { auth, clerkClient } from '@clerk/nextjs/server';
+import { auth } from '@clerk/nextjs/server';
 import { eq } from 'drizzle-orm';
 import { db, schema } from '@/db';
 import { clerkEnabled } from '@/lib/clerk';
 import { dbConfigured } from '@/lib/courses/source';
 import { resolveUserId } from '@/lib/learner/access';
 import { getTeacherProfile, isApprovedTeacher } from '@/lib/teacher/profile';
-import { resolveAdminRole } from '@/lib/admin/access';
-import { can } from '@/lib/admin/permissions';
 import { recordAudit } from '@/lib/admin/data/real/users';
 import type { AdminActor } from '@/lib/admin/data/types';
 import { bunnyStorageConfigured, uploadToBunnyStorage } from '@/lib/bunny/storage';
@@ -76,26 +79,11 @@ function respond(body: UploadResponse) {
 type Gate = { ok: true; actor: AdminActor; targetUserId: string } | { ok: false; message: string };
 
 /**
- * The dual gate (see file header). Admin arm first — it needs no DB, so an
- * admin can upload even before DATABASE_URL exists (mirrors
- * `createVideoUploadAction`, whose whole gate is `requireEditor`). Any
- * Clerk lookup failure falls through to the teacher arm rather than
- * erroring — the stricter, DB-backed ownership check.
+ * The ownership gate (see file header) — same shape as
+ * `lib/teacher/studio-actions.ts`'s `requireOwnedCourse`: approved teacher
+ * AND the course's `owner_user_id` must equal their own `users.id`.
  */
 async function authorizeUpload(clerkId: string, slug: string): Promise<Gate> {
-  try {
-    const client = await clerkClient();
-    const user = await client.users.getUser(clerkId);
-    const role = resolveAdminRole(user);
-    if (role && can(role, 'courses.edit')) {
-      const name =
-        [user.firstName, user.lastName].filter(Boolean).join(' ') || user.emailAddresses[0]?.emailAddress || clerkId;
-      return { ok: true, actor: { id: clerkId, name }, targetUserId: clerkId };
-    }
-  } catch {
-    /* not an admin (or Clerk hiccup) — try the teacher-ownership arm */
-  }
-
   if (!dbConfigured()) return { ok: false, message: 'db_required' };
   const userId = await resolveUserId(clerkId);
   if (!userId) return { ok: false, message: 'unauthorized' };

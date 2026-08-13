@@ -2,11 +2,11 @@
  * lib/bunny/organize.ts — the single place that turns "a teacher picked a
  * file for lesson X" into a fully-organized Bunny upload: the AUTHORITATIVE
  * structured video title (lib/bunny/naming.ts) plus the course's Bunny
- * Collection id (lib/bunny/collections.ts), resolved server-side so neither
- * studio nor admin upload actions duplicate this logic (see
- * lib/teacher/studio-actions.ts's `createMyVideoUploadAction` / lib/admin/
- * content-actions.ts's `createVideoUploadAction`, both of which call
- * `planOrganizedUpload` AFTER their own ownership/capability gate).
+ * Collection id (lib/bunny/collections.ts), resolved server-side so the
+ * studio's upload action doesn't duplicate this logic (see
+ * lib/teacher/studio-actions.ts's `createMyVideoUploadAction`, the only
+ * remaining caller since Stage 1 — it calls `planOrganizedUpload` AFTER its
+ * own ownership gate).
  *
  * BEST-EFFORT, end to end: this function NEVER throws. Any failure —
  * course/lesson not found, DB read error, Bunny collection create/verify

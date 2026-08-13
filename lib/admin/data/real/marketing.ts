@@ -60,6 +60,7 @@ import { getCourseMap } from '@/lib/courses/source';
 import type { Course } from '@/data/courses';
 import { SUBSCRIPTION_USD } from '@/data/pricing';
 import { recordAudit } from './users';
+import { promoScopeOk } from '../promo-scope';
 import type {
   AbandonedCartRow,
   AdminActor,
@@ -302,12 +303,31 @@ export async function deletePromoCode(p: { id: string; admin: AdminActor }): Pro
   return { ok: true };
 }
 
-/** PUBLIC / no side effect — gates real discounts once checkout wires it. */
+/**
+ * PUBLIC / no side effect — gates real discounts at checkout.
+ *
+ * SCOPE, and the marketplace-boundary fix this carries (Stage 1): a promo
+ * the platform creates must never unilaterally discount a THIRD-PARTY
+ * teacher's own money without their consent. `appliesTo: 'subscription'` and
+ * `'all'` therefore only ever match the platform's OWN "Pass PNICE"
+ * (`p.productKind === 'platform'`) — never a named teacher's own
+ * subscription plan (`'teacher'`), even though both are `productType:
+ * 'subscription'`. `'course'` still requires an EXACT slug match (the old
+ * `!promo.courseSlug` "any course" fallback is gone — every course belongs
+ * to some teacher now, so a blanket course-wide promo would have the exact
+ * same problem; the admin UI has never produced a null `courseSlug` for a
+ * `'course'` promo, this closes the same hole for a hand-crafted row).
+ * A real per-teacher opt-in/consent flow (a schema change, tracked
+ * separately) is the follow-up for course- and teacher-plan-scoped
+ * discounts; until then this is the safe default: the platform can only
+ * ever discount its own product.
+ */
 export async function validatePromo(p: {
   code: string;
   productType: ProductType;
   courseSlug: string | null;
   grossCents: number;
+  productKind: 'teacher' | 'platform' | null;
 }): Promise<PromoValidation> {
   const code = p.code.trim();
   const [row] = await db
@@ -323,10 +343,7 @@ export async function validatePromo(p: {
   if (status === 'scheduled') return { valid: false, reason: 'scheduled', code: promo.code };
   if (status === 'expired') return { valid: false, reason: 'expired', code: promo.code };
   if (status === 'depleted') return { valid: false, reason: 'depleted', code: promo.code };
-  const scopeOk =
-    promo.appliesTo === 'all' ||
-    (promo.appliesTo === 'subscription' && p.productType === 'subscription') ||
-    (promo.appliesTo === 'course' && p.productType === 'course' && (!promo.courseSlug || promo.courseSlug === p.courseSlug));
+  const scopeOk = promoScopeOk(promo, { productType: p.productType, courseSlug: p.courseSlug, productKind: p.productKind });
   if (!scopeOk) return { valid: false, reason: 'wrong_product', code: promo.code };
   const discountCents = promoDiscount(promo, p.grossCents);
   return {

@@ -1131,6 +1131,20 @@ export interface AdminDataSource {
     productType: ProductType;
     courseSlug: string | null;
     grossCents: number;
+    /**
+     * Stage 1 fix (marketplace-boundary finding — a platform-created promo
+     * had no idea whether it was about to discount the platform's OWN "Pass
+     * PNICE" or a NAMED teacher's own subscription plan, and applied
+     * `appliesTo: 'subscription' | 'all'` to either without distinction —
+     * unilaterally cutting into a third-party teacher's earnings with no
+     * consent). `null` for a course purchase (courses carry no `kind`);
+     * `'platform'` for the platform-wide pass; `'teacher'` for a named
+     * teacher's own plan — see lib/payments/products.ts's `ResolvedProduct`.
+     * `'subscription'`/`'all'`-scoped promos only ever match `'platform'`
+     * now; a real per-teacher opt-in/consent flow (schema change) is the
+     * follow-up for course- and teacher-plan-scoped discounts.
+     */
+    productKind: 'teacher' | 'platform' | null;
   }): Promise<PromoValidation>;
   redeemPromo(p: {
     code: string;

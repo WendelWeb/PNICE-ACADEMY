@@ -195,10 +195,9 @@ export function VideoUpload({
    *  each path's origin (automatic upload vs manual paste) stays legible at
    *  the call site. */
   onManualIdCommit: (guid: string) => void;
-  /** Injected by the caller — studio vs admin CMS pass their own
-   *  ownership/capability-gated server action (createMyVideoUploadAction /
-   *  createVideoUploadAction) here. Never call Bunny directly from this
-   *  component. */
+  /** Injected by the caller — the studio passes its own ownership-gated
+   *  server action (createMyVideoUploadAction) here. Never call Bunny
+   *  directly from this component. */
   createUpload: (title: string) => Promise<BunnyUploadResult>;
   /** Same shape as `LessonActions.validateBunnyVideo` — moved in here from
    *  the row that used to render this control (Task A2). */

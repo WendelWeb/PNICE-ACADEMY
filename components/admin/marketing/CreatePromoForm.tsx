@@ -169,6 +169,11 @@ export function CreatePromoForm({ courses }: { courses: { slug: string; title: s
           </label>
         )}
       </div>
+      {/* Stage 1 fix — say plainly what these two options actually touch
+          (money-truth: the same ethos that made the MonCash-outage copy
+          honest applies here). See lib/admin/data/real/marketing.ts's
+          `validatePromo` doc comment for the enforcement itself. */}
+      <p className="text-[11px] leading-snug text-graphite/60">{t('create.appliesToHint')}</p>
 
       {/* limits */}
       <div className="grid gap-3 sm:grid-cols-2">

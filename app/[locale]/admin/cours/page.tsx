@@ -23,6 +23,7 @@ import { Forbidden } from '@/components/admin/Forbidden';
 import { Link } from '@/i18n/routing';
 import { cn } from '@/lib/cn';
 import { CourseReviewActions } from '@/components/admin/content/CourseReviewActions';
+import { CourseUnpublishAction } from '@/components/admin/content/CourseUnpublishAction';
 
 export const dynamic = 'force-dynamic';
 
@@ -285,6 +286,7 @@ export default async function CoursesPage({
                       {canUseStudio && signedInUserId && c.ownerUserId === signedInUserId && (
                         <EditInStudioAction slug={c.slug} />
                       )}
+                      {canReview && c.status === 'published' && <CourseUnpublishAction slug={c.slug} />}
                     </div>
                   </td>
                 </tr>

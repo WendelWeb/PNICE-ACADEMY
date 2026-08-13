@@ -20,10 +20,15 @@ export function PromoCodeField({
   productType,
   courseSlug,
   grossCents,
+  productKind,
 }: {
   productType: ProductType;
   courseSlug: string | null;
   grossCents: number;
+  /** 'platform' | 'teacher' for a subscription purchase, `null` for a course
+   *  — see lib/admin/data/types.ts's `validatePromo` doc comment for why a
+   *  named teacher's own plan can never be promo-discounted this way. */
+  productKind: 'teacher' | 'platform' | null;
 }) {
   const t = useTranslations('checkout.promo');
   const [pending, start] = useTransition();
@@ -33,7 +38,7 @@ export function PromoCodeField({
 
   const apply = () =>
     start(async () => {
-      const r = await validatePromoAction({ code: code.trim(), productType, courseSlug, grossCents });
+      const r = await validatePromoAction({ code: code.trim(), productType, courseSlug, grossCents, productKind });
       setResult(r);
       promo?.setApplied(
         r.valid

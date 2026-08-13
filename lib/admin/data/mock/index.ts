@@ -91,6 +91,7 @@ import type {
   SupportSettings,
 } from '../types';
 import { getMockDataset, type MockDataset } from './dataset';
+import { promoScopeOk } from '../promo-scope';
 
 const DAY = 86_400_000;
 const PAGE_SIZE = 25;
@@ -1772,11 +1773,13 @@ async function deletePromoCode(p: { id: string; admin: AdminActor }): Promise<{ 
   return { ok: true };
 }
 
+/** Same scope rule as the real implementation (lib/admin/data/real/marketing.ts) — see that function's doc comment. */
 async function validatePromo(p: {
   code: string;
   productType: ProductType;
   courseSlug: string | null;
   grossCents: number;
+  productKind: 'teacher' | 'platform' | null;
 }): Promise<PromoValidation> {
   const ds = getMockDataset();
   const now = Date.parse(ds.referenceNow);
@@ -1788,10 +1791,7 @@ async function validatePromo(p: {
   if (status === 'scheduled') return { valid: false, reason: 'scheduled', code: c.code };
   if (status === 'expired') return { valid: false, reason: 'expired', code: c.code };
   if (status === 'depleted') return { valid: false, reason: 'depleted', code: c.code };
-  const scopeOk =
-    c.appliesTo === 'all' ||
-    (c.appliesTo === 'subscription' && p.productType === 'subscription') ||
-    (c.appliesTo === 'course' && p.productType === 'course' && (!c.courseSlug || c.courseSlug === p.courseSlug));
+  const scopeOk = promoScopeOk(c, { productType: p.productType, courseSlug: p.courseSlug, productKind: p.productKind });
   if (!scopeOk) return { valid: false, reason: 'wrong_product', code: c.code };
   const discountCents = promoDiscount(c, p.grossCents);
   return {

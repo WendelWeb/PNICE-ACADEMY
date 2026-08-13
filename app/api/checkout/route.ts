@@ -102,6 +102,11 @@ export async function POST(req: NextRequest) {
       productType: product.productType,
       courseSlug: product.courseSlug,
       grossCents: product.amountCents,
+      // Stage 1 fix — see lib/admin/data/types.ts's `validatePromo` doc
+      // comment: this is the SERVER-AUTHORITATIVE resolution (never trusts
+      // anything the client sent), so a promo can never be tricked into
+      // discounting a named teacher's own subscription plan.
+      productKind: product.kind,
     });
     const applied = applyPromo(product.amountCents, validation);
     if (!applied.ok) {

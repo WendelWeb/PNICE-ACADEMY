@@ -120,6 +120,7 @@ export async function validatePromoAction(p: {
   productType: ProductType;
   courseSlug: string | null;
   grossCents: number;
+  productKind: 'teacher' | 'platform' | null;
 }): Promise<PromoValidation> {
   return validatePromo(p);
 }

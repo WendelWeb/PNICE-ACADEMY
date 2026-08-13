@@ -4,9 +4,9 @@
  * Course-review queue server actions (Task C3-T3, the "À valider" tab on
  * `/admin/cours`). Thin auth+wiring layer over `lib/courses/write.ts`'s
  * `approveCourse`/`rejectCourse` — mirrors `lib/admin/content-actions.ts`'s
- * `requireEditor` pattern, but gated on the moderation capability
- * (`teachers.review`) instead of `courses.edit`: the CMS editor's direct
- * publish/unpublish stays owner-only, this queue is the ADMIN review step.
+ * `requireModerator` pattern (same `teachers.review` capability): this queue
+ * is the platform's real moderation step; course authoring itself lives only
+ * in the teacher studio (Stage 1 — admin/studio boundary).
  */
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { resolveAdminRole } from '@/lib/admin/access';
