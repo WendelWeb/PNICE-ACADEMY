@@ -133,6 +133,11 @@ export function PaymentMethods({
         setErrorMsg(t('moncashSubscription'));
       } else if (data.error === 'promo_unsupported') {
         setErrorMsg(t('moncashPromo'));
+      } else if (data.error === 'amount_too_large') {
+        // MonCash refuses anything above its own wallet limit — say so
+        // plainly and point at the rail that still works, same tone as
+        // moncashSubscription/moncashPromo above.
+        setErrorMsg(t('moncashAmountTooLarge'));
       } else {
         setErrorMsg(t('payErr'));
       }

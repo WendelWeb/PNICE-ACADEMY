@@ -5,6 +5,7 @@ import {
   moncashProviderId,
   createMoncashOrder,
   retrieveMoncashOrder,
+  retrieveMoncashOrderFrom,
   resetMoncashTokenCache,
 } from '@/lib/payments/moncash';
 import { isBazikPaid, bazikMode, tokenExpiryMs } from '@/lib/payments/moncash/bazik';
@@ -12,6 +13,7 @@ import {
   encodeMoncashRef,
   decodeMoncashLocale,
   decodeMoncashProviderRef,
+  decodeMoncashProviderId,
   isMoncashRef,
 } from '@/lib/payments/moncash-order';
 
@@ -248,6 +250,83 @@ describe('checkout-row reference encoding', () => {
   it('reads a Stripe session id as neither MonCash nor a provider ref', () => {
     expect(decodeMoncashProviderRef('cs_test_a1b2c3')).toBeNull();
     expect(decodeMoncashLocale('cs_test_a1b2c3')).toBe('ht');
+  });
+
+  it('round-trips locale, provider id AND reference (three-part shape)', () => {
+    const ref = encodeMoncashRef('fr', 'BZK_sandbox_abc_123', 'bazik');
+    expect(decodeMoncashLocale(ref)).toBe('fr');
+    expect(decodeMoncashProviderRef(ref)).toBe('BZK_sandbox_abc_123');
+    expect(decodeMoncashProviderId(ref)).toBe('bazik');
+  });
+
+  it('providerId reads null for rows that never recorded one (both shapes, and the ref-less shape)', () => {
+    expect(decodeMoncashProviderId(encodeMoncashRef('ht'))).toBeNull();
+    expect(decodeMoncashProviderId(encodeMoncashRef('ht', 'our-order-id'))).toBeNull();
+    expect(decodeMoncashProviderId('cs_test_a1b2c3')).toBeNull();
+  });
+
+  it('a legacy two-part row still gives the whole remainder as the ref, not mistaking it for a provider id', () => {
+    // A providerRef that happens to start with "direct" or "bazik" would be a
+    // pathological Digicel order id — not realistic (those are UUIDs), but
+    // pin the rule anyway: only the reserved two tokens are ever read as ids.
+    const ref = encodeMoncashRef('ht', 'directish-order-id');
+    expect(decodeMoncashProviderId(ref)).toBeNull();
+    expect(decodeMoncashProviderRef(ref)).toBe('directish-order-id');
+  });
+});
+
+describe('retrieveMoncashOrderFrom — verifies through the SAME provider that created the order', () => {
+  it('with no providerId (legacy row), falls back to the env-driven pick', async () => {
+    withBazik();
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+      if (String(url) === 'https://api.bazik.io/token') {
+        return new Response(JSON.stringify({ access_token: 'AT', expires_in: 86400, user_id: 'u' }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      return new Response(JSON.stringify({ success: true, data: { status: 'successful', gdes: 100 } }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    });
+    const r = await retrieveMoncashOrderFrom(null, 'BZK_sandbox_x');
+    expect(r.ok).toBe(true);
+  });
+
+  it('asks the order-creating provider even when the OTHER one is now the env default', async () => {
+    // Both configured — `direct` would win as the env-driven default — but
+    // this order was created through `bazik`, so verification must go there.
+    withDirect();
+    withBazik();
+    const calls: string[] = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+      calls.push(String(url));
+      if (String(url) === 'https://api.bazik.io/token') {
+        return new Response(JSON.stringify({ access_token: 'AT', expires_in: 86400, user_id: 'u' }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      return new Response(JSON.stringify({ success: true, data: { status: 'successful', gdes: 100 } }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    });
+    const r = await retrieveMoncashOrderFrom('bazik', 'BZK_sandbox_x');
+    expect(r.ok).toBe(true);
+    expect(calls.some((u) => u.includes('api.bazik.io'))).toBe(true);
+    expect(calls.some((u) => u.includes('digicelgroup'))).toBe(false);
+  });
+
+  it('refuses rather than silently asking the OTHER provider when the order-creating one is gone', async () => {
+    // Only `bazik` configured now; the order was created through `direct`
+    // (credentials since removed/rotated away). Must NOT fall back to bazik.
+    withBazik();
+    const spy = vi.spyOn(globalThis, 'fetch');
+    const r = await retrieveMoncashOrderFrom('direct', 'our-order-id');
+    expect(r).toEqual({ ok: false, message: 'order_provider_unavailable' });
+    expect(spy).not.toHaveBeenCalled();
   });
 });
 

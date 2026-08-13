@@ -16,7 +16,8 @@
 import { db } from '@/db';
 import { checkoutSessions, webhookLogs } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { retrieveMoncashOrder, moncashConfigured } from './moncash';
+import { retrieveMoncashOrderFrom, moncashConfigured } from './moncash';
+import type { MoncashProviderId } from './moncash';
 import { fulfillMoncashOrder } from './moncash-fulfill';
 
 /**
@@ -48,13 +49,23 @@ async function logMoncashFailure(orderId: string, eventType: string, message: st
 const REF_PREFIX = 'moncash:';
 
 /**
- * `checkout_sessions.sessionId` carries two things a MonCash order needs and
- * has nowhere else to put, encoded as `moncash:<locale>[:<providerRef>]`:
+ * `checkout_sessions.sessionId` carries three things a MonCash order needs
+ * and has nowhere else to put, encoded as
+ * `moncash:<locale>[:<providerId>:<providerRef>]`:
  *
  *   1. THE BUYER'S LANGUAGE. Digicel's callback URLs are configured once, in
  *      their portal, so they arrive with no per-order state — yet the receipt
  *      and the thank-you redirect must be in the right language.
- *   2. THE PROVIDER'S OWN REFERENCE. Digicel looks a payment up by the id WE
+ *   2. WHICH PROVIDER CREATED THE ORDER. Verification must ask the SAME
+ *      company back — asking the other one for a reference it never minted
+ *      reads as "not found" even though the buyer really paid. Without this,
+ *      a MonCash order created while `direct` was the effective provider
+ *      could stop verifying if `bazik` becomes the default before the buyer
+ *      confirms (env change, credential rotation) — see
+ *      `retrieveMoncashOrderFrom`'s header for the full story. Omitted when
+ *      unknown (a row from before this field existed): the caller falls back
+ *      to the OLD env-driven pick, same as before this fix.
+ *   3. THE PROVIDER'S OWN REFERENCE. Digicel looks a payment up by the id WE
  *      chose, but Bazik mints its own (`BZK_sandbox_…`) and only answers to
  *      that. Without persisting it, a Bazik payment could never be verified.
  *
@@ -63,15 +74,32 @@ const REF_PREFIX = 'moncash:';
  * at all. The Stripe checkout route filters these rows out of its
  * pending-session guard by this same prefix — a value starting with
  * `moncash:` is never a Stripe session id.
+ *
+ * BACKWARD COMPATIBLE with the two earlier shapes this same encoding used:
+ * `moncash:<locale>` (no ref at all) and `moncash:<locale>:<providerRef>`
+ * (ref but no providerId, from before `retrieveMoncashOrderFrom` existed) —
+ * `decodeMoncashProviderRef`/`decodeMoncashProviderId` below read all three.
  */
-export function encodeMoncashRef(locale: 'ht' | 'fr', providerRef?: string | null): string {
-  return providerRef ? `${REF_PREFIX}${locale}:${providerRef}` : `${REF_PREFIX}${locale}`;
+export function encodeMoncashRef(
+  locale: 'ht' | 'fr',
+  providerRef?: string | null,
+  providerId?: MoncashProviderId | null,
+): string {
+  if (!providerRef) return `${REF_PREFIX}${locale}`;
+  return providerId
+    ? `${REF_PREFIX}${locale}:${providerId}:${providerRef}`
+    : `${REF_PREFIX}${locale}:${providerRef}`;
 }
 
 /** Pure — the locale out of an encoded ref; anything unexpected reads as 'ht'. */
 export function decodeMoncashLocale(ref: string | null | undefined): 'ht' | 'fr' {
   if (typeof ref !== 'string' || !ref.startsWith(REF_PREFIX)) return 'ht';
   return ref.slice(REF_PREFIX.length).split(':')[0] === 'fr' ? 'fr' : 'ht';
+}
+
+/** True for the exact tokens `encodeMoncashRef` can put in the providerId slot. */
+function isProviderId(value: string): value is MoncashProviderId {
+  return value === 'direct' || value === 'bazik';
 }
 
 /**
@@ -82,10 +110,32 @@ export function decodeMoncashLocale(ref: string | null | undefined): 'ht' | 'fr'
 export function decodeMoncashProviderRef(ref: string | null | undefined): string | null {
   if (typeof ref !== 'string' || !ref.startsWith(REF_PREFIX)) return null;
   const rest = ref.slice(REF_PREFIX.length);
-  const sep = rest.indexOf(':');
-  if (sep === -1) return null;
-  const providerRef = rest.slice(sep + 1).trim();
-  return providerRef || null;
+  const localeSep = rest.indexOf(':');
+  if (localeSep === -1) return null; // "<locale>" only — no ref at all
+  const afterLocale = rest.slice(localeSep + 1); // "<providerRef>" or "<providerId>:<providerRef>"
+  const idSep = afterLocale.indexOf(':');
+  if (idSep !== -1 && isProviderId(afterLocale.slice(0, idSep))) {
+    return afterLocale.slice(idSep + 1).trim() || null;
+  }
+  return afterLocale.trim() || null; // legacy two-part row — no providerId segment
+}
+
+/**
+ * Pure — which provider created this order, or null when the row predates
+ * that being recorded (every row from before this fix, and any row with no
+ * providerRef at all). `settleMoncashOrder` treats null as "use the old
+ * env-driven pick" via `retrieveMoncashOrderFrom`.
+ */
+export function decodeMoncashProviderId(ref: string | null | undefined): MoncashProviderId | null {
+  if (typeof ref !== 'string' || !ref.startsWith(REF_PREFIX)) return null;
+  const rest = ref.slice(REF_PREFIX.length);
+  const localeSep = rest.indexOf(':');
+  if (localeSep === -1) return null;
+  const afterLocale = rest.slice(localeSep + 1);
+  const idSep = afterLocale.indexOf(':');
+  if (idSep === -1) return null;
+  const maybeId = afterLocale.slice(0, idSep);
+  return isProviderId(maybeId) ? maybeId : null;
 }
 
 /** True when this checkout row was started through MonCash rather than Stripe. */
@@ -132,8 +182,11 @@ export async function settleMoncashOrder(orderId: string): Promise<SettleResult>
     // our own order id, but Bazik only answers to the `BZK_…` id it minted, so
     // assuming our id here would make every Bazik payment unverifiable.
     const providerRef = decodeMoncashProviderRef(row.sessionId) ?? orderId;
+    // Ask the SAME provider that created the order, not whichever one the
+    // current env resolves to — see `retrieveMoncashOrderFrom`'s header.
+    const providerId = decodeMoncashProviderId(row.sessionId);
 
-    const remote = await retrieveMoncashOrder(providerRef);
+    const remote = await retrieveMoncashOrderFrom(providerId, providerRef);
     if (!remote.ok) {
       console.error('[moncash/order] retrieval failed:', remote.message);
       await logMoncashFailure(orderId, 'order.retrieve', remote.message);

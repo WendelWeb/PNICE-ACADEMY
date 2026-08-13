@@ -824,7 +824,8 @@
     "moncashDeclined": "Le paiement n’est pas passé. Tu peux réessayer.",
     "moncashTimeout": "Nous n’avons pas reçu ta réponse. Si tu as confirmé le paiement, ton accès s’ouvrira tout seul — vérifie ton tableau de bord dans quelques minutes.",
     "moncashTestNotice": "MODE TEST — MonCash est en simulation. Le paiement n’est pas réel : aucune gourde ne quittera ton compte. Réservé aux tests.",
-    "moncashDown": "MonCash ne répond pas en ce moment — le problème vient de Digicel. Réessaie dans quelques minutes, ou paie par carte."
+    "moncashDown": "MonCash ne répond pas en ce moment — le problème vient de Digicel. Réessaie dans quelques minutes, ou paie par carte.",
+    "moncashAmountTooLarge": "Ce montant dépasse la limite MonCash (75 000 HTG). Pour cet achat, paie par carte."
   },
   "merci": {
     "title": "Merci ! Paiement reçu",

@@ -824,7 +824,8 @@
     "moncashDeclined": "Peman an pa pase. Ou ka eseye ankò.",
     "moncashTimeout": "Nou pa jwenn repons ou. Si w konfime peman an, aksè w ap louvri poukont li — tcheke tablodbò w nan kèk minit.",
     "moncashTestNotice": "MODE TÈS — MonCash nan mòd similasyon. Peman an pa reyèl: okenn goud p ap kite kont ou. Se pou tès sèlman.",
-    "moncashDown": "MonCash pa reponn kounye a — se yon pwoblèm bò kote Digicel. Eseye ankò nan kèk minit, oswa peye ak yon kat."
+    "moncashDown": "MonCash pa reponn kounye a — se yon pwoblèm bò kote Digicel. Eseye ankò nan kèk minit, oswa peye ak yon kat.",
+    "moncashAmountTooLarge": "Montan sa a depase limit MonCash la (75 000 HTG). Pou acha sa a, peye ak yon kat."
   },
   "merci": {
     "title": "Mèsi! Peman an resevwa",

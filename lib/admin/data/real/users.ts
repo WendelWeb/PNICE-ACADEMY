@@ -11,6 +11,7 @@
  */
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { db, schema } from '@/db';
+import { paymentsSelectSafe, PAYMENTS_COLUMNS_PRE_0019 } from '@/db/payments-compat';
 import { getCourseMap } from '@/lib/courses/source';
 import { SUBSCRIPTION_USD } from '@/data/pricing';
 import type {
@@ -54,7 +55,10 @@ type DbProgress = typeof T.progress.$inferSelect;
 async function loadAll() {
   const [u, p, s, e, pr, cl, courseBySlug] = await Promise.all([
     db.select().from(T.users),
-    db.select().from(T.payments),
+    paymentsSelectSafe(
+      () => db.select().from(T.payments),
+      () => db.select(PAYMENTS_COLUMNS_PRE_0019).from(T.payments),
+    ),
     db.select().from(T.subscriptions),
     db.select().from(T.enrollments),
     db.select().from(T.progress),
@@ -433,7 +437,10 @@ export async function grantSubscription(p: { userId: string; admin: AdminActor }
  * refunding an already-refunded payment — can't double-credit.
  */
 export async function refundPayment(p: { userId: string; paymentId: string; admin: AdminActor; note?: string }): Promise<void> {
-  const [pay] = await db.select().from(T.payments).where(eq(T.payments.id, p.paymentId)).limit(1);
+  const [pay] = await paymentsSelectSafe(
+    () => db.select().from(T.payments).where(eq(T.payments.id, p.paymentId)).limit(1),
+    () => db.select(PAYMENTS_COLUMNS_PRE_0019).from(T.payments).where(eq(T.payments.id, p.paymentId)).limit(1),
+  );
   if (pay && pay.status === 'completed') {
     await db.update(T.payments).set({ status: 'refunded' }).where(eq(T.payments.id, p.paymentId));
     await db.insert(T.creditLedger).values({ userId: p.userId, amountCents: pay.amountCents, reason: 'refund', relatedId: p.paymentId });

@@ -61,6 +61,7 @@
  * this never throws.
  */
 import { db, schema } from '@/db';
+import { paymentsSelectSafe, PAYMENTS_COLUMNS_PRE_0019 } from '@/db/payments-compat';
 import { getCourseMap } from '@/lib/courses/source';
 import type {
   AnalyticsData,
@@ -109,7 +110,10 @@ function isActivity(p: DbProgress): boolean {
 async function loadAll() {
   const [u, p, s, e, pr, cert, courseBySlug] = await Promise.all([
     db.select().from(T.users),
-    db.select().from(T.payments),
+    paymentsSelectSafe(
+      () => db.select().from(T.payments),
+      () => db.select(PAYMENTS_COLUMNS_PRE_0019).from(T.payments),
+    ),
     db.select().from(T.subscriptions),
     db.select().from(T.enrollments),
     db.select().from(T.progress),

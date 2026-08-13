@@ -30,6 +30,10 @@ const dbState = vi.hoisted(() => ({
   insertReturningQueue: [] as AnyRow[][],
   updates: [] as { set: AnyRow }[],
   inserts: [] as { values: AnyRow }[],
+  /** When >0, the NEXT `.returning()` call throws a missing-column-shaped
+   *  error instead of resolving — simulates a live DB that still lags
+   *  migration 0019, one throw per queued insert. */
+  throwMissingColumnTimes: 0,
 }));
 
 vi.mock('@/db', async () => {
@@ -69,8 +73,18 @@ vi.mock('@/db', async () => {
     };
     b.onConflictDoNothing = () => b;
     b.onConflictDoUpdate = () => b;
-    b.returning = () =>
-      Promise.resolve(dbState.insertReturningQueue.length > 0 ? dbState.insertReturningQueue.shift() : []);
+    b.returning = () => {
+      // Simulates Postgres's 42703 undefined_column, the exact shape
+      // db/index.ts's real `isMissingColumnError` unwraps — a live DB that
+      // still lags migration 0019 (payments.amount_htg).
+      if (dbState.throwMissingColumnTimes > 0) {
+        dbState.throwMissingColumnTimes--;
+        const err = new Error('undefined_column') as Error & { cause?: unknown };
+        err.cause = { code: '42703' };
+        return Promise.reject(err);
+      }
+      return Promise.resolve(dbState.insertReturningQueue.length > 0 ? dbState.insertReturningQueue.shift() : []);
+    };
     b.then = (onF: (v: unknown) => unknown, onR?: (e: unknown) => unknown) =>
       Promise.resolve([]).then(onF, onR);
     return b;
@@ -82,7 +96,11 @@ vi.mock('@/db', async () => {
       insert: () => makeInsert(),
     },
     schema,
-    isMissingColumnError: () => false,
+    // Mirrors db/index.ts's real implementation exactly.
+    isMissingColumnError: (err: unknown) => {
+      const cause = (err as { cause?: { code?: unknown } } | undefined)?.cause;
+      return typeof cause === 'object' && cause !== null && (cause as { code?: unknown }).code === '42703';
+    },
   };
 });
 
@@ -135,6 +153,7 @@ beforeEach(() => {
   dbState.insertReturningQueue = [];
   dbState.updates = [];
   dbState.inserts = [];
+  dbState.throwMissingColumnTimes = 0;
   emailState.configured = true;
   emailState.sendCalls = [];
   receiptState.calls = [];
@@ -183,6 +202,23 @@ describe('fulfillMoncashOrder — persists the REAL gourdes charged (Stage 2 mon
     await fulfillMoncashOrder({ ...BASE_INPUT, amountHtg: 0 });
     const paymentInsert = dbState.inserts.find((i) => 'amountHtg' in i.values);
     expect(paymentInsert!.values.amountHtg).toBeNull();
+  });
+
+  it('a live DB still lagging migration 0019 does not lose the sale — retries without amount_htg', async () => {
+    queueNewSaleSelects();
+    dbState.throwMissingColumnTimes = 1;
+    const outcome = await fulfillMoncashOrder({ ...BASE_INPUT, amountHtg: 264 });
+    // The sale itself must still go through — access granted, ledger booked —
+    // even though the exact gourde figure couldn't be persisted this time.
+    expect(outcome).toBe('processed');
+    const moncashInserts = dbState.inserts.filter((i) => i.values.provider === 'moncash');
+    // Two attempts: the first (with amount_htg) fails, the retry (without it)
+    // is the one that actually lands.
+    expect(moncashInserts).toHaveLength(2);
+    expect(moncashInserts[0].values).toHaveProperty('amountHtg');
+    const landed = moncashInserts[1];
+    expect(landed.values).not.toHaveProperty('amountHtg');
+    expect(landed.values).toMatchObject({ provider: 'moncash', amountCents: 200, currency: 'usd' });
   });
 
   it('never overwrites/re-derives amountHtg on the self-heal ("already recorded") path', async () => {

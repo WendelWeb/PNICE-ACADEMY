@@ -109,6 +109,40 @@ export async function retrieveMoncashOrder(
   return provider.checkOrder(providerRef);
 }
 
+/**
+ * Asks a SPECIFIC provider whether `providerRef` was paid, instead of
+ * whichever one `activeMoncashProvider()` resolves to right now.
+ *
+ * WHY THIS EXISTS: `checkout_sessions` persists which provider actually
+ * created an order (see `encodeMoncashRef`'s `providerId` argument). Digicel
+ * and Bazik mint incompatible reference formats and neither recognises the
+ * other's — so if the env-driven default (`MONCASH_PROVIDER` unset,
+ * credentials added/rotated) changes between order-creation and settlement,
+ * verifying through `retrieveMoncashOrder`'s fresh `activeMoncashProvider()`
+ * would ask the WRONG company about a real, paid order and get back "not
+ * found" for it. This asks the one that actually minted the reference.
+ *
+ * `providerId: null` is the legacy path — an order row encoded before this
+ * function existed, which never recorded which provider created it. There is
+ * no way to recover that after the fact, so this falls back to the old
+ * env-driven behaviour (`retrieveMoncashOrder`), same as before this fix.
+ */
+export async function retrieveMoncashOrderFrom(
+  providerId: MoncashProviderId | null,
+  providerRef: string,
+): Promise<MoncashPayment | MoncashFailure> {
+  if (!providerId) return retrieveMoncashOrder(providerRef);
+  const provider = PROVIDERS.find((p) => p.id === providerId);
+  if (!provider || !provider.configured()) {
+    // Never silently ask the OTHER provider — same rule as
+    // `pickMoncashProvider`. The order was created through `providerId`; if
+    // that one is gone, the honest answer is "can't verify", not a
+    // false-negative from asking a company that never saw this payment.
+    return { ok: false, message: 'order_provider_unavailable' };
+  }
+  return provider.checkOrder(providerRef);
+}
+
 /* ---------------------- direct-provider specifics ------------------------ */
 /* Re-exported because the admin diagnostic page and the existing unit tests
  * reason about Digicel's own hosts and redirect URLs. Nothing in the checkout

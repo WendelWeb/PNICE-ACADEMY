@@ -18,6 +18,7 @@
  */
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { db, schema, isMissingColumnError } from '@/db';
+import { paymentsSelectSafe, PAYMENTS_COLUMNS_PRE_0019 } from '@/db/payments-compat';
 import { clerkEnabled } from '@/lib/clerk';
 import { getAllCourses } from '@/lib/courses/source';
 import { getPlatformPassPriceCents } from '@/lib/platformPrice';
@@ -310,11 +311,20 @@ export async function getMyAccountData(clerkId: string): Promise<MyAccountData> 
 
     const [subscriptions, paymentRows, certRows, ticketRows, courses] = await Promise.all([
       buildMySubscriptions(userId),
-      db
-        .select()
-        .from(T.payments)
-        .where(eq(T.payments.userId, userId))
-        .orderBy(desc(T.payments.createdAt)),
+      paymentsSelectSafe(
+        () =>
+          db
+            .select()
+            .from(T.payments)
+            .where(eq(T.payments.userId, userId))
+            .orderBy(desc(T.payments.createdAt)),
+        () =>
+          db
+            .select(PAYMENTS_COLUMNS_PRE_0019)
+            .from(T.payments)
+            .where(eq(T.payments.userId, userId))
+            .orderBy(desc(T.payments.createdAt)),
+      ),
       db
         .select()
         .from(T.certificates)

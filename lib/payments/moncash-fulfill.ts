@@ -40,7 +40,7 @@
  * appears where it matters to the buyer: on MonCash's own confirmation and on
  * the "(~X HTG)" line of the receipt.
  */
-import { db } from '@/db';
+import { db, isMissingColumnError } from '@/db';
 import { payments, users } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { ensureCourseEnrollment } from './fulfill';
@@ -50,6 +50,48 @@ import { sendEmail, emailConfigured } from '@/lib/email/resend';
 import { buildReceiptHtml } from '@/lib/email/templates';
 import { getCourseBySlug } from '@/lib/courses/source';
 import { getFxRate } from '@/lib/fx';
+
+type NewMoncashPaymentRow = {
+  userId: string;
+  provider: 'moncash';
+  providerRef: string;
+  amountCents: number;
+  currency: 'usd';
+  amountHtg: number | null;
+  status: 'completed';
+  productType: 'course';
+  courseSlug: string;
+};
+
+/**
+ * Inserts the `payments` row, tolerating a live DB that still lags migration
+ * 0019 (`payments.amount_htg` — db/migrations/0019_moncash_amount_htg.sql).
+ * Same idiom as lib/payments/fulfill.ts's `insertSubscriptionRow`
+ * (protecting db/migrations/0015's `subscriptions.kind` the same way):
+ * MONEY-CRITICAL, unlike a read — this is the platform's only live
+ * real-money rail, and without this fallback a missing column would make
+ * EVERY MonCash sale fail right here, after the buyer's gourdes already
+ * left their wallet, with no payment row / enrollment / earnings ever
+ * recorded (the outer try/catch in `fulfillMoncashOrder` would just log and
+ * return 'error' — silent data loss, not a visible failure). On a
+ * missing-column failure, retries the identical insert without `amountHtg`
+ * so the sale still records/grants access/emails a receipt; the exact
+ * gourde figure is lost for that one row (the receipt falls back to a
+ * live-FX-rate estimate, same as any pre-migration MonCash row) but nothing
+ * else is.
+ */
+async function insertMoncashPayment(values: NewMoncashPaymentRow): Promise<{ id: string }[]> {
+  try {
+    return await db.insert(payments).values(values).onConflictDoNothing().returning({ id: payments.id });
+  } catch (err) {
+    if (!isMissingColumnError(err)) throw err;
+    console.warn(
+      '[moncash/fulfill] payments insert fell back to pre-migration columns (no amount_htg) — run `npm run db:push`.',
+    );
+    const { amountHtg: _amountHtg, ...rest } = values;
+    return await db.insert(payments).values(rest).onConflictDoNothing().returning({ id: payments.id });
+  }
+}
 
 export type MoncashFulfilInput = {
   /** OUR reference — the checkout_sessions row id we passed to MonCash. */
@@ -102,30 +144,26 @@ export async function fulfillMoncashOrder(
     }
 
     const inserted = (
-      await db
-        .insert(payments)
-        .values({
-          userId: input.userDbId,
-          provider: 'moncash',
-          providerRef: input.orderId,
-          // USD cents, NOT the gourdes charged — see the file header. Every
-          // admin revenue figure sums this column blind to `currency`.
-          amountCents: input.usdCentsEquivalent,
-          currency: 'usd',
-          // The gourdes MonCash actually took, frozen here so the receipt
-          // never has to re-derive it from a live FX rate later (a rate the
-          // admin can and does change — see the file header's "corrupted the
-          // books" story for what trusting a live re-derivation costs). Only
-          // stored when the provider actually disclosed a positive amount —
-          // `remote.amountHtg` can be null/0 on a delivery that didn't carry
-          // it, and 0 is not a real gourde figure to freeze as history.
-          amountHtg: input.amountHtg > 0 ? Math.round(input.amountHtg) : null,
-          status: 'completed',
-          productType: 'course',
-          courseSlug: input.courseSlug,
-        })
-        .onConflictDoNothing()
-        .returning({ id: payments.id })
+      await insertMoncashPayment({
+        userId: input.userDbId,
+        provider: 'moncash',
+        providerRef: input.orderId,
+        // USD cents, NOT the gourdes charged — see the file header. Every
+        // admin revenue figure sums this column blind to `currency`.
+        amountCents: input.usdCentsEquivalent,
+        currency: 'usd',
+        // The gourdes MonCash actually took, frozen here so the receipt
+        // never has to re-derive it from a live FX rate later (a rate the
+        // admin can and does change — see the file header's "corrupted the
+        // books" story for what trusting a live re-derivation costs). Only
+        // stored when the provider actually disclosed a positive amount —
+        // `remote.amountHtg` can be null/0 on a delivery that didn't carry
+        // it, and 0 is not a real gourde figure to freeze as history.
+        amountHtg: input.amountHtg > 0 ? Math.round(input.amountHtg) : null,
+        status: 'completed',
+        productType: 'course',
+        courseSlug: input.courseSlug,
+      })
     )[0];
 
     // A concurrent delivery won the race between our SELECT and this INSERT.

@@ -23,7 +23,7 @@ import { db } from '@/db';
 import { users, checkoutSessions } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { clerkEnabled } from '@/lib/clerk';
-import { moncashConfigured, createMoncashOrder, usdCentsToHtg } from '@/lib/payments/moncash';
+import { moncashConfigured, createMoncashOrder, usdCentsToHtg, MONCASH_MAX_HTG } from '@/lib/payments/moncash';
 import { encodeMoncashRef } from '@/lib/payments/moncash-order';
 import { resolveProduct } from '@/lib/payments/products';
 import { parseCheckoutBody } from '@/lib/payments/checkout-body';
@@ -95,6 +95,15 @@ export async function POST(req: NextRequest) {
     console.error('[checkout/moncash] refusing a zero-gourde charge', { rate, cents: product.amountCents });
     return NextResponse.json({ error: 'bad_amount' }, { status: 400 });
   }
+  // MonCash refuses anything above MONCASH_MAX_HTG in one transaction (a
+  // limit of the underlying wallet, not of any one integrator — see that
+  // constant's own doc comment). Checked here, before the network call, so
+  // an over-limit cart fails with a reason the buyer can act on (pay by
+  // card instead) rather than a generic provider error.
+  if (amountHtg > MONCASH_MAX_HTG) {
+    console.error('[checkout/moncash] refusing a charge above the MonCash limit', { amountHtg, rate });
+    return NextResponse.json({ error: 'amount_too_large' }, { status: 400 });
+  }
 
   // The order row IS the MonCash orderId — both callbacks resolve the buyer,
   // the course and the USD price from it. `sessionId` carries the locale (see
@@ -141,12 +150,17 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Persist the PROVIDER's reference. For Digicel it is our own order id, but
-  // Bazik mints its own and only answers to that — without this, a Bazik
-  // payment could never be verified and the buyer would never get access.
+  // Persist the PROVIDER's reference AND which provider minted it. For
+  // Digicel the ref is our own order id, but Bazik mints its own and only
+  // answers to that — without the ref, a Bazik payment could never be
+  // verified. Without the provider id, settlement would re-resolve the
+  // provider from whatever the env says is active AT VERIFICATION TIME
+  // instead of the one that actually created this order — see
+  // retrieveMoncashOrderFrom's header for why that can silently break a
+  // real, paid order if the default changes in between.
   await db
     .update(checkoutSessions)
-    .set({ sessionId: encodeMoncashRef(locale, created.providerRef) })
+    .set({ sessionId: encodeMoncashRef(locale, created.providerRef, created.provider) })
     .where(eq(checkoutSessions.id, order.id));
 
   return NextResponse.json({ url: created.redirectUrl, amountHtg, orderId: order.id });

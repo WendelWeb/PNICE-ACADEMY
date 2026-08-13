@@ -81,6 +81,7 @@
  */
 import { and, eq } from 'drizzle-orm';
 import { db, schema } from '@/db';
+import { paymentsSelectSafe, PAYMENTS_COLUMNS_PRE_0019 } from '@/db/payments-compat';
 import { SUBSCRIPTION_USD } from '@/data/pricing';
 import { recordAudit } from './users';
 import type {
@@ -218,7 +219,10 @@ export async function getTicketById(id: string): Promise<TicketDetail | null> {
 
   let payment: AdminPayment | null = null;
   if (t.relatedPaymentId) {
-    const [p] = await db.select().from(T.payments).where(eq(T.payments.id, t.relatedPaymentId)).limit(1);
+    const [p] = await paymentsSelectSafe(
+      () => db.select().from(T.payments).where(eq(T.payments.id, t.relatedPaymentId!)).limit(1),
+      () => db.select(PAYMENTS_COLUMNS_PRE_0019).from(T.payments).where(eq(T.payments.id, t.relatedPaymentId!)).limit(1),
+    );
     if (p) {
       payment = {
         id: p.id,

@@ -58,6 +58,7 @@
  * an empty dataset — never throws.
  */
 import { db, schema } from '@/db';
+import { paymentsSelectSafe, PAYMENTS_COLUMNS_PRE_0019 } from '@/db/payments-compat';
 import { SUBSCRIPTION_USD } from '@/data/pricing';
 import type {
   CohortRow,
@@ -104,7 +105,10 @@ async function loadAll() {
   const [subs, users, payments] = await Promise.all([
     db.select().from(T.subscriptions),
     db.select().from(T.users),
-    db.select().from(T.payments),
+    paymentsSelectSafe(
+      () => db.select().from(T.payments),
+      () => db.select(PAYMENTS_COLUMNS_PRE_0019).from(T.payments),
+    ),
   ]);
   return { subs, users, payments };
 }

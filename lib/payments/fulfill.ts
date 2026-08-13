@@ -4,6 +4,7 @@
  * checkout.session.completed + invoice.paid can describe the same charge.
  */
 import { db, isMissingColumnError } from '@/db';
+import { paymentsSelectSafe, PAYMENTS_COLUMNS_PRE_0019 } from '@/db/payments-compat';
 import {
   payments,
   enrollments,
@@ -761,12 +762,22 @@ async function sendRefundConfirmationEmail(
 
 async function fulfillChargeRefunded(a: ChargeRefunded): Promise<'processed' | 'ignored'> {
   if (!a.paymentIntentId) return 'ignored';
+  const paymentIntentId = a.paymentIntentId;
   const payment = (
-    await db
-      .select()
-      .from(payments)
-      .where(and(eq(payments.provider, 'stripe'), eq(payments.providerRef, a.paymentIntentId)))
-      .limit(1)
+    await paymentsSelectSafe(
+      () =>
+        db
+          .select()
+          .from(payments)
+          .where(and(eq(payments.provider, 'stripe'), eq(payments.providerRef, paymentIntentId)))
+          .limit(1),
+      () =>
+        db
+          .select(PAYMENTS_COLUMNS_PRE_0019)
+          .from(payments)
+          .where(and(eq(payments.provider, 'stripe'), eq(payments.providerRef, paymentIntentId)))
+          .limit(1),
+    )
   )[0];
   if (!payment) return 'ignored'; // refund of a charge we never recorded
   if (payment.status === 'refunded') return 'processed'; // already fully refunded — nothing left any branch below could do

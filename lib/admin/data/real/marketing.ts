@@ -56,6 +56,7 @@
  */
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import { db, schema } from '@/db';
+import { paymentsSelectSafe, PAYMENTS_COLUMNS_PRE_0019 } from '@/db/payments-compat';
 import { getCourseMap } from '@/lib/courses/source';
 import type { Course } from '@/data/courses';
 import { SUBSCRIPTION_USD } from '@/data/pricing';
@@ -201,7 +202,10 @@ export async function getPromoDetail(codeOrId: string): Promise<PromoDetail | nu
   const [redemptions, users, payments] = await Promise.all([
     db.select().from(T.promoRedemptions).where(eq(T.promoRedemptions.promoCodeId, promo.id)),
     db.select().from(T.users),
-    db.select().from(T.payments),
+    paymentsSelectSafe(
+      () => db.select().from(T.payments),
+      () => db.select(PAYMENTS_COLUMNS_PRE_0019).from(T.payments),
+    ),
   ]);
   const userById = new Map(users.map((u) => [u.id, u]));
   const paymentById = new Map(payments.map((p) => [p.id, p]));
@@ -392,7 +396,10 @@ export async function redeemPromo(p: { code: string; userId: string; admin: Admi
 export async function getUtmAttribution(query: UtmQuery): Promise<UtmRow[]> {
   const [acqRows, payments, subs] = await Promise.all([
     db.select().from(T.userAcquisition),
-    db.select().from(T.payments),
+    paymentsSelectSafe(
+      () => db.select().from(T.payments),
+      () => db.select(PAYMENTS_COLUMNS_PRE_0019).from(T.payments),
+    ),
     db.select().from(T.subscriptions),
   ]);
   const inRange = (isoStr: string) =>
@@ -506,8 +513,11 @@ export async function getCartStats(): Promise<CartStats> {
 const RECENT_ATTEMPTS_LIMIT = 25;
 
 // Same encoding lib/payments/moncash-order.ts's `encodeMoncashRef` writes
-// (`moncash:<locale>[:<providerRef>]`) — deliberately duplicated as a tiny
-// PURE string check rather than imported: that module pulls in
+// (`moncash:<locale>[:<providerRef>]`, or `moncash:<locale>:<providerId>:
+// <providerRef>` once a provider id is known — this check only cares whether
+// SOMETHING follows the locale, so either shape reads the same here) —
+// deliberately duplicated as a tiny PURE string check rather than imported:
+// that module pulls in
 // `fulfillMoncashOrder` → lib/teacher/earnings.ts → lib/teacher/profile.ts →
 // `@clerk/nextjs/server` ('server-only'), and this admin-data barrel is
 // reachable from a CLIENT component (components/reviews/RatingWidget.tsx →

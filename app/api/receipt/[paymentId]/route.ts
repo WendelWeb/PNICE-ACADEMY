@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { eq } from 'drizzle-orm';
 import { db, schema } from '@/db';
+import { paymentsSelectSafe, PAYMENTS_COLUMNS_PRE_0019 } from '@/db/payments-compat';
 import { clerkEnabled } from '@/lib/clerk';
 import { resolveUserId } from '@/lib/learner/access';
 import { getCourseBySlug } from '@/lib/courses/source';
@@ -40,11 +41,10 @@ export async function GET(req: NextRequest, { params }: { params: { paymentId: s
     const userId = await resolveUserId(clerkId);
     if (!userId) return new NextResponse('Not found', { status: 404 });
 
-    const [payment] = await db
-      .select()
-      .from(T.payments)
-      .where(eq(T.payments.id, paymentId))
-      .limit(1);
+    const [payment] = await paymentsSelectSafe(
+      () => db.select().from(T.payments).where(eq(T.payments.id, paymentId)).limit(1),
+      () => db.select(PAYMENTS_COLUMNS_PRE_0019).from(T.payments).where(eq(T.payments.id, paymentId)).limit(1),
+    );
     // Owner-only: a foreign payment behaves exactly like a missing one.
     if (!payment || payment.userId !== userId) return new NextResponse('Not found', { status: 404 });
     if (payment.status !== 'completed' && payment.status !== 'refunded') {

@@ -54,6 +54,7 @@
  *     zeroed shape, never throws.
  */
 import { db, schema } from '@/db';
+import { paymentsSelectSafe, PAYMENTS_COLUMNS_PRE_0019 } from '@/db/payments-compat';
 import { getAllCourses } from '@/lib/courses/source';
 import type { Course } from '@/data/courses';
 import type { CourseDetail, CourseSalesRow, LessonFunnel } from '../types';
@@ -69,7 +70,10 @@ async function loadBase() {
   const [enrolls, prog, payments, certs] = await Promise.all([
     db.select().from(T.enrollments),
     db.select().from(T.progress),
-    db.select().from(T.payments),
+    paymentsSelectSafe(
+      () => db.select().from(T.payments),
+      () => db.select(PAYMENTS_COLUMNS_PRE_0019).from(T.payments),
+    ),
     db.select().from(T.certificates),
   ]);
   return { enrolls, prog, payments, certs };
