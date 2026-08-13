@@ -16,8 +16,9 @@ export default async function AdminOverviewPage({
   setRequestLocale(locale);
   const t = await getTranslations('admin.overview');
   const k = await getKpiOverview();
-  // Task fix/fx-rate-unify: show HTG at the live admin-set rate, not the
-  // env-default fallback fmtHtgFromCents would otherwise use.
+  // The live admin-set rate. `fmtHtgFromCents` requires it — there is no
+  // env-default to fall back on, precisely so no screen can quietly show
+  // gourdes at a different rate than /admin/parametres does.
   const rate = await getFxRate();
 
   const period = {

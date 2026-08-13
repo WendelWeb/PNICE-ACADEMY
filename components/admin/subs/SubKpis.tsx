@@ -4,7 +4,10 @@ import { cn } from '@/lib/cn';
 import { fmtUsdCents, fmtHtgFromCents, fmtPct, fmtInt } from '@/lib/admin/format';
 import type { SubKpis as SubKpisData } from '@/lib/admin/data';
 
-export async function SubKpis({ data, rate }: { data: SubKpisData; rate?: number }) {
+/** `rate` is the live USD→HTG rate (lib/fx.ts's `getFxRate`), REQUIRED: an
+ *  optional rate here meant this panel could silently convert at the
+ *  build-time env constant while the rest of the admin used the DB one. */
+export async function SubKpis({ data, rate }: { data: SubKpisData; rate: number }) {
   const t = await getTranslations('admin.subs.kpi');
   const up = data.mrrChangeCents >= 0;
 

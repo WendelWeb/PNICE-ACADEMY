@@ -4,8 +4,8 @@
  * THREE previously disconnected FX sources —
  *   - lib/admin/settings.ts's in-memory `fxRate` (admin-only, reset on
  *     restart, not shared across serverless instances, never persisted),
- *   - lib/money.ts's build-time `USD_TO_HTG` env constant (what the public
- *     price display actually used),
+ *   - lib/money.ts's build-time env constant (what the public price display
+ *     actually used; now `FX_FALLBACK_HTG`, and ONLY a fallback — see below),
  *   - this DB column, which existed but was never read/written for FX —
  * with one: every reader (public price display via
  * components/ui/FxRateProvider.tsx, the admin FX panel, receipts) reads
@@ -15,7 +15,7 @@
  * GATED + NEVER-THROW, mirroring lib/teacher/profile.ts's `getCommissionPct`
  * exactly: no DATABASE_URL, no settings row, an invalid/non-positive stored
  * value, or a failed query ⇒ fall back to the env constant
- * (lib/money.ts's `USD_TO_HTG`) — never throws. This is what keeps dev/
+ * (lib/money.ts's `FX_FALLBACK_HTG`) — never throws. This is what keeps dev/
  * build/mock working with no live DB: public pages still show a HTG price,
  * just not the admin-editable one.
  *
@@ -26,7 +26,7 @@
 import { eq } from 'drizzle-orm';
 import { db, schema } from '@/db';
 import { dbConfigured } from '@/lib/courses/source';
-import { USD_TO_HTG } from '@/lib/money';
+import { FX_FALLBACK_HTG } from '@/lib/money';
 import { SUBSCRIPTION_USD } from '@/data/pricing';
 
 const T = schema;
@@ -35,11 +35,11 @@ const SUB_CENTS = SUBSCRIPTION_USD * 100;
 /**
  * The live USD→HTG display rate (`platform_settings.fx_rate_htg`). GATED +
  * FALLBACK: no DATABASE_URL, no settings row, a non-positive/invalid stored
- * value, or a failed query ⇒ the env constant (lib/money.ts's `USD_TO_HTG`),
+ * value, or a failed query ⇒ the env constant (lib/money.ts's `FX_FALLBACK_HTG`),
  * never throws.
  */
 export async function getFxRate(): Promise<number> {
-  if (!dbConfigured()) return USD_TO_HTG;
+  if (!dbConfigured()) return FX_FALLBACK_HTG;
   try {
     const [row] = await db
       .select()
@@ -47,10 +47,10 @@ export async function getFxRate(): Promise<number> {
       .where(eq(T.platformSettings.id, 'singleton'))
       .limit(1);
     const stored = row?.fxRateHtg;
-    return typeof stored === 'number' && Number.isFinite(stored) && stored > 0 ? stored : USD_TO_HTG;
+    return typeof stored === 'number' && Number.isFinite(stored) && stored > 0 ? stored : FX_FALLBACK_HTG;
   } catch (err) {
     console.error('[fx] getFxRate DB read failed, falling back to env default:', err);
-    return USD_TO_HTG;
+    return FX_FALLBACK_HTG;
   }
 }
 

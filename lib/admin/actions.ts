@@ -226,7 +226,7 @@ export async function resendReceiptAction(userId: string, paymentId: string): Pr
     const pay = detail?.payments.find((p) => p.id === paymentId);
     if (!detail || !pay) return { ok: false, message: 'not_found' };
     if (detail.user.email) {
-      const locale = detail.user.language === 'fr' ? 'fr' : 'ht';
+      const locale: 'fr' | 'ht' = detail.user.language === 'fr' ? 'fr' : 'ht';
       const course = pay.courseSlug ? await getCourseBySlug(pay.courseSlug) : undefined;
       const itemName = course
         ? locale === 'fr'
@@ -237,17 +237,22 @@ export async function resendReceiptAction(userId: string, paymentId: string): Pr
       // frozen on the row (payments.amount_htg) — show that verbatim rather
       // than re-deriving a figure from whatever FX rate is live today. Only
       // Stripe rows (and MonCash rows predating that column) fall back to
-      // the live-rate estimate.
-      const receipt = buildReceiptHtml({
+      // the live-rate estimate. The two branches are spelled out because
+      // `buildReceiptHtml` now takes one OR the other, never both-optional:
+      // a receipt is either a real charge or an estimate, and "neither" used
+      // to silently mean "estimate at the build-time env constant".
+      const base = {
         locale,
         name: detail.user.name,
         itemName,
         amountCents: pay.amountCents,
         dateIso: pay.createdAt,
         ref: pay.id,
-        htgExact: pay.amountHtg,
-        rateHtg: pay.amountHtg === undefined ? await getFxRate() : undefined,
-      });
+      };
+      const receipt =
+        typeof pay.amountHtg === 'number' && pay.amountHtg > 0
+          ? buildReceiptHtml({ ...base, htgExact: pay.amountHtg })
+          : buildReceiptHtml({ ...base, rateHtg: await getFxRate() });
       await sendEmail({ to: detail.user.email, subject: receipt.subject, html: receipt.html, text: receipt.text });
     }
     await recordAudit({ action: 'resend_receipt', userId, admin: actor, detail: paymentId });

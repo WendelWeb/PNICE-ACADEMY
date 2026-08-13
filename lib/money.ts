@@ -1,28 +1,48 @@
 /**
- * Currency helpers. A single rate constant drives every gourdes amount shown
- * on the site — update USD_TO_HTG (placeholder) with the live rate before launch.
+ * Currency helpers — ONE USD→HTG rule for the whole app.
+ *
+ * `toHtgAt` is that rule, and it is EXACT: round to the nearest gourde, at
+ * the rate the caller hands in. `lib/payments/moncash/types.ts`'s
+ * `usdCentsToHtg` — the arithmetic that builds the REAL MonCash charge —
+ * delegates here, so what a page advertises and what the buyer's wallet is
+ * debited can no longer be two different numbers.
+ *
+ * WHY THIS CHANGED: this function used to round to the nearest 50 HTG. A $2
+ * course therefore advertised "~250 HTG" and then charged 270 — the same
+ * price, converted twice, two different ways. The "this is only an estimate"
+ * signal now lives where it belongs: in the "≈"/"~" prefix that BROWSING
+ * surfaces put in front of the figure (the USD price is the real price; the
+ * gourde equivalent moves with the rate). The checkout page drops that
+ * prefix and shows the exact debit, because at that point it is a commitment.
+ *
+ * The rate itself always comes from lib/fx.ts's `getFxRate()` — the
+ * admin-editable `platform_settings.fx_rate_htg`. Every function here takes
+ * it as a REQUIRED argument on purpose: there is no default, so a caller
+ * that forgot to fetch the live rate fails to compile instead of quietly
+ * printing a stale one.
  */
-// Configurable via env (set NEXT_PUBLIC_USD_TO_HTG and update manually for the
-// MVP). Falls back to a placeholder. Leaves the door open for a live FX API
-// later without touching call sites.
-export const USD_TO_HTG = Number(process.env.NEXT_PUBLIC_USD_TO_HTG) || 132;
 
 /**
- * Convert a USD amount to gourdes at an explicit rate, rounded to the
- * nearest 50 HTG. The rate normally comes from lib/fx.ts's `getFxRate()`
- * (the DB-backed admin-editable rate) — this stays a pure, sync helper so
- * both server and client display code can share the same rounding rule.
+ * LAST-RESORT fallback rate — used ONLY where there is no database to read
+ * the admin-set rate from (lib/fx.ts's `getFxRate`, which falls back to this
+ * when `DATABASE_URL` is absent or the settings row is missing).
+ *
+ * It is NOT a display source. Nothing renders a price from this constant
+ * directly, and no conversion helper defaults to it: when the DB says 135
+ * and this env var still says 132, the app must show 135 everywhere or
+ * nothing at all — never a silent mix of the two, which is exactly the
+ * incoherence this constant used to cause as a default parameter value.
+ */
+export const FX_FALLBACK_HTG = Number(process.env.NEXT_PUBLIC_USD_TO_HTG) || 132;
+
+/**
+ * Convert a USD amount to gourdes at an explicit rate, rounded to the nearest
+ * whole gourde. Pure and sync so server and client display code share the one
+ * rule. Non-finite / non-positive inputs give 0 rather than NaN.
  */
 export function toHtgAt(usd: number, rateHtg: number): number {
-  return Math.round((usd * rateHtg) / 50) * 50;
-}
-
-/** Convert a USD amount to gourdes at the env-default rate, rounded to the
- *  nearest 50 HTG. Kept for backward-compat and as the fallback path when
- *  no live rate is available (see lib/fx.ts) — prefer `toHtgAt` wherever a
- *  live rate is in hand. */
-export function toHtg(usd: number): number {
-  return toHtgAt(usd, USD_TO_HTG);
+  if (!Number.isFinite(usd) || !Number.isFinite(rateHtg) || usd <= 0 || rateHtg <= 0) return 0;
+  return Math.round(usd * rateHtg);
 }
 
 export function formatUsd(usd: number): string {
@@ -33,16 +53,10 @@ export function formatHtg(htg: number): string {
   return `${htg.toLocaleString('fr-FR')} HTG`;
 }
 
-/** "≈ 10 450 HTG" style label derived from a USD amount, at an explicit rate. */
+/** "10 665 HTG" derived from a USD amount at an explicit rate. Callers that
+ *  are BROWSING (not committing) prefix it with "≈"/"~" themselves. */
 export function htgLabelAt(usd: number, rateHtg: number): string {
   return formatHtg(toHtgAt(usd, rateHtg));
-}
-
-/** "≈ 10 450 HTG" style label derived from a USD amount, at the env-default
- *  rate. Kept for backward-compat / the fallback path — prefer `htgLabelAt`
- *  wherever a live rate is in hand. */
-export function htgLabel(usd: number): string {
-  return htgLabelAt(usd, USD_TO_HTG);
 }
 
 /**

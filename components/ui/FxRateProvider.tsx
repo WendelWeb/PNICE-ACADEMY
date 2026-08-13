@@ -1,9 +1,17 @@
 'use client';
 
 import { createContext, useContext } from 'react';
-import { USD_TO_HTG } from '@/lib/money';
 
-const FxRateContext = createContext<number>(USD_TO_HTG);
+/**
+ * `null` means "no live rate reached this subtree" — deliberately NOT a
+ * fallback number. A frozen default here was invisible by design: a price
+ * rendered outside the provider silently converted at the build-time env
+ * constant while the admin's own Paramètres screen showed the DB rate, and
+ * nothing on the page hinted the two disagreed. `null` makes consumers choose
+ * out loud, and every one of them chooses to show no gourde figure at all
+ * rather than a wrong one.
+ */
+const FxRateContext = createContext<number | null>(null);
 
 /**
  * Wraps the public site (app/[locale]/(site)/layout.tsx — already
@@ -19,11 +27,10 @@ export function FxRateProvider({ rate, children }: { rate: number; children: Rea
 }
 
 /**
- * The current USD→HTG display rate. Defaults to the env constant
- * (lib/money.ts's `USD_TO_HTG`) when rendered with no `FxRateProvider`
- * above it — e.g. the admin route group, a sibling of `(site)` that does
- * not inherit its layout.
+ * The current USD→HTG display rate, or `null` when rendered with no
+ * `FxRateProvider` above it. Callers MUST handle `null` by omitting the
+ * gourde figure — see the context's own comment for why there is no default.
  */
-export function useFxRate(): number {
+export function useFxRate(): number | null {
   return useContext(FxRateContext);
 }

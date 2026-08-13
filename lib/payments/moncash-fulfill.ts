@@ -230,10 +230,9 @@ async function sendMoncashReceipt(input: MoncashFulfilInput): Promise<void> {
     // The gourdes MonCash actually took — frozen at sale time, never a live
     // re-derivation (see the file header + db/migrations/0019). Only fall
     // back to a live-rate ESTIMATE on the rare delivery where the provider
-    // didn't disclose an amount at all.
-    const htgExact = input.amountHtg > 0 ? Math.round(input.amountHtg) : undefined;
-    const rateHtg = htgExact === undefined ? await getFxRate() : undefined;
-    const receipt = buildReceiptHtml({
+    // didn't disclose an amount at all. The builder takes one OR the other,
+    // so the two cases are spelled out rather than passed as two optionals.
+    const receiptBase = {
       locale,
       name: user.name,
       itemName,
@@ -242,9 +241,11 @@ async function sendMoncashReceipt(input: MoncashFulfilInput): Promise<void> {
       amountCents: input.usdCentsEquivalent,
       dateIso: new Date().toISOString(),
       ref: input.transactionId ?? input.orderId,
-      htgExact,
-      rateHtg,
-    });
+    };
+    const receipt =
+      input.amountHtg > 0
+        ? buildReceiptHtml({ ...receiptBase, htgExact: Math.round(input.amountHtg) })
+        : buildReceiptHtml({ ...receiptBase, rateHtg: await getFxRate() });
     await sendEmail({
       to: user.email,
       subject: receipt.subject,

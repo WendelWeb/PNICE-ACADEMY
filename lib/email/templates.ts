@@ -9,9 +9,25 @@
  * accessibility) alongside the existing `{ subject, html }` shape — additive
  * only, so every existing call site keeps compiling unchanged.
  */
-import { toHtgAt, USD_TO_HTG } from '@/lib/money';
+import { toHtgAt } from '@/lib/money';
 import { emailLayout, emailRow, emailTable, escapeHtml, SITE_URL, COLORS } from '@/lib/email/layout';
 import { DEFAULT_FROM } from '@/lib/email/resend';
+
+/**
+ * How an email states a gourde amount. Exactly one of the two, never a
+ * default: a receipt either reports a REAL charge (frozen at sale time) or an
+ * ESTIMATE at a stated live rate, and the reader deserves to know which. The
+ * union makes "I forgot to fetch the live rate" a compile error rather than a
+ * mail that quietly converts at the build-time env constant while the admin's
+ * Paramètres screen shows a different rate.
+ *
+ *   - `htgExact`  — whole gourdes actually charged (a MonCash sale's stored
+ *     `payments.amount_htg`). Shown verbatim; `rateHtg` is then irrelevant
+ *     and ignored, so a later FX-rate edit cannot move a buyer's own receipt.
+ *   - `rateHtg`   — the live rate (lib/fx.ts's `getFxRate()`) to derive a
+ *     "(~X HTG)" estimate from, for Stripe sales where no gourdes moved.
+ */
+type HtgSource = { htgExact: number; rateHtg?: number } | { htgExact?: undefined; rateHtg: number };
 
 const usd = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 
@@ -28,24 +44,12 @@ export function buildReceiptHtml(input: {
   amountCents: number;
   dateIso: string;
   ref: string;
-  /** USD→HTG rate for the "(~X HTG)" line, ideally the live DB rate
-   *  (lib/fx.ts's `getFxRate`) passed by the caller (lib/payments/fulfill.ts).
-   *  Optional + defaults to the env constant so existing callers/tests keep
-   *  working unchanged (Task fix/fx-rate-unify). IGNORED when `htgExact` is
-   *  given. */
-  rateHtg?: number;
-  /**
-   * Whole gourdes ACTUALLY charged (e.g. a MonCash sale's stored
-   * `payments.amount_htg`), frozen at sale time. When given, this is shown
-   * verbatim instead of recomputing a figure from `rateHtg`/`USD_TO_HTG` — a
-   * real charge must never drift with a later FX-rate change (Stage 2 money
-   * exactness pass). Leave unset for Stripe/estimated amounts.
-   */
-  htgExact?: number;
-}): { subject: string; html: string; text: string } {
+} & HtgSource): { subject: string; html: string; text: string } {
   const fr = input.locale === 'fr';
   const htg = (
-    input.htgExact !== undefined ? Math.round(input.htgExact) : Math.round(toHtgAt(input.amountCents / 100, input.rateHtg ?? USD_TO_HTG))
+    input.htgExact !== undefined
+      ? Math.round(input.htgExact)
+      : Math.round(toHtgAt(input.amountCents / 100, input.rateHtg))
   ).toLocaleString('fr-FR');
   const date = new Date(input.dateIso).toLocaleDateString(fr ? 'fr-FR' : 'fr-HT');
   const helloHtml = helloLine(input.name, fr, escapeHtml);
@@ -133,15 +137,14 @@ export function buildCartReminderHtml(input: {
   itemName: string;
   amountCents: number;
   resumeUrl?: string | null;
-  /** USD→HTG rate for the "(~X HTG)" line, ideally the live DB rate
-   *  (lib/fx.ts's `getFxRate`) passed by the caller
-   *  (app/api/cron/abandoned-carts/route.ts). Optional + defaults to the env
-   *  constant so existing callers/tests keep working unchanged (Task
-   *  fix/fx-rate-unify — same shape as `buildReceiptHtml`'s `rateHtg`). */
-  rateHtg?: number;
+  /** The live USD→HTG rate (lib/fx.ts's `getFxRate`) for the "(~X HTG)"
+   *  line. REQUIRED — nothing was charged yet, so this is always an estimate,
+   *  and it must be an estimate at the rate the site is currently showing,
+   *  never at a stale build-time constant. */
+  rateHtg: number;
 }): { subject: string; html: string; text: string } {
   const fr = input.locale === 'fr';
-  const htg = Math.round(toHtgAt(input.amountCents / 100, input.rateHtg ?? USD_TO_HTG)).toLocaleString('fr-FR');
+  const htg = Math.round(toHtgAt(input.amountCents / 100, input.rateHtg)).toLocaleString('fr-FR');
   const helloHtml = helloLine(input.name, fr, escapeHtml);
   const helloPlain = helloLine(input.name, fr, (s) => s);
   const subject = fr

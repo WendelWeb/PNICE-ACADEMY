@@ -1,14 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { toHtg, toHtgAt, formatUsd, formatHtg, htgLabel, htgLabelAt, receiptHtgText, USD_TO_HTG } from './money';
+import { toHtgAt, formatUsd, formatHtg, htgLabelAt, receiptHtgText } from './money';
+import { usdCentsToHtg } from './payments/moncash/types';
 
 describe('money', () => {
-  it('converts usd to htg with the rate, rounded to the nearest 50', () => {
-    expect(toHtg(0)).toBe(0);
-    expect(toHtg(79)).toBe(Math.round((79 * USD_TO_HTG) / 50) * 50);
-    expect(toHtg(79) % 50).toBe(0);
-    expect(toHtg(10) % 50).toBe(0);
-  });
-
   it('formats a usd amount with a dollar suffix', () => {
     expect(formatUsd(79)).toBe('79$');
     expect(formatUsd(9)).toBe('9$');
@@ -18,40 +12,55 @@ describe('money', () => {
     expect(formatHtg(10450)).toMatch(/HTG$/);
   });
 
-  it('htgLabel derives a HTG label from a usd amount', () => {
-    expect(htgLabel(79)).toMatch(/HTG$/);
-    expect(htgLabel(79)).toBe(formatHtg(toHtg(79)));
+  it('toHtgAt converts at the given rate, EXACTLY — no 50-HTG bucket', () => {
+    expect(toHtgAt(79, 140)).toBe(79 * 140);
+    // Different explicit rates produce different amounts — proves the rate
+    // argument, and nothing ambient, drives the conversion.
+    expect(toHtgAt(79, 140)).not.toBe(toHtgAt(79, 132));
   });
 
-  it('toHtgAt converts at an explicit rate, rounded to the nearest 50 (fix/fx-rate-unify)', () => {
+  it('rejects nonsense instead of returning NaN', () => {
     expect(toHtgAt(0, 140)).toBe(0);
-    expect(toHtgAt(79, 140)).toBe(Math.round((79 * 140) / 50) * 50);
-    expect(toHtgAt(79, 140) % 50).toBe(0);
-    // Different explicit rates produce different amounts — proves the rate
-    // argument, not USD_TO_HTG, drives the conversion.
-    expect(toHtgAt(79, 140)).not.toBe(toHtgAt(79, 132));
-    // toHtg (env-default) matches toHtgAt at USD_TO_HTG exactly.
-    expect(toHtg(79)).toBe(toHtgAt(79, USD_TO_HTG));
+    expect(toHtgAt(-2, 140)).toBe(0);
+    expect(toHtgAt(2, 0)).toBe(0);
+    expect(toHtgAt(Number.NaN, 140)).toBe(0);
+    expect(toHtgAt(2, Number.NaN)).toBe(0);
   });
 
   it('htgLabelAt derives a HTG label at an explicit rate', () => {
     expect(htgLabelAt(79, 140)).toMatch(/HTG$/);
     expect(htgLabelAt(79, 140)).toBe(formatHtg(toHtgAt(79, 140)));
-    expect(htgLabel(79)).toBe(htgLabelAt(79, USD_TO_HTG));
+  });
+
+  /**
+   * THE REGRESSION THE OWNER HIT: a $2 course displayed "~250 HTG" and
+   * MonCash then charged 270. Two conversions of one price — the display
+   * rounded to the nearest 50, the charge to the nearest gourde. They are
+   * now the same function, so the site cannot advertise a figure it will
+   * not charge.
+   */
+  it('displays exactly what MonCash charges, at any rate', () => {
+    for (const rate of [132, 135, 141]) {
+      for (const cents of [200, 900, 7900]) {
+        expect(toHtgAt(cents / 100, rate)).toBe(usdCentsToHtg(cents, rate));
+      }
+    }
+    // The owner's own numbers, spelled out: $2 at the 135 rate in Paramètres.
+    expect(toHtgAt(2, 135)).toBe(270);
+    expect(usdCentsToHtg(200, 135)).toBe(270);
   });
 
   describe('receiptHtgText (Stage 2 money-exactness pass)', () => {
     // The exact real-world regression this guards against: the one live
     // MonCash sale (course $2.00, checkout at fx_rate_htg=132) that MonCash
-    // actually charged 264 HTG for (usdCentsToHtg(200, 132) — round-to-
-    // nearest-1), while the OLD receipt logic re-derived toHtgAt(2, rate)
-    // (round-to-nearest-50) at whatever rate was live when the receipt was
-    // rendered — 250 HTG at the sale-time rate, and STILL 250 HTG (not the
-    // real 264) even after an admin later moved the rate to 135.
+    // actually charged 264 HTG for, while the receipt re-derived the figure
+    // at whatever rate was live when it was RENDERED. Since the owner moved
+    // the rate to 135, that derivation says 270 — a receipt for a charge of
+    // 264. The stored amount must win, whatever today's rate is.
     it('shows the REAL charged amount, exactly, ignoring the USD price entirely', () => {
-      const text = receiptHtgText(264, 200, 132);
+      const text = receiptHtgText(264, 200, 135);
       expect(text).toBe(formatHtg(264));
-      expect(text).not.toBe(htgLabelAt(2, 132)); // the old (wrong) derivation
+      expect(text).not.toBe(htgLabelAt(2, 135)); // 270 — today's derivation
     });
 
     it('is frozen: a live rate that changed AFTER the sale has zero effect once a real amount is stored', () => {

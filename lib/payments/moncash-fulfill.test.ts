@@ -239,7 +239,10 @@ describe('fulfillMoncashOrder — the receipt email shows the EXACT charge, not 
     await fulfillMoncashOrder({ ...BASE_INPUT, amountHtg: 264 });
 
     expect(receiptState.calls).toHaveLength(1);
-    expect(receiptState.calls[0]).toMatchObject({ htgExact: 264, rateHtg: undefined, amountCents: 200 });
+    expect(receiptState.calls[0]).toMatchObject({ htgExact: 264, amountCents: 200 });
+    // No rate is even passed on this branch — the builder takes one OR the
+    // other, so a frozen charge cannot carry a live rate alongside it.
+    expect('rateHtg' in (receiptState.calls[0] as object)).toBe(false);
     expect(getFxRate).not.toHaveBeenCalled();
   });
 
@@ -256,7 +259,8 @@ describe('fulfillMoncashOrder — the receipt email shows the EXACT charge, not 
     await fulfillMoncashOrder({ ...BASE_INPUT, amountHtg: 0 });
 
     expect(getFxRate).toHaveBeenCalledTimes(1);
-    expect(receiptState.calls[0]).toMatchObject({ htgExact: undefined, rateHtg: 135 });
+    expect(receiptState.calls[0]).toMatchObject({ rateHtg: 135 });
+    expect('htgExact' in (receiptState.calls[0] as object)).toBe(false);
   });
 
   it('sends no receipt at all on the self-heal path — no email, no re-derivation, on a MonCash redelivery', async () => {

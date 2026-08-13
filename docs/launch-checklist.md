@@ -189,7 +189,7 @@ rate-limitées par IP (protection anti-abus basique, en mémoire par instance
    | Variable | Requis pour |
    |---|---|
    | `NEXT_PUBLIC_SITE_URL` | Emails, og:image, sitemap, robots — Étape 3 |
-   | `NEXT_PUBLIC_USD_TO_HTG` | Fallback d'affichage HTG (sinon 132) |
+   | `NEXT_PUBLIC_USD_TO_HTG` | Filet de sécurité HTG quand il n'y a pas de base (sinon 132). Le vrai taux se règle sur `/admin/taux` |
    | `ADMIN_DATA_SOURCE` | `real` pour sortir du mock — Étape 8 |
    | `DATABASE_URL` | Toute lecture/écriture réelle |
    | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `CLERK_WEBHOOK_SECRET` | Auth — Étape 7 |

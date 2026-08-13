@@ -9,7 +9,9 @@ import { SmartImage } from '@/components/ui/SmartImage';
 import { CourseSlideshow } from '@/components/courses/CourseSlideshow';
 import { courseMainImage, siteImages } from '@/lib/courseImage';
 import { getPublishedCourseBySlug } from '@/lib/courses/source';
-import { formatUsd } from '@/lib/money';
+import { formatUsd, formatHtg } from '@/lib/money';
+import { usdCentsToHtg } from '@/lib/payments/moncash';
+import { getFxRate } from '@/lib/fx';
 import { Price, PriceSecondary } from '@/components/ui/Price';
 import { courseTitle } from '@/lib/courseFields';
 import { PaymentMethods } from '@/components/checkout/PaymentMethods';
@@ -125,6 +127,18 @@ export default async function CheckoutPage({
   const liveMethods = live.map((k) => ({ id: k, label: PROVIDER_LABELS[k] }));
   const comingSoonMethods = comingSoon.map((k) => ({ id: k, label: PROVIDER_LABELS[k] }));
 
+  // THE EXACT DEBIT, not an estimate. Everywhere else on the site a gourde
+  // figure is a conversion of the real (USD) price and carries a "~" to say
+  // so. Here it stops being an estimate: MonCash charges in gourdes, and this
+  // is the very number /api/checkout/moncash will send to the gateway —
+  // `usdCentsToHtg` at the same live rate, so the summary and the wallet
+  // debit cannot disagree. Courses only, because MonCash refuses
+  // subscriptions (that route returns `subscription_unsupported`).
+  const moncashIsLive = !isSub && live.includes('moncash');
+  const moncashExactHtg = moncashIsLive
+    ? formatHtg(usdCentsToHtg(Math.round(amountUsd * 100), await getFxRate()))
+    : null;
+
   return (
     <Section>
       <Container className="max-w-4xl">
@@ -188,10 +202,21 @@ export default async function CheckoutPage({
                     </span>
                   </div>
                 </div>
-                <p className="mt-1 text-right font-mono text-xs text-graphite/55">
-                  <PriceSecondary usd={amountUsd} />
-                  {perLabel}
-                </p>
+                {moncashExactHtg ? (
+                  <>
+                    <p className="mt-1 text-right font-mono text-xs text-graphite/70">
+                      {moncashExactHtg}
+                    </p>
+                    <p className="mt-0.5 text-right font-mono text-[10px] leading-snug text-graphite/50">
+                      {t('moncashExactNote')}
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-1 text-right font-mono text-xs text-graphite/55">
+                    <PriceSecondary usd={amountUsd} />
+                    {perLabel}
+                  </p>
+                )}
               </div>
 
               {/* Nothing to pay when access already exists — no promo field. */}

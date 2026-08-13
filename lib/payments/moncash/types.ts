@@ -17,6 +17,7 @@
  * order, send the buyer to a hosted page, then ask afterwards whether the money
  * moved. Only the credentials, the URLs and the field names differ.
  */
+import { toHtgAt } from '@/lib/money';
 
 export type MoncashMode = 'sandbox' | 'live';
 export type MoncashProviderId = 'direct' | 'bazik';
@@ -96,10 +97,17 @@ export type MoncashProvider = {
  * by the gateway, so the rounding is explicit and testable here. Always at
  * least 1 gourde for any non-zero price — a paid course must never become free
  * through a rounding accident.
+ *
+ * DELEGATES to lib/money.ts's `toHtgAt`, which is the app's only USD→HTG
+ * rule. That is not tidiness: this function computes what the buyer is
+ * actually DEBITED, and `toHtgAt` computes what every page ADVERTISES. When
+ * they were two separate implementations they disagreed — a $2 course showed
+ * "~250 HTG" (rounded to the nearest 50) and charged 270 (rounded to the
+ * nearest 1). One function, one number, by construction.
  */
 export function usdCentsToHtg(amountCents: number, rate: number): number {
   if (!Number.isFinite(amountCents) || !Number.isFinite(rate) || amountCents <= 0 || rate <= 0) return 0;
-  return Math.max(1, Math.round((amountCents / 100) * rate));
+  return Math.max(1, toHtgAt(amountCents / 100, rate));
 }
 
 /**

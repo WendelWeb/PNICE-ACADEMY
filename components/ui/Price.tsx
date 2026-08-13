@@ -34,9 +34,11 @@ export function PriceSecondary({
 
 /** Clerk-off path: still reads the live DB rate via `FxRateProvider`
  *  (Task fix/fx-rate-unify) so an admin's rate edit shows up even with no
- *  ClerkProvider mounted. */
+ *  ClerkProvider mounted. No live rate ⇒ nothing, rather than a gourde
+ *  figure converted at a stale constant. */
 function PriceSecondaryStatic({ usd, className }: { usd: number; className?: string }) {
   const rate = useFxRate();
+  if (rate === null) return null;
   return <span className={className}>~{htgLabelAt(usd, rate)}</span>;
 }
 

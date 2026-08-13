@@ -3,18 +3,28 @@
  * the gourdes equivalent is derived at the configured rate (lib/money.ts), the
  * same way the public site shows HTG everywhere a USD amount appears.
  */
-import { toHtgAt, USD_TO_HTG } from '@/lib/money';
+import { toHtgAt } from '@/lib/money';
 
 /** "$12,480" — whole-dollar, thousands-separated. */
 export function fmtUsdCents(cents: number): string {
   return '$' + Math.round(cents / 100).toLocaleString('en-US');
 }
 
-/** "≈ 1 647 360 HTG" — gourdes equivalent of a USD-cents amount, at an
- *  explicit rate when the caller has one in hand (e.g. lib/fx.ts's live DB
- *  rate); defaults to the env constant otherwise (Task fix/fx-rate-unify —
- *  same fallback lib/fx.ts's `getFxRate` itself uses with no live DB). */
-export function fmtHtgFromCents(cents: number, rate: number = USD_TO_HTG): string {
+/**
+ * "≈ 1 647 360 HTG" — gourdes equivalent of a USD-cents amount.
+ *
+ * `rate` is REQUIRED and comes from lib/fx.ts's `getFxRate()` (the live
+ * admin-set `platform_settings.fx_rate_htg`). It used to default to the env
+ * constant, which meant any admin page that forgot to fetch the rate quietly
+ * printed gourdes at a DIFFERENT rate from the page next to it — the exact
+ * "the rate in Paramètres says 135 but this screen says 132" incoherence.
+ * With no default, forgetting is a compile error instead of a wrong number.
+ *
+ * The "≈" is honest: the USD cents are the accounting truth, and this is a
+ * conversion at today's rate — unlike a real MonCash charge, which is shown
+ * exactly from `payments.amount_htg` (lib/money.ts's `receiptHtgText`).
+ */
+export function fmtHtgFromCents(cents: number, rate: number): string {
   return '≈ ' + toHtgAt(cents / 100, rate).toLocaleString('fr-FR') + ' HTG';
 }
 

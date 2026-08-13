@@ -63,7 +63,10 @@ describe('buildSupportReplyHtml', () => {
 });
 
 describe('buildReceiptHtml', () => {
-  const base = { name: 'Jean', itemName: 'Zouti finansye dijital', amountCents: 900, dateIso: '2026-07-22T12:00:00Z', ref: 'pi_123' };
+  // `rateHtg` is part of the base fixture because the builder now REQUIRES a
+  // gourde source — an explicit live rate, or a frozen `htgExact`. There is
+  // no third "just use the env constant" option, by design.
+  const base = { name: 'Jean', itemName: 'Zouti finansye dijital', amountCents: 900, dateIso: '2026-07-22T12:00:00Z', ref: 'pi_123', rateHtg: 132 };
 
   it('builds a French receipt with USD amount and reference', () => {
     const { subject, html } = buildReceiptHtml({ ...base, locale: 'fr' });
@@ -86,20 +89,22 @@ describe('buildReceiptHtml', () => {
   });
 
   it('escapes HTML in name and itemName', () => {
-    const { html } = buildReceiptHtml({ locale: 'fr', name: '<img src=x onerror=alert(1)>', itemName: 'A & B <script>', amountCents: 900, dateIso: '2026-07-22T12:00:00Z', ref: 'pi_x' });
+    const { html } = buildReceiptHtml({ locale: 'fr', name: '<img src=x onerror=alert(1)>', itemName: 'A & B <script>', amountCents: 900, dateIso: '2026-07-22T12:00:00Z', ref: 'pi_x', rateHtg: 132 });
     expect(html).not.toContain('<img src=x');
     expect(html).not.toContain('<script>');
     expect(html).toContain('&lt;img src=x');
     expect(html).toContain('A &amp; B');
   });
 
-  it('uses an explicit rateHtg for the (~X HTG) line when given (fix/fx-rate-unify)', () => {
-    const { html: withDefault } = buildReceiptHtml({ ...base, locale: 'fr' });
-    const { html: withRate } = buildReceiptHtml({ ...base, locale: 'fr', rateHtg: 140 });
-    expect(withRate).not.toBe(withDefault);
-    // base.amountCents is 900 → $9.00 at an explicit 140 rate, rounded to 50.
-    const expectedHtg = Math.round((9 * 140) / 50) * 50;
-    expect(withRate).toContain(expectedHtg.toLocaleString('fr-FR'));
+  it('derives the (~X HTG) line from the rate it is given, exactly (fix/fx-rate-unify)', () => {
+    const at132 = buildReceiptHtml({ ...base, locale: 'fr', rateHtg: 132 }).html;
+    const at140 = buildReceiptHtml({ ...base, locale: 'fr', rateHtg: 140 }).html;
+    expect(at140).not.toBe(at132);
+    // base.amountCents is 900 → $9.00. EXACT conversion, no 50-HTG bucket:
+    // the old round-to-50 rule is what made a page advertise one figure and
+    // MonCash charge another (1 260 here, not 1 250).
+    expect(at140).toContain((9 * 140).toLocaleString('fr-FR'));
+    expect(at132).toContain((9 * 132).toLocaleString('fr-FR'));
   });
 
   describe('htgExact — the REAL MonCash charge, frozen at sale time (Stage 2 money-exactness pass)', () => {
@@ -109,12 +114,12 @@ describe('buildReceiptHtml', () => {
     const moncashCase = { ...base, locale: 'ht' as const, amountCents: 200 };
 
     it('shows the exact htgExact figure instead of deriving one from amountCents/rateHtg', () => {
-      const { html, text } = buildReceiptHtml({ ...moncashCase, htgExact: 264, rateHtg: 132 });
+      // Sale-time charge 264 HTG (the rate was 132 then); the rate is 135
+      // today, so the derivation would say 270. htgExact must win outright.
+      const { html, text } = buildReceiptHtml({ ...moncashCase, htgExact: 264, rateHtg: 135 });
       expect(html).toContain('264');
       expect(text).toContain('264');
-      // NOT the old toHtgAt(2, 132)=250 derivation, even though rateHtg=132
-      // was passed alongside it — htgExact must win outright.
-      expect(html).not.toContain('(~250 HTG)');
+      expect(html).not.toContain('270');
     });
 
     it('ignores rateHtg entirely once htgExact is set — a later FX-rate change cannot move it', () => {
@@ -131,15 +136,18 @@ describe('buildReceiptHtml', () => {
 
     it('falls back to the rateHtg derivation when htgExact is omitted (Stripe / no gourdes charged)', () => {
       const withExact = buildReceiptHtml({ ...moncashCase, htgExact: 264 });
-      const withoutExact = buildReceiptHtml({ ...moncashCase, rateHtg: 132 });
+      const withoutExact = buildReceiptHtml({ ...moncashCase, rateHtg: 135 });
       expect(withExact.html).not.toBe(withoutExact.html);
-      expect(withoutExact.html).toContain('(~250 HTG)'); // toHtgAt(2, 132), the pre-existing estimate path
+      // toHtgAt(2, 135) = 270 EXACTLY — the estimate path now lands on the
+      // same number MonCash would charge today, not a 50-HTG bucket (250).
+      expect(withoutExact.html).toContain('(~270 HTG)');
+      expect(withoutExact.html).not.toContain('250 HTG');
     });
   });
 });
 
 describe('buildCartReminderHtml', () => {
-  const base = { name: 'Jean', itemName: 'Kòmès sou entènèt', amountCents: 4900 };
+  const base = { name: 'Jean', itemName: 'Kòmès sou entènèt', amountCents: 4900, rateHtg: 132 };
 
   it('builds a French reminder with amount and item', () => {
     const { subject, html } = buildCartReminderHtml({ ...base, locale: 'fr' });
@@ -167,7 +175,7 @@ describe('buildCartReminderHtml', () => {
   });
 
   it('escapes HTML in name and itemName', () => {
-    const { html } = buildCartReminderHtml({ locale: 'fr', name: '<b>x</b>', itemName: 'A & B <script>', amountCents: 100 });
+    const { html } = buildCartReminderHtml({ locale: 'fr', name: '<b>x</b>', itemName: 'A & B <script>', amountCents: 100, rateHtg: 132 });
     expect(html).not.toContain('<b>x</b>');
     expect(html).toContain('&lt;b&gt;x&lt;/b&gt;');
     expect(html).toContain('A &amp; B');
@@ -507,8 +515,8 @@ describe('Stage 6 builders — text alternative has no leftover HTML', () => {
 
 describe('plain-text alternative (deliverability)', () => {
   it('every builder returns non-empty text without leftover HTML tags', () => {
-    const receipt = buildReceiptHtml({ locale: 'fr', name: 'Jean', itemName: 'Zouti finansye dijital', amountCents: 900, dateIso: '2026-07-22T12:00:00Z', ref: 'pi_123' });
-    const cart = buildCartReminderHtml({ locale: 'fr', name: 'Jean', itemName: 'Kòmès sou entènèt', amountCents: 4900, resumeUrl: 'https://pnice.academy/fr/checkout?course=x' });
+    const receipt = buildReceiptHtml({ locale: 'fr', name: 'Jean', itemName: 'Zouti finansye dijital', amountCents: 900, dateIso: '2026-07-22T12:00:00Z', ref: 'pi_123', rateHtg: 132 });
+    const cart = buildCartReminderHtml({ locale: 'fr', name: 'Jean', itemName: 'Kòmès sou entènèt', amountCents: 4900, resumeUrl: 'https://pnice.academy/fr/checkout?course=x', rateHtg: 132 });
     const test = buildTestEmailHtml({ locale: 'fr' });
     const digest = buildDailyDigestHtml({
       locale: 'fr',
