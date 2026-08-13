@@ -14,10 +14,35 @@
  * `message: "successful"` for our order id.
  */
 import { db } from '@/db';
-import { checkoutSessions } from '@/db/schema';
+import { checkoutSessions, webhookLogs } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { retrieveMoncashOrder, moncashConfigured } from './moncash';
 import { fulfillMoncashOrder } from './moncash-fulfill';
+
+/**
+ * Best-effort ops signal for MonCash — the platform's only live real-money
+ * rail otherwise writes NOTHING to `webhook_logs` (that table used to be
+ * written by the Stripe webhook route only), so a Bazik/Digicel outage was
+ * invisible to /admin/sante's stale-failure alert. Mirrors the shape the
+ * Stripe route writes (provider/eventType/status/errorMessage/providerRef)
+ * closely enough that the SAME alert + replay UI covers this rail too.
+ * NEVER THROWS — a logging hiccup must never change what the callback
+ * answers to MonCash.
+ */
+async function logMoncashFailure(orderId: string, eventType: string, message: string): Promise<void> {
+  try {
+    await db.insert(webhookLogs).values({
+      provider: 'moncash',
+      eventType,
+      status: 'failed',
+      errorMessage: message,
+      providerRef: orderId,
+      processedAt: new Date(),
+    });
+  } catch (e) {
+    console.error('[moncash/order] webhook log write failed:', e instanceof Error ? e.message : e);
+  }
+}
 
 /** How MonCash state is smuggled onto the order row — see `encodeMoncashRef`. */
 const REF_PREFIX = 'moncash:';
@@ -98,6 +123,7 @@ export async function settleMoncashOrder(orderId: string): Promise<SettleResult>
     )[0];
 
     if (!row || !row.userId || !row.courseSlug) {
+      await logMoncashFailure(orderId, 'order.unknown', 'checkout_sessions row not found or incomplete');
       return { status: 'unknown_order', locale: 'ht' };
     }
     const locale = decodeMoncashLocale(row.sessionId);
@@ -110,6 +136,7 @@ export async function settleMoncashOrder(orderId: string): Promise<SettleResult>
     const remote = await retrieveMoncashOrder(providerRef);
     if (!remote.ok) {
       console.error('[moncash/order] retrieval failed:', remote.message);
+      await logMoncashFailure(orderId, 'order.retrieve', remote.message);
       return { status: 'error', locale, courseSlug: row.courseSlug };
     }
     if (!remote.paid) {
@@ -128,7 +155,10 @@ export async function settleMoncashOrder(orderId: string): Promise<SettleResult>
       transactionId: remote.transactionId,
       locale,
     });
-    if (outcome === 'error') return { status: 'error', locale, courseSlug: row.courseSlug };
+    if (outcome === 'error') {
+      await logMoncashFailure(orderId, 'order.fulfill', 'fulfillMoncashOrder returned error');
+      return { status: 'error', locale, courseSlug: row.courseSlug };
+    }
 
     // Mark the cart closed so the abandoned-cart cron stops chasing it. Best
     // effort and idempotent; access has already been granted above.
@@ -146,7 +176,9 @@ export async function settleMoncashOrder(orderId: string): Promise<SettleResult>
       courseSlug: row.courseSlug,
     };
   } catch (e) {
-    console.error('[moncash/order] settle failed:', e instanceof Error ? e.message : e);
+    const message = e instanceof Error ? e.message : String(e);
+    console.error('[moncash/order] settle failed:', message);
+    await logMoncashFailure(orderId, 'order.settle', message);
     return { status: 'error', locale: 'ht' };
   }
 }

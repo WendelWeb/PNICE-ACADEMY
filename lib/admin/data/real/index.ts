@@ -121,6 +121,7 @@ export function realDataSource(): AdminDataSource {
     getAbandonedCarts: marketing.getAbandonedCarts,
     getOpenCarts: marketing.getOpenCarts,
     getCartStats: marketing.getCartStats,
+    getPurchaseAttempts: marketing.getPurchaseAttempts,
     markCartAbandoned: marketing.markCartAbandoned,
     remindCart: marketing.remindCart,
     getReferrers: marketing.getReferrers,

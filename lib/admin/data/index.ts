@@ -81,6 +81,7 @@ export const getUtmAttribution: AdminDataSource['getUtmAttribution'] = (q) => so
 export const getAbandonedCarts: AdminDataSource['getAbandonedCarts'] = () => source.getAbandonedCarts();
 export const getOpenCarts: AdminDataSource['getOpenCarts'] = () => source.getOpenCarts();
 export const getCartStats: AdminDataSource['getCartStats'] = () => source.getCartStats();
+export const getPurchaseAttempts: AdminDataSource['getPurchaseAttempts'] = () => source.getPurchaseAttempts();
 export const markCartAbandoned: AdminDataSource['markCartAbandoned'] = (p) => source.markCartAbandoned(p);
 export const remindCart: AdminDataSource['remindCart'] = (p) => source.remindCart(p);
 export const getReferrers: AdminDataSource['getReferrers'] = (s) => source.getReferrers(s);
@@ -207,6 +208,12 @@ export type {
   AbandonedCartRow,
   OpenCartRow,
   CartStats,
+  AttemptRail,
+  AttemptRailStats,
+  AttemptState,
+  PurchaseAttemptRow,
+  PurchaseAttemptStats,
+  PurchaseAttempts,
   ReferralStatus,
   Referral,
   ReferralSortKey,

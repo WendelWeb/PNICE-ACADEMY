@@ -43,6 +43,7 @@ import {
   IconChalkboard,
   IconReceipt2,
   IconChartPie,
+  IconScale,
   type Icon as TablerIcon,
 } from '@tabler/icons-react';
 import type { AdminRole } from '@/lib/admin/roles';
@@ -105,6 +106,12 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
       // 'payouts' (payouts.process): this page moves money into the SAME
       // teacher ledger that page's queue reads.
       { key: 'platformSplit', href: '/admin/repartition', icon: 'platformSplit', enabled: true, cap: 'payouts.process' },
+      // Task: finance surface — reconciliation ("what did the platform earn,
+      // what do I owe teachers, what have I already paid out, what's
+      // outstanding"), derived from the same earnings_ledger/
+      // withdrawal_requests/platform_pass_splits tables 'payouts'/
+      // 'platformSplit' already read — same cap, no new permission.
+      { key: 'reconciliation', href: '/admin/bilan', icon: 'reconciliation', enabled: true, cap: 'payouts.process' },
     ],
   },
   {
@@ -178,6 +185,7 @@ export const ADMIN_NAV_ICONS: Record<string, TablerIcon> = {
   siteContent: IconFileText,
   myStudio: IconChalkboard,
   platformSplit: IconChartPie,
+  reconciliation: IconScale,
 };
 
 /**

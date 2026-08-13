@@ -109,14 +109,26 @@ beforeEach(() => {
 });
 
 describe('refundPaymentAction — Transactions console "Rembourser" button', () => {
-  it('reverses the teacher earnings for the payment it just refunded', async () => {
-    const result = await refundPaymentAction('user-1', 'payment-1');
+  it('reverses the teacher earnings for the payment it just refunded, and records the admin\'s note', async () => {
+    const result = await refundPaymentAction('user-1', 'payment-1', 'Remboursé via le tableau de bord Bazik');
     expect(result.ok).toBe(true);
     expect(dataState.refundPaymentCalls).toEqual([
-      { userId: 'user-1', paymentId: 'payment-1', admin: { id: 'admin-1', name: 'Admin' } },
+      {
+        userId: 'user-1',
+        paymentId: 'payment-1',
+        admin: { id: 'admin-1', name: 'Admin' },
+        note: 'Remboursé via le tableau de bord Bazik',
+      },
     ]);
     expect(recordRefundReversal).toHaveBeenCalledTimes(1);
     expect(recordRefundReversal).toHaveBeenCalledWith({ id: 'payment-1' });
+  });
+
+  it('Stage 3: refuses a refund with no note (the admin must state where/how the money moved) — no DB write, no reversal', async () => {
+    const result = await refundPaymentAction('user-1', 'payment-1', '   ');
+    expect(result).toEqual({ ok: false, message: 'note_required' });
+    expect(dataState.refundPaymentCalls).toHaveLength(0);
+    expect(recordRefundReversal).not.toHaveBeenCalled();
   });
 });
 

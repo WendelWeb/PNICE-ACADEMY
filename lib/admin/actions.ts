@@ -117,10 +117,11 @@ export async function setStatusAction(
   }
 }
 
-export async function refundPaymentAction(userId: string, paymentId: string): Promise<ActionResult> {
+export async function refundPaymentAction(userId: string, paymentId: string, note: string): Promise<ActionResult> {
   try {
+    if (!note.trim()) return { ok: false, message: 'note_required' };
     const { actor } = await requireAdmin('transactions.refund');
-    await refundPayment({ userId, paymentId, admin: actor });
+    await refundPayment({ userId, paymentId, admin: actor, note: note.trim() });
     // Reverses the teacher's earnings-ledger 'sale' row for this payment —
     // see lib/admin/data/real/users.ts's `refundPayment` doc comment for why
     // this lives HERE and not inside that function (client-bundle boundary:

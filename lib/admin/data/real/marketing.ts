@@ -64,6 +64,7 @@ import { promoScopeOk } from '../promo-scope';
 import type {
   AbandonedCartRow,
   AdminActor,
+  AttemptRail,
   CartReminderStatus,
   CartStats,
   OpenCartRow,
@@ -75,6 +76,8 @@ import type {
   PromoStatus,
   PromoValidation,
   ProductType,
+  PurchaseAttempts,
+  PurchaseAttemptRow,
   ReferralSortKey,
   ReferrerDetail,
   ReferrerRow,
@@ -497,6 +500,109 @@ export async function getCartStats(): Promise<CartStats> {
     reminded,
     convertedAfterReminder,
     reminderConversionPct: reminded ? (convertedAfterReminder / reminded) * 100 : 0,
+  };
+}
+
+const RECENT_ATTEMPTS_LIMIT = 25;
+
+// Same encoding lib/payments/moncash-order.ts's `encodeMoncashRef` writes
+// (`moncash:<locale>[:<providerRef>]`) — deliberately duplicated as a tiny
+// PURE string check rather than imported: that module pulls in
+// `fulfillMoncashOrder` → lib/teacher/earnings.ts → lib/teacher/profile.ts →
+// `@clerk/nextjs/server` ('server-only'), and this admin-data barrel is
+// reachable from a CLIENT component (components/reviews/RatingWidget.tsx →
+// lib/reviews/reviews.ts → lib/admin/data), so importing it here fails the
+// build the exact same way lib/admin/data/real/users.ts's `refundPayment`
+// doc comment already explains for `recordRefundReversal`. If that prefix
+// ever changes, update it there AND here.
+const MONCASH_REF_PREFIX = 'moncash:';
+
+/**
+ * The rail + "did the provider actually create an order" signal, derived
+ * from `checkout_sessions.session_id` alone — no schema change. Both
+ * checkout routes (app/api/checkout/route.ts, app/api/checkout/moncash/
+ * route.ts) insert the row with `session_id` UNSET, then set it only once
+ * the provider call itself succeeds:
+ *  - MonCash: `moncash:<locale>` is written BEFORE calling Bazik/Digicel,
+ *    then rewritten to `moncash:<locale>:<providerRef>` only on success. A
+ *    row stuck at `moncash:<locale>` with no providerRef means the provider
+ *    call itself failed (a genuine outage), not that the buyer walked away.
+ *  - Stripe: `session_id` is null until `createStripeCheckout` succeeds.
+ */
+export function attemptRailOf(sessionId: string | null): { rail: AttemptRail; providerOrderCreated: boolean } {
+  if (typeof sessionId === 'string' && sessionId.startsWith(MONCASH_REF_PREFIX)) {
+    const rest = sessionId.slice(MONCASH_REF_PREFIX.length);
+    const sep = rest.indexOf(':');
+    const providerRef = sep === -1 ? '' : rest.slice(sep + 1).trim();
+    return { rail: 'moncash', providerOrderCreated: providerRef !== '' };
+  }
+  return { rail: 'card', providerOrderCreated: sessionId !== null };
+}
+
+/**
+ * Stage 3 finance surface, item 1 — /admin/transactions' "purchase attempts"
+ * panel: every checkout_sessions row (completed or not), a conversion stat
+ * by rail, and the most recent NON-completed attempts (open or abandoned)
+ * with when/who/product/amount/rail/provider-order-created — the view the
+ * owner had no way to see from the money pages themselves (only reachable,
+ * before this, via Marketing > Carts, gated on a different capability).
+ */
+export async function getPurchaseAttempts(): Promise<PurchaseAttempts> {
+  const [sessions, users, courseBySlug] = await Promise.all([
+    db.select().from(T.checkoutSessions),
+    db.select().from(T.users),
+    getCourseMap(),
+  ]);
+  const userById = new Map(users.map((u) => [u.id, u]));
+
+  const byRail = new Map<AttemptRail, { attempts: number; completed: number }>();
+  let completed = 0;
+  for (const s of sessions) {
+    const { rail } = attemptRailOf(s.sessionId);
+    const isDone = s.completedAt != null;
+    if (isDone) completed++;
+    const acc = byRail.get(rail) ?? { attempts: 0, completed: 0 };
+    acc.attempts++;
+    if (isDone) acc.completed++;
+    byRail.set(rail, acc);
+  }
+
+  const recent: PurchaseAttemptRow[] = sessions
+    .filter((s) => s.completedAt == null)
+    .sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime())
+    .slice(0, RECENT_ATTEMPTS_LIMIT)
+    .map((s) => {
+      const u = s.userId ? userById.get(s.userId) : undefined;
+      const c = s.courseSlug ? courseBySlug.get(s.courseSlug) : undefined;
+      const isSub = s.productType === 'subscription';
+      const { rail, providerOrderCreated } = attemptRailOf(s.sessionId);
+      return {
+        id: s.id,
+        userId: s.userId,
+        isGuest: !s.userId,
+        userName: u?.name ?? u?.email ?? '',
+        userEmail: u?.email ?? null,
+        productType: s.productType,
+        productTitle_fr: isSub ? 'Abonnement mensuel' : (c?.title_fr ?? s.courseSlug ?? '—'),
+        productTitle_ht: isSub ? 'Abònman mansyèl' : (c?.title_ht ?? s.courseSlug ?? '—'),
+        amountCents: s.amountCents,
+        rail,
+        providerOrderCreated,
+        startedAt: iso(s.startedAt)!,
+        state: s.abandonedAt != null ? 'abandoned' : 'open',
+      };
+    });
+
+  return {
+    stats: {
+      totalAttempts: sessions.length,
+      completed,
+      conversionPct: sessions.length ? (completed / sessions.length) * 100 : 0,
+      byRail: [...byRail.entries()]
+        .map(([rail, v]) => ({ rail, attempts: v.attempts, completed: v.completed }))
+        .sort((a, b) => b.attempts - a.attempts),
+    },
+    recent,
   };
 }
 

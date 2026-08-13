@@ -253,18 +253,83 @@ export function AccountActions({
 }
 
 /* ----------------------------- inline buttons ---------------------------- */
+/**
+ * Stage 3 finance surface — this button does NOT call Stripe or MonCash: for
+ * MonCash (the platform's only live real-money rail) no refund API exists at
+ * all, and for Stripe the automatic `charge.refunded` webhook is already the
+ * source of truth. Clicking it only RECORDS that the admin already moved the
+ * money back OUTSIDE the platform, then reverses the sale's numbers to match
+ * (buyer credited, course access revoked, teacher's earnings-ledger row
+ * reversed) — see lib/admin/data/real/users.ts's `refundPayment` doc comment.
+ * The confirmation modal says so explicitly and REQUIRES a short note (where/
+ * how the money actually moved) so that honesty is on record, not just in a
+ * code comment — same pattern this file already uses for a payout reference
+ * or a suspend/ban reason.
+ */
 export function RefundButton({ userId, paymentId }: { userId: string; paymentId: string }) {
   const t = useTranslations('admin.users.actions');
-  const { pending, run } = useRunner();
+  const { pending, feedback, run } = useRunner();
+  const [open, setOpen] = useState(false);
+  const [note, setNote] = useState('');
+
   return (
-    <button
-      type="button"
-      disabled={pending}
-      onClick={() => run(() => refundPaymentAction(userId, paymentId), t('done'), t('error'))}
-      className={cn('inline-flex items-center gap-1 font-mono text-[11px] text-stampred hover:underline', focusRing)}
-    >
-      <IconReceiptRefund size={13} /> {t('refund')}
-    </button>
+    <>
+      <button
+        type="button"
+        disabled={pending}
+        onClick={() => setOpen(true)}
+        className={cn('inline-flex items-center gap-1 font-mono text-[11px] text-stampred hover:underline', focusRing)}
+      >
+        <IconReceiptRefund size={13} /> {t('refund')}
+      </button>
+      <Feedback feedback={feedback} />
+
+      {open && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-ink/40 p-4">
+          <div className="w-full max-w-md rounded-2xl border border-ink/12 bg-paper-light p-5">
+            <div className="flex items-center justify-between">
+              <h3 className="font-display text-base font-bold text-ink">{t('refund')}</h3>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className={cn('text-ink/50 hover:text-ink', focusRing)}
+                aria-label={t('cancel')}
+              >
+                <IconX size={18} />
+              </button>
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-graphite/70">{t('refundHelp')}</p>
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={3}
+              placeholder={t('refundNotePlaceholder')}
+              className={cn('mt-3 w-full rounded-lg border border-ink/15 bg-paper px-3 py-2 text-sm text-ink', focusRing)}
+            />
+            <div className="mt-3 flex justify-end gap-2">
+              <button type="button" onClick={() => setOpen(false)} className={cn(buttonClasses('ghost', 'md'), 'text-xs')}>
+                {t('cancel')}
+              </button>
+              <button
+                type="button"
+                disabled={!note.trim() || pending}
+                onClick={() => {
+                  run(() => refundPaymentAction(userId, paymentId, note.trim()), t('done'), t('error'));
+                  setOpen(false);
+                  setNote('');
+                }}
+                className={cn(
+                  'flex items-center gap-1.5 rounded bg-stampred px-4 py-2.5 text-xs font-semibold text-paper-light disabled:opacity-50',
+                  focusRing,
+                )}
+              >
+                {t('refundConfirm')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

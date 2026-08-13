@@ -75,6 +75,9 @@ import type {
   OpenCartRow,
   CartStats,
   CartReminderStatus,
+  AttemptRail,
+  PurchaseAttempts,
+  PurchaseAttemptRow,
   ReferralSortKey,
   ReferrerRow,
   ReferrerDetail,
@@ -1551,6 +1554,7 @@ async function refundPayment(p: {
   userId: string;
   paymentId: string;
   admin: AdminActor;
+  note?: string;
 }): Promise<void> {
   const ds = getMockDataset();
   const pay = ds.payments.find((x) => x.id === p.paymentId && x.userId === p.userId);
@@ -1571,6 +1575,7 @@ async function refundPayment(p: {
     action: 'refund_payment',
     targetUserId: p.userId,
     detail: p.paymentId,
+    reason: p.note,
   });
 }
 
@@ -1935,6 +1940,57 @@ async function getCartStats(): Promise<CartStats> {
     reminded,
     convertedAfterReminder,
     reminderConversionPct: reminded ? (convertedAfterReminder / reminded) * 100 : 0,
+  };
+}
+
+/**
+ * Documented degeneracy (mirrors the real source's file-header convention):
+ * the mock dataset (mock/dataset.ts's `pushSession`) never encodes a
+ * MonCash-style `moncash:<locale>[:<ref>]` sessionId — every mock attempt
+ * reads as the 'card' rail with the provider order always created. Only the
+ * REAL source (lib/admin/data/real/marketing.ts's `attemptRailOf`) can
+ * distinguish a MonCash order that failed before Bazik/Digicel ever
+ * accepted it.
+ */
+async function getPurchaseAttempts(): Promise<PurchaseAttempts> {
+  const ds = getMockDataset();
+  const sessions = ds.checkoutSessions;
+  const completed = sessions.filter((s) => s.completedAt != null).length;
+  const rail: AttemptRail = 'card';
+
+  const recent: PurchaseAttemptRow[] = sessions
+    .filter((s) => s.completedAt == null)
+    .sort((a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt))
+    .slice(0, 25)
+    .map((s) => {
+      const u = s.userId ? ds.users.find((x) => x.id === s.userId) : null;
+      const c = s.courseSlug ? courseBySlug.get(s.courseSlug) : null;
+      const isSub = s.productType === 'subscription';
+      return {
+        id: s.id,
+        userId: s.userId,
+        isGuest: !s.userId,
+        userName: u?.name ?? u?.email ?? '',
+        userEmail: u?.email ?? null,
+        productType: s.productType,
+        productTitle_fr: isSub ? 'Abonnement mensuel' : c?.title_fr ?? s.courseSlug ?? '—',
+        productTitle_ht: isSub ? 'Abònman mansyèl' : c?.title_ht ?? s.courseSlug ?? '—',
+        amountCents: s.amountCents,
+        rail,
+        providerOrderCreated: true,
+        startedAt: s.startedAt,
+        state: s.abandonedAt != null ? 'abandoned' : 'open',
+      };
+    });
+
+  return {
+    stats: {
+      totalAttempts: sessions.length,
+      completed,
+      conversionPct: sessions.length ? (completed / sessions.length) * 100 : 0,
+      byRail: sessions.length ? [{ rail, attempts: sessions.length, completed }] : [],
+    },
+    recent,
   };
 }
 
@@ -2305,6 +2361,7 @@ export const mockDataSource: AdminDataSource = {
   getAbandonedCarts,
   getOpenCarts,
   getCartStats,
+  getPurchaseAttempts,
   markCartAbandoned,
   remindCart,
   getReferrers,

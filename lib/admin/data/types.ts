@@ -1007,6 +1007,55 @@ export type OpenCartRow = {
   startedAt: string;
 };
 
+/* ---- Purchase attempts (Stage 3 finance surface, item 1) ----
+ * Every `checkout_sessions` row, completed or not — the conversion signal
+ * /admin/transactions never showed: how many people started a purchase, by
+ * which rail, and whether the provider (Stripe/MonCash) actually created an
+ * order for it before the buyer dropped off. `AbandonedCartRow`/`OpenCartRow`
+ * above already cover the Marketing > Carts nudge workflow; this is the same
+ * underlying table read as a plain conversion/failure signal instead. */
+export type AttemptRailStats = { rail: PaymentMethod; attempts: number; completed: number };
+
+export type PurchaseAttemptStats = {
+  totalAttempts: number;
+  completed: number;
+  /** completed / totalAttempts * 100; 0 when totalAttempts is 0. */
+  conversionPct: number;
+  byRail: AttemptRailStats[];
+};
+
+/** Only ever 'moncash' or 'card' — the two rails checkout can start today. */
+export type AttemptRail = 'moncash' | 'card';
+export type AttemptState = 'open' | 'abandoned';
+
+export type PurchaseAttemptRow = {
+  id: string;
+  userId: string | null;
+  isGuest: boolean;
+  userName: string;
+  userEmail: string | null;
+  productType: ProductType;
+  productTitle_fr: string;
+  productTitle_ht: string;
+  amountCents: number;
+  rail: AttemptRail;
+  /**
+   * Whether the PROVIDER actually created an order for this attempt (a
+   * Stripe Checkout Session, or a Bazik/Digicel order) — false means the
+   * checkout_sessions row exists but the provider call itself never
+   * succeeded (a genuine provider-side failure, not just an abandoned cart).
+   */
+  providerOrderCreated: boolean;
+  startedAt: string;
+  state: AttemptState;
+};
+
+export type PurchaseAttempts = {
+  stats: PurchaseAttemptStats;
+  /** Most recent non-completed attempts, newest first (capped). */
+  recent: PurchaseAttemptRow[];
+};
+
 /* ---- Referral programme (Tasks 8–9) ---- */
 export type ReferralStatus = 'pending' | 'confirmed';
 
@@ -1110,7 +1159,15 @@ export interface AdminDataSource {
     reason: string;
     admin: AdminActor;
   }): Promise<void>;
-  refundPayment(p: { userId: string; paymentId: string; admin: AdminActor }): Promise<void>;
+  /**
+   * `note` — Stage 3 finance surface: what the admin states about how they
+   * already moved the money outside the platform (the ONLY refund path for
+   * MonCash, which has no refund API — see refundPayment's real
+   * implementation for the full explanation). Optional so existing callers
+   * (lib/admin/support-actions.ts's ticket-triggered refund) keep compiling;
+   * the admin-console button REQUIRES it (see RefundButton).
+   */
+  refundPayment(p: { userId: string; paymentId: string; admin: AdminActor; note?: string }): Promise<void>;
   /** Record a Clerk-side action (resend verification, impersonate) in the audit log. */
   recordAudit(p: {
     action: AuditAction;
@@ -1159,6 +1216,7 @@ export interface AdminDataSource {
   getAbandonedCarts(): Promise<AbandonedCartRow[]>;
   getOpenCarts(): Promise<OpenCartRow[]>;
   getCartStats(): Promise<CartStats>;
+  getPurchaseAttempts(): Promise<PurchaseAttempts>;
   markCartAbandoned(p: { id: string; admin: AdminActor }): Promise<void>;
   remindCart(p: { id: string; admin: AdminActor }): Promise<{ ok: boolean; message?: string }>;
   getReferrers(sort: ReferralSortKey): Promise<ReferrerRow[]>;

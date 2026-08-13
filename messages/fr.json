@@ -1287,6 +1287,7 @@
       "teachers": "Enseignants",
       "payouts": "Retraits",
       "platformSplit": "Répartition Pass PNICE",
+      "reconciliation": "Bilan",
       "courses": "Cours",
       "subscriptions": "Abonnements",
       "payments": "Paiements",
@@ -1534,6 +1535,9 @@
         "cancel": "Annuler",
         "confirm": "Confirmer",
         "refund": "Rembourser",
+        "refundHelp": "Ce bouton n'appelle ni Stripe ni MonCash — il n'existe aucune API de remboursement pour MonCash. Il enregistre seulement que tu as DÉJÀ renvoyé l'argent à l'acheteur en dehors de la plateforme (tableau de bord Bazik/MonCash, ou Stripe), puis annule la vente : l'élève perd l'accès, l'enseignant perd sa part. Précise comment/où l'argent a été renvoyé — c'est obligatoire et gardé dans le journal d'audit.",
+        "refundNotePlaceholder": "Ex. : Remboursé via le tableau de bord Bazik, réf. BZK_123…",
+        "refundConfirm": "J'ai déjà remboursé — enregistrer",
         "revoke": "Retirer"
       }
     },
@@ -1669,7 +1673,44 @@
         "sent": "Envoyé ✓",
         "error": "Erreur"
       },
-      "fxMovedNote": "Géré dans Taux de change"
+      "fxMovedNote": "Géré dans Taux de change",
+      "exportCsv": "Télécharger CSV",
+      "attempts": {
+        "title": "Tentatives d'achat",
+        "viewCarts": "Voir tous les paniers →",
+        "statGroup": "Conversion",
+        "stat": {
+          "total": "Tentatives",
+          "totalHint": "Toutes les sessions de paiement démarrées, complétées ou non.",
+          "completed": "Complétées",
+          "conversion": "Taux de conversion",
+          "byRail": "Par méthode"
+        },
+        "moncashFailures": "{count} erreur(s) MonCash récentes — voir Santé système",
+        "empty": "Aucune tentative en cours ou abandonnée.",
+        "guest": "Visiteur",
+        "col": {
+          "user": "Utilisateur",
+          "product": "Produit",
+          "rail": "Méthode",
+          "amount": "Montant",
+          "providerOrder": "Commande créée",
+          "state": "État",
+          "startedAt": "Débuté"
+        },
+        "rail": {
+          "card": "Visa/MC",
+          "moncash": "MonCash"
+        },
+        "providerOrder": {
+          "yes": "Oui",
+          "no": "Non — échec fournisseur"
+        },
+        "state": {
+          "open": "En cours",
+          "abandoned": "Abandonné"
+        }
+      }
     },
     "courses": {
       "subtitle": "Statistiques de vente et de complétion par formation — statut, propriétaire, file de validation. L'édition du contenu se fait dans le studio de l'enseignant.",
@@ -2974,6 +3015,36 @@
       },
       "empty": "Pas encore d'historique.",
       "computedBy": "Traité par {name}"
+    },
+    "reconciliation": {
+      "subtitle": "Ce que la plateforme a gagné, ce qui est dû aux enseignants, ce qui a déjà été payé, et ce qui reste en attente — tout au même endroit.",
+      "group": {
+        "platform": "Vue d'ensemble",
+        "byTeacher": "Par enseignant"
+      },
+      "kpi": {
+        "platformCommission": "Gagné par la plateforme",
+        "platformCommissionHint": "Commission sur les ventes de cours/abonnements-enseignant, nette des remboursements, plus la part de 30% des périodes Pass PNICE déjà traitées.",
+        "outstanding": "Dû aux enseignants maintenant",
+        "outstandingHint": "Solde actuel de chaque enseignant (gagné moins déjà payé), qu'un retrait ait été demandé ou non.",
+        "pendingWithdrawals": "Retraits en attente",
+        "pendingWithdrawalsHint": "Déjà demandés par des enseignants, pas encore traités — voir Retraits.",
+        "paidOut": "Déjà payé",
+        "paidOutHint": "Somme de tous les retraits marqués payés."
+      },
+      "byTeacherHelp": "Chaque ligne : ce que cet enseignant a vendu, la commission de la plateforme dessus, sa part du Pass PNICE, ce qu'il a gagné en tout, ce qui lui a déjà été payé, et ce qu'il reste lui devoir.",
+      "empty": "Aucun enseignant n'a encore d'activité dans le grand livre.",
+      "col": {
+        "teacher": "Enseignant",
+        "grossSales": "Ventes brutes",
+        "commission": "Commission plateforme",
+        "platformPass": "Part Pass PNICE",
+        "netEarned": "Gagné net",
+        "paidOut": "Déjà payé",
+        "balance": "Solde dû",
+        "pendingBadge": "dont {amount} en attente de retrait"
+      },
+      "note": "Dérivé du grand livre des gains, de la file des retraits et des périodes Pass PNICE déjà traitées — aucune donnée saisie manuellement ici."
     },
     "support": {
       "subtitle": "Boîte de support : tickets des utilisateurs.",

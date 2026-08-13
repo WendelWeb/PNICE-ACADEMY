@@ -1287,6 +1287,7 @@
       "teachers": "Pwofesè",
       "payouts": "Retrè",
       "platformSplit": "Repartisyon Pass PNICE",
+      "reconciliation": "Bilan",
       "courses": "Fòmasyon",
       "subscriptions": "Abònman",
       "payments": "Peman",
@@ -1534,6 +1535,9 @@
         "cancel": "Anile",
         "confirm": "Konfime",
         "refund": "Ranbouse",
+        "refundHelp": "Bouton sa a pa rele ni Stripe ni MonCash — pa gen okenn API ranbousman pou MonCash. Li sèlman anrejistre ke ou DEJA voye lajan an tounen bay achtè a deyò platfòm nan (tablo bò Bazik/MonCash, oswa Stripe), epi li anile vant lan : elèv la pèdi aksè, pwofesè a pèdi pa li. Ekri kijan/kibò lajan an tounen — sa obligatwa epi li ap rete nan jounal odit la.",
+        "refundNotePlaceholder": "Egz. : Ranbouse via tablo bò Bazik, referans BZK_123…",
+        "refundConfirm": "Mwen deja ranbouse — anrejistre",
         "revoke": "Retire"
       }
     },
@@ -1669,7 +1673,44 @@
         "sent": "Voye ✓",
         "error": "Erè"
       },
-      "fxMovedNote": "Jere nan To chanj"
+      "fxMovedNote": "Jere nan To chanj",
+      "exportCsv": "Telechaje CSV",
+      "attempts": {
+        "title": "Tantativ acha",
+        "viewCarts": "Gade tout panye yo →",
+        "statGroup": "Konvèsyon",
+        "stat": {
+          "total": "Tantativ",
+          "totalHint": "Tout sesyon peman ki demare, konplete oswa pa konplete.",
+          "completed": "Konplete",
+          "conversion": "To konvèsyon",
+          "byRail": "Pa metòd"
+        },
+        "moncashFailures": "{count} erè MonCash resan — gade Sante sistèm",
+        "empty": "Pa gen tantativ ki ap tann oswa ki abandone.",
+        "guest": "Vizitè",
+        "col": {
+          "user": "Itilizatè",
+          "product": "Pwodwi",
+          "rail": "Metòd",
+          "amount": "Montan",
+          "providerOrder": "Kòmand kreye",
+          "state": "Eta",
+          "startedAt": "Kòmanse"
+        },
+        "rail": {
+          "card": "Visa/MC",
+          "moncash": "MonCash"
+        },
+        "providerOrder": {
+          "yes": "Wi",
+          "no": "Non — echèk founisè"
+        },
+        "state": {
+          "open": "Ap tann",
+          "abandoned": "Abandone"
+        }
+      }
     },
     "courses": {
       "subtitle": "Estatistik vant ak konpletay pa fòmasyon — estati, moun ki responsab li, fil validasyon. Modifye kontni an fèt nan estidyo pwofesè a.",
@@ -2974,6 +3015,36 @@
       },
       "empty": "Pa gen istorik ankò.",
       "computedBy": "Trete pa {name}"
+    },
+    "reconciliation": {
+      "subtitle": "Sa platfòm nan fè, sa yo dwe pwofesè yo, sa ki deja peye, ak sa ki toujou ap tann — tout nan yon sèl kote.",
+      "group": {
+        "platform": "Apèsi jeneral",
+        "byTeacher": "Pa pwofesè"
+      },
+      "kpi": {
+        "platformCommission": "Sa platfòm nan fè",
+        "platformCommissionHint": "Komisyon sou lavant kou/abònman-pwofesè, san sa ki ranbouse, plis pa 30% platfòm nan nan peryòd Pass PNICE ki deja trete.",
+        "outstanding": "Sa nou dwe pwofesè yo kounye a",
+        "outstandingHint": "Balans aktyèl chak pwofesè (sa yo fè mwens sa yo deja peye), kit yo mande yon retrè kit yo pa mande.",
+        "pendingWithdrawals": "Retrè k ap tann",
+        "pendingWithdrawalsHint": "Pwofesè yo deja mande yo, poko trete — gade nan Retrè.",
+        "paidOut": "Deja peye",
+        "paidOutHint": "Total tout retrè ki make peye."
+      },
+      "byTeacherHelp": "Chak liy : sa pwofesè sa a vann, komisyon platfòm nan sou sa, pa li nan Pass PNICE, tout sa li fè, sa yo deja peye l, ak sa nou toujou dwe l.",
+      "empty": "Pa gen okenn pwofesè ki gen aktivite nan liv la ankò.",
+      "col": {
+        "teacher": "Pwofesè",
+        "grossSales": "Lavant brit",
+        "commission": "Komisyon platfòm",
+        "platformPass": "Pa Pass PNICE",
+        "netEarned": "Fè net",
+        "paidOut": "Deja peye",
+        "balance": "Balans dwe",
+        "pendingBadge": "gen {amount} k ap tann retrè"
+      },
+      "note": "Sa soti nan liv gen yo, fil retrè yo, ak peryòd Pass PNICE ki deja trete — pa gen okenn done ki antre alamen isit la."
     },
     "support": {
       "subtitle": "Bwat sipò : tikè itilizatè yo.",

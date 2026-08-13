@@ -432,7 +432,7 @@ export async function grantSubscription(p: { userId: string; admin: AdminActor }
  * apart from the audit-log row, so double-clicking the button — or
  * refunding an already-refunded payment — can't double-credit.
  */
-export async function refundPayment(p: { userId: string; paymentId: string; admin: AdminActor }): Promise<void> {
+export async function refundPayment(p: { userId: string; paymentId: string; admin: AdminActor; note?: string }): Promise<void> {
   const [pay] = await db.select().from(T.payments).where(eq(T.payments.id, p.paymentId)).limit(1);
   if (pay && pay.status === 'completed') {
     await db.update(T.payments).set({ status: 'refunded' }).where(eq(T.payments.id, p.paymentId));
@@ -441,5 +441,9 @@ export async function refundPayment(p: { userId: string; paymentId: string; admi
       await db.update(T.enrollments).set({ status: 'refunded' }).where(eq(T.enrollments.relatedPaymentId, p.paymentId));
     }
   }
-  await recordAudit({ action: 'refund_payment', userId: p.userId, admin: p.admin, detail: p.paymentId });
+  // `note` — what the admin stated about where/how they already moved the
+  // money (Stage 3 finance surface) — lands in the audit row's `reason`
+  // exactly like a suspend/ban reason or a withdrawal-rejection note does,
+  // so the audit log reads as a real explanation instead of a bare payment id.
+  await recordAudit({ action: 'refund_payment', userId: p.userId, admin: p.admin, detail: p.paymentId, reason: p.note });
 }
