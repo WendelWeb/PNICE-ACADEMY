@@ -55,6 +55,7 @@ import { createBunnyVideo, bunnyUploadConfigured, type BunnyUploadResult } from 
 import { planOrganizedUpload } from '@/lib/bunny/organize';
 import { sendEmail } from '@/lib/email/resend';
 import { buildPayoutRequestedHtml } from '@/lib/email/templates';
+import { hasCap } from '@/lib/admin/guard';
 
 const T = schema;
 
@@ -148,8 +149,42 @@ async function requireOwnedCourse(
  * surfaces this to the teacher the moment the page refreshes post-edit — no
  * new i18n key needed for that.
  */
+/**
+ * WHO SKIPS THE RE-REVIEW GATE.
+ *
+ * Someone trusted to REVIEW other people's courses does not need their own
+ * edits reviewed — that would be asking them to approve themselves. So the
+ * exemption is tied to the `teachers.review` capability rather than to a
+ * hardcoded account or a global "off" switch: the owner (and any admin given
+ * that capability) edits a live course and the change is public immediately,
+ * while an ordinary marketplace teacher still goes through moderation.
+ *
+ * Turning the gate off for EVERYONE would have been the shorter change and a
+ * much worse one: a teacher could publish something clean, wait for approval,
+ * then edit it into anything at all with nobody looking. The whole point of
+ * the queue is that the published version is the reviewed version.
+ *
+ * Never throws — an unavailable capability check must not block a legitimate
+ * save, so it resolves to "not exempt", which is the cautious direction.
+ */
+async function skipsReviewOnEdit(): Promise<boolean> {
+  try {
+    return await hasCap('teachers.review');
+  } catch {
+    return false;
+  }
+}
+
 async function reenterReviewIfWasPublished(slug: string, ownerUserId: string, wasPublished: boolean): Promise<void> {
   if (!wasPublished) return;
+
+  if (await skipsReviewOnEdit()) {
+    // Stays published — but the public pages must still be told, or the edit
+    // sits invisible behind a cached catalog while the studio shows it saved.
+    writeOps.revalidateCoursePaths(slug);
+    return;
+  }
+
   await db
     .update(T.courses)
     .set({ status: 'pending_review', submittedAt: new Date(), hasUnpublishedChanges: true, updatedAt: new Date() })
