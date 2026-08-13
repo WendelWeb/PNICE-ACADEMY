@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { setRequestLocale, getTranslations } from 'next-intl/server';
-import { IconArrowLeft, IconUsers, IconCoin, IconCertificate, IconTrendingDown, IconPencil } from '@tabler/icons-react';
+import { IconArrowLeft, IconUsers, IconCoin, IconCertificate, IconTrendingDown } from '@tabler/icons-react';
 import { getCourseDetail } from '@/lib/admin/data';
 import { fmtUsdCents, fmtInt, fmtPct } from '@/lib/admin/format';
 import { hasCap } from '@/lib/admin/guard';
@@ -20,7 +20,6 @@ export default async function CourseDetailPage({
 
   const t = await getTranslations('admin.courses');
   const tc = await getTranslations('admin.cms.list');
-  const canEdit = await hasCap('courses.edit');
   const detail = await getCourseDetail(slug);
   if (!detail) notFound();
 
@@ -40,11 +39,15 @@ export default async function CourseDetailPage({
             <span className="font-mono text-[10px] uppercase text-ink/40">{course.code}</span>
             <h1 className="font-display text-xl font-bold text-ink">{locale === 'ht' ? course.title_ht : course.title_fr}</h1>
           </div>
-          {canEdit && (
-            <Link href={`/admin/cours/${slug}/editer`} className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-ochre/40 px-2.5 py-1.5 font-mono text-[11px] font-medium text-ochre hover:bg-ochre/10">
-              <IconPencil size={13} /> {tc('edit')}
-            </Link>
-          )}
+          {/* NO EDIT BUTTON HERE, deliberately. This is the platform-admin
+              space: it moderates and observes courses, it does not author
+              them. Authoring lives in the teacher studio for EVERY teacher,
+              the owner included — a marketplace where the operator edits
+              content through a private back door is not a marketplace.
+              (The button that used to sit here pointed at
+              /admin/cours/[slug]/editer, which has been a redirect since
+              authoring moved out — a dead control promising something the
+              app no longer does.) */}
         </div>
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat icon={<IconUsers size={14} />} label={t('detail.enrolled')} value={fmtInt(enrolled)} />

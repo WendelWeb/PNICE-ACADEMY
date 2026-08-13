@@ -53,7 +53,10 @@ export default async function CoursePreviewPage({
   return (
     <div className="mx-auto max-w-[820px] space-y-4">
       <div className="flex items-center justify-between">
-        <Link href={`/admin/cours/${slug}/editer`} className="inline-flex items-center gap-1 font-mono text-[11px] text-ink/55 hover:text-ink">
+        {/* Back to the course's ADMIN detail, not to an editor: this preview
+            is a moderation tool. The old target (/admin/cours/[slug]/editer)
+            has been a redirect since authoring moved to the studio. */}
+        <Link href={`/admin/cours/${slug}`} className="inline-flex items-center gap-1 font-mono text-[11px] text-ink/55 hover:text-ink">
           <IconArrowLeft size={14} /> {t('back')}
         </Link>
         <span className="inline-flex items-center gap-1 rounded bg-ochre/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-ochre">

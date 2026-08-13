@@ -23,11 +23,22 @@
  * is chosen so the worst interleaving is a *missing* follow-up write that the
  * next delivery heals — never a double grant or a double charge.
  *
- * MONEY IS RECORDED IN GOURDES. MonCash charges HTG; storing the USD list
- * price here would make the admin ledger and the buyer's receipt disagree with
- * their bank. `amountHtg` is what MonCash actually took, and `currency` says
- * so. `usdCentsEquivalent` is carried separately for the teacher-earnings
- * split, which the rest of the platform computes in USD cents.
+ * MONEY IS RECORDED IN USD CENTS — the platform's one accounting unit.
+ *
+ * This was originally the other way round (gourdes in `amountCents`, currency
+ * 'htg') on the reasoning that the record should match the buyer's bank. That
+ * was wrong, and it corrupted the books the first time it was used: every
+ * admin revenue figure reads `payments.amount_cents` and aggregates it with
+ * `sum()` WITHOUT looking at `currency`, so a 264-gourde charge was displayed
+ * as "$2.64" and, worse, ADDED to dollar totals. Two currencies in one column
+ * is not a display bug, it is a broken ledger.
+ *
+ * So the row now records what the platform earned, in the unit everything else
+ * speaks: `usdCentsEquivalent` — the same figure as the course price, the same
+ * figure the teacher ledger books the 70% from. The fact that the buyer paid
+ * in gourdes is carried by `provider = 'moncash'`, and the exact gourde amount
+ * appears where it matters to the buyer: on MonCash's own confirmation and on
+ * the "(~X HTG)" line of the receipt.
  */
 import { db } from '@/db';
 import { payments, users } from '@/db/schema';
@@ -97,8 +108,10 @@ export async function fulfillMoncashOrder(
           userId: input.userDbId,
           provider: 'moncash',
           providerRef: input.orderId,
-          amountCents: input.amountHtg,
-          currency: 'htg',
+          // USD cents, NOT the gourdes charged — see the file header. Every
+          // admin revenue figure sums this column blind to `currency`.
+          amountCents: input.usdCentsEquivalent,
+          currency: 'usd',
           status: 'completed',
           productType: 'course',
           courseSlug: input.courseSlug,
