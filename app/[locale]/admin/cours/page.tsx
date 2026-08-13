@@ -91,10 +91,22 @@ export default async function CoursesPage({
   const ownerLabel = (ownerUserId: string | null) => (ownerUserId && ownerNames.get(ownerUserId)) || '—';
 
   const params = paramsOf(searchParams);
-  const tab = canReview && params.get('tab') === 'review' ? 'review' : 'all';
   const pendingRows = rows
     .filter((r) => r.rawStatus === 'pending_review')
     .sort((a, b) => (a.submittedAt ?? '').localeCompare(b.submittedAt ?? ''));
+
+  /**
+   * Land on the work, not on the inventory. Arriving with no ?tab and
+   * something waiting used to show the full catalogue — a screen with no
+   * approve/reject anywhere — so a course could sit pending for days while the
+   * reviewer looked straight at a page that gave no sign of it. An explicit
+   * ?tab=all still wins, so "show me everything" remains one click away.
+   */
+  const explicitTab = params.get('tab');
+  const tab =
+    canReview && (explicitTab === 'review' || (explicitTab === null && pendingRows.length > 0))
+      ? 'review'
+      : 'all';
   const sort = (params.get('sort') as SortKey) || 'revenue';
   const dir = params.get('dir') === 'asc' ? 'asc' : 'desc';
   const mult = dir === 'asc' ? 1 : -1;
@@ -147,8 +159,10 @@ export default async function CoursesPage({
 
       {canReview && (
         <div className="flex flex-wrap gap-2 border-b border-ink/10 pb-2">
+          {/* `tab: 'all'` explicitly, not null — with the auto-landing above,
+              clearing the param would just bounce back to the review tab. */}
           <Link
-            href={`${BASE}${mergeParams(params, { tab: null })}`}
+            href={`${BASE}${mergeParams(params, { tab: 'all' })}`}
             className={cn(
               'rounded-lg px-3 py-1.5 font-mono text-[11px] uppercase tracking-wide transition-colors',
               tab === 'all' ? 'bg-ink text-paper-light' : 'text-ink/55 hover:bg-ink/[0.05]',
@@ -159,11 +173,24 @@ export default async function CoursesPage({
           <Link
             href={`${BASE}${mergeParams(params, { tab: 'review' })}`}
             className={cn(
-              'rounded-lg px-3 py-1.5 font-mono text-[11px] uppercase tracking-wide transition-colors',
+              'flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-mono text-[11px] uppercase tracking-wide transition-colors',
               tab === 'review' ? 'bg-ink text-paper-light' : 'text-ink/55 hover:bg-ink/[0.05]',
             )}
           >
-            {tr('tabPending')} ({pendingRows.length})
+            {tr('tabPending')}
+            {/* An ochre count reads as "act on me" where "(1)" read as a
+                footnote — this is the one number on the page that means work
+                is waiting on a human. */}
+            {pendingRows.length > 0 && (
+              <span
+                className={cn(
+                  'rounded px-1.5 py-px text-[10px] font-bold tabular-nums',
+                  tab === 'review' ? 'bg-paper-light/25 text-paper-light' : 'bg-ochre text-ink',
+                )}
+              >
+                {pendingRows.length}
+              </span>
+            )}
           </Link>
         </div>
       )}
