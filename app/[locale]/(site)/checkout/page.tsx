@@ -129,13 +129,14 @@ export default async function CheckoutPage({
 
   // THE EXACT DEBIT, not an estimate. Everywhere else on the site a gourde
   // figure is a conversion of the real (USD) price and carries a "~" to say
-  // so. Here it stops being an estimate: MonCash charges in gourdes, and this
-  // is the very number /api/checkout/moncash will send to the gateway —
-  // `usdCentsToHtg` at the same live rate, so the summary and the wallet
-  // debit cannot disagree. Courses only, because MonCash refuses
-  // subscriptions (that route returns `subscription_unsupported`).
-  const moncashIsLive = !isSub && live.includes('moncash');
-  const moncashExactHtg = moncashIsLive
+  // so. Here it stops being an estimate: both Haitian wallets charge in
+  // gourdes, and this is the very number the checkout route will send to the
+  // gateway — `usdCentsToHtg` at the same live rate, so the summary and the
+  // debit cannot disagree. One line serves either rail because both compute
+  // the identical figure. Courses only: neither wallet can renew a
+  // subscription (those routes return `subscription_unsupported`).
+  const walletIsLive = !isSub && (live.includes('moncash') || live.includes('natcash'));
+  const walletExactHtg = walletIsLive
     ? formatHtg(usdCentsToHtg(Math.round(amountUsd * 100), await getFxRate()))
     : null;
 
@@ -202,13 +203,13 @@ export default async function CheckoutPage({
                     </span>
                   </div>
                 </div>
-                {moncashExactHtg ? (
+                {walletExactHtg ? (
                   <>
                     <p className="mt-1 text-right font-mono text-xs text-graphite/70">
-                      {moncashExactHtg}
+                      {walletExactHtg}
                     </p>
                     <p className="mt-0.5 text-right font-mono text-[10px] leading-snug text-graphite/50">
-                      {t('moncashExactNote')}
+                      {live.includes('moncash') ? t('moncashExactNote') : t('natcashExactNote')}
                     </p>
                   </>
                 ) : (

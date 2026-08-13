@@ -21,6 +21,7 @@
 import { activeProviders as toggledProviders } from '@/lib/admin/platform/store';
 import type { ProviderKey } from '@/lib/admin/platform/keys';
 import { moncashConfigured, moncashMode } from './moncash';
+import { natcashConfigured, natcashMode } from './natcash';
 
 /**
  * Rails with a real, live charge path. Card = Stripe checkout, always built.
@@ -34,9 +35,26 @@ import { moncashConfigured, moncashMode } from './moncash';
  * automatically, everywhere, with no other edit.
  */
 export function implementedProviders(): ProviderKey[] {
-  // Same MonCash-first order as `checkoutProviders()` so the badge rows and
-  // the selector agree on which rail leads.
-  return moncashSellable() ? ['moncash', 'card'] : ['card'];
+  // Same mobile-money-first order as `checkoutProviders()` so the badge rows
+  // and the selector agree on which rail leads.
+  return [
+    ...(moncashSellable() ? (['moncash'] as ProviderKey[]) : []),
+    ...(natcashSellable() ? (['natcash'] as ProviderKey[]) : []),
+    'card',
+  ];
+}
+
+/**
+ * NatCash may be OFFERED TO THE PUBLIC on exactly the same terms as MonCash:
+ * configured, and not pointed at a sandbox on a production deployment. Same
+ * reasoning too — this app grants course access on the gateway's word, so a
+ * sandbox rail on the live site would hand out paid courses for nothing. The
+ * check is positive, so a missing or misspelled KOBARA_MODE fails closed.
+ */
+export function natcashSellable(): boolean {
+  if (!natcashConfigured()) return false;
+  if (natcashMode() === 'live') return true;
+  return process.env.VERCEL_ENV !== 'production';
 }
 
 /**
@@ -78,7 +96,11 @@ export async function checkoutProviders(): Promise<ProviderKey[]> {
   // already use should be the path of least resistance — a card is the
   // fallback here, not the norm. Ordering is the whole mechanism: nothing
   // else needs to know which rail is "preferred".
-  return moncashOfferable() ? ['moncash', 'card'] : ['card'];
+  return [
+    ...(moncashOfferable() ? (['moncash'] as ProviderKey[]) : []),
+    ...(natcashSellable() ? (['natcash'] as ProviderKey[]) : []),
+    'card',
+  ];
 }
 
 /**

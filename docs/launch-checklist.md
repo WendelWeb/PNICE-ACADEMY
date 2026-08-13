@@ -260,8 +260,21 @@ rate-limitées par IP (protection anti-abus basique, en mémoire par instance
     Valeurs par défaut déjà correctes pour lancer, aucune action requise tant
     que tu ne veux pas les changer.
 - **Enregistre tes cours** (Étape 5) — le goulot d'étranglement réel.
-- **MonCash / NatCash** : différés (aucun code, pas de rail actif). Lancement
-  **carte uniquement** via Stripe ; on ajoutera les rails haïtiens ensuite.
+- **MonCash** : EN PRODUCTION, via l'agrégateur Bazik. Encaisse déjà de vraies
+  gourdes. Vérifie que `MONCASH_PROVIDER=bazik` est bien posé sur Vercel — s'il
+  manque, MonCash disparaît de la caisse **en silence**, sans erreur.
+- **NatCash** : rail construit, via la passerelle **Kobara** (api.kobara.app).
+  Il n'apparaît à la caisse que quand ses deux clés sont posées sur Vercel :
+  1. `KOBARA_SECRET_KEY` — clé serveur du tableau de bord Kobara. Le préfixe
+     décide de l'environnement (`_test_` = bac à sable, tout le reste = réel).
+  2. `KOBARA_WEBHOOK_SECRET` — **indispensable**. Sur ce rail, l'accès au cours
+     est accordé sur la foi de la signature HMAC du webhook, parce que Kobara
+     ne documente aucun endpoint pour reinterroger un paiement. Sans ce secret,
+     `/api/webhooks/natcash` refuse tout, et aucun achat NatCash n'aboutira.
+  3. Dans le tableau de bord Kobara, déclare l'URL de notification :
+     `https://pniceacademy.com/api/webhooks/natcash`
+  Comme pour MonCash, une clé de test sur un déploiement de production ne sera
+  jamais proposée au public (`natcashSellable()` échoue côté fermé).
 
 ---
 

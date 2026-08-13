@@ -50,11 +50,17 @@ export default async function MerciPage({
   // carries `?moncash=1&course=<slug>` instead of a Stripe session id. Nothing
   // is re-verified here (that would be a second, slower round trip to prove
   // something already proved); this only decides which course to name.
+  // Either Haitian wallet lands here the same way — the return route appends
+  // its own flag, and from this page's point of view the two are identical:
+  // a gourde purchase whose amount and reference live on the gateway's side.
   const paidWithMoncash = searchParams.moncash === '1';
+  const paidWithNatcash = searchParams.natcash === '1';
+  const paidWithWallet = paidWithMoncash || paidWithNatcash;
+  const walletName = paidWithNatcash ? 'NatCash' : 'MonCash';
   const moncashCourseSlug =
     typeof searchParams.course === 'string' ? searchParams.course : undefined;
   const moncashCourse =
-    paidWithMoncash && moncashCourseSlug ? await getCourseBySlug(moncashCourseSlug) : null;
+    paidWithWallet && moncashCourseSlug ? await getCourseBySlug(moncashCourseSlug) : null;
   const moncashItemName = moncashCourse
     ? (locale === 'fr' ? moncashCourse.title_fr : moncashCourse.title_ht) || moncashCourse.title_ht
     : null;
@@ -70,7 +76,7 @@ export default async function MerciPage({
   // and offers one tap back to the callback that settles it. The
   // reconciliation cron closes it out even if they never tap.
   const pendingOrderId =
-    paidWithMoncash && searchParams.pending === '1' && typeof searchParams.order === 'string'
+    paidWithWallet && searchParams.pending === '1' && typeof searchParams.order === 'string'
       ? searchParams.order
       : null;
 
@@ -111,7 +117,7 @@ export default async function MerciPage({
               {t('pending.title')}
             </h1>
             <p className="mt-3 text-[15px] leading-relaxed text-graphite/80">
-              {t('pending.body')}
+              {t('pending.body', { wallet: walletName })}
             </p>
 
             <dl className="mt-6 space-y-2.5 border-t border-ink/10 pt-5 text-left">
@@ -138,10 +144,13 @@ export default async function MerciPage({
 
           <div className="mt-8">
             {/* Straight back to the callback that settles the order — the same
-                URL MonCash itself calls, so one tap is a real re-verification,
-                not a page reload that re-renders this same message. */}
+                URL the gateway itself calls, so one tap is a real
+                re-verification, not a page reload that re-renders this same
+                message. It must be the rail the buyer actually used: asking
+                MonCash about a NatCash order gets a confident "never heard of
+                it". */}
             <a
-              href={`/api/payments/moncash/retour?orderId=${encodeURIComponent(pendingOrderId)}`}
+              href={`/api/payments/${paidWithNatcash ? 'natcash' : 'moncash'}/retour?orderId=${encodeURIComponent(pendingOrderId)}`}
               className={buttonClasses('primary', 'lg', 'inline-flex')}
             >
               {t('pending.recheck')}
@@ -233,7 +242,7 @@ export default async function MerciPage({
           {/* MonCash: the amount and reference live on Digicel's side, and the
               return URL carries neither. Naming the course is both honest and
               the only thing the buyer actually needs to see confirmed. */}
-          {paidWithMoncash && moncashItemName && (
+          {paidWithWallet && moncashItemName && (
             <dl className="mt-6 space-y-2.5 border-t border-ink/10 pt-5 text-left">
               <div className="flex items-baseline justify-between gap-3">
                 <dt className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-ink/45">
@@ -247,7 +256,7 @@ export default async function MerciPage({
                 <dt className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-ink/45">
                   {t('method')}
                 </dt>
-                <dd className="text-right text-sm font-medium text-ink">MonCash</dd>
+                <dd className="text-right text-sm font-medium text-ink">{walletName}</dd>
               </div>
             </dl>
           )}

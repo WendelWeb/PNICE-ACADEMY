@@ -78,6 +78,9 @@ export function PaymentMethods({
   const applied = promo?.applied ?? null;
   const buttonLabel = applied ? `${t('pay')} ${formatUsd(applied.netCents / 100)}` : payLabel;
 
+  // The chosen wallet's brand name, for refusals that apply to both.
+  const walletName = selected === 'natcash' ? 'NatCash' : 'MonCash';
+
   async function pay() {
     if (!selected || busy) return;
     setBusy(true);
@@ -87,7 +90,14 @@ export function PaymentMethods({
       // protocol: Stripe hands back a hosted-checkout URL, MonCash hands back
       // a gateway redirect carrying a one-payment token. Both answer the same
       // `{ url }` shape, so everything below this line is rail-agnostic.
-      const endpoint = selected === 'moncash' ? '/api/checkout/moncash' : '/api/checkout';
+      // One endpoint per rail because each speaks a different protocol.
+      // Everything below this line is rail-agnostic: all three answer { url }.
+      const endpoint =
+        selected === 'moncash'
+          ? '/api/checkout/moncash'
+          : selected === 'natcash'
+            ? '/api/checkout/natcash'
+            : '/api/checkout';
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -123,21 +133,24 @@ export function PaymentMethods({
             ? t(`promo.error.${data.reason}`)
             : t('promo.payInvalid'),
         );
+      } else if (data.error === 'natcash_unreachable' || data.error === 'natcash_error') {
+        // The NatCash gateway is down — not the buyer's fault, and not
+        // something an immediate retry fixes. Point at a rail that works.
+        setErrorMsg(t('natcashDown'));
       } else if (data.error === 'moncash_unreachable') {
         // Digicel is down, not the buyer's fault and not something retrying
         // immediately will fix — point them at the rail that still works.
         setErrorMsg(t('moncashDown'));
       } else if (data.error === 'subscription_unsupported') {
-        // MonCash cannot renew anything — say so plainly instead of a generic
-        // failure the buyer would just retry.
-        setErrorMsg(t('moncashSubscription'));
+        // Neither wallet can renew anything — say so plainly, naming the rail
+        // the buyer actually picked, instead of a generic failure they retry.
+        setErrorMsg(t('walletSubscription', { wallet: walletName }));
       } else if (data.error === 'promo_unsupported') {
-        setErrorMsg(t('moncashPromo'));
+        setErrorMsg(t('walletPromo', { wallet: walletName }));
       } else if (data.error === 'amount_too_large') {
-        // MonCash refuses anything above its own wallet limit — say so
-        // plainly and point at the rail that still works, same tone as
-        // moncashSubscription/moncashPromo above.
-        setErrorMsg(t('moncashAmountTooLarge'));
+        // Both wallets refuse anything above 75 000 HTG in one transaction —
+        // say so plainly and point at the rail that still works.
+        setErrorMsg(t('walletAmountTooLarge', { wallet: walletName }));
       } else {
         setErrorMsg(t('payErr'));
       }

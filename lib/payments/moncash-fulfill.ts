@@ -53,7 +53,7 @@ import { getFxRate } from '@/lib/fx';
 
 type NewMoncashPaymentRow = {
   userId: string;
-  provider: 'moncash';
+  provider: HtgRail;
   providerRef: string;
   amountCents: number;
   currency: 'usd';
@@ -93,7 +93,17 @@ async function insertMoncashPayment(values: NewMoncashPaymentRow): Promise<{ id:
   }
 }
 
+/**
+ * Which Haitian mobile-money rail the gourdes came through. It lands in
+ * `payments.provider`, so it is what tells a refund, a reconciliation and the
+ * admin's method breakdown WHICH wallet to look in. Defaults to 'moncash'
+ * because that rail predates NatCash and every existing caller means it.
+ */
+export type HtgRail = 'moncash' | 'natcash';
+
 export type MoncashFulfilInput = {
+  /** Defaults to 'moncash' — see `HtgRail`. */
+  rail?: HtgRail;
   /** OUR reference — the checkout_sessions row id we passed to MonCash. */
   orderId: string;
   userDbId: string;
@@ -116,12 +126,16 @@ export type MoncashFulfilInput = {
 export async function fulfillMoncashOrder(
   input: MoncashFulfilInput,
 ): Promise<'processed' | 'already' | 'error'> {
+  // One binding, used by the idempotency lookup, the insert and the race
+  // re-read alike — so a NatCash payment can never be deduplicated against a
+  // MonCash one that happens to share an order id.
+  const rail: HtgRail = input.rail ?? 'moncash';
   try {
     const existing = (
       await db
         .select({ id: payments.id })
         .from(payments)
-        .where(and(eq(payments.provider, 'moncash'), eq(payments.providerRef, input.orderId)))
+        .where(and(eq(payments.provider, rail), eq(payments.providerRef, input.orderId)))
         .limit(1)
     )[0];
 
@@ -146,7 +160,7 @@ export async function fulfillMoncashOrder(
     const inserted = (
       await insertMoncashPayment({
         userId: input.userDbId,
-        provider: 'moncash',
+        provider: rail,
         providerRef: input.orderId,
         // USD cents, NOT the gourdes charged — see the file header. Every
         // admin revenue figure sums this column blind to `currency`.
@@ -174,7 +188,7 @@ export async function fulfillMoncashOrder(
         await db
           .select({ id: payments.id })
           .from(payments)
-          .where(and(eq(payments.provider, 'moncash'), eq(payments.providerRef, input.orderId)))
+          .where(and(eq(payments.provider, rail), eq(payments.providerRef, input.orderId)))
           .limit(1)
       )[0];
       if (raced) {
@@ -210,7 +224,7 @@ export async function fulfillMoncashOrder(
     await sendMoncashReceipt(input);
     return 'processed';
   } catch (e) {
-    console.error('[moncash/fulfill] failed:', e instanceof Error ? e.message : e);
+    console.error('[htg/fulfill] failed:', e instanceof Error ? e.message : e);
     return 'error';
   }
 }
@@ -253,6 +267,6 @@ async function sendMoncashReceipt(input: MoncashFulfilInput): Promise<void> {
       text: receipt.text,
     });
   } catch (e) {
-    console.error('[moncash/fulfill] receipt email failed (non-fatal):', e instanceof Error ? e.message : e);
+    console.error('[htg/fulfill] receipt email failed (non-fatal):', e instanceof Error ? e.message : e);
   }
 }

@@ -814,8 +814,6 @@
       "guarantee": "Pa satisfè? Kontakte sipò a — nou ka ede w jwenn yon ranbousman.",
       "accepted": "Nou aksepte"
     },
-    "moncashSubscription": "MonCash pa ka fè peman ki repete. Pou yon abònman, sèvi ak yon kat.",
-    "moncashPromo": "Kòd rabè yo pa mache ak MonCash pou kounye a — sèvi ak yon kat.",
     "moncashPhoneLabel": "Nimewo MonCash ou",
     "moncashPhoneHint": "N ap voye yon demann peman sou telefòn sa a. Se sou li w ap konfime ak kòd sekrè w.",
     "moncashBadPhone": "Nimewo a pa sanble yon nimewo ayisyen. Egzanp : 3866 2809",
@@ -825,8 +823,12 @@
     "moncashTimeout": "Nou pa jwenn repons ou. Si w konfime peman an, aksè w ap louvri poukont li — tcheke tablodbò w nan kèk minit.",
     "moncashTestNotice": "MODE TÈS — MonCash nan mòd similasyon. Peman an pa reyèl: okenn goud p ap kite kont ou. Se pou tès sèlman.",
     "moncashDown": "MonCash pa reponn kounye a — se yon pwoblèm bò kote Digicel. Eseye ankò nan kèk minit, oswa peye ak yon kat.",
-    "moncashAmountTooLarge": "Montan sa a depase limit MonCash la (75 000 HTG). Pou acha sa a, peye ak yon kat.",
-    "moncashExactNote": "Se montan egzak sa a MonCash ap pran sou kont ou."
+    "moncashExactNote": "Se montan egzak sa a MonCash ap pran sou kont ou.",
+    "natcashDown": "NatCash pa reponn kounye a. Eseye ankò nan kèk minit, oswa peye ak MonCash oswa yon kat.",
+    "walletSubscription": "{wallet} pa ka fè peman ki repete. Pou yon abònman, sèvi ak yon kat.",
+    "walletPromo": "Kòd rabè yo pa mache ak {wallet} pou kounye a — sèvi ak yon kat.",
+    "walletAmountTooLarge": "Montan sa a depase limit {wallet} la (75 000 HTG). Pou acha sa a, peye ak yon kat.",
+    "natcashExactNote": "Se montan egzak sa a NatCash ap pran sou kont ou."
   },
   "merci": {
     "title": "Mèsi! Peman an resevwa",
@@ -842,7 +844,7 @@
     "method": "Mwayen peman",
     "pending": {
       "title": "N ap verifye peman w la",
-      "body": "Nou resevwa demann peman w. MonCash poko konfime l ban nou — sa ka pran kèk minit. Pa peye yon dezyèm fwa: si lajan an soti nan kont ou, aksè w ap louvri poukont li.",
+      "body": "Nou resevwa demann peman w. {wallet} poko konfime l ban nou — sa ka pran kèk minit. Pa peye yon dezyèm fwa: si lajan an soti nan kont ou, aksè w ap louvri poukont li.",
       "recheck": "Verifye kounye a",
       "reassure": "Ou ka fèmen paj sa a. Nou kontinye verifye poukont nou, epi w ap resevwa yon imel lè aksè w pare.",
       "contact": "Kontakte nou ak referans lan"

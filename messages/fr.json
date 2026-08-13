@@ -814,8 +814,6 @@
       "guarantee": "Pas satisfait(e) ? Contacte le support — on peut t'aider à obtenir un remboursement.",
       "accepted": "On accepte"
     },
-    "moncashSubscription": "MonCash ne gère pas les paiements récurrents. Pour un abonnement, utilise une carte.",
-    "moncashPromo": "Les codes promo ne fonctionnent pas encore avec MonCash — utilise une carte.",
     "moncashPhoneLabel": "Ton numéro MonCash",
     "moncashPhoneHint": "Nous envoyons une demande de paiement sur ce téléphone. C’est là que tu confirmes avec ton code secret.",
     "moncashBadPhone": "Ce numéro ne ressemble pas à un numéro haïtien. Exemple : 3866 2809",
@@ -825,8 +823,12 @@
     "moncashTimeout": "Nous n’avons pas reçu ta réponse. Si tu as confirmé le paiement, ton accès s’ouvrira tout seul — vérifie ton tableau de bord dans quelques minutes.",
     "moncashTestNotice": "MODE TEST — MonCash est en simulation. Le paiement n’est pas réel : aucune gourde ne quittera ton compte. Réservé aux tests.",
     "moncashDown": "MonCash ne répond pas en ce moment — le problème vient de Digicel. Réessaie dans quelques minutes, ou paie par carte.",
-    "moncashAmountTooLarge": "Ce montant dépasse la limite MonCash (75 000 HTG). Pour cet achat, paie par carte.",
-    "moncashExactNote": "Montant exact prélevé par MonCash sur votre compte."
+    "moncashExactNote": "Montant exact prélevé par MonCash sur votre compte.",
+    "natcashDown": "NatCash ne répond pas actuellement. Réessaie dans quelques minutes, ou paie avec MonCash ou une carte.",
+    "walletSubscription": "{wallet} ne peut pas faire de paiement récurrent. Pour un abonnement, utilise une carte.",
+    "walletPromo": "Les codes promo ne fonctionnent pas encore avec {wallet} — utilise une carte.",
+    "walletAmountTooLarge": "Ce montant dépasse la limite {wallet} (75 000 HTG). Pour cet achat, paie avec une carte.",
+    "natcashExactNote": "Montant exact prélevé par NatCash sur votre compte."
   },
   "merci": {
     "title": "Merci ! Paiement reçu",
@@ -842,7 +844,7 @@
     "method": "Moyen de paiement",
     "pending": {
       "title": "Nous vérifions ton paiement",
-      "body": "Nous avons bien reçu ta demande de paiement. MonCash ne nous l’a pas encore confirmé — cela peut prendre quelques minutes. Ne paie pas une deuxième fois : si l’argent est parti de ton compte, ton accès s’ouvrira tout seul.",
+      "body": "Nous avons bien reçu ta demande de paiement. {wallet} ne nous l’a pas encore confirmé — cela peut prendre quelques minutes. Ne paie pas une deuxième fois : si l’argent est parti de ton compte, ton accès s’ouvrira tout seul.",
       "recheck": "Vérifier maintenant",
       "reassure": "Tu peux fermer cette page. Nous continuons de vérifier de notre côté, et tu recevras un e-mail dès que ton accès est prêt.",
       "contact": "Nous écrire avec cette référence"
