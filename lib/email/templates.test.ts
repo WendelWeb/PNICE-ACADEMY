@@ -101,6 +101,41 @@ describe('buildReceiptHtml', () => {
     const expectedHtg = Math.round((9 * 140) / 50) * 50;
     expect(withRate).toContain(expectedHtg.toLocaleString('fr-FR'));
   });
+
+  describe('htgExact — the REAL MonCash charge, frozen at sale time (Stage 2 money-exactness pass)', () => {
+    // Reproduces the live production sale the audit found: course $2.00,
+    // MonCash actually took 264 HTG (usdCentsToHtg(200, 132)), but the OLD
+    // receipt showed toHtgAt(2, rate) — 250 HTG — a real, live mismatch.
+    const moncashCase = { ...base, locale: 'ht' as const, amountCents: 200 };
+
+    it('shows the exact htgExact figure instead of deriving one from amountCents/rateHtg', () => {
+      const { html, text } = buildReceiptHtml({ ...moncashCase, htgExact: 264, rateHtg: 132 });
+      expect(html).toContain('264');
+      expect(text).toContain('264');
+      // NOT the old toHtgAt(2, 132)=250 derivation, even though rateHtg=132
+      // was passed alongside it — htgExact must win outright.
+      expect(html).not.toContain('(~250 HTG)');
+    });
+
+    it('ignores rateHtg entirely once htgExact is set — a later FX-rate change cannot move it', () => {
+      const atSaleTime = buildReceiptHtml({ ...moncashCase, htgExact: 264, rateHtg: 132 });
+      const afterAdminMovedTheRate = buildReceiptHtml({ ...moncashCase, htgExact: 264, rateHtg: 135 });
+      expect(afterAdminMovedTheRate.html).toBe(atSaleTime.html);
+      expect(afterAdminMovedTheRate.text).toBe(atSaleTime.text);
+    });
+
+    it('rounds a fractional htgExact to the nearest whole gourde', () => {
+      const { html } = buildReceiptHtml({ ...moncashCase, htgExact: 263.6 });
+      expect(html).toContain('264');
+    });
+
+    it('falls back to the rateHtg derivation when htgExact is omitted (Stripe / no gourdes charged)', () => {
+      const withExact = buildReceiptHtml({ ...moncashCase, htgExact: 264 });
+      const withoutExact = buildReceiptHtml({ ...moncashCase, rateHtg: 132 });
+      expect(withExact.html).not.toBe(withoutExact.html);
+      expect(withoutExact.html).toContain('(~250 HTG)'); // toHtgAt(2, 132), the pre-existing estimate path
+    });
+  });
 });
 
 describe('buildCartReminderHtml', () => {

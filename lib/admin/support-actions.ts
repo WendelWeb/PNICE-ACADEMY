@@ -35,6 +35,7 @@ import {
 import { checkBunnyStream, type BunnyStatus } from '@/lib/admin/health/bunny';
 import { sendEmail, emailLive, DEFAULT_FROM } from '@/lib/email/resend';
 import { buildTestEmailHtml, buildSupportReplyHtml, buildTicketReceivedHtml } from '@/lib/email/templates';
+import { recordRefundReversal } from '@/lib/teacher/earnings';
 
 export type SupResult = { ok: boolean; message?: string; id?: string };
 
@@ -117,6 +118,11 @@ export async function refundFromTicketAction(ticketId: string): Promise<SupResul
     if (ticket.type !== 'refund' || !payment) return { ok: false, message: 'no_payment' };
     if (payment.status !== 'succeeded') return { ok: false, message: 'not_refundable' };
     await refundPayment({ userId: payment.userId, paymentId: payment.id, admin: actor });
+    // Reverses the teacher's earnings-ledger 'sale' row — see
+    // lib/admin/data/real/users.ts's `refundPayment` doc comment for why
+    // this call lives at the 'use server' caller instead of inside that
+    // function.
+    await recordRefundReversal({ id: payment.id });
     await setTicketStatus({ ticketId, status: 'resolved', actor });
     return { ok: true };
   } catch (e) {

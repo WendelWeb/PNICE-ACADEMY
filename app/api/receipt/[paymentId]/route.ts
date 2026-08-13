@@ -17,7 +17,7 @@ import { clerkEnabled } from '@/lib/clerk';
 import { resolveUserId } from '@/lib/learner/access';
 import { getCourseBySlug } from '@/lib/courses/source';
 import { getFxRate } from '@/lib/fx';
-import { htgLabelAt } from '@/lib/money';
+import { receiptHtgText } from '@/lib/money';
 import { buildReceiptPdf } from '@/lib/pdf/receipt';
 
 export const runtime = 'nodejs';
@@ -65,14 +65,20 @@ export async function GET(req: NextRequest, { params }: { params: { paymentId: s
         : course.title_ht
       : payment.courseSlug ?? (locale === 'fr' ? 'Abonnement mensuel' : 'Abònman chak mwa');
 
-    const rateHtg = await getFxRate();
+    // The gourdes actually charged, frozen at sale time (payments.amount_htg,
+    // Stage 2 money-exactness pass) — never recomputed from a live FX rate
+    // once it exists, so the PDF can't drift after an admin later moves the
+    // rate. Only MonCash rows ever have it; everything else (Stripe, or a
+    // MonCash row recorded before this column existed) falls back to the
+    // same live-rate ESTIMATE as before (`receiptHtgText`, lib/money.ts).
     const ref = payment.providerRef ?? payment.id;
+    const htgText = receiptHtgText(payment.amountHtg, payment.amountCents, await getFxRate());
     const pdfBytes = await buildReceiptPdf({
       name: user?.name ?? null,
       itemName,
       amountCents: payment.amountCents,
       currency: payment.currency,
-      htgText: htgLabelAt(payment.amountCents / 100, rateHtg),
+      htgText,
       dateIso: payment.createdAt.toISOString(),
       ref,
       locale,

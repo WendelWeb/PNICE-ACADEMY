@@ -43,6 +43,7 @@ import {
   buildEngagementReminderHtml,
 } from '@/lib/email/templates';
 import { getCourseBySlug } from '@/lib/courses/source';
+import { recordRefundReversal } from '@/lib/teacher/earnings';
 
 export type ActionResult = { ok: boolean; message?: string };
 
@@ -120,6 +121,14 @@ export async function refundPaymentAction(userId: string, paymentId: string): Pr
   try {
     const { actor } = await requireAdmin('transactions.refund');
     await refundPayment({ userId, paymentId, admin: actor });
+    // Reverses the teacher's earnings-ledger 'sale' row for this payment —
+    // see lib/admin/data/real/users.ts's `refundPayment` doc comment for why
+    // this lives HERE and not inside that function (client-bundle boundary:
+    // `recordRefundReversal` pulls in `@clerk/nextjs/server`, which that
+    // module cannot import). Provider-agnostic and idempotent (amount-aware
+    // — a redundant call, e.g. against an already-refunded payment, reverses
+    // zero and is a true no-op), so calling it unconditionally here is safe.
+    await recordRefundReversal({ id: paymentId });
     return { ok: true };
   } catch (e) {
     return fail(e);
@@ -223,6 +232,11 @@ export async function resendReceiptAction(userId: string, paymentId: string): Pr
           ? course.title_fr
           : course.title_ht
         : pay.courseSlug ?? (locale === 'fr' ? 'Abonnement mensuel' : 'Abònman chak mwa');
+      // Stage 2 money-exactness pass: a MonCash payment's real gourdes are
+      // frozen on the row (payments.amount_htg) — show that verbatim rather
+      // than re-deriving a figure from whatever FX rate is live today. Only
+      // Stripe rows (and MonCash rows predating that column) fall back to
+      // the live-rate estimate.
       const receipt = buildReceiptHtml({
         locale,
         name: detail.user.name,
@@ -230,7 +244,8 @@ export async function resendReceiptAction(userId: string, paymentId: string): Pr
         amountCents: pay.amountCents,
         dateIso: pay.createdAt,
         ref: pay.id,
-        rateHtg: await getFxRate(),
+        htgExact: pay.amountHtg,
+        rateHtg: pay.amountHtg === undefined ? await getFxRate() : undefined,
       });
       await sendEmail({ to: detail.user.email, subject: receipt.subject, html: receipt.html, text: receipt.text });
     }

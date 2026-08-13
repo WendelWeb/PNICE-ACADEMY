@@ -116,6 +116,17 @@ export const payments = pgTable(
     providerRef: text('provider_ref'),
     amountCents: integer('amount_cents').notNull(),
     currency: text('currency').notNull(),
+    /**
+     * Whole gourdes MonCash actually reported as charged (`MoncashPayment.
+     * amountHtg` — lib/payments/moncash/types.ts), frozen at the moment of
+     * sale. NULL for every Stripe row (nothing was ever charged in HTG) and
+     * for MonCash rows recorded before this column existed, or on the rare
+     * delivery where the provider didn't disclose an amount — those fall back
+     * to a live-FX-rate ESTIMATE at render time (see lib/email/templates.ts /
+     * app/api/receipt). Never recomputed once set: a later FX-rate change
+     * must not rewrite what a buyer was actually charged in the past.
+     */
+    amountHtg: integer('amount_htg'),
     status: text('status')
       .$type<'pending' | 'completed' | 'failed' | 'refunded'>()
       .notNull()

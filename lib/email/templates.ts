@@ -31,11 +31,22 @@ export function buildReceiptHtml(input: {
   /** USD→HTG rate for the "(~X HTG)" line, ideally the live DB rate
    *  (lib/fx.ts's `getFxRate`) passed by the caller (lib/payments/fulfill.ts).
    *  Optional + defaults to the env constant so existing callers/tests keep
-   *  working unchanged (Task fix/fx-rate-unify). */
+   *  working unchanged (Task fix/fx-rate-unify). IGNORED when `htgExact` is
+   *  given. */
   rateHtg?: number;
+  /**
+   * Whole gourdes ACTUALLY charged (e.g. a MonCash sale's stored
+   * `payments.amount_htg`), frozen at sale time. When given, this is shown
+   * verbatim instead of recomputing a figure from `rateHtg`/`USD_TO_HTG` — a
+   * real charge must never drift with a later FX-rate change (Stage 2 money
+   * exactness pass). Leave unset for Stripe/estimated amounts.
+   */
+  htgExact?: number;
 }): { subject: string; html: string; text: string } {
   const fr = input.locale === 'fr';
-  const htg = Math.round(toHtgAt(input.amountCents / 100, input.rateHtg ?? USD_TO_HTG)).toLocaleString('fr-FR');
+  const htg = (
+    input.htgExact !== undefined ? Math.round(input.htgExact) : Math.round(toHtgAt(input.amountCents / 100, input.rateHtg ?? USD_TO_HTG))
+  ).toLocaleString('fr-FR');
   const date = new Date(input.dateIso).toLocaleDateString(fr ? 'fr-FR' : 'fr-HT');
   const helloHtml = helloLine(input.name, fr, escapeHtml);
   const helloPlain = helloLine(input.name, fr, (s) => s);

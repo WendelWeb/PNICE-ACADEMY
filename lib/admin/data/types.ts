@@ -55,6 +55,10 @@ export type AdminPayment = {
   createdAt: string;
   /** Set on refund rows / refunded originals. */
   isRefund?: boolean;
+  /** Whole gourdes MonCash actually charged, frozen at sale time
+   *  (payments.amount_htg — Stage 2 money-exactness pass). Undefined for
+   *  Stripe rows and for MonCash rows recorded before this column existed. */
+  amountHtg?: number;
 };
 
 export type AdminSubscription = {

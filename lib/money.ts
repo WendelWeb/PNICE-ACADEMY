@@ -44,3 +44,23 @@ export function htgLabelAt(usd: number, rateHtg: number): string {
 export function htgLabel(usd: number): string {
   return htgLabelAt(usd, USD_TO_HTG);
 }
+
+/**
+ * The gourdes figure to print on a RECEIPT (Stage 2 money-exactness pass).
+ *
+ * A real MonCash charge must show what MonCash actually took
+ * (`payments.amount_htg`, frozen at sale time — db/migrations/0019), not a
+ * number re-derived from today's FX rate: the two can legitimately disagree
+ * the moment an admin edits the rate, and re-deriving would make a buyer's
+ * own receipt drift after the fact. `storedHtg` therefore ALWAYS wins when
+ * it is a real positive figure, and `liveRateHtg` is never consulted in that
+ * case — passing a different, "changed since the sale" rate must not change
+ * the output. Only a payment with no stored figure (a Stripe sale, where no
+ * gourdes ever changed hands, or a MonCash row that predates this column)
+ * falls back to the live-rate ESTIMATE.
+ */
+export function receiptHtgText(storedHtg: number | null | undefined, usdCents: number, liveRateHtg: number): string {
+  return typeof storedHtg === 'number' && Number.isFinite(storedHtg) && storedHtg > 0
+    ? formatHtg(Math.round(storedHtg))
+    : htgLabelAt(usdCents / 100, liveRateHtg);
+}

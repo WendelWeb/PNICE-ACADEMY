@@ -224,6 +224,7 @@ export async function getUserById(id: string): Promise<UserDetail | null> {
       currency: 'USD' as const,
       createdAt: iso(x.createdAt)!,
       isRefund: x.status === 'refunded' ? true : undefined,
+      amountHtg: x.amountHtg && x.amountHtg > 0 ? x.amountHtg : undefined,
     }))
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
@@ -386,11 +387,59 @@ export async function grantSubscription(p: { userId: string; admin: AdminActor }
   await recordAudit({ action: 'grant_subscription', userId: p.userId, admin: p.admin });
 }
 
+/**
+ * Admin manual refund (Transactions console's "Rembourser" button) — the
+ * ONLY refund path that exists for MonCash: it has no scriptable refund API,
+ * so the admin moves the real gourdes back outside this app (e.g. Bazik's
+ * own dashboard) and records that here so the platform's own books agree.
+ * Stripe refunds are normally reversed automatically by the
+ * `charge.refunded` webhook (lib/payments/fulfill.ts's
+ * `fulfillChargeRefunded`); this manual path also covers a Stripe refund
+ * issued straight from the Stripe dashboard for any reason the webhook
+ * missed it.
+ *
+ * Stage 2 money-exactness pass: this used to ONLY flip `payments.status` and
+ * credit the buyer's account — the teacher's earnings-ledger 'sale' row kept
+ * crediting them their full share forever, and the learner's enrollment
+ * stayed active, for every payment refunded through here (which, for
+ * MonCash, was the only refund path there was). It now ALSO revokes the
+ * enrollment it granted, same as `fulfillChargeRefunded` does for a full
+ * Stripe refund. The buyer additionally gets store credit (`credit_ledger`)
+ * — this app has no way to push gourdes back to a MonCash wallet, so credit
+ * toward a future purchase is the make-good on that rail.
+ *
+ * THE THIRD THING `fulfillChargeRefunded` does — reversing the teacher's
+ * earnings-ledger 'sale' row via `recordRefundReversal` — deliberately does
+ * NOT happen in here. This module is reached from `components/reviews/
+ * RatingWidget.tsx` (a Client Component) via lib/reviews/reviews.ts's
+ * `getTickets` → the `@/lib/admin/data` barrel → `real/index.ts`'s
+ * `import * as users from './users'`, so a top-level import of
+ * `recordRefundReversal` (which pulls in lib/teacher/profile.ts →
+ * `@clerk/nextjs/server`, 'server-only') would drag a server-only package
+ * into that client bundle graph and fail the build — and a dynamic
+ * `import()` does NOT dodge this: webpack still resolves and traces it into
+ * the same graph. `recordRefundReversal` is provider-agnostic and idempotent
+ * (amount-aware — a redundant call reverses zero), so it is called instead
+ * from the two 'use server' callers that already import Clerk directly and
+ * are exempt from this boundary check: lib/admin/actions.ts's
+ * `refundPaymentAction` and lib/admin/support-actions.ts's
+ * `refundFromTicketAction`. Any FUTURE caller of `refundPayment` must do the
+ * same or a refund recorded through it will silently never reverse the
+ * teacher's earnings.
+ *
+ * Guarded the same way as every other admin mutation here: a payment that
+ * isn't 'completed' (already refunded, still pending, failed) is a no-op
+ * apart from the audit-log row, so double-clicking the button — or
+ * refunding an already-refunded payment — can't double-credit.
+ */
 export async function refundPayment(p: { userId: string; paymentId: string; admin: AdminActor }): Promise<void> {
   const [pay] = await db.select().from(T.payments).where(eq(T.payments.id, p.paymentId)).limit(1);
   if (pay && pay.status === 'completed') {
     await db.update(T.payments).set({ status: 'refunded' }).where(eq(T.payments.id, p.paymentId));
     await db.insert(T.creditLedger).values({ userId: p.userId, amountCents: pay.amountCents, reason: 'refund', relatedId: p.paymentId });
+    if (pay.productType === 'course') {
+      await db.update(T.enrollments).set({ status: 'refunded' }).where(eq(T.enrollments.relatedPaymentId, p.paymentId));
+    }
   }
   await recordAudit({ action: 'refund_payment', userId: p.userId, admin: p.admin, detail: p.paymentId });
 }

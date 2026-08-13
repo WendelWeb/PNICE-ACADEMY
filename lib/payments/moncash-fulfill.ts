@@ -112,6 +112,14 @@ export async function fulfillMoncashOrder(
           // admin revenue figure sums this column blind to `currency`.
           amountCents: input.usdCentsEquivalent,
           currency: 'usd',
+          // The gourdes MonCash actually took, frozen here so the receipt
+          // never has to re-derive it from a live FX rate later (a rate the
+          // admin can and does change — see the file header's "corrupted the
+          // books" story for what trusting a live re-derivation costs). Only
+          // stored when the provider actually disclosed a positive amount —
+          // `remote.amountHtg` can be null/0 on a delivery that didn't carry
+          // it, and 0 is not a real gourde figure to freeze as history.
+          amountHtg: input.amountHtg > 0 ? Math.round(input.amountHtg) : null,
           status: 'completed',
           productType: 'course',
           courseSlug: input.courseSlug,
@@ -181,17 +189,22 @@ async function sendMoncashReceipt(input: MoncashFulfilInput): Promise<void> {
     const itemName =
       (locale === 'fr' ? course?.title_fr : course?.title_ht) ?? course?.title_ht ?? input.courseSlug;
 
-    const rateHtg = await getFxRate();
+    // The gourdes MonCash actually took — frozen at sale time, never a live
+    // re-derivation (see the file header + db/migrations/0019). Only fall
+    // back to a live-rate ESTIMATE on the rare delivery where the provider
+    // didn't disclose an amount at all.
+    const htgExact = input.amountHtg > 0 ? Math.round(input.amountHtg) : undefined;
+    const rateHtg = htgExact === undefined ? await getFxRate() : undefined;
     const receipt = buildReceiptHtml({
       locale,
       name: user.name,
       itemName,
       // The receipt shows the USD figure the rest of the platform speaks, with
-      // the layout's own "(~X HTG)" line derived from the same live rate the
-      // order was priced at — so it lines up with the gourdes MonCash took.
+      // the "(~X HTG)" line showing exactly what MonCash charged.
       amountCents: input.usdCentsEquivalent,
       dateIso: new Date().toISOString(),
       ref: input.transactionId ?? input.orderId,
+      htgExact,
       rateHtg,
     });
     await sendEmail({

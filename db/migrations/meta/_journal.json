@@ -134,6 +134,13 @@
       "when": 1785777385749,
       "tag": "0018_checkout_honesty_promo_redemption",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1786591134543,
+      "tag": "0019_moncash_amount_htg",
+      "breakpoints": true
     }
   ]
 }
