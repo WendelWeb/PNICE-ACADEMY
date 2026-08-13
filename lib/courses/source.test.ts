@@ -17,6 +17,7 @@ import {
   getPublishedCourseBySlug,
   getCourseLessons,
   getCourseDetail,
+  isSellableCourseRow,
 } from './source';
 
 describe('mapDbCourseToCourse — DB row → Course shape', () => {
@@ -140,8 +141,14 @@ describe('mapDbCourseToCourse — DB row → Course shape', () => {
       audience_ht: 'Odyans kreyòl',
       audience_fr: 'Audience française',
       lessons: [
-        { title_ht: 'Leson 1 kreyòl', title_fr: 'Leçon 1 français', bunnyVideoId: 'bunny-abc123' },
-        { title_ht: 'Leson 2 kreyòl', title_fr: 'Leçon 2 français', bunnyVideoId: undefined },
+        // `isPreview` carries the TEACHER's own free-preview choice through to
+        // the access gate. The mapper used to drop it, which forced the gate
+        // to fall back to "lesson 1 is always free" — note that here the
+        // teacher flagged lesson 1 (index 1) and NOT lesson 2, and that the
+        // two therefore disagree, which is exactly the case that used to be
+        // silently overridden.
+        { title_ht: 'Leson 1 kreyòl', title_fr: 'Leçon 1 français', bunnyVideoId: 'bunny-abc123', isPreview: true },
+        { title_ht: 'Leson 2 kreyòl', title_fr: 'Leçon 2 français', bunnyVideoId: undefined, isPreview: false },
       ],
       bilingual: true,
       primary_locale: 'ht',
@@ -444,5 +451,42 @@ describe('gated fallback — no DATABASE_URL', () => {
     const detail = await getCourseDetail('biznis-shipping'); // PA-03
     expect(detail).toEqual(staticCourseDetails['PA-03']);
     expect(await getCourseDetail('nope-not-a-course')).toBeUndefined();
+  });
+});
+
+/**
+ * Suspending a teacher must pull their work off the shelf.
+ *
+ * Before this rule, `suspendTeacherProfile` flipped one column on
+ * `teacher_profiles` and nothing else: the suspended teacher's courses stayed
+ * in the catalogue, stayed purchasable, and every sale kept crediting their
+ * earnings ledger. Suspending someone for fraud left the money flowing to
+ * them. `isSellableCourseRow` is the single definition both public reads —
+ * and therefore `resolveProduct`, and therefore both checkout routes — share.
+ */
+describe('isSellableCourseRow — a suspended teacher is not selling', () => {
+  const row = (over: Record<string, unknown> = {}) =>
+    ({ slug: 's', status: 'published', ownerUserId: 'owner-1', ...over }) as never;
+
+  it('sells a published course whose owner is in good standing', () => {
+    expect(isSellableCourseRow(row(), new Set())).toBe(true);
+  });
+
+  it('refuses a published course whose owner is suspended', () => {
+    expect(isSellableCourseRow(row(), new Set(['owner-1']))).toBe(false);
+  });
+
+  it('still refuses anything not published, suspended or not', () => {
+    expect(isSellableCourseRow(row({ status: 'draft' }), new Set())).toBe(false);
+    expect(isSellableCourseRow(row({ status: 'pending_review' }), new Set())).toBe(false);
+    expect(isSellableCourseRow(row({ status: 'archived' }), new Set(['owner-1']))).toBe(false);
+  });
+
+  it("does not punish a course for someone ELSE's suspension", () => {
+    expect(isSellableCourseRow(row(), new Set(['owner-2', 'owner-3']))).toBe(true);
+  });
+
+  it('sells an owner-less course — the platform\'s own, with nobody to suspend', () => {
+    expect(isSellableCourseRow(row({ ownerUserId: null }), new Set(['owner-1']))).toBe(true);
   });
 });

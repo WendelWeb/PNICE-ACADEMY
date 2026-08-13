@@ -1,6 +1,7 @@
 /**
  * Clerk user-sync webhook (Phase D Lot 3). Keeps the `users` table in sync with
- * Clerk: user.created/updated → upsert, user.deleted → delete.
+ * Clerk: user.created/updated → upsert, user.deleted → REDACT (never delete —
+ * see `redactDeletedUser`: the money rows cascade off this table).
  *
  * Signature is verified with the Svix scheme using Node crypto (no svix dep).
  * Env-gated: returns 503 until both CLERK_WEBHOOK_SECRET and DATABASE_URL are
@@ -19,6 +20,52 @@ import { buildWelcomeHtml } from '@/lib/email/templates';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+/**
+ * "Delete my account" — forget the PERSON, keep the accounting.
+ *
+ * This used to be `DELETE FROM users`, and every money table references
+ * `users.id` with ON DELETE CASCADE: one learner clicking « Efase kont mwen »
+ * silently erased their payments, the teacher's matching earnings line, and
+ * any sale a future refund would need to reverse. Revenue shrank with nothing
+ * to show why.
+ *
+ * So the row stays and the person goes:
+ *   - `clerk_id` becomes a `deleted:<old id>` tombstone. It keeps the UNIQUE
+ *     constraint satisfied without a nullable-column migration, and it can
+ *     never again match a live Clerk session — every access lookup goes
+ *     through `clerk_id`, so the account is genuinely unusable.
+ *   - e-mail becomes a per-row address under `.invalid`, the TLD RFC 2606
+ *     reserves precisely so it can never resolve or receive mail.
+ *   - name, certificate name, phone, country and city are cleared outright.
+ *   - `deleted_at` records when, so the admin console can tell an anonymous
+ *     row from an active one.
+ *
+ * Idempotent: Clerk retries webhooks, and a second delivery matches nothing
+ * (the tombstone no longer equals the incoming id), so it is a silent no-op.
+ */
+async function redactDeletedUser(clerkId: string): Promise<void> {
+  const [row] = await db
+    .select({ id: schema.users.id })
+    .from(schema.users)
+    .where(eq(schema.users.clerkId, clerkId))
+    .limit(1);
+  if (!row) return;
+
+  await db
+    .update(schema.users)
+    .set({
+      clerkId: `deleted:${clerkId}`,
+      email: `deleted+${row.id}@pniceacademy.invalid`,
+      name: null,
+      certificateName: null,
+      phone: null,
+      country: null,
+      city: null,
+      deletedAt: new Date(),
+    })
+    .where(eq(schema.users.id, row.id));
+}
 
 function verifySvix(secret: string, id: string | null, ts: string | null, sigHeader: string | null, body: string): boolean {
   if (!id || !ts || !sigHeader) return false;
@@ -88,7 +135,7 @@ export async function POST(req: Request): Promise<Response> {
         }
       }
     } else if (evt.type === 'user.deleted') {
-      if (data.id) await db.delete(schema.users).where(eq(schema.users.clerkId, data.id));
+      if (data.id) await redactDeletedUser(data.id);
     }
     // Other event types are acknowledged and ignored.
     return new Response('ok', { status: 200 });

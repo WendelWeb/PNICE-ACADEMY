@@ -193,12 +193,12 @@
       "title": "Questions fréquentes",
       "items": [
         {
-          "q": "Comment est-ce que je paie aujourd'hui ?",
-          "a": "Aujourd'hui tu paies par carte Visa ou Mastercard, en toute sécurité. Chaque prix s'affiche en dollars avec son équivalent en gourdes."
+          "q": "Comment est-ce que je paie aujourd’hui ?",
+          "a": "Avec MonCash ou avec une carte Visa/Mastercard. MonCash est le moyen le plus simple depuis Haïti : tu confirmes sur ton téléphone et ton accès s’ouvre aussitôt. Chaque prix s’affiche en dollars avec le montant exact en gourdes."
         },
         {
-          "q": "Puis-je payer avec MonCash ou NatCash ?",
-          "a": "Pas encore — mais ça arrive bientôt. Dès que MonCash et NatCash seront prêts, tu les verras apparaître automatiquement sur la page de paiement."
+          "q": "Puis-je payer avec MonCash ?",
+          "a": "Oui, MonCash fonctionne dès maintenant. Tu le choisis sur la page de paiement, tu confirmes avec ton code secret sur ton téléphone, et la formation s’ouvre immédiatement — aucune carte nécessaire. NatCash n’est pas encore prêt ; il apparaîtra automatiquement sur la page de paiement dès qu’il le sera."
         },
         {
           "q": "Le prix est-il le même pour Haïti et la diaspora ?",
@@ -839,7 +839,14 @@
     "purchased": "Ton achat",
     "amount": "Montant",
     "reference": "Référence",
-    "method": "Moyen de paiement"
+    "method": "Moyen de paiement",
+    "pending": {
+      "title": "Nous vérifions ton paiement",
+      "body": "Nous avons bien reçu ta demande de paiement. MonCash ne nous l’a pas encore confirmé — cela peut prendre quelques minutes. Ne paie pas une deuxième fois : si l’argent est parti de ton compte, ton accès s’ouvrira tout seul.",
+      "recheck": "Vérifier maintenant",
+      "reassure": "Tu peux fermer cette page. Nous continuons de vérifier de notre côté, et tu recevras un e-mail dès que ton accès est prêt.",
+      "contact": "Nous écrire avec cette référence"
+    }
   },
   "dashboard": {
     "title": "Tableau de bord",
@@ -1225,7 +1232,7 @@
       },
       "delete": {
         "title": "Supprimer mon compte",
-        "warning": "Cette action est irréversible. Tu perdras l'accès à tes formations, tes certificats et tout ton historique.",
+        "warning": "Cette action est irréversible. Tu perdras l’accès à tes formations, tes certificats et tout ton historique. Tes informations personnelles (nom, e-mail, téléphone) sont effacées. Nous ne conservons que les lignes comptables de tes achats, sans ton nom — la loi l’exige et c’est ce qui permet qu’un remboursement reste possible.",
         "instruction": "Tape ton e-mail pour confirmer :",
         "placeholder": "ton e-mail",
         "mismatch": "L'e-mail ne correspond pas.",
@@ -1507,6 +1514,7 @@
         "update_template": "Template modifié",
         "delete_template": "Template supprimé",
         "replay_webhook": "Webhook rejoué",
+        "dismiss_webhook": "Webhook classé",
         "set_digest": "Récapitulatif quotidien modifié",
         "approve_teacher": "Profil enseignant approuvé",
         "reject_teacher": "Profil enseignant rejeté",
@@ -1540,7 +1548,18 @@
         "refundHelp": "Ce bouton n'appelle ni Stripe ni MonCash — il n'existe aucune API de remboursement pour MonCash. Il enregistre seulement que tu as DÉJÀ renvoyé l'argent à l'acheteur en dehors de la plateforme (tableau de bord Bazik/MonCash, ou Stripe), puis annule la vente : l'élève perd l'accès, l'enseignant perd sa part. Précise comment/où l'argent a été renvoyé — c'est obligatoire et gardé dans le journal d'audit.",
         "refundNotePlaceholder": "Ex. : Remboursé via le tableau de bord Bazik, réf. BZK_123…",
         "refundConfirm": "J'ai déjà remboursé — enregistrer",
-        "revoke": "Retirer"
+        "revoke": "Retirer",
+        "refundMethod": {
+          "legend": "Comment l’acheteur est remboursé",
+          "money_back": {
+            "label": "Tu as déjà renvoyé l’argent",
+            "help": "Hors plateforme (tableau Bazik/MonCash ou Stripe). On annule la vente ; aucun avoir interne n’est créé."
+          },
+          "store_credit": {
+            "label": "Donner un avoir sur la plateforme",
+            "help": "Aucun argent ne sort. L’acheteur reçoit le montant en crédit utilisable sur PNICE. L’un OU l’autre — jamais les deux."
+          }
+        }
       }
     },
     "access": {
@@ -2883,6 +2902,7 @@
         "update_template": "Template modifié",
         "delete_template": "Template supprimé",
         "replay_webhook": "Webhook rejoué",
+        "dismiss_webhook": "Webhook classé",
         "set_digest": "Récapitulatif quotidien modifié",
         "create_course": "Formation créée",
         "update_course": "Formation modifiée",
@@ -3156,7 +3176,21 @@
         "error": "Erreur",
         "action": "Action",
         "empty": "Aucun webhook.",
-        "replay": "Rejouer"
+        "replay": "Rejouer",
+        "dismiss": "Classer",
+        "dismissReason": "Pourquoi tu le classes ?",
+        "dismissConfirm": "Confirmer",
+        "replayErr": {
+          "generic": "Le rejeu n’a pas abouti. Réessaie plus tard.",
+          "not_found": "Cette ligne n’existe plus.",
+          "not_failed": "Cette ligne n’est pas en échec — il n’y a rien à rejouer.",
+          "no_payload": "Le corps de l’événement Stripe n’est pas conservé, donc il ne peut pas être rejoué. Stripe le renvoie tout seul pendant 3 jours ; passé ce délai, classe-le.",
+          "no_reference": "Cette ligne ne porte aucune référence de commande, impossible de vérifier.",
+          "replay_unpaid": "MonCash dit que cette commande n’est pas payée. Rien n’a été accordé.",
+          "replay_unknown_order": "Cette commande n’existe plus en base.",
+          "replay_not_configured": "MonCash n’est pas configuré actuellement.",
+          "replay_error": "MonCash ne répond pas. L’alerte reste ouverte — réessaie plus tard."
+        }
       },
       "bunny": {
         "title": "Bunny Stream",
@@ -3456,12 +3490,12 @@
         "a": "Non. Les formations te montrent comment utiliser des outils qui existent déjà, étape par étape, sans écrire de code."
       },
       "kat": {
-        "q": "Comment est-ce que je paie aujourd'hui ?",
-        "a": "Aujourd'hui tu paies par carte Visa ou Mastercard, en toute sécurité. Chaque prix s'affiche en dollars avec son équivalent en gourdes."
+        "q": "Comment est-ce que je paie aujourd’hui ?",
+        "a": "Avec MonCash ou avec une carte Visa/Mastercard. MonCash est le moyen le plus simple depuis Haïti : tu confirmes sur ton téléphone et ton accès s’ouvre aussitôt. Chaque prix s’affiche en dollars avec le montant exact en gourdes."
       },
       "moncash": {
-        "q": "Puis-je payer avec MonCash ou NatCash ?",
-        "a": "Pas encore — mais ça arrive. Dès que MonCash et NatCash seront prêts, tu les verras apparaître automatiquement sur la page de paiement."
+        "q": "Puis-je payer avec MonCash ?",
+        "a": "Oui, MonCash fonctionne dès maintenant. Tu le choisis sur la page de paiement, tu confirmes avec ton code secret sur ton téléphone, et la formation s’ouvre immédiatement — aucune carte nécessaire. NatCash n’est pas encore prêt ; il apparaîtra automatiquement sur la page de paiement dès qu’il le sera."
       },
       "sel-pri": {
         "q": "Le prix est-il le même pour Haïti et la diaspora ?",

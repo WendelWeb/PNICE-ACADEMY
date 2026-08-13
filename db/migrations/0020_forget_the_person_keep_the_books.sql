@@ -1,0 +1,15 @@
+-- "Delete my account" must forget the PERSON, not the accounting.
+--
+-- `payments`, `enrollments`, `earnings_ledger`, `subscriptions` and the rest
+-- all reference `users.id` with ON DELETE CASCADE. So the Clerk `user.deleted`
+-- webhook, which ran a real `DELETE FROM users`, also erased every payment that
+-- learner had ever made: platform revenue shrank with no trace, the teacher's
+-- sale lost the buyer it belonged to, and a later refund had no sale to reverse.
+--
+-- The webhook now REDACTS the row instead (clears name/e-mail/phone/location
+-- and rewrites clerk_id to a `deleted:…` tombstone that can never match a live
+-- session). This column records when that happened, so the admin console can
+-- tell an anonymous row from an active one.
+--
+-- Additive and nullable: existing rows read as "not deleted", which they are.
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "deleted_at" timestamp with time zone;

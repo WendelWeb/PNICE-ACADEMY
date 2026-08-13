@@ -19,6 +19,14 @@ export type Lesson = {
    * are set.
    */
   bunnyVideoId?: string;
+  /**
+   * Whether the TEACHER marked this lesson as the free preview (the studio's
+   * `is_preview` checkbox — a real DB column since Task C2-T4, carried
+   * through by lib/courses/source.ts). Optional because the static catalogue
+   * below predates it; absent reads as "not a preview", which is the safe
+   * direction for an access gate. `isPreviewLesson` is the only reader.
+   */
+  isPreview?: boolean;
 };
 
 /**
@@ -82,7 +90,7 @@ export type CourseImages = {
   secondary?: { url: string; alt?: string }[];
 };
 
-export const courses: Course[] = [
+const rawCourses: Course[] = [
   {
     code: 'PA-01',
     slug: 'zouti-finansye-dijital',
@@ -370,23 +378,48 @@ export const courses: Course[] = [
   },
 ];
 
+/**
+ * The catalogue as the rest of the app sees it.
+ *
+ * This fixture is the NO-DATABASE fallback (local dev, mock mode). It carries
+ * no per-lesson preview data of its own, so lesson 1 of each course is marked
+ * as the free preview HERE — once, as the fixture's own default — rather than
+ * in the access gate. That keeps `isPreviewLesson` a pure reader of the flag:
+ * a real course honours what its teacher ticked, and the static fixture keeps
+ * behaving exactly as it did before that rule changed. A lesson that already
+ * states its own flag is left alone.
+ */
+export const courses: Course[] = rawCourses.map((c) => ({
+  ...c,
+  lessons: c.lessons.map((l, i) => ({ ...l, isPreview: l.isPreview ?? i === 0 })),
+}));
+
 export function getCourse(slug: string): Course | undefined {
   return courses.find((c) => c.slug === slug);
 }
 
 /**
- * Free-preview policy for lessons (binding access model — Task L1, see
- * docs/superpowers/plans/2026-07-23-launch-code.md): a lesson is reachable
- * without purchase/subscription only if it's a free preview. The static
- * catalog here carries no per-lesson field for this. `lessons.is_preview`
- * DOES exist as a real, admin-editable DB column (lib/courses/write.ts,
- * DB-backed since Task C2-T4 — LessonsManager's preview checkbox), but
- * `lib/courses/source.ts`'s public `Lesson` shape doesn't carry it through
- * and this access gate still isn't wired to it (pre-existing gap, inherited
- * unchanged from Phase C — not this task's scope to close). We mirror the
- * same position-based default: lesson 1 (1-based) of every course is a free
- * preview; nothing else is.
+ * Free-preview policy for lessons (binding access model — Task L1): a lesson
+ * is reachable without purchase or subscription only if the TEACHER marked it
+ * as a free preview.
+ *
+ * WHAT THIS USED TO BE: `lessonNumber1Based === 1`. Position, not permission.
+ * Lesson 1 of every course on the platform was given away, on a marketplace
+ * that takes 30% of other people's work — and the `is_preview` checkbox the
+ * teacher actually ticks in the studio (a real DB column since Task C2-T4,
+ * carried through by lib/courses/source.ts and already honoured by the course
+ * sales page) was ignored by the one place that decides access. The catalogue
+ * therefore advertised the lesson the teacher chose while the player unlocked
+ * a different one.
+ *
+ * The flag is now the only input. Structurally typed on purpose so both the
+ * DB-backed lesson shape and any future one satisfy it; a lesson number out
+ * of range, or a lesson with no flag, is NOT a preview — the safe direction
+ * for a gate that stands between a paying learner and someone else's work.
  */
-export function isPreviewLesson(lessonNumber1Based: number): boolean {
-  return lessonNumber1Based === 1;
+export function isPreviewLesson(
+  lessons: ReadonlyArray<{ isPreview?: boolean | null }>,
+  lessonNumber1Based: number,
+): boolean {
+  return lessons[lessonNumber1Based - 1]?.isPreview === true;
 }

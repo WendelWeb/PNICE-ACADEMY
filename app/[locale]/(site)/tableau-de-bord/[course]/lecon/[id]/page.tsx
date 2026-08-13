@@ -38,6 +38,7 @@ function LessonRailRow({
   n,
   access,
   completed,
+  preview,
 }: {
   slug: string;
   idx: number;
@@ -45,12 +46,16 @@ function LessonRailRow({
   n: number;
   access: boolean;
   completed: Set<number>;
+  /** Whether THIS lesson is the teacher's own free preview. Passed in rather
+   *  than derived from `idx` — deriving it from the position is exactly what
+   *  used to give away lesson 1 of every course on the platform. */
+  preview: boolean;
 }) {
   const isCurrent = idx === n;
   const done = completed.has(idx);
   // Locked = neither a purchased/subscribed access nor a free preview —
   // clicking it would just redirect to the sales page (real gate, not demo).
-  const locked = !access && !isPreviewLesson(idx);
+  const locked = !access && !preview;
   return (
     <li>
       <Link
@@ -122,6 +127,7 @@ function LessonRailList({
             n={n}
             access={access}
             completed={completed}
+            preview={isPreviewLesson(course.lessons, i + 1)}
           />
         ))}
       </ol>
@@ -145,6 +151,7 @@ function LessonRailList({
                 n={n}
                 access={access}
                 completed={completed}
+                preview={isPreviewLesson(course.lessons, l.index)}
               />
             ))}
           </ol>
@@ -161,6 +168,7 @@ function LessonRailList({
               n={n}
               access={access}
               completed={completed}
+              preview={isPreviewLesson(course.lessons, l.index)}
             />
           ))}
         </ol>
@@ -184,7 +192,7 @@ export default async function LessonPlayer({
 
   const clerkId = clerkEnabled ? (await auth()).userId : null;
   const access = clerkId ? await hasCourseAccess(clerkId, slug) : false;
-  const preview = isPreviewLesson(n);
+  const preview = isPreviewLesson(course.lessons, n);
   const t = await getTranslations('lesson');
 
   // Binding access model (Task L1, updated by Task: two subscription

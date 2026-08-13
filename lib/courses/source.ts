@@ -63,6 +63,12 @@ export function mapDbCourseToCourse(row: DbCourseRow, lessonRows: DbLessonRow[])
       title_ht: l.titleHt,
       title_fr: l.titleFr,
       bunnyVideoId: l.bunnyVideoId ?? undefined,
+      // The teacher's own free-preview choice. This mapper used to drop it,
+      // which is precisely why the lesson gate fell back to "lesson 1 is
+      // always free" — the flag existed in the DB and on the sales page, but
+      // never reached the code that decides who may watch. See
+      // data/courses.ts's `isPreviewLesson`.
+      isPreview: l.isPreview === true,
     }));
 
   return {
@@ -248,11 +254,58 @@ export async function getCourseMap(): Promise<Map<string, Course>> {
  * show (Task C2-T3). With no DB (fallback), the static catalog IS today's
  * live/published set, so every static course is returned.
  */
+/**
+ * Teachers who are currently suspended — their work is NOT for sale.
+ *
+ * Suspension used to change one column on `teacher_profiles` and nothing
+ * else: the suspended teacher's courses stayed in the catalogue, stayed
+ * purchasable, and every sale kept crediting their earnings ledger. Suspending
+ * someone for fraud left the money flowing to them.
+ *
+ * Enforced as a READ rule rather than by unpublishing their courses, for two
+ * reasons: reactivating a teacher restores everything instantly with no
+ * bookkeeping to get out of sync, and the teacher's own drafts and published
+ * state stay exactly as they left them.
+ *
+ * GATED + NEVER-THROW: no DB or a failed query ⇒ an empty set, i.e. the
+ * pre-existing behaviour. A read failure must not empty the whole catalogue.
+ */
+async function suspendedOwnerIds(): Promise<Set<string>> {
+  if (!dbConfigured()) return new Set();
+  try {
+    const rows = await db
+      .select({ userId: T.teacherProfiles.userId })
+      .from(T.teacherProfiles)
+      .where(eq(T.teacherProfiles.status, 'suspended'));
+    return new Set(rows.map((r) => r.userId));
+  } catch (err) {
+    console.error('[courses/source] suspended-teacher read failed, treating none as suspended:', err);
+    return new Set();
+  }
+}
+
+/**
+ * The catalogue as a BUYER sees it: published, and owned by a teacher in good
+ * standing. Deliberately NOT used by the lesson player — a learner who already
+ * paid keeps the access they bought even if that teacher is suspended later.
+ */
+/**
+ * Pure — is this course row FOR SALE right now? Published, and owned by a
+ * teacher who is not suspended. Exported so the rule can be tested without a
+ * DB, and so both public reads below share one definition instead of two
+ * filters that can drift.
+ */
+export function isSellableCourseRow(row: DbCourseRow, suspendedOwners: ReadonlySet<string>): boolean {
+  if (row.status !== 'published') return false;
+  return !(row.ownerUserId && suspendedOwners.has(row.ownerUserId));
+}
+
 export async function getPublishedCourses(): Promise<Course[]> {
   const rows = await readDbRows();
   if (!rows) return staticCourses;
+  const suspended = await suspendedOwnerIds();
   return rows.courseRows
-    .filter((r) => r.status === 'published')
+    .filter((r) => isSellableCourseRow(r, suspended))
     .map((r) => mapDbCourseToCourse(r, rows.lessonRows));
 }
 
@@ -272,8 +325,13 @@ export async function getCourseLessons(slug: string): Promise<Lesson[]> {
 export async function getPublishedCourseBySlug(slug: string): Promise<Course | undefined> {
   const rows = await readDbRows();
   if (!rows) return getStaticCourse(slug);
-  const row = rows.courseRows.find((r) => r.slug === slug && r.status === 'published');
-  return row ? mapDbCourseToCourse(row, rows.lessonRows) : undefined;
+  const row = rows.courseRows.find((r) => r.slug === slug);
+  // A suspended teacher's course reads as "not published" here — and this is
+  // what the sales page AND `resolveProduct` (both checkout routes) resolve
+  // through, so it 404s and cannot be bought, without touching the course's
+  // own status. See `suspendedOwnerIds` and `isSellableCourseRow`.
+  if (!row || !isSellableCourseRow(row, await suspendedOwnerIds())) return undefined;
+  return mapDbCourseToCourse(row, rows.lessonRows);
 }
 
 /**

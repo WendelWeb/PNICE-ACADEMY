@@ -25,6 +25,8 @@ import {
   markAllNotificationsRead,
   getOpenUnassignedCount,
   replayWebhook,
+  dismissWebhook,
+  getWebhookLogs,
   setSupportSettings,
   type AdminActor,
   type TicketStatus,
@@ -36,6 +38,7 @@ import { checkBunnyStream, type BunnyStatus } from '@/lib/admin/health/bunny';
 import { sendEmail, emailLive, DEFAULT_FROM } from '@/lib/email/resend';
 import { buildTestEmailHtml, buildSupportReplyHtml, buildTicketReceivedHtml } from '@/lib/email/templates';
 import { recordRefundReversal } from '@/lib/teacher/earnings';
+import { settleMoncashOrder } from '@/lib/payments/moncash-order';
 
 export type SupResult = { ok: boolean; message?: string; id?: string };
 
@@ -117,7 +120,11 @@ export async function refundFromTicketAction(ticketId: string): Promise<SupResul
     const { ticket, payment } = detail;
     if (ticket.type !== 'refund' || !payment) return { ok: false, message: 'no_payment' };
     if (payment.status !== 'succeeded') return { ok: false, message: 'not_refundable' };
-    await refundPayment({ userId: payment.userId, paymentId: payment.id, admin: actor });
+    // A refund TICKET is, by definition, "give me my money back" — so this
+    // path is always `money_back`, and never also grants platform credit.
+    // (The /admin/utilisateurs button is where store credit can be chosen
+    // instead; see the contract's `refundPayment`.)
+    await refundPayment({ userId: payment.userId, paymentId: payment.id, admin: actor, method: 'money_back' });
     // Reverses the teacher's earnings-ledger 'sale' row — see
     // lib/admin/data/real/users.ts's `refundPayment` doc comment for why
     // this call lives at the 'use server' caller instead of inside that
@@ -199,10 +206,66 @@ export async function getSupportBadgeAction(): Promise<number> {
 }
 
 /* ------------------------------ santé système ---------------------------- */
+/**
+ * Re-drives a failed webhook — for real.
+ *
+ * WHAT THIS USED TO DO: flip the row to 'processed', clear the alert, write an
+ * audit line, and nothing else. The owner clicked « Rejouer », the red banner
+ * went away, and the buyer whose payment had failed to settle was still
+ * sitting there with no access. The one control built for exactly this
+ * emergency actively hid it.
+ *
+ * WHAT IT DOES NOW: for MonCash — the platform's only live real-money rail —
+ * `webhook_logs.providerRef` holds the checkout order id, so a replay is
+ * literally `settleMoncashOrder` again: ask the provider whether that order
+ * was paid and, if it was, grant access, record the payment, credit the
+ * teacher and send the receipt. The row is marked 'processed' ONLY when that
+ * actually succeeded. A replay that fails leaves the alert standing and says
+ * why, because a red banner the owner can still see is worth more than a
+ * green one that lies.
+ *
+ * Stripe rows are refused with `no_payload`: the webhook route never stored
+ * the event body, so there is nothing to re-dispatch and pretending otherwise
+ * is the exact bug being fixed here. Stripe redelivers failed events on its
+ * own for 3 days; past that, `dismissWebhookAction` is the honest button.
+ */
 export async function replayWebhookAction(id: string): Promise<SupResult> {
   try {
     const actor = await requireCap('support.act');
+    const log = (await getWebhookLogs({})).find((w) => w.id === id);
+    if (!log) return { ok: false, message: 'not_found' };
+    if (log.status !== 'failed') return { ok: false, message: 'not_failed' };
+
+    if (log.provider !== 'moncash') return { ok: false, message: 'no_payload' };
+    if (!log.ref) return { ok: false, message: 'no_reference' };
+
+    // Idempotent: an order settled by the callback seconds ago answers
+    // 'already' and writes nothing, so clicking twice is harmless.
+    const settled = await settleMoncashOrder(log.ref);
+    if (settled.status !== 'granted' && settled.status !== 'already') {
+      return { ok: false, message: `replay_${settled.status}` };
+    }
+    // Only NOW is 'processed' the truth.
     return await replayWebhook({ id, actor });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/**
+ * Explicitly retires an alert that will never be replayable — a Stripe event
+ * past its redelivery window, a MonCash order the provider no longer knows.
+ *
+ * Deliberately a SEPARATE control from « Rejouer », and it parks the row in
+ * 'ignored' rather than 'processed': the owner is stating "I looked and there
+ * is nothing to recover", which is a different fact from "this succeeded" and
+ * must not be recorded as the same one. The audit log keeps the distinction.
+ */
+export async function dismissWebhookAction(id: string, reason: string): Promise<SupResult> {
+  try {
+    const actor = await requireCap('support.act');
+    if (!reason.trim()) return { ok: false, message: 'reason_required' };
+    return await dismissWebhook({ id, reason: reason.trim(), actor });
   } catch (e) {
     return fail(e);
   }

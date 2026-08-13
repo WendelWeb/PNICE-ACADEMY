@@ -110,7 +110,7 @@ beforeEach(() => {
 
 describe('refundPaymentAction — Transactions console "Rembourser" button', () => {
   it('reverses the teacher earnings for the payment it just refunded, and records the admin\'s note', async () => {
-    const result = await refundPaymentAction('user-1', 'payment-1', 'Remboursé via le tableau de bord Bazik');
+    const result = await refundPaymentAction('user-1', 'payment-1', 'Remboursé via le tableau de bord Bazik', 'money_back');
     expect(result.ok).toBe(true);
     expect(dataState.refundPaymentCalls).toEqual([
       {
@@ -118,6 +118,8 @@ describe('refundPaymentAction — Transactions console "Rembourser" button', () 
         paymentId: 'payment-1',
         admin: { id: 'admin-1', name: 'Admin' },
         note: 'Remboursé via le tableau de bord Bazik',
+        // ONE compensation: money already sent back, so NO internal credit.
+        method: 'money_back',
       },
     ]);
     expect(recordRefundReversal).toHaveBeenCalledTimes(1);
@@ -125,7 +127,7 @@ describe('refundPaymentAction — Transactions console "Rembourser" button', () 
   });
 
   it('Stage 3: refuses a refund with no note (the admin must state where/how the money moved) — no DB write, no reversal', async () => {
-    const result = await refundPaymentAction('user-1', 'payment-1', '   ');
+    const result = await refundPaymentAction('user-1', 'payment-1', '   ', 'money_back');
     expect(result).toEqual({ ok: false, message: 'note_required' });
     expect(dataState.refundPaymentCalls).toHaveLength(0);
     expect(recordRefundReversal).not.toHaveBeenCalled();
@@ -141,7 +143,9 @@ describe('refundFromTicketAction — refund issued from a support ticket', () =>
     const result = await refundFromTicketAction('ticket-1');
     expect(result.ok).toBe(true);
     expect(dataState.refundPaymentCalls).toEqual([
-      { userId: 'user-2', paymentId: 'payment-2', admin: { id: 'admin-1', name: 'Admin' } },
+      // A refund ticket is "give me my money back" — always money_back, never
+      // ALSO a store credit for the same amount.
+      { userId: 'user-2', paymentId: 'payment-2', admin: { id: 'admin-1', name: 'Admin' }, method: 'money_back' },
     ]);
     expect(recordRefundReversal).toHaveBeenCalledTimes(1);
     expect(recordRefundReversal).toHaveBeenCalledWith({ id: 'payment-2' });

@@ -95,9 +95,12 @@ function DeleteCard() {
     setBusy(true);
     setStatus(null);
     try {
-      // Phase 2: once the Neon backend exists, deleting the Clerk user must also
-      // cascade-delete related rows (enrollments, payments, certificates) —
-      // handled server-side via a `user.deleted` Clerk webhook. Not built yet.
+      // Deleting the Clerk user fires the `user.deleted` webhook, which
+      // REDACTS the matching DB row rather than deleting it (see
+      // app/api/webhooks/clerk/route.ts's `redactDeletedUser`): the person is
+      // forgotten, the accounting rows their payments belong to survive. The
+      // warning above says so plainly — a "delete everything" promise we
+      // cannot keep would be worse than the truth.
       await user!.delete();
       await signOut();
       router.push('/');

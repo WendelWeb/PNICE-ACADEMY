@@ -205,7 +205,11 @@ async function main() {
         descFr: lessonDetail?.desc_fr ?? null,
         bunnyVideoId: lesson.bunnyVideoId ?? null,
         durationSeconds: lessonDetail ? lessonDetail.minutes * 60 : null,
-        isPreview: isPreviewLesson(index),
+        // SEED DEFAULT, not the access rule. A brand-new course gets lesson 1
+        // ticked as its free preview so it has one out of the box; from then
+        // on the teacher owns that choice in the studio, and the access gate
+        // reads only the stored flag (data/courses.ts's `isPreviewLesson`).
+        isPreview: index === 1,
         updatedAt: now,
       };
     });

@@ -16,6 +16,7 @@ import {
   IconX,
 } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
+import type { RefundMethod } from '@/lib/admin/data/types';
 import { buttonClasses } from '@/components/ui/Button';
 import {
   grantCourseAction,
@@ -271,6 +272,10 @@ export function RefundButton({ userId, paymentId }: { userId: string; paymentId:
   const { pending, feedback, run } = useRunner();
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState('');
+  // Defaults to what the help text describes — the admin having already moved
+  // the real money — but it is a visible, changeable choice, never an implicit
+  // "and also credit them" the way it used to be.
+  const [method, setMethod] = useState<RefundMethod>('money_back');
 
   return (
     <>
@@ -299,6 +304,40 @@ export function RefundButton({ userId, paymentId }: { userId: string; paymentId:
               </button>
             </div>
             <p className="mt-2 text-xs leading-relaxed text-graphite/70">{t('refundHelp')}</p>
+
+            {/* ONE compensation, chosen out loud. Both boxes used to be ticked
+                silently: the money was sent back AND full platform credit was
+                granted. */}
+            <fieldset className="mt-3">
+              <legend className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink/50">
+                {t('refundMethod.legend')}
+              </legend>
+              <div className="mt-2 space-y-1.5">
+                {(['money_back', 'store_credit'] as const).map((m) => (
+                  <label
+                    key={m}
+                    className={cn(
+                      'flex cursor-pointer items-start gap-2 rounded-lg border p-2.5 text-xs leading-snug',
+                      method === m ? 'border-stampred bg-stampred/[0.06]' : 'border-ink/15 hover:border-ink/30',
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name={`refund-method-${paymentId}`}
+                      value={m}
+                      checked={method === m}
+                      onChange={() => setMethod(m)}
+                      className="mt-0.5 accent-stampred"
+                    />
+                    <span>
+                      <span className="block font-semibold text-ink">{t(`refundMethod.${m}.label`)}</span>
+                      <span className="block text-graphite/70">{t(`refundMethod.${m}.help`)}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
@@ -314,9 +353,10 @@ export function RefundButton({ userId, paymentId }: { userId: string; paymentId:
                 type="button"
                 disabled={!note.trim() || pending}
                 onClick={() => {
-                  run(() => refundPaymentAction(userId, paymentId, note.trim()), t('done'), t('error'));
+                  run(() => refundPaymentAction(userId, paymentId, note.trim(), method), t('done'), t('error'));
                   setOpen(false);
                   setNote('');
+                  setMethod('money_back');
                 }}
                 className={cn(
                   'flex items-center gap-1.5 rounded bg-stampred px-4 py-2.5 text-xs font-semibold text-paper-light disabled:opacity-50',

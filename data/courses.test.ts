@@ -43,9 +43,41 @@ describe('courses data', () => {
     }
   });
 
-  it('only the first lesson of a course is a free preview', () => {
-    expect(isPreviewLesson(1)).toBe(true);
-    expect(isPreviewLesson(2)).toBe(false);
-    expect(isPreviewLesson(5)).toBe(false);
+  describe('isPreviewLesson — the TEACHER decides, not the position', () => {
+    // The regression this pins: the gate used to return `n === 1`, so lesson 1
+    // of every course on the marketplace was free whatever the teacher chose,
+    // while the sales page showed the lesson they actually ticked.
+    const lessons = [
+      { title_ht: 'a', title_fr: 'a', isPreview: false },
+      { title_ht: 'b', title_fr: 'b', isPreview: true },
+      { title_ht: 'c', title_fr: 'c' },
+    ];
+
+    it('unlocks exactly the lesson the teacher flagged', () => {
+      expect(isPreviewLesson(lessons, 2)).toBe(true);
+    });
+
+    it('does NOT unlock lesson 1 just for being lesson 1', () => {
+      expect(isPreviewLesson(lessons, 1)).toBe(false);
+    });
+
+    it('treats a missing flag as locked, never as free', () => {
+      expect(isPreviewLesson(lessons, 3)).toBe(false);
+    });
+
+    it('locks anything out of range instead of throwing', () => {
+      expect(isPreviewLesson(lessons, 0)).toBe(false);
+      expect(isPreviewLesson(lessons, 99)).toBe(false);
+      expect(isPreviewLesson([], 1)).toBe(false);
+    });
+
+    it('can unlock more than one lesson — a teacher may offer several', () => {
+      const generous = [
+        { title_ht: 'a', title_fr: 'a', isPreview: true },
+        { title_ht: 'b', title_fr: 'b', isPreview: true },
+      ];
+      expect(isPreviewLesson(generous, 1)).toBe(true);
+      expect(isPreviewLesson(generous, 2)).toBe(true);
+    });
   });
 });

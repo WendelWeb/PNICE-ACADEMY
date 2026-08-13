@@ -5,6 +5,7 @@
 import { courses } from '@/data/courses';
 import type {
   AdminActor,
+  RefundMethod,
   AdminDataSource,
   AdminSubscription,
   AdminUser,
@@ -1555,19 +1556,24 @@ async function refundPayment(p: {
   paymentId: string;
   admin: AdminActor;
   note?: string;
+  method: RefundMethod;
 }): Promise<void> {
   const ds = getMockDataset();
   const pay = ds.payments.find((x) => x.id === p.paymentId && x.userId === p.userId);
   if (pay && pay.status === 'succeeded') {
     pay.status = 'refunded';
     pay.isRefund = true;
-    ds.creditLedger.push({
-      id: `cred_${ds.creditLedger.length + 1}`,
-      userId: p.userId,
-      amountCents: pay.amountCents,
-      reason: 'refund',
-      createdAt: new Date().toISOString(),
-    });
+    // Mirrors the real source: credit is an ALTERNATIVE to sending the money
+    // back, never an addition to it. See the contract's `refundPayment`.
+    if (p.method === 'store_credit') {
+      ds.creditLedger.push({
+        id: `cred_${ds.creditLedger.length + 1}`,
+        userId: p.userId,
+        amountCents: pay.amountCents,
+        reason: 'refund',
+        createdAt: new Date().toISOString(),
+      });
+    }
   }
   appendAudit(ds, {
     adminId: p.admin.id,
@@ -2285,7 +2291,10 @@ async function replayWebhook(p: { id: string; actor: AdminActor }): Promise<{ ok
   const w = ds.webhookLogs.find((x) => x.id === p.id);
   if (!w) return { ok: false, message: 'not_found' };
   if (w.status !== 'failed') return { ok: false, message: 'not_failed' };
-  // Mock: a replay succeeds. Production: re-dispatch the stored payload to the handler.
+  // Mock: a replay succeeds. In production the real re-drive happens one layer
+  // up (lib/admin/support-actions.ts's `replayWebhookAction` calls
+  // `settleMoncashOrder` and only reaches this marker once it worked) — this
+  // stays the "mark it processed" primitive for both sources.
   w.status = 'processed';
   w.processedAt = new Date().toISOString();
   w.retryCount += 1;
@@ -2293,6 +2302,22 @@ async function replayWebhook(p: { id: string; actor: AdminActor }): Promise<{ ok
   // Clear the matching critical notification, if any.
   for (const n of ds.notifications) if (n.kind === 'webhook_error' && !n.read) n.read = true;
   appendAudit(ds, { adminId: p.actor.id, adminName: p.actor.name, action: 'replay_webhook', targetUserId: p.actor.id, detail: `${w.provider}:${w.eventType}` });
+  return { ok: true };
+}
+
+/** Mirror of the real `dismissWebhook` — terminal state 'ignored', reason kept. */
+async function dismissWebhook(p: { id: string; reason: string; actor: AdminActor }): Promise<{ ok: boolean; message?: string }> {
+  const ds = getMockDataset();
+  const w = ds.webhookLogs.find((x) => x.id === p.id);
+  if (!w) return { ok: false, message: 'not_found' };
+  if (w.status !== 'failed') return { ok: false, message: 'not_failed' };
+  w.status = 'ignored';
+  w.processedAt = new Date().toISOString();
+  w.errorMessage = p.reason;
+  if (!ds.webhookLogs.some((x) => x.status === 'failed')) {
+    for (const n of ds.notifications) if (n.kind === 'webhook_error' && !n.read) n.read = true;
+  }
+  appendAudit(ds, { adminId: p.actor.id, adminName: p.actor.name, action: 'dismiss_webhook', targetUserId: p.actor.id, detail: `${w.provider}:${w.eventType} — ${p.reason}` });
   return { ok: true };
 }
 
@@ -2385,6 +2410,7 @@ export const mockDataSource: AdminDataSource = {
   markAllNotificationsRead,
   getWebhookLogs,
   replayWebhook,
+  dismissWebhook,
   getErrorLogs,
   getSupportSettings,
   setSupportSettings,

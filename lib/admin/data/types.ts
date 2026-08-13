@@ -178,6 +178,11 @@ export type AuditAction =
   | 'update_template'
   | 'delete_template'
   | 'replay_webhook'
+  // Distinct from 'replay_webhook' on purpose: one says the failure was
+  // actually recovered, the other says the owner judged it unrecoverable and
+  // retired the alert. Collapsing them would erase the difference between a
+  // fixed payment and an abandoned one.
+  | 'dismiss_webhook'
   | 'set_digest'
   // Course CMS → DB (Phase C2-T4)
   | 'create_course'
@@ -809,6 +814,9 @@ export type AdminNotification = {
 
 export type NotificationFeed = { items: AdminNotification[]; unread: number; criticalUnread: number };
 
+/** How a refund compensates the buyer — see `refundPayment`. Exactly one. */
+export type RefundMethod = 'money_back' | 'store_credit';
+
 export type WebhookStatus = 'processed' | 'failed' | 'ignored';
 
 export type WebhookLog = {
@@ -1167,7 +1175,28 @@ export interface AdminDataSource {
    * (lib/admin/support-actions.ts's ticket-triggered refund) keep compiling;
    * the admin-console button REQUIRES it (see RefundButton).
    */
-  refundPayment(p: { userId: string; paymentId: string; admin: AdminActor; note?: string }): Promise<void>;
+  refundPayment(p: {
+    userId: string;
+    paymentId: string;
+    admin: AdminActor;
+    note?: string;
+    /**
+     * HOW the buyer is made whole — required, because doing both is paying
+     * them twice.
+     *
+     *  - `money_back`: the admin already sent the real gourdes/dollars back
+     *    out of band (the MonCash wallet, the Stripe dashboard). The sale is
+     *    reversed and NOTHING is credited inside the platform.
+     *  - `store_credit`: no money left the business; the buyer is given the
+     *    amount as platform credit instead.
+     *
+     * This used to do BOTH unconditionally: every refund wrote a full-amount
+     * `credit_ledger` row on top of the money the admin had already returned.
+     * Invisible today only because nothing spends credit yet — the day it
+     * does, every past refund becomes a free course.
+     */
+    method: RefundMethod;
+  }): Promise<void>;
   /** Record a Clerk-side action (resend verification, impersonate) in the audit log. */
   recordAudit(p: {
     action: AuditAction;
@@ -1255,6 +1284,10 @@ export interface AdminDataSource {
   markAllNotificationsRead(): Promise<void>;
   getWebhookLogs(query: WebhookQuery): Promise<WebhookLog[]>;
   replayWebhook(p: { id: string; actor: AdminActor }): Promise<{ ok: boolean; message?: string }>;
+  /** Retires a failed webhook the owner has judged unrecoverable — parks it in
+   *  'ignored', NOT 'processed'. See `dismissWebhookAction` for why the two
+   *  must stay distinguishable in the audit log. */
+  dismissWebhook(p: { id: string; reason: string; actor: AdminActor }): Promise<{ ok: boolean; message?: string }>;
   getErrorLogs(): Promise<ErrorLog[]>;
   getSupportSettings(): Promise<SupportSettings>;
   setSupportSettings(p: { enabled: boolean; hour: number; actor: AdminActor }): Promise<void>;

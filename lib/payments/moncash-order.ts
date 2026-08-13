@@ -48,6 +48,59 @@ async function logMoncashFailure(orderId: string, eventType: string, message: st
 /** How MonCash state is smuggled onto the order row — see `encodeMoncashRef`. */
 const REF_PREFIX = 'moncash:';
 
+/* ----------------------------- verification retry ------------------------- */
+
+/**
+ * A provider failure worth asking again about, as opposed to an answer.
+ *
+ * `timeout` and 5xx mean Bazik/Digicel had a bad second, not that the money
+ * didn't move — and the buyer is standing in front of this request having
+ * already been debited. Everything else ('not_found', 'not_configured',
+ * 'order_provider_unavailable', a 4xx) is a real answer: asking again would
+ * only get the same one, slower.
+ */
+function isTransient(message: string): boolean {
+  return message === 'timeout' || /^HTTP 5\d\d/.test(message) || /fetch|network|ECONN|socket/i.test(message);
+}
+
+/** Attempt schedule in milliseconds — the pause BEFORE attempt 2 and 3. */
+const RETRY_DELAYS_MS = [400, 900];
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Asks the provider whether an order was paid, and does not give up on the
+ * first bad answer.
+ *
+ * TWO failures are retried, both of which used to strand a buyer who had
+ * really paid:
+ *
+ *   1. A TRANSIENT PROVIDER ERROR. The old code returned 'error' on the first
+ *      timeout, the callback ended, and nothing ever re-checked — money taken,
+ *      access never granted, and no automatic path back.
+ *   2. A "NOT PAID YET" ANSWER. Bazik can still report an order as pending for
+ *      a moment after the buyer confirms on their handset. The old code read
+ *      that as "they backed out" and sent them to checkout — inviting a SECOND
+ *      payment for a course they had just bought.
+ *
+ * Bounded on purpose: this runs inside the buyer's own redirect, so it costs
+ * at most ~1.3s of extra wait before answering honestly. The reconciliation
+ * cron (app/api/cron/moncash-reconcile) is what covers everything past that.
+ */
+async function retrieveWithRetry(
+  providerId: MoncashProviderId | null,
+  providerRef: string,
+): Promise<Awaited<ReturnType<typeof retrieveMoncashOrderFrom>>> {
+  let last = await retrieveMoncashOrderFrom(providerId, providerRef);
+  for (const delay of RETRY_DELAYS_MS) {
+    const settled = last.ok ? last.paid : !isTransient(last.message);
+    if (settled) return last;
+    await sleep(delay);
+    last = await retrieveMoncashOrderFrom(providerId, providerRef);
+  }
+  return last;
+}
+
 /**
  * `checkout_sessions.sessionId` carries three things a MonCash order needs
  * and has nowhere else to put, encoded as
@@ -186,7 +239,7 @@ export async function settleMoncashOrder(orderId: string): Promise<SettleResult>
     // current env resolves to — see `retrieveMoncashOrderFrom`'s header.
     const providerId = decodeMoncashProviderId(row.sessionId);
 
-    const remote = await retrieveMoncashOrderFrom(providerId, providerRef);
+    const remote = await retrieveWithRetry(providerId, providerRef);
     if (!remote.ok) {
       console.error('[moncash/order] retrieval failed:', remote.message);
       await logMoncashFailure(orderId, 'order.retrieve', remote.message);

@@ -34,6 +34,7 @@ import {
   getUsers,
   getUserById,
   type AdminActor,
+  type RefundMethod,
   type UserStatus,
 } from '@/lib/admin/data';
 import { sendEmail } from '@/lib/email/resend';
@@ -117,11 +118,22 @@ export async function setStatusAction(
   }
 }
 
-export async function refundPaymentAction(userId: string, paymentId: string, note: string): Promise<ActionResult> {
+/**
+ * `method` is REQUIRED and has no default on purpose: a refund either sends
+ * the money back out of band or grants platform credit, and the old code did
+ * both at once — see the contract's `refundPayment`. Making the admin state
+ * which one is the only way the books can stay right.
+ */
+export async function refundPaymentAction(
+  userId: string,
+  paymentId: string,
+  note: string,
+  method: RefundMethod,
+): Promise<ActionResult> {
   try {
     if (!note.trim()) return { ok: false, message: 'note_required' };
     const { actor } = await requireAdmin('transactions.refund');
-    await refundPayment({ userId, paymentId, admin: actor, note: note.trim() });
+    await refundPayment({ userId, paymentId, admin: actor, note: note.trim(), method });
     // Reverses the teacher's earnings-ledger 'sale' row for this payment —
     // see lib/admin/data/real/users.ts's `refundPayment` doc comment for why
     // this lives HERE and not inside that function (client-bundle boundary:

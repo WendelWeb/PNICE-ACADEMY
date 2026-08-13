@@ -469,6 +469,47 @@ export async function replayWebhook(p: { id: string; actor: AdminActor }): Promi
   return { ok: true };
 }
 
+/**
+ * Retires an unrecoverable failed webhook. Terminal state is 'ignored', never
+ * 'processed': "I looked and there is nothing to recover" and "this succeeded"
+ * are different facts, and the money trail must be able to tell them apart
+ * months later. The owner's reason is required and lands in the audit log.
+ *
+ * Unlike `replayWebhook` this clears no notification wholesale — it marks read
+ * only if no OTHER failed webhook is still outstanding, so dismissing one row
+ * cannot silence an alert that is still true for another.
+ */
+export async function dismissWebhook(p: { id: string; reason: string; actor: AdminActor }): Promise<{ ok: boolean; message?: string }> {
+  const [w] = await db.select().from(T.webhookLogs).where(eq(T.webhookLogs.id, p.id)).limit(1);
+  if (!w) return { ok: false, message: 'not_found' };
+  if (w.status !== 'failed') return { ok: false, message: 'not_failed' };
+
+  await db
+    .update(T.webhookLogs)
+    .set({ status: 'ignored', processedAt: new Date(), errorMessage: p.reason })
+    .where(eq(T.webhookLogs.id, p.id));
+
+  const stillFailing = await db
+    .select({ id: T.webhookLogs.id })
+    .from(T.webhookLogs)
+    .where(eq(T.webhookLogs.status, 'failed'))
+    .limit(1);
+  if (stillFailing.length === 0) {
+    await db
+      .update(T.adminNotifications)
+      .set({ read: true })
+      .where(and(eq(T.adminNotifications.kind, 'webhook_error'), eq(T.adminNotifications.read, false)));
+  }
+
+  await recordAudit({
+    action: 'dismiss_webhook',
+    userId: p.actor.id,
+    admin: p.actor,
+    detail: `${w.provider}:${w.eventType} — ${p.reason}`,
+  });
+  return { ok: true };
+}
+
 /* =============================== error logs ================================ */
 
 /** See file-header degeneracy note (4). */

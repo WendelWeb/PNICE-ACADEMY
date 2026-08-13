@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { IconMail } from '@tabler/icons-react';
+import { IconMail, IconClockHour4 } from '@tabler/icons-react';
 import { Section, Container } from '@/components/ui/Section';
 import { Sceau } from '@/components/ui/Sceau';
 import { Stamp } from '@/components/ui/Stamp';
@@ -59,6 +59,21 @@ export default async function MerciPage({
     ? (locale === 'fr' ? moncashCourse.title_fr : moncashCourse.title_ht) || moncashCourse.title_ht
     : null;
 
+  // PENDING VERIFICATION. `/api/payments/moncash/retour` sends the buyer here
+  // with `?pending=1&order=…` when it could not get a definitive answer out of
+  // the provider — the money has very likely left their wallet, but we cannot
+  // yet prove it, so we must not claim the purchase succeeded.
+  //
+  // Before this state existed those buyers were dropped on an empty dashboard
+  // telling them they owned nothing, seconds after paying. Now the page says
+  // what is actually happening, shows the reference they can quote to support,
+  // and offers one tap back to the callback that settles it. The
+  // reconciliation cron closes it out even if they never tap.
+  const pendingOrderId =
+    paidWithMoncash && searchParams.pending === '1' && typeof searchParams.order === 'string'
+      ? searchParams.order
+      : null;
+
   // Real, uneventful confirmation date — shown alongside the real Stripe
   // reference when we have one; still no fabricated order number when the
   // page has no session to read.
@@ -67,6 +82,87 @@ export default async function MerciPage({
     month: 'short',
     year: 'numeric',
   }).format(new Date());
+
+  if (pendingOrderId) {
+    // Deliberately NOT the celebratory seal: nothing is confirmed yet, and a
+    // stamped "✓ PEYE" over an unverified payment would be the one lie this
+    // page must never tell.
+    return (
+      <Section>
+        <Container className="max-w-lg text-center">
+          <div className="mx-auto max-w-sm rounded-2xl border border-ochre/40 bg-paper px-7 pb-8 pt-6 shadow-[0_28px_56px_-28px_rgba(16,32,74,0.35)]">
+            <header
+              aria-hidden="true"
+              className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.18em] text-ink/45"
+            >
+              <span>{t('docHeader')}</span>
+              <span>{dateLabel}</span>
+            </header>
+            <div aria-hidden="true">
+              <div className="mt-2 border-t-2 border-ochre/70" />
+              <div className="mt-[3px] border-t border-ink/25" />
+            </div>
+
+            <div className="mt-7 flex justify-center">
+              <IconClockHour4 size={44} className="text-ochre" aria-hidden="true" />
+            </div>
+
+            <h1 className="mt-5 font-display text-2xl font-black leading-tight text-ink md:text-3xl">
+              {t('pending.title')}
+            </h1>
+            <p className="mt-3 text-[15px] leading-relaxed text-graphite/80">
+              {t('pending.body')}
+            </p>
+
+            <dl className="mt-6 space-y-2.5 border-t border-ink/10 pt-5 text-left">
+              {moncashItemName && (
+                <div className="flex items-baseline justify-between gap-3">
+                  <dt className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-ink/45">
+                    {t('purchased')}
+                  </dt>
+                  <dd className="text-right text-sm font-medium leading-snug text-ink">
+                    {moncashItemName}
+                  </dd>
+                </div>
+              )}
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-ink/45">
+                  {t('reference')}
+                </dt>
+                <dd className="break-all text-right font-mono text-[11px] text-graphite/70">
+                  {pendingOrderId}
+                </dd>
+              </div>
+            </dl>
+          </div>
+
+          <div className="mt-8">
+            {/* Straight back to the callback that settles the order — the same
+                URL MonCash itself calls, so one tap is a real re-verification,
+                not a page reload that re-renders this same message. */}
+            <a
+              href={`/api/payments/moncash/retour?orderId=${encodeURIComponent(pendingOrderId)}`}
+              className={buttonClasses('primary', 'lg', 'inline-flex')}
+            >
+              {t('pending.recheck')}
+            </a>
+            <p className="mt-4 text-sm leading-relaxed text-graphite/70">
+              {t('pending.reassure')}
+            </p>
+            <p className="mt-4 font-mono text-[11px] text-graphite/55">
+              <Link href="/tableau-de-bord" className="underline underline-offset-2 transition-colors hover:text-ochre">
+                {t('cta')}
+              </Link>
+              {' · '}
+              <Link href="/kontak" className="underline underline-offset-2 transition-colors hover:text-ochre">
+                {t('pending.contact')}
+              </Link>
+            </p>
+          </div>
+        </Container>
+      </Section>
+    );
+  }
 
   return (
     <Section>

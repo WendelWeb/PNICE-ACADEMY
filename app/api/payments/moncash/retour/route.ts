@@ -16,12 +16,22 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { settleMoncashOrder } from '@/lib/payments/moncash-order';
+import { rateLimit, ipFromHeaders, RATE_LIMITS } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   const origin = req.nextUrl.origin;
+
+  // This URL is public by necessity (MonCash calls it) and is now ALSO the
+  // buyer's own "check again" button, so it invites repeat hits. Each one
+  // costs a round trip to the provider — rate-limit per IP so a held-down
+  // refresh cannot turn into a flood against Bazik. Over the limit, the buyer
+  // still lands somewhere useful rather than seeing a 429.
+  if (!rateLimit('moncash-retour', ipFromHeaders(req.headers), RATE_LIMITS.checkout)) {
+    return NextResponse.redirect(`${origin}/ht/tableau-de-bord`, { status: 303 });
+  }
   const params = req.nextUrl.searchParams;
   const orderId =
     params.get('orderId') ?? params.get('order_id') ?? params.get('reference') ?? params.get('orderID');
@@ -55,11 +65,20 @@ export async function GET(req: NextRequest) {
         { status: 303 },
       );
 
-    default:
+    default: {
       // unknown_order / not_configured / error — the money may well have left
-      // their wallet, so never imply failure on their side. Their dashboard is
-      // where access appears once the notification callback settles it.
+      // their wallet, so never imply failure on their side.
+      //
+      // This used to drop them on their dashboard, which then greeted a buyer
+      // who had JUST paid with "you aren't enrolled in any course yet, go
+      // browse the catalogue". Send them instead to a thank-you page in its
+      // honest PENDING state: it names what they bought, gives them the
+      // reference to quote, and offers a one-tap re-check that comes straight
+      // back here. The reconciliation cron settles it even if they never tap.
       console.error(`[moncash/retour] order ${orderId}: ${result.status}`);
-      return NextResponse.redirect(`${origin}/${locale}/tableau-de-bord`, { status: 303 });
+      const params = new URLSearchParams({ moncash: '1', pending: '1', order: orderId.trim() });
+      if (result.courseSlug) params.set('course', result.courseSlug);
+      return NextResponse.redirect(`${origin}/${locale}/checkout/merci?${params}`, { status: 303 });
+    }
   }
 }

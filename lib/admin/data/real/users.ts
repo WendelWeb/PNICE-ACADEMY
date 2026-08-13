@@ -31,6 +31,7 @@ import type {
   UsersQuery,
   UserStatus,
   UserType,
+  RefundMethod,
 } from '../types';
 
 const T = schema;
@@ -436,14 +437,21 @@ export async function grantSubscription(p: { userId: string; admin: AdminActor }
  * apart from the audit-log row, so double-clicking the button — or
  * refunding an already-refunded payment — can't double-credit.
  */
-export async function refundPayment(p: { userId: string; paymentId: string; admin: AdminActor; note?: string }): Promise<void> {
+export async function refundPayment(p: { userId: string; paymentId: string; admin: AdminActor; note?: string; method: RefundMethod }): Promise<void> {
   const [pay] = await paymentsSelectSafe(
     () => db.select().from(T.payments).where(eq(T.payments.id, p.paymentId)).limit(1),
     () => db.select(PAYMENTS_COLUMNS_PRE_0019).from(T.payments).where(eq(T.payments.id, p.paymentId)).limit(1),
   );
   if (pay && pay.status === 'completed') {
     await db.update(T.payments).set({ status: 'refunded' }).where(eq(T.payments.id, p.paymentId));
-    await db.insert(T.creditLedger).values({ userId: p.userId, amountCents: pay.amountCents, reason: 'refund', relatedId: p.paymentId });
+    // ONE compensation, never two. This insert used to be unconditional, so a
+    // 'money_back' refund — the admin having already wired the gourdes back
+    // through MonCash — ALSO handed the buyer the full amount as internal
+    // credit. Store credit is now an explicit alternative to sending the
+    // money, not a silent bonus on top of it.
+    if (p.method === 'store_credit') {
+      await db.insert(T.creditLedger).values({ userId: p.userId, amountCents: pay.amountCents, reason: 'refund', relatedId: p.paymentId });
+    }
     if (pay.productType === 'course') {
       await db.update(T.enrollments).set({ status: 'refunded' }).where(eq(T.enrollments.relatedPaymentId, p.paymentId));
     }

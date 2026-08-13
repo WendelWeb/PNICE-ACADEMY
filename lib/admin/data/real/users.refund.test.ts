@@ -105,29 +105,19 @@ beforeEach(() => {
 });
 
 describe('refundPayment — a MonCash (or manually-issued Stripe) refund revokes the access it granted, not just the label', () => {
-  it('flips payment status, credits the buyer, AND revokes the course enrollment', async () => {
+  it('flips payment status AND revokes the course enrollment', async () => {
     dbState.selectQueue = [[COURSE_PAYMENT]];
-    await refundPayment({ userId: 'user-1', paymentId: 'payment-1', admin: ADMIN });
+    await refundPayment({ userId: 'user-1', paymentId: 'payment-1', admin: ADMIN, method: 'money_back' });
 
     // payments.status -> 'refunded', enrollments.status -> 'refunded'.
     expect(dbState.updates).toHaveLength(2);
     expect(dbState.updates[0].set).toEqual({ status: 'refunded' });
     expect(dbState.updates[1].set).toEqual({ status: 'refunded' });
-
-    // Store credit for exactly what was charged (200 cents — a discounted
-    // sale's payments.amountCents is already the discounted total, so this
-    // is correct for a promo-discounted MonCash/Stripe sale too, not just a
-    // full-price one).
-    const creditInsert = dbState.inserts.find((i) => i.values.reason === 'refund');
-    expect(creditInsert?.values).toMatchObject({ userId: 'user-1', amountCents: 200, relatedId: 'payment-1' });
-
-    // recordAudit's own insert (audit_log) is the only other insert.
-    expect(dbState.inserts).toHaveLength(2);
   });
 
   it('does NOT touch enrollments for a subscription payment (no per-payment enrollment row exists)', async () => {
     dbState.selectQueue = [[{ ...COURSE_PAYMENT, productType: 'subscription', courseSlug: null }]];
-    await refundPayment({ userId: 'user-1', paymentId: 'payment-1', admin: ADMIN });
+    await refundPayment({ userId: 'user-1', paymentId: 'payment-1', admin: ADMIN, method: 'money_back' });
 
     expect(dbState.updates).toHaveLength(1); // payments.status only
     expect(dbState.updates[0].set).toEqual({ status: 'refunded' });
@@ -135,7 +125,7 @@ describe('refundPayment — a MonCash (or manually-issued Stripe) refund revokes
 
   it('is idempotent: an already-refunded payment writes nothing new (no double credit)', async () => {
     dbState.selectQueue = [[{ ...COURSE_PAYMENT, status: 'refunded' }]];
-    await refundPayment({ userId: 'user-1', paymentId: 'payment-1', admin: ADMIN });
+    await refundPayment({ userId: 'user-1', paymentId: 'payment-1', admin: ADMIN, method: 'store_credit' });
 
     expect(dbState.updates).toHaveLength(0);
     expect(dbState.inserts.find((i) => i.values.reason === 'refund')).toBeUndefined();
@@ -146,9 +136,39 @@ describe('refundPayment — a MonCash (or manually-issued Stripe) refund revokes
 
   it('is a no-op (besides the audit row) for a payment id that does not exist', async () => {
     dbState.selectQueue = [[]];
-    await refundPayment({ userId: 'user-1', paymentId: 'missing', admin: ADMIN });
+    await refundPayment({ userId: 'user-1', paymentId: 'missing', admin: ADMIN, method: 'money_back' });
 
     expect(dbState.updates).toHaveLength(0);
     expect(dbState.inserts).toHaveLength(1);
+  });
+
+  /**
+   * ONE compensation, never two. The credit-ledger insert used to run on
+   * EVERY refund, including the ordinary case where the admin had already
+   * wired the gourdes back through MonCash — handing the buyer the full
+   * amount a second time as platform credit. Nothing spends credit yet, so
+   * it was invisible; the day it does, every past refund becomes a free
+   * course. These two tests are the pin.
+   */
+  describe('the compensation is exactly one of the two, chosen by the admin', () => {
+    it("money_back: no internal credit — the money already left the business", async () => {
+      dbState.selectQueue = [[COURSE_PAYMENT]];
+      await refundPayment({ userId: 'user-1', paymentId: 'payment-1', admin: ADMIN, method: 'money_back' });
+
+      expect(dbState.inserts.find((i) => i.values.reason === 'refund')).toBeUndefined();
+      // Only recordAudit's own row.
+      expect(dbState.inserts).toHaveLength(1);
+    });
+
+    it('store_credit: credit for exactly what was charged, and no money sent', async () => {
+      dbState.selectQueue = [[COURSE_PAYMENT]];
+      await refundPayment({ userId: 'user-1', paymentId: 'payment-1', admin: ADMIN, method: 'store_credit' });
+
+      // 200 cents — a discounted sale's payments.amountCents is already the
+      // discounted total, so this is right for a promo sale too.
+      const creditInsert = dbState.inserts.find((i) => i.values.reason === 'refund');
+      expect(creditInsert?.values).toMatchObject({ userId: 'user-1', amountCents: 200, relatedId: 'payment-1' });
+      expect(dbState.inserts).toHaveLength(2); // credit + audit
+    });
   });
 });

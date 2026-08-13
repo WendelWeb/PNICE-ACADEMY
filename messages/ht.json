@@ -194,11 +194,11 @@
       "items": [
         {
           "q": "Kijan pou m peye jodi a?",
-          "a": "Jodi a ou peye ak kat Visa oswa Mastercard, an tout sekirite. Chak pri parèt an dola ansanm ak ekivalan li an goud."
+          "a": "Ak MonCash oswa ak yon kat Visa/Mastercard. MonCash se metòd la pi fasil an Ayiti: ou konfime sou telefòn ou epi aksè w louvri menm moman an. Chak pri parèt an dola ansanm ak montan egzak la an goud."
         },
         {
-          "q": "Èske m ka peye ak MonCash oswa NatCash?",
-          "a": "Poko — men y ap vini byento. Kou MonCash ak NatCash pare, w ap wè yo parèt otomatikman nan paj peman an."
+          "q": "Èske m ka peye ak MonCash?",
+          "a": "Wi, MonCash ap mache kounye a. Ou chwazi l sou paj peman an, ou konfime ak kòd sekrè w sou telefòn ou, epi kou a louvri tousuit — pa gen kat ki nesesè. NatCash poko pare; l ap parèt otomatikman sou paj peman an lè li pare."
         },
         {
           "q": "Èske se yon sèl pri pou Ayiti ak dyaspora?",
@@ -839,7 +839,14 @@
     "purchased": "Sa ou achte",
     "amount": "Montan",
     "reference": "Referans",
-    "method": "Mwayen peman"
+    "method": "Mwayen peman",
+    "pending": {
+      "title": "N ap verifye peman w la",
+      "body": "Nou resevwa demann peman w. MonCash poko konfime l ban nou — sa ka pran kèk minit. Pa peye yon dezyèm fwa: si lajan an soti nan kont ou, aksè w ap louvri poukont li.",
+      "recheck": "Verifye kounye a",
+      "reassure": "Ou ka fèmen paj sa a. Nou kontinye verifye poukont nou, epi w ap resevwa yon imel lè aksè w pare.",
+      "contact": "Kontakte nou ak referans lan"
+    }
   },
   "dashboard": {
     "title": "Tablo debò",
@@ -1225,7 +1232,7 @@
       },
       "delete": {
         "title": "Efase kont mwen",
-        "warning": "Aksyon sa a pa ka defèt. W ap pèdi aksè ak fòmasyon ou yo, sètifika ou yo, ak tout istorik ou.",
+        "warning": "Aksyon sa a pa ka defèt. W ap pèdi aksè w sou fòmasyon w yo, sètifika w yo ak tout istorik ou. Enfòmasyon pèsonèl ou yo (non, imel, telefòn) efase nèt. Sèl bagay nou kenbe se liy kontablite acha w yo, san non w — lalwa egzije sa epi se sa ki pèmèt yon ranbousman toujou posib.",
         "instruction": "Tape imèl ou pou konfime:",
         "placeholder": "imèl ou",
         "mismatch": "Imèl la pa koresponn.",
@@ -1507,6 +1514,7 @@
         "update_template": "Modèl modifye",
         "delete_template": "Modèl efase",
         "replay_webhook": "Webhook rejwe",
+        "dismiss_webhook": "Webhook klase",
         "set_digest": "Rezime chak jou modifye",
         "approve_teacher": "Pwofil pwofesè apwouve",
         "reject_teacher": "Pwofil pwofesè rejte",
@@ -1540,7 +1548,18 @@
         "refundHelp": "Bouton sa a pa rele ni Stripe ni MonCash — pa gen okenn API ranbousman pou MonCash. Li sèlman anrejistre ke ou DEJA voye lajan an tounen bay achtè a deyò platfòm nan (tablo bò Bazik/MonCash, oswa Stripe), epi li anile vant lan : elèv la pèdi aksè, pwofesè a pèdi pa li. Ekri kijan/kibò lajan an tounen — sa obligatwa epi li ap rete nan jounal odit la.",
         "refundNotePlaceholder": "Egz. : Ranbouse via tablo bò Bazik, referans BZK_123…",
         "refundConfirm": "Mwen deja ranbouse — anrejistre",
-        "revoke": "Retire"
+        "revoke": "Retire",
+        "refundMethod": {
+          "legend": "Kijan achtè a jwenn lajan l",
+          "money_back": {
+            "label": "Ou deja voye lajan an tounen",
+            "help": "Deyò platfòm nan (tablo Bazik/MonCash oswa Stripe). Nou anile vant lan; nou pa bay okenn kredi anndan platfòm nan."
+          },
+          "store_credit": {
+            "label": "Bay yon kredi sou platfòm nan",
+            "help": "Okenn lajan pa soti. Achtè a resevwa montan an kòm kredi pou l sèvi sou PNICE. Chwazi youn OSWA lòt — pa toude."
+          }
+        }
       }
     },
     "access": {
@@ -2883,6 +2902,7 @@
         "update_template": "Modèl modifye",
         "delete_template": "Modèl efase",
         "replay_webhook": "Webhook rejwe",
+        "dismiss_webhook": "Webhook klase",
         "set_digest": "Rezime chak jou modifye",
         "create_course": "Fòmasyon kreye",
         "update_course": "Fòmasyon modifye",
@@ -3156,7 +3176,21 @@
         "error": "Erè",
         "action": "Aksyon",
         "empty": "Pa gen webhook.",
-        "replay": "Rejwe"
+        "replay": "Rejwe",
+        "dismiss": "Klase",
+        "dismissReason": "Poukisa ou klase l?",
+        "dismissConfirm": "Konfime",
+        "replayErr": {
+          "generic": "Rejwe a pa mache. Eseye ankò pita.",
+          "not_found": "Nou pa jwenn liy sa a ankò.",
+          "not_failed": "Liy sa a pa an echèk — pa gen anyen pou rejwe.",
+          "no_payload": "Nou pa konsève kò evènman Stripe la, kidonk nou pa ka rejwe l. Stripe voye l ankò poukont li pandan 3 jou; apre sa, klase l.",
+          "no_reference": "Liy sa a pa gen referans kòmand, kidonk nou pa ka verifye l.",
+          "replay_unpaid": "MonCash di kòmand sa a poko peye. Anyen pa bay.",
+          "replay_unknown_order": "Kòmand sa a pa egziste ankò nan baz la.",
+          "replay_not_configured": "MonCash pa konfigire kounye a.",
+          "replay_error": "MonCash pa reponn. Alèt la rete louvri — eseye ankò pita."
+        }
       },
       "bunny": {
         "title": "Bunny Stream",
@@ -3457,11 +3491,11 @@
       },
       "kat": {
         "q": "Kijan pou m peye jodi a?",
-        "a": "Jodi a ou peye ak kat Visa oswa Mastercard, an tout sekirite. Chak pri parèt an dola ansanm ak ekivalan li an goud."
+        "a": "Ak MonCash oswa ak yon kat Visa/Mastercard. MonCash se metòd la pi fasil an Ayiti: ou konfime sou telefòn ou epi aksè w louvri menm moman an. Chak pri parèt an dola ansanm ak montan egzak la an goud."
       },
       "moncash": {
-        "q": "Èske m ka peye ak MonCash oswa NatCash?",
-        "a": "Poko — men y ap vini. Kou MonCash ak NatCash pare, w ap wè yo parèt otomatikman nan paj peman an."
+        "q": "Èske m ka peye ak MonCash?",
+        "a": "Wi, MonCash ap mache kounye a. Ou chwazi l sou paj peman an, ou konfime ak kòd sekrè w sou telefòn ou, epi kou a louvri tousuit — pa gen kat ki nesesè. NatCash poko pare; l ap parèt otomatikman sou paj peman an lè li pare."
       },
       "sel-pri": {
         "q": "Èske se yon sèl pri pou Ayiti ak dyaspora?",

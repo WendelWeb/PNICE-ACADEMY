@@ -40,6 +40,23 @@ export const users = pgTable('users', {
   // Admin-controlled account state (Clerk ban mirrored here for the admin list).
   status: text('status').$type<'active' | 'suspended' | 'banned'>().default('active').notNull(),
   referralCode: text('referral_code').unique(),
+  /**
+   * When the person asked for their account to be deleted.
+   *
+   * THE ROW SURVIVES ON PURPOSE. Every payment, enrolment and earnings-ledger
+   * line references `users.id` with `onDelete: 'cascade'`, so actually
+   * DELETING a user erased their payments too — the platform's revenue
+   * silently shrank, the teacher's sale lost the buyer it belonged to, and a
+   * refund could no longer find the sale it was reversing. "Forget me" must
+   * remove the PERSON, not the accounting.
+   *
+   * So `user.deleted` now redacts instead (app/api/webhooks/clerk/route.ts):
+   * name, e-mail, phone and location are cleared, `clerk_id` is rewritten to
+   * a `deleted:…` tombstone that can never match a live Clerk session again,
+   * and this column records when. The money rows keep pointing at a real, but
+   * anonymous, row.
+   */
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true })
     .defaultNow()
     .notNull(),

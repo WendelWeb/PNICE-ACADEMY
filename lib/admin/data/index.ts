@@ -108,6 +108,7 @@ export const markNotificationRead: AdminDataSource['markNotificationRead'] = (p)
 export const markAllNotificationsRead: AdminDataSource['markAllNotificationsRead'] = () => source.markAllNotificationsRead();
 export const getWebhookLogs: AdminDataSource['getWebhookLogs'] = (q) => source.getWebhookLogs(q);
 export const replayWebhook: AdminDataSource['replayWebhook'] = (p) => source.replayWebhook(p);
+export const dismissWebhook: AdminDataSource['dismissWebhook'] = (p) => source.dismissWebhook(p);
 export const getErrorLogs: AdminDataSource['getErrorLogs'] = () => source.getErrorLogs();
 export const getSupportSettings: AdminDataSource['getSupportSettings'] = () => source.getSupportSettings();
 export const setSupportSettings: AdminDataSource['setSupportSettings'] = (p) => source.setSupportSettings(p);
@@ -233,6 +234,7 @@ export type {
   AdminNotification,
   NotificationFeed,
   WebhookStatus,
+  RefundMethod,
   WebhookLog,
   WebhookQuery,
   ErrorLog,

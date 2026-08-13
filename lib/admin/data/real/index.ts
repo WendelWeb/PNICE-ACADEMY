@@ -147,6 +147,7 @@ export function realDataSource(): AdminDataSource {
     markAllNotificationsRead: support.markAllNotificationsRead,
     getWebhookLogs: support.getWebhookLogs,
     replayWebhook: support.replayWebhook,
+    dismissWebhook: support.dismissWebhook,
     getErrorLogs: support.getErrorLogs,
     getSupportSettings: support.getSupportSettings,
     setSupportSettings: support.setSupportSettings,
