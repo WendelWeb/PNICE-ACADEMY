@@ -50,20 +50,41 @@ const TIMEOUT_MS = 20_000;
 /** Bazik's tokens are long-lived (86 400s in their docs); a minute of margin is ample. */
 const TOKEN_SAFETY_WINDOW_S = 60;
 
+/**
+ * Bazik calls this field `userID`, which invites both `BAZIK_USER_ID` and the
+ * shorter `BAZIK_ID` when someone types it from memory. Accepting either costs
+ * one line and removes a failure that would otherwise show up as a silent
+ * "MonCash not configured" on a deployment nobody thinks to re-check.
+ */
+function bazikUserId(): string | undefined {
+  return process.env.BAZIK_USER_ID?.trim() || process.env.BAZIK_ID?.trim() || undefined;
+}
+
 export function bazikConfigured(): boolean {
-  return Boolean(process.env.BAZIK_USER_ID?.trim() && process.env.BAZIK_SECRET_KEY?.trim());
+  return Boolean(bazikUserId() && process.env.BAZIK_SECRET_KEY?.trim());
 }
 
 /**
- * DISPLAY ONLY. Bazik picks the environment from the credentials, so this is
- * an inference from their documented key-naming convention
- * (`bzk_sandbox_…` / `bzk_production_…`) purely so the admin page can say
- * which environment it believes it is in. Nothing branches on it — an
- * unrecognised prefix reads as 'sandbox', the cautious answer.
+ * Which environment Bazik will route to. Bazik decides this from the
+ * credentials alone, so this can only be inferred — and the direction of the
+ * guess is a safety decision, not a cosmetic one.
+ *
+ * IT DEFAULTS TO 'live'. A real account id looks like `bzk_ed99283b_17865…`
+ * and says nothing about the environment, yet that exact key returns
+ * `"environment":"production"` and moves REAL money. Reporting 'sandbox' there
+ * would put "SANDBOX — argent fictif" on the admin page above a button that
+ * really charges someone — the worst possible lie. Guessing 'live' when it is
+ * actually sandbox merely over-warns, which costs nothing.
+ *
+ * Only an explicit signal downgrades it: `BAZIK_MODE=sandbox`, or a
+ * credential that literally says so.
  */
 export function bazikMode(): MoncashMode {
-  const id = process.env.BAZIK_USER_ID?.trim().toLowerCase() ?? '';
-  return id.includes('production') || id.includes('_live') ? 'live' : 'sandbox';
+  const explicit = process.env.BAZIK_MODE?.trim().toLowerCase();
+  if (explicit === 'sandbox') return 'sandbox';
+  if (explicit === 'live') return 'live';
+  const id = bazikUserId()?.toLowerCase() ?? '';
+  return id.includes('sandbox') || id.includes('_test') ? 'sandbox' : 'live';
 }
 
 /* --------------------------------- token --------------------------------- */
@@ -71,13 +92,51 @@ export function bazikMode(): MoncashMode {
 type CachedToken = { accessToken: string; userId: string; expiresAtMs: number; key: string };
 let cachedToken: CachedToken | null = null;
 
+/** Both the documented and the actually-served shapes — see `getToken`. */
+type BazikTokenBody = {
+  /** What the live API returns. */
+  token?: string;
+  /** What their docs promise. */
+  access_token?: string;
+  user_id?: string;
+  /** Live API: absolute epoch milliseconds. */
+  expires_at?: number;
+  /** Docs: seconds from now. */
+  expires_in?: number;
+};
+
+/**
+ * Pure — when to stop trusting a token, from either expiry style.
+ *
+ * `expires_at` is an absolute epoch-ms instant (what the API really sends);
+ * `expires_in` is seconds from now (what the docs describe). Both are pulled
+ * back by a safety window so an in-flight call can't age out mid-request, and
+ * both are floored at one minute: a server clock skewed into the past would
+ * otherwise produce a token that is expired on arrival and re-authenticate on
+ * every single call.
+ */
+export function tokenExpiryMs(
+  body: { expires_at?: number; expires_in?: number } | null | undefined,
+  now = Date.now(),
+): number {
+  const floor = now + 60_000;
+  const at = Number(body?.expires_at);
+  if (Number.isFinite(at) && at > 0) return Math.max(floor, at - TOKEN_SAFETY_WINDOW_S * 1000);
+  const seconds = Number(body?.expires_in);
+  if (Number.isFinite(seconds) && seconds > 0) {
+    return Math.max(floor, now + (seconds - TOKEN_SAFETY_WINDOW_S) * 1000);
+  }
+  // Neither field present: keep it briefly rather than forever.
+  return now + 5 * 60_000;
+}
+
 /** Test seam: drop the cached bearer. Harmless in production. */
 export function resetBazikTokenCache(): void {
   cachedToken = null;
 }
 
 async function getToken(): Promise<{ ok: true; token: string; userId: string } | MoncashFailure> {
-  const userID = process.env.BAZIK_USER_ID?.trim();
+  const userID = bazikUserId();
   const secretKey = process.env.BAZIK_SECRET_KEY?.trim();
   if (!userID || !secretKey) return { ok: false, message: 'not_configured' };
 
@@ -97,21 +156,24 @@ async function getToken(): Promise<{ ok: true; token: string; userId: string } |
     if (!res.ok) {
       return { ok: false, message: await describeError(res) };
     }
-    const data = (await res.json().catch(() => null)) as
-      | { access_token?: string; expires_in?: number; user_id?: string }
-      | null;
-    const accessToken = data?.access_token;
+    const data = (await res.json().catch(() => null)) as BazikTokenBody | null;
+
+    // THEIR DOCS AND THEIR API DISAGREE — verified against the live endpoint.
+    // The docs advertise `{access_token, token_type, expires_in}`; the server
+    // actually returns `{success, token, user_id, expires_at}`. Both shapes are
+    // accepted so this keeps working whichever one a given account or a future
+    // fix produces.
+    const accessToken = data?.token ?? data?.access_token;
     if (!accessToken) return { ok: false, message: 'auth_no_token' };
 
     // Their /moncash/token wants a `userID` in the BODY too, and the token
     // response is the authoritative source for it — prefer it over our env
     // value so a credential that resolves to a different account id still works.
     const resolvedUserId = data?.user_id ?? userID;
-    const ttl = Math.max(60, Number(data?.expires_in ?? 3600) - TOKEN_SAFETY_WINDOW_S);
     cachedToken = {
       accessToken,
       userId: resolvedUserId,
-      expiresAtMs: Date.now() + ttl * 1000,
+      expiresAtMs: tokenExpiryMs(data),
       key: userID,
     };
     return { ok: true, token: accessToken, userId: resolvedUserId };
@@ -181,20 +243,29 @@ export const bazikProvider: MoncashProvider = {
       });
       if (!res.ok) return { ok: false, message: await describeError(res) };
 
-      const data = (await res.json().catch(() => null)) as
-        | { success?: boolean; data?: { orderId?: string; redirectUrl?: string } }
-        | null;
-      const redirectUrl = data?.data?.redirectUrl;
-      const orderId = data?.data?.orderId;
+      const body = (await res.json().catch(() => null)) as BazikCreateBody | null;
+
+      // ANOTHER DOCS-VS-REALITY GAP, verified live: the docs show the payment
+      // wrapped in `{success, data:{…}}`, but the server returns those fields
+      // FLAT at the top level. Both are read so this survives either.
+      const flat = body?.data ?? body;
+      const redirectUrl = flat?.redirectUrl;
+      const orderId = flat?.orderId;
       if (!redirectUrl || !orderId) return { ok: false, message: 'no_redirect_url' };
 
       return {
         ok: true,
-        redirectUrl,
+        // Bazik passes Digicel's redirect through verbatim, and Digicel's own
+        // SDK emits `http://`. Sending a buyer to a plaintext payment page —
+        // where they type a wallet PIN — is not acceptable, so it is upgraded
+        // here rather than trusted.
+        redirectUrl: redirectUrl.replace(/^http:\/\//i, 'https://'),
         // THEIR id — `GET /order/{orderId}` is the only way to verify later,
         // and our own reference will not resolve there.
         providerRef: orderId,
-        mode: bazikMode(),
+        // Prefer what the response SAYS over what we inferred: this is the one
+        // moment Bazik tells us the truth about the environment.
+        mode: flat?.environment === 'production' ? 'live' : bazikMode(),
         provider: 'bazik',
       };
     } catch (e) {
@@ -236,6 +307,10 @@ export const bazikProvider: MoncashProvider = {
 
 /* -------------------------------- mapping -------------------------------- */
 
+/** Create-payment response — flat in practice, wrapped in the docs. */
+type BazikCreateFields = { orderId?: string; redirectUrl?: string; environment?: string };
+type BazikCreateBody = BazikCreateFields & { success?: boolean; data?: BazikCreateFields };
+
 type BazikOrderBody = {
   success?: boolean;
   data?: {
@@ -264,15 +339,18 @@ type BazikOrderBody = {
  * check, whereas an over-eager match would give a course away.
  */
 export function isBazikPaid(body: unknown): boolean {
-  const d = (body as BazikOrderBody | null)?.data;
-  if (!d) return false;
+  const b = body as BazikOrderBody | null;
+  const d = b?.data ?? (b as NonNullable<BazikOrderBody>['data']);
+  if (!d || typeof d !== 'object') return false;
   if (d.paid === true) return true;
   const word = String(d.status ?? d.state ?? d.message ?? '').trim().toLowerCase();
   return word === 'successful' || word === 'success' || word === 'completed' || word === 'paid';
 }
 
 function mapBazikOrder(body: unknown): MoncashPayment {
-  const d = (body as BazikOrderBody | null)?.data ?? {};
+  // Flat in practice, wrapped in the docs — read both, like create does.
+  const b = body as BazikOrderBody | null;
+  const d = b?.data ?? (b as NonNullable<BazikOrderBody>['data']) ?? {};
   const amount = typeof d.gdes === 'number' ? d.gdes : typeof d.amount === 'number' ? d.amount : null;
   return {
     ok: true,

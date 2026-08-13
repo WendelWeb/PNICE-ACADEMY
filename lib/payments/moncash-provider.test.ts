@@ -7,7 +7,7 @@ import {
   retrieveMoncashOrder,
   resetMoncashTokenCache,
 } from '@/lib/payments/moncash';
-import { isBazikPaid } from '@/lib/payments/moncash/bazik';
+import { isBazikPaid, bazikMode, tokenExpiryMs } from '@/lib/payments/moncash/bazik';
 import {
   encodeMoncashRef,
   decodeMoncashLocale,
@@ -248,5 +248,104 @@ describe('checkout-row reference encoding', () => {
   it('reads a Stripe session id as neither MonCash nor a provider ref', () => {
     expect(decodeMoncashProviderRef('cs_test_a1b2c3')).toBeNull();
     expect(decodeMoncashLocale('cs_test_a1b2c3')).toBe('ht');
+  });
+});
+
+describe('bazik: the live API disagrees with its own docs', () => {
+  /**
+   * Every case here was captured from Bazik's real responses. The docs promise
+   * one shape and the server sends another; these tests pin the SERVER, which
+   * is the only thing that actually pays for a course.
+   */
+  it('reads the token from `token` (live) as well as `access_token` (docs)', async () => {
+    process.env.BAZIK_ID = 'bzk_ed99283b_1786543705';
+    process.env.BAZIK_SECRET_KEY = 'sk_x';
+    const seen: string[] = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+      if (String(url) === 'https://api.bazik.io/token') {
+        // The real payload: no access_token, no expires_in, no token_type.
+        return new Response(
+          JSON.stringify({
+            success: true,
+            token: 'LIVE_TOKEN',
+            user_id: 'bzk_ed99283b_1786543705',
+            expires_at: Date.now() + 86_400_000,
+            message: 'Authentication successful',
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }
+      seen.push(((init?.headers ?? {}) as Record<string, string>).Authorization ?? '');
+      return new Response(
+        JSON.stringify({ orderId: 'BZK_production_x', redirectUrl: 'https://pay/x', environment: 'production' }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      );
+    });
+
+    const r = await createMoncashOrder({ orderId: 'o', amountHtg: 5 });
+    expect(r.ok).toBe(true);
+    expect(seen[0]).toBe('Bearer LIVE_TOKEN');
+  });
+
+  it('reads orderId/redirectUrl FLAT, not wrapped in `data`', async () => {
+    process.env.BAZIK_ID = 'bzk_x';
+    process.env.BAZIK_SECRET_KEY = 'sk_x';
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+      if (String(url) === 'https://api.bazik.io/token') {
+        return new Response(JSON.stringify({ token: 'T', user_id: 'u', expires_at: Date.now() + 60_000 }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      return new Response(
+        JSON.stringify({
+          orderId: 'BZK_production_ed99283b_1786583330619_r2rb',
+          // Digicel's own SDK emits http:// and Bazik passes it through.
+          redirectUrl: 'http://moncashbutton.digicelgroup.com/Moncash-middleware/Payment/Redirect?token=abc',
+          environment: 'production',
+          status: 'pending',
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      );
+    });
+
+    const r = await createMoncashOrder({ orderId: 'o', amountHtg: 5 });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.providerRef).toBe('BZK_production_ed99283b_1786583330619_r2rb');
+      // A buyer types a wallet PIN on that page — it must never be plaintext.
+      expect(r.redirectUrl.startsWith('https://')).toBe(true);
+      // The response is believed over any inference.
+      expect(r.mode).toBe('live');
+    }
+  });
+
+  it('defaults to live when the credential says nothing — over-warning is the safe direction', () => {
+    process.env.BAZIK_ID = 'bzk_ed99283b_1786543705';
+    process.env.BAZIK_SECRET_KEY = 'sk_x';
+    expect(bazikMode()).toBe('live');
+    process.env.BAZIK_MODE = 'sandbox';
+    expect(bazikMode()).toBe('sandbox');
+    delete process.env.BAZIK_MODE;
+    process.env.BAZIK_ID = 'bzk_sandbox_abc';
+    expect(bazikMode()).toBe('sandbox');
+  });
+
+  it('accepts BAZIK_ID as well as BAZIK_USER_ID', () => {
+    process.env.BAZIK_SECRET_KEY = 'sk_x';
+    process.env.BAZIK_ID = 'bzk_a';
+    expect(moncashProviderId()).toBe('bazik');
+    delete process.env.BAZIK_ID;
+    process.env.BAZIK_USER_ID = 'bzk_a';
+    expect(moncashProviderId()).toBe('bazik');
+  });
+
+  it('tokenExpiryMs handles both expiry styles and never returns the past', () => {
+    const now = 1_000_000_000_000;
+    expect(tokenExpiryMs({ expires_at: now + 86_400_000 }, now)).toBe(now + 86_400_000 - 60_000);
+    expect(tokenExpiryMs({ expires_in: 3600 }, now)).toBe(now + (3600 - 60) * 1000);
+    // A skewed/expired timestamp must not produce a token that is dead on arrival.
+    expect(tokenExpiryMs({ expires_at: now - 5000 }, now)).toBe(now + 60_000);
+    expect(tokenExpiryMs({}, now)).toBe(now + 300_000);
   });
 });
