@@ -2751,7 +2751,7 @@
         "super-admin": "tout + gestion des rôles",
         "admin": "tout sauf rôles",
         "support": "lecture seule",
-        "editeur-contenu": "contenu des cours"
+        "editeur-contenu": "contenu du site, pas les formations"
       },
       "col": {
         "admin": "Admin",
