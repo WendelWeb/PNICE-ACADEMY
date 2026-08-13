@@ -93,7 +93,7 @@ export async function moncashCheckAction(orderId: string): Promise<DiagResult> {
       paid: r.paid,
       message: r.paid ? 'successful' : 'pas encore payé',
       transactionId: r.transactionId,
-      amountHtg: r.costHtg,
+      amountHtg: r.amountHtg,
       payer: r.payer,
     },
   };

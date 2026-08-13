@@ -1,304 +1,130 @@
 /**
- * lib/payments/moncash.ts — server-only MonCash (Digicel) REST client.
+ * lib/payments/moncash.ts — the MonCash facade: picks a provider, then gets
+ * out of the way.
  *
- * WHY NO SDK: `digicel-moncash-api-sdk` is a callback-era wrapper around
- * node:http that hardcodes `http://` for the payment redirect and carries its
- * own token cache. This app already talks to Stripe through plain `fetch` for
- * the same reasons (no dependency, no surprises, full control of timeouts and
- * error shapes), so MonCash follows that convention. The API contract below
- * was read straight out of that SDK's source (v1.1.4 — lib/configure.js,
- * lib/api.js, lib/resources/{Payment,Capture}.js) rather than from memory.
+ * MonCash can be reached two ways and which one is available depends on
+ * paperwork, not on code:
  *
- * WHAT MONCASH IS: a Haitian mobile wallet. Two consequences shape everything
- * here and must not be "fixed" later without re-reading this note:
- *   1. It charges in GOURDES (HTG), never USD. Prices in this app are stored
- *      in USD cents, so every charge converts through the live FX rate
- *      (lib/fx.ts) at order-creation time and the converted figure is what the
- *      buyer is committed to. The `payments` row records HTG so the receipt
- *      and the admin ledger tell the truth about what was actually charged.
- *   2. It has NO recurring/mandate concept — one-off payments only. Both
- *      subscription products (pass prof, Pass PNICE) therefore stay card-only;
- *      the checkout route refuses a MonCash subscription rather than creating
- *      an order nobody can renew.
+ *   - `direct` — Digicel's own API. No middleman, no aggregator fee, but it
+ *                needs a Digicel merchant contract that takes weeks.
+ *   - `bazik`  — Bazik (api.bazik.io), a Haitian aggregator fronting MonCash
+ *                with self-serve credentials, so it can be live today.
  *
- * ENV-GATED + NEVER-THROW, same contract as lib/bunny/upload.ts: missing keys
- * resolve to `{ ok: false, message: 'not_configured' }`; every network/parse
- * failure resolves to `{ ok: false, message }`. Nothing here ever throws, so a
- * MonCash outage degrades the checkout page instead of 500-ing it.
+ * Everything downstream — the checkout route, both callbacks, fulfilment, the
+ * admin probe — imports from HERE and never learns which one answered.
+ * Switching is `MONCASH_PROVIDER=direct|bazik`, not a refactor.
  *
- * SECURITY: the client id/secret are read from `process.env` at call time,
- * used only to mint a short-lived bearer token server-side, and never returned,
- * logged, or embedded in anything the browser sees. The browser only ever
- * receives the `Payment/Redirect?token=…` URL, which is a single-payment,
- * MonCash-issued token — not a credential of ours.
+ * SELECTION RULE (`activeMoncashProvider`): honour MONCASH_PROVIDER when it
+ * names a provider that is actually configured; otherwise fall back to
+ * whichever one has credentials, preferring `direct` because it is the
+ * cheaper path when both exist. Naming an unconfigured provider does NOT
+ * silently use the other one — it resolves to null, so a typo surfaces as
+ * "MonCash not configured" instead of quietly charging through a different
+ * company than intended.
  */
+import { directProvider, directHost, directMode, directRedirectUrl, directBasicAuth, isDirectPaid, resetDirectTokenCache } from './moncash/direct';
+import { bazikProvider, bazikMode, isBazikPaid, resetBazikTokenCache } from './moncash/bazik';
+import type {
+  MoncashCreateInput,
+  MoncashFailure,
+  MoncashMode,
+  MoncashOrder,
+  MoncashPayment,
+  MoncashProvider,
+  MoncashProviderId,
+} from './moncash/types';
 
-const SANDBOX_HOST = 'sandbox.moncashbutton.digicelgroup.com';
-const LIVE_HOST = 'moncashbutton.digicelgroup.com';
+export type { MoncashMode, MoncashFailure, MoncashOrder, MoncashPayment, MoncashProviderId };
+export { usdCentsToHtg, MONCASH_MAX_HTG } from './moncash/types';
 
-const OAUTH_PATH = '/Api/oauth/token';
-const CREATE_PAYMENT_PATH = '/Api/v1/CreatePayment';
-const RETRIEVE_ORDER_PATH = '/Api/v1/RetrieveOrderPayment';
-const RETRIEVE_TRANSACTION_PATH = '/Api/v1/RetrieveTransactionPayment';
-/** The customer-facing gateway lives under a different path prefix than the API. */
-const GATEWAY_PREFIX = '/Moncash-middleware';
-const REDIRECT_PATH = '/Payment/Redirect';
+/** Both implementations, in preference order for the fallback below. */
+const PROVIDERS: MoncashProvider[] = [directProvider, bazikProvider];
 
-const TIMEOUT_MS = 20_000;
-/**
- * MonCash tokens live 59 SECONDS (verified against the live sandbox, and
- * stated in Digicel's own docs). A conventional "refresh a minute early"
- * window would therefore expire every token the instant it was minted and
- * re-authenticate on every single call — so the margin is 10s, leaving ~49s
- * of real reuse while never handing a token to a call that could outlive it.
- */
-const TOKEN_SAFETY_WINDOW_S = 10;
-
-export type MoncashMode = 'sandbox' | 'live';
-export type MoncashFailure = { ok: false; message: string };
-
-/** True once BOTH credentials are set. Mirrors `stripeConfigured()`/`bunnyUploadConfigured()`. */
-export function moncashConfigured(): boolean {
-  return Boolean(process.env.MONCASH_CLIENT_ID?.trim() && process.env.MONCASH_CLIENT_SECRET?.trim());
-}
-
-/**
- * Defaults to 'sandbox'. Going live is an explicit, deliberate act
- * (`MONCASH_MODE=live`) — the failure mode of guessing wrong in this direction
- * is a test payment, in the other it is charging a real customer against a
- * sandbox wallet.
- */
-export function moncashMode(): MoncashMode {
-  return process.env.MONCASH_MODE?.trim().toLowerCase() === 'live' ? 'live' : 'sandbox';
-}
-
-export function moncashHost(mode: MoncashMode = moncashMode()): string {
-  return mode === 'live' ? LIVE_HOST : SANDBOX_HOST;
-}
-
-/**
- * Pure — the URL the BROWSER is sent to in order to pay. Exported for tests:
- * getting this wrong sends a paying customer to the wrong environment, which
- * no type checker would catch. Always https (the SDK emits http://).
- */
-export function moncashRedirectUrl(token: string, mode: MoncashMode = moncashMode()): string {
-  return `https://${moncashHost(mode)}${GATEWAY_PREFIX}${REDIRECT_PATH}?token=${encodeURIComponent(token)}`;
-}
-
-/* --------------------------------- token --------------------------------- */
-
-type CachedToken = { accessToken: string; expiresAtMs: number; key: string };
-let cachedToken: CachedToken | null = null;
-
-/** Pure: the Basic credential MonCash's OAuth endpoint expects. */
-export function moncashBasicAuth(clientId: string, clientSecret: string): string {
-  return `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`;
-}
-
-async function getToken(): Promise<{ ok: true; token: string } | MoncashFailure> {
-  const clientId = process.env.MONCASH_CLIENT_ID?.trim();
-  const clientSecret = process.env.MONCASH_CLIENT_SECRET?.trim();
-  if (!clientId || !clientSecret) return { ok: false, message: 'not_configured' };
-
-  // Cache key includes the credentials + mode so rotating a key or flipping to
-  // live can never serve a stale token minted for the other environment.
-  const key = `${moncashMode()}:${clientId}`;
-  if (cachedToken && cachedToken.key === key && Date.now() < cachedToken.expiresAtMs) {
-    return { ok: true, token: cachedToken.accessToken };
+/** Pure — the selection rule, exported so it can be tested without env juggling. */
+export function pickMoncashProvider(
+  requested: string | undefined,
+  configured: Record<MoncashProviderId, boolean>,
+): MoncashProviderId | null {
+  const want = requested?.trim().toLowerCase();
+  if (want === 'direct' || want === 'bazik') {
+    // Explicit choice is honoured or refused — never silently redirected to
+    // the other provider, which would mean charging through a different
+    // company than the operator asked for.
+    return configured[want] ? want : null;
   }
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-  try {
-    const res = await fetch(`https://${moncashHost()}${OAUTH_PATH}`, {
-      method: 'POST',
-      headers: {
-        Authorization: moncashBasicAuth(clientId, clientSecret),
-        'content-type': 'application/x-www-form-urlencoded',
-        accept: 'application/json',
-      },
-      body: 'scope=read,write&grant_type=client_credentials',
-      signal: controller.signal,
-    });
-    if (!res.ok) {
-      const body = await res.text().catch(() => '');
-      return { ok: false, message: `oauth HTTP ${res.status}${body ? ` — ${body.slice(0, 200)}` : ''}` };
-    }
-    const data = (await res.json().catch(() => null)) as
-      | { access_token?: string; expires_in?: number }
-      | null;
-    const accessToken = data?.access_token;
-    if (!accessToken) return { ok: false, message: 'oauth_no_token' };
-
-    const ttl = Math.max(0, Number(data?.expires_in ?? 0) - TOKEN_SAFETY_WINDOW_S);
-    cachedToken = { accessToken, expiresAtMs: Date.now() + ttl * 1000, key };
-    return { ok: true, token: accessToken };
-  } catch (e) {
-    const message = e instanceof Error ? (e.name === 'AbortError' ? 'timeout' : e.message) : 'error';
-    return { ok: false, message };
-  } finally {
-    clearTimeout(timer);
-  }
+  if (configured.direct) return 'direct';
+  if (configured.bazik) return 'bazik';
+  return null;
 }
 
-/** Test seam: drop the cached bearer (used by unit tests; harmless in prod). */
-export function resetMoncashTokenCache(): void {
-  cachedToken = null;
-}
-
-/* ------------------------------ authed call ------------------------------ */
-
-async function post<T>(path: string, body: unknown): Promise<{ ok: true; data: T } | MoncashFailure> {
-  const auth = await getToken();
-  if (!auth.ok) return auth;
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-  try {
-    const res = await fetch(`https://${moncashHost()}${path}`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${auth.token}`,
-        'content-type': 'application/json',
-        accept: 'application/json',
-      },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
-    if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      // A 401 here means our cached token was rejected — drop it so the very
-      // next call re-mints rather than looping on a dead bearer.
-      if (res.status === 401) cachedToken = null;
-      return { ok: false, message: `HTTP ${res.status}${text ? ` — ${text.slice(0, 200)}` : ''}` };
-    }
-    const data = (await res.json().catch(() => null)) as T | null;
-    if (!data) return { ok: false, message: 'bad_json' };
-    return { ok: true, data };
-  } catch (e) {
-    const message = e instanceof Error ? (e.name === 'AbortError' ? 'timeout' : e.message) : 'error';
-    return { ok: false, message };
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-/* ------------------------------ create order ----------------------------- */
-
-export type MoncashOrder = { ok: true; token: string; redirectUrl: string; mode: MoncashMode };
-
-/**
- * Creates a MonCash payment for `orderId` and returns the URL to send the
- * buyer to. `amountHtg` is a WHOLE number of gourdes — MonCash has no cent
- * concept, and passing a fractional amount silently truncates on their side,
- * so the caller must have rounded already (see `usdCentsToHtg`).
- *
- * `orderId` is OUR reference (the checkout_sessions row id). It is what
- * `retrieveMoncashOrder` looks the payment back up by, and what makes
- * fulfilment idempotent — never reuse one across two carts.
- */
-export async function createMoncashOrder(input: {
-  orderId: string;
-  amountHtg: number;
-}): Promise<MoncashOrder | MoncashFailure> {
-  if (!moncashConfigured()) return { ok: false, message: 'not_configured' };
-  if (!Number.isInteger(input.amountHtg) || input.amountHtg <= 0) {
-    return { ok: false, message: 'bad_amount' };
-  }
-  if (!input.orderId.trim()) return { ok: false, message: 'bad_order_id' };
-
-  const r = await post<{ payment_token?: { token?: string } }>(CREATE_PAYMENT_PATH, {
-    amount: input.amountHtg,
-    orderId: input.orderId,
+/** The provider in force right now, or null when none is usable. */
+export function activeMoncashProvider(): MoncashProvider | null {
+  const id = pickMoncashProvider(process.env.MONCASH_PROVIDER, {
+    direct: directProvider.configured(),
+    bazik: bazikProvider.configured(),
   });
-  if (!r.ok) return r;
-
-  const token = r.data.payment_token?.token;
-  if (!token) return { ok: false, message: 'no_payment_token' };
-
-  const mode = moncashMode();
-  return { ok: true, token, redirectUrl: moncashRedirectUrl(token, mode), mode };
+  return id ? (PROVIDERS.find((p) => p.id === id) ?? null) : null;
 }
 
-/* ------------------------------- verify ---------------------------------- */
+/** True when SOME provider can take a MonCash payment. */
+export function moncashConfigured(): boolean {
+  return activeMoncashProvider() !== null;
+}
 
-/** The subset of MonCash's retrieval payload this app relies on. */
-export type MoncashPayment = {
-  ok: true;
-  paid: boolean;
-  orderId: string | null;
-  transactionId: string | null;
-  /** Gourdes actually charged, as MonCash reports them. */
-  costHtg: number | null;
-  payer: string | null;
-  raw: unknown;
-};
+/** Which environment the active provider points at; 'sandbox' when none. */
+export function moncashMode(): MoncashMode {
+  return activeMoncashProvider()?.mode() ?? 'sandbox';
+}
 
-type RetrieveResponse = {
-  payment?: {
-    reference?: string;
-    transaction_id?: string;
-    cost?: number;
-    message?: string;
-    payer?: string;
-  };
-  status?: number;
-};
+/** Human-readable target, for the admin diagnostic page. */
+export function moncashLabel(): string {
+  return activeMoncashProvider()?.label() ?? 'aucun fournisseur configuré';
+}
+
+export function moncashProviderId(): MoncashProviderId | null {
+  return activeMoncashProvider()?.id ?? null;
+}
 
 /**
- * Pure — decides whether a retrieval payload represents money actually
- * received. MonCash signals success through `payment.message === 'successful'`
- * (their spelling), so this is the ONE place that string lives. Exported
- * because "did we get paid" is the single most consequential boolean in the
- * app and deserves a direct unit test rather than being buried in a route.
+ * Creates a MonCash order through the active provider.
+ *
+ * The returned `providerRef` is what MUST be persisted to verify later — it is
+ * our own order id for Digicel but Bazik's minted `BZK_…` id for Bazik, so a
+ * caller that assumes it can re-derive it will silently break on a switch.
  */
-export function isMoncashPaid(body: unknown): boolean {
-  const payment = (body as RetrieveResponse | null)?.payment;
-  if (!payment) return false;
-  return String(payment.message ?? '').trim().toLowerCase() === 'successful';
+export async function createMoncashOrder(
+  input: MoncashCreateInput,
+): Promise<MoncashOrder | MoncashFailure> {
+  const provider = activeMoncashProvider();
+  if (!provider) return { ok: false, message: 'not_configured' };
+  return provider.createOrder(input);
 }
 
-function mapRetrieval(body: RetrieveResponse): MoncashPayment {
-  const p = body.payment ?? {};
-  return {
-    ok: true,
-    paid: isMoncashPaid(body),
-    orderId: p.reference ?? null,
-    transactionId: p.transaction_id ?? null,
-    costHtg: typeof p.cost === 'number' ? p.cost : null,
-    payer: p.payer ?? null,
-    raw: body,
-  };
-}
-
-/** Looks a payment up by OUR order reference. The authoritative "was it paid". */
-export async function retrieveMoncashOrder(orderId: string): Promise<MoncashPayment | MoncashFailure> {
-  if (!moncashConfigured()) return { ok: false, message: 'not_configured' };
-  if (!orderId.trim()) return { ok: false, message: 'bad_order_id' };
-  const r = await post<RetrieveResponse>(RETRIEVE_ORDER_PATH, { orderId });
-  return r.ok ? mapRetrieval(r.data) : r;
-}
-
-/** Looks a payment up by MONCASH's own transaction id (used by the notification callback). */
-export async function retrieveMoncashTransaction(
-  transactionId: string,
+/** Asks the active provider whether `providerRef` was actually paid. */
+export async function retrieveMoncashOrder(
+  providerRef: string,
 ): Promise<MoncashPayment | MoncashFailure> {
-  if (!moncashConfigured()) return { ok: false, message: 'not_configured' };
-  if (!transactionId.trim()) return { ok: false, message: 'bad_transaction_id' };
-  const r = await post<RetrieveResponse>(RETRIEVE_TRANSACTION_PATH, { transactionId });
-  return r.ok ? mapRetrieval(r.data) : r;
+  const provider = activeMoncashProvider();
+  if (!provider) return { ok: false, message: 'not_configured' };
+  return provider.checkOrder(providerRef);
 }
 
-/* -------------------------------- money ---------------------------------- */
+/* ---------------------- direct-provider specifics ------------------------ */
+/* Re-exported because the admin diagnostic page and the existing unit tests
+ * reason about Digicel's own hosts and redirect URLs. Nothing in the checkout
+ * path uses these — they are provider-specific by nature. */
+export {
+  directHost as moncashHost,
+  directRedirectUrl as moncashRedirectUrl,
+  directBasicAuth as moncashBasicAuth,
+  isDirectPaid as isMoncashPaid,
+  directMode,
+  bazikMode,
+  isBazikPaid,
+};
 
-/**
- * Pure — USD cents to whole gourdes at `rate`. Rounds to the nearest gourde
- * because MonCash has no sub-unit: a half-gourde would be silently dropped by
- * their gateway, so the rounding is made explicit and testable here instead.
- * Always returns at least 1 gourde for any non-zero price — a course must
- * never become free through a rounding accident.
- */
-export function usdCentsToHtg(amountCents: number, rate: number): number {
-  if (!Number.isFinite(amountCents) || !Number.isFinite(rate) || amountCents <= 0 || rate <= 0) return 0;
-  return Math.max(1, Math.round((amountCents / 100) * rate));
+/** Test seam: clear every provider's cached bearer. */
+export function resetMoncashTokenCache(): void {
+  resetDirectTokenCache();
+  resetBazikTokenCache();
 }

@@ -112,10 +112,24 @@ export async function POST(req: NextRequest) {
       .returning({ id: checkoutSessions.id })
   )[0];
 
-  const created = await createMoncashOrder({ orderId: order.id, amountHtg });
+  const locale = body.locale === 'fr' ? 'fr' : 'ht';
+  const origin = req.nextUrl.origin;
+
+  const created = await createMoncashOrder({
+    orderId: order.id,
+    amountHtg,
+    description: product.courseSlug,
+    // Bazik takes these per request; Digicel ignores them (its URLs are fixed
+    // in the merchant portal). Sending them always keeps this call site free
+    // of provider knowledge — and gives Bazik buyers a return that already
+    // knows the order and the language.
+    successUrl: `${origin}/api/payments/moncash/retour?orderId=${encodeURIComponent(order.id)}`,
+    errorUrl: `${origin}/${locale}/checkout?course=${encodeURIComponent(product.courseSlug)}`,
+    webhookUrl: `${origin}/api/webhooks/moncash?orderId=${encodeURIComponent(order.id)}`,
+  });
   if (!created.ok) {
     console.error('[checkout/moncash] create failed:', created.message);
-    // Digicel's own outages are the failure this rail sees most (their sandbox
+    // Provider outages are the failure this rail sees most (Digicel's sandbox
     // has stopped answering CreatePayment mid-session while OAuth kept
     // working). Separating "MonCash is not answering" from every other error
     // matters: the buyer's own action is different — wait and retry, or pay by
@@ -126,6 +140,14 @@ export async function POST(req: NextRequest) {
       { status: 502 },
     );
   }
+
+  // Persist the PROVIDER's reference. For Digicel it is our own order id, but
+  // Bazik mints its own and only answers to that — without this, a Bazik
+  // payment could never be verified and the buyer would never get access.
+  await db
+    .update(checkoutSessions)
+    .set({ sessionId: encodeMoncashRef(locale, created.providerRef) })
+    .where(eq(checkoutSessions.id, order.id));
 
   return NextResponse.json({ url: created.redirectUrl, amountHtg, orderId: order.id });
 }

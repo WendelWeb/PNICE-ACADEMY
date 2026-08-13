@@ -49,6 +49,12 @@ describe('mode and hosts', () => {
   });
 
   it('switches to the live host only on MONCASH_MODE=live', () => {
+    // `moncashMode()` now reports the ACTIVE provider's mode, so a provider
+    // has to be configured for the question to mean anything — with none, it
+    // answers 'sandbox', the cautious default.
+    process.env.MONCASH_CLIENT_ID = 'id';
+    process.env.MONCASH_CLIENT_SECRET = 'secret';
+
     process.env.MONCASH_MODE = 'live';
     expect(moncashMode()).toBe('live');
     expect(moncashHost()).toBe('moncashbutton.digicelgroup.com');
@@ -157,8 +163,11 @@ describe('createMoncashOrder', () => {
     const r = await createMoncashOrder({ orderId: 'order-42', amountHtg: 1188 });
     expect(r).toEqual({
       ok: true,
-      token: 'PTOK',
+      provider: 'direct',
       mode: 'sandbox',
+      // Digicel verifies by the id WE chose, so our own reference is what gets
+      // persisted — unlike Bazik, which mints its own.
+      providerRef: 'order-42',
       redirectUrl:
         'https://sandbox.moncashbutton.digicelgroup.com/Moncash-middleware/Payment/Redirect?token=PTOK',
     });
@@ -251,9 +260,9 @@ describe('retrieveMoncashOrder', () => {
     expect(r.ok).toBe(true);
     if (r.ok) {
       expect(r.paid).toBe(true);
-      expect(r.orderId).toBe('order-42');
       expect(r.transactionId).toBe('1234');
-      expect(r.costHtg).toBe(1188);
+      expect(r.amountHtg).toBe(1188);
+      expect(r.payer).toBe('509xxxxxxx');
     }
   });
 
