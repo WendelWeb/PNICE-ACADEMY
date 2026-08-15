@@ -11,9 +11,9 @@ import { getCourse, courses } from './courses';
 
 describe('teachers data', () => {
   it('has teacher #1: the platform account owning all 9 launch courses', () => {
-    const t = getTeacher('pnice-academy');
+    const t = getTeacher('daceus-dadlyn');
     expect(t).toBeDefined();
-    expect(t!.displayName).toBe('PNICE Academy');
+    expect(t!.displayName).toBe('Daceus Dadlyn');
     expect(t!.courseSlugs).toHaveLength(9);
     expect(t!.joinedYear).toBe(2026);
   });
@@ -58,17 +58,17 @@ describe('teachers data', () => {
   });
 
   it('keeps marketplace-only fields null until real data exists', () => {
-    const t = getTeacher('pnice-academy')!;
+    const t = getTeacher('daceus-dadlyn')!;
     expect(t.rating).toBeNull();
     expect(t.studentCount).toBeNull();
   });
 
   it('resolves by slug and returns undefined for unknown slugs', () => {
-    expect(getTeacher('pnice-academy')?.initials).toBe('PA');
+    expect(getTeacher('daceus-dadlyn')?.initials).toBe('DD');
     expect(getTeacher('nope')).toBeUndefined();
   });
 
   it('derives a registry document number', () => {
-    expect(teacherDocNo(getTeacher('pnice-academy')!)).toBe('ANS-2026-001');
+    expect(teacherDocNo(getTeacher('daceus-dadlyn')!)).toBe('ANS-2026-001');
   });
 });

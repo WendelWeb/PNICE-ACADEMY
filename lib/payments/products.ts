@@ -151,7 +151,7 @@ async function resolveDefaultSubscription(): Promise<ResolvedSubscription> {
  * same as an unknown course slug.
  *
  * EXCEPTION for teacher #1 with no live DB: their own slug still resolves to
- * the constant price (never `null`) — a fresh checkout of `/prof/pnice-academy`'s
+ * the constant price (never `null`) — a fresh checkout of `/prof/daceus-dadlyn`'s
  * own CTA must work with no DATABASE_URL configured, still tagged 'teacher'
  * since the visitor explicitly picked a named teacher's own plan (Task: two
  * subscription products) — access control itself is moot with no DB (every

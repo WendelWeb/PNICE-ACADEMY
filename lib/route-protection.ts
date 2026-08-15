@@ -37,7 +37,7 @@ export const PUBLIC_CANARY_PATHS = [
   '/ht/apropos',
   '/ht/fak',
   '/ht/prof',
-  '/ht/prof/pnice-academy',
+  '/ht/prof/daceus-dadlyn',
   '/ht/enseigner',
   '/ht/legal/cgu',
   '/ht/certificats/verifier',

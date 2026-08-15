@@ -34,17 +34,17 @@ export type Teacher = {
 
 export const teachers: Teacher[] = [
   {
-    slug: 'pnice-academy',
-    displayName: 'PNICE Academy',
-    initials: 'PA',
+    slug: 'daceus-dadlyn',
+    displayName: 'Daceus Dadlyn',
+    initials: 'DD',
     bio_ht:
-      'PNICE Academy se premye anseyan sou pwòp platfòm li. Nou te kòmanse ak yon biznis senp: pote pakè ant Miami ak Ayiti. Sou wout la, nou te wè menm baryè a chak jou — moun ki gen talan, men san kat pou peye sou entènèt, san zouti pou vann, san konfyans nan dijital la. Se konsa 9 fòmasyon sa yo fèt: chak ladan yo soti nan yon pwoblèm nou te rezoud toutbon, ak pwòp lajan nou, nan reyalite Ayiti a. Pa gen teyori pou plezi — se etap konkrè, an kreyòl, ou ka aplike menm jou a.',
+      'Mwen kòmanse ak yon biznis senp: pote pakè ant Miami ak Ayiti. Sou wout la, mwen te wè menm baryè a chak jou — moun ki gen talan, men san kat pou peye sou entènèt, san zouti pou vann, san konfyans nan dijital la. Se konsa fòmasyon sa yo fèt: chak ladan yo soti nan yon pwoblèm mwen te rezoud toutbon, ak pwòp lajan mwen, nan reyalite Ayiti a. Pa gen teyori pou plezi — se etap konkrè, an kreyòl, ou ka aplike menm jou a.',
     bio_fr:
-      "PNICE Academy est le premier enseignant de sa propre plateforme. Nous avons commencé avec un business simple : transporter des colis entre Miami et Haïti. En chemin, nous voyions la même barrière chaque jour — des gens talentueux, mais sans carte pour payer en ligne, sans outils pour vendre, sans confiance dans le numérique. C'est ainsi que ces 9 formations sont nées : chacune vient d'un problème que nous avons réellement résolu, avec notre propre argent, dans la réalité haïtienne. Pas de théorie pour le plaisir — des étapes concrètes, à appliquer le jour même.",
+      "J'ai commencé avec un business simple : transporter des colis entre Miami et Haïti. En chemin, je voyais la même barrière chaque jour — des gens talentueux, mais sans carte pour payer en ligne, sans outils pour vendre, sans confiance dans le numérique. C'est ainsi que ces formations sont nées : chacune vient d'un problème que j'ai réellement résolu, avec mon propre argent, dans la réalité haïtienne. Pas de théorie pour le plaisir — des étapes concrètes, à appliquer le jour même.",
     shortBio_ht:
-      'Premye anseyan sou pwòp platfòm li — 9 fòmasyon ki soti nan pwoblèm nou te rezoud toutbon, ak pwòp lajan nou, nan reyalite Ayiti a.',
+      'Fòmasyon ki soti nan pwoblèm mwen te rezoud toutbon, ak pwòp lajan mwen, nan reyalite Ayiti a.',
     shortBio_fr:
-      'Premier enseignant de sa propre plateforme — 9 formations nées de problèmes que nous avons réellement résolus, avec notre propre argent, dans la réalité haïtienne.',
+      "Des formations nées de problèmes que j'ai réellement résolus, avec mon propre argent, dans la réalité haïtienne.",
     imageName: 'founder',
     courseSlugs: courses.map((c) => c.slug),
     joinedYear: 2026,
