@@ -16,8 +16,7 @@ import { db, schema } from '@/db';
 import { dbConfigured, getPublishedCourses } from '@/lib/courses/source';
 import { teachers as staticTeachers, getCourseTeacher } from '@/data/teachers';
 import {
-  getApprovedTeacherSlugs,
-  getPublicTeacher,
+  rosterTeacherSlugs, getPublicTeacher,
   type PublicTeacher,
 } from '@/lib/teacher/public';
 import { SUBSCRIPTION_USD } from '@/data/pricing';
@@ -43,12 +42,14 @@ export type HomeStats = {
  * are DB-only claims and come back `null` — hidden, not faked — without one.
  */
 export async function getHomeStats(): Promise<HomeStats> {
-  const [courses, dbSlugs] = await Promise.all([
+  // Same ONE roster rule as the rail below — this very stat printed
+  // "2 anseyan" for one real person during the owner's teacher rename,
+  // because it unioned static and DB slugs by string.
+  const [courses, rosterSlugs] = await Promise.all([
     getPublishedCourses(),
-    getApprovedTeacherSlugs(),
+    rosterTeacherSlugs(),
   ]);
-  const staticSlugs = staticTeachers.map((t) => t.slug);
-  const teacherCount = new Set([...staticSlugs, ...dbSlugs]).size;
+  const teacherCount = rosterSlugs.length;
 
   let studentCount: number | null = null;
   let certificateCount: number | null = null;
@@ -88,12 +89,11 @@ const HOME_TEACHERS_LIMIT = 6;
  * the way down; no DB ⇒ just teacher #1's static card.
  */
 export async function getHomeTeachers(locale: string): Promise<PublicTeacher[]> {
-  const staticSlugs = staticTeachers.map((t) => t.slug);
-  const dbSlugs = await getApprovedTeacherSlugs();
-  const slugs = [...staticSlugs, ...dbSlugs.filter((s) => !staticSlugs.includes(s))].slice(
-    0,
-    HOME_TEACHERS_LIMIT,
-  );
+  // The ONE roster rule — DB truth when it exists, static only without a DB.
+  // Never a merge of the two: merging by slug equality is what listed the
+  // same person twice on the homepage during the owner's teacher rename
+  // (see `rosterTeacherSlugs`'s header).
+  const slugs = (await rosterTeacherSlugs()).slice(0, HOME_TEACHERS_LIMIT);
   const resolved = await Promise.all(slugs.map((slug) => getPublicTeacher(slug, locale)));
   return resolved.filter((t): t is PublicTeacher => Boolean(t));
 }

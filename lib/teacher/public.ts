@@ -300,11 +300,31 @@ export async function getCourseTeacherSlug(courseSlug: string): Promise<string |
  * down; with no DB this is exactly teacher #1's static card.
  */
 export async function getAllPublicTeachers(locale: string): Promise<PublicTeacher[]> {
-  const staticSlugs = teachers.map((t) => t.slug);
-  const dbSlugs = await getApprovedTeacherSlugs();
-  const slugs = [...staticSlugs, ...dbSlugs.filter((s) => !staticSlugs.includes(s))];
+  const slugs = await rosterTeacherSlugs();
   const resolved = await Promise.all(slugs.map((slug) => getPublicTeacher(slug, locale)));
   return resolved.filter((t): t is PublicTeacher => Boolean(t));
+}
+
+/**
+ * The ONE rule for who is on the public teacher roster.
+ *
+ * When the DB can vouch for at least one approved teacher, the DB list IS
+ * the roster. The static registry (data/teachers.ts) serves only when there
+ * is no DB truth at all — dev with no DATABASE_URL, or a failed read.
+ *
+ * WHY NOT MERGE THE TWO: the old rule concatenated static + DB slugs and
+ * deduplicated by string equality — but the static entry describes the SAME
+ * HUMAN as one of the DB rows, and slugs drift. The owner's teacher rename
+ * (août 2026) proved it in production: for the minutes between the DB
+ * update ('daceus-dadlyn') and the deploy of the matching static file
+ * (still 'pnice-academy'), the homepage listed the same person twice —
+ * "2 anseyan", identical bios, two doc numbers. Identity must never depend
+ * on two independently-updated strings staying equal.
+ */
+export async function rosterTeacherSlugs(): Promise<string[]> {
+  const dbSlugs = await getApprovedTeacherSlugs();
+  if (dbSlugs.length > 0) return dbSlugs;
+  return teachers.map((t) => t.slug);
 }
 
 /**
