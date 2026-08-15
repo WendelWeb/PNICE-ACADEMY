@@ -77,8 +77,12 @@ export function CourseCatalogCard({
   const bilingual = courseIsBilingual(course);
   const primary = coursePrimaryLocale(course);
 
+  // NO h-full, NO reserved min-heights (owner: « carte si longue, toutes ces
+  // espaces pour rien ») — the card takes its NATURAL height and stops. Grid
+  // rows top-align; a shorter card leaves page background below its border,
+  // which is invisible, instead of stretched whitespace inside it.
   return (
-    <div className="card-hover group flex h-full flex-col rounded-xl border border-ink/12 bg-paper-light outline-none transition-colors hover:border-ink/35">
+    <div className="card-hover group flex flex-col self-start rounded-xl border border-ink/12 bg-paper-light outline-none transition-colors hover:border-ink/35">
       <Link
         href={`/formations/${course.slug}`}
         className="flex flex-1 flex-col rounded-t-xl outline-none focus-visible:ring-2 focus-visible:ring-ochre focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
@@ -133,11 +137,7 @@ export function CourseCatalogCard({
             title → author → rating → promise → proof bullets → price last
             and boldest. Same information as before, re-ordered into the
             grammar of the biggest course marketplace on earth. */}
-        {/* min-h reserves the 2-line box even for 1-line titles — that's how
-            Udemy keeps every card the same height WITHOUT flex leftover
-            pooling above the price row (owner: « entre description et prix
-            beaucoup trop [d'espace] »). Same trick on the tagline below. */}
-        <h3 className="line-clamp-2 min-h-[2.75em] font-display text-[17px] font-bold leading-snug text-ink">
+        <h3 className="line-clamp-2 font-display text-[17px] font-bold leading-snug text-ink">
           {courseTitle(course, locale)}
         </h3>
 
@@ -163,7 +163,7 @@ export function CourseCatalogCard({
           </span>
         )}
 
-        <p className="mt-1.5 line-clamp-2 min-h-[3.25em] text-[13px] leading-relaxed text-graphite/75">
+        <p className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-graphite/75">
           {courseTagline(course, locale)}
         </p>
 
@@ -300,13 +300,16 @@ function CardActions({ course, title }: { course: Course; title: string }) {
           {inCart ? <IconShoppingCartFilled size={20} /> : <IconShoppingCart size={20} />}
         </button>
       )}
+      {/* The buy control carries its verb (owner: « ajoute le texte, genre
+          acheter ») — icon + the short imperative, a pill instead of a bare
+          circle. The banknote still says money; the word removes all doubt. */}
       <Link
         href={`/checkout?course=${course.slug}`}
-        aria-label={tc('buy')}
         title={tc('buy')}
-        className="grid h-11 w-11 place-items-center rounded-full bg-ochre text-[#1b1207] transition-transform hover:-translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ochre"
+        className="flex h-11 items-center gap-1.5 whitespace-nowrap rounded-full bg-ochre px-4 font-display text-[13px] font-bold text-[#1b1207] transition-transform hover:-translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ochre"
       >
-        <IconCash size={20} />
+        <IconCash size={18} />
+        {tc('buyShort')}
       </Link>
     </div>
   );
