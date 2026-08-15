@@ -53,7 +53,8 @@ export function QuickActions({
       // Review fix: switching steps swaps the plan out of the tree and kills
       // any in-flight video upload — confirm before navigating.
       if (hasActiveUploads() && !window.confirm(tEditor('uploadLeaveConfirm'))) return;
-      const base = step === 'infos' ? basePath : `${basePath}?tab=${step}`;
+      // Explicit `?tab=` always — see ControlRail's hrefForStep note.
+      const base = `${basePath}?tab=${step}`;
       router.push(`${base}#${anchorId}`);
     } else {
       try {

@@ -130,9 +130,19 @@ export default async function EditMyCoursePage({
   // Task A2 — tabs instead of one giant scroll: `?tab=` is server-read here
   // (shareable URL, no lost state on refresh) — see ControlRail.tsx. Task D1
   // keeps this EXACT contract, just presents the 4 tab keys as ① → ④.
+  // MASTERCLASS LANDING (owner: « difficulté ajouter vidéo, trop
+  // complexe ») — with no explicit ?tab, land where the WORK is: a course
+  // with no lessons, or lessons still missing videos, opens straight on
+  // step ② (the video workflow), not on the text form. Every real tab
+  // click carries an explicit ?tab (ControlRail/MobileStepBar/QuickActions
+  // all pin theirs), so choosing a step always wins over this default.
+  const contentWorkRemains =
+    course.lessons.length === 0 || course.lessons.some((l) => !l.bunnyVideoId);
   const activeTab: EditorStepKey = TAB_KEYS.includes(searchParams.tab as EditorStepKey)
     ? (searchParams.tab as EditorStepKey)
-    : 'infos';
+    : contentWorkRemains
+      ? 'plan'
+      : 'infos';
   const activeStepNumber = EDITOR_STEPS.find((s) => s.key === activeTab)?.number ?? 1;
   const basePath = `/enseigner/studio/cours/${slug}/editer`;
   const isDraft = course.rawStatus === 'draft' || course.rawStatus === 'rejected';

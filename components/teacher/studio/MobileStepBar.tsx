@@ -38,7 +38,9 @@ export function MobileStepBar({
   const t = useTranslations('teach.studio.editor');
   const router = useRouter();
 
-  const hrefForStep = (step: EditorStepKey) => (step === 'infos' ? basePath : `${basePath}?tab=${step}`);
+  // Explicit `?tab=` always — see ControlRail's hrefForStep note (the bare
+  // path is the smart landing).
+  const hrefForStep = (step: EditorStepKey) => `${basePath}?tab=${step}`;
 
   return (
     <nav

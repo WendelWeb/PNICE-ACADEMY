@@ -2216,6 +2216,14 @@
         "tagsCount": "{count}/{max} tags",
         "tagsRemove": "Retirer le tag « {tag} »",
         "tagsDeferred": "Enregistré — mais les tags s’appliqueront après une petite mise à jour du serveur. Ne les efface pas, ils partiront automatiquement.",
+        "sections": {
+          "optional": "Optionnel",
+          "identity": { "title": "Identité du cours", "hint": "Nom, accroche, catégorie, tags — ce que les visiteurs voient en premier." },
+          "price": { "title": "Prix", "hint": "Ce que l’élève paie — ou Gratuit, si c’est ton choix." },
+          "audience": { "title": "Pour qui", "hint": "À qui s’adresse le cours, quel niveau, quels prérequis." },
+          "content": { "title": "Ce que l’élève obtient", "hint": "Ce qu’il saura faire, la promesse, le problème résolu, les livrables." },
+          "faq": { "title": "FAQ", "hint": "Réponses aux questions que les acheteurs posent le plus." }
+        },
         "priceModePaid": "Payant",
         "priceModeFree": "Gratuit",
         "priceFreeNote": "La formation sera GRATUITE — tout le monde pourra s’inscrire sans payer. Tu ne toucheras rien dessus.",

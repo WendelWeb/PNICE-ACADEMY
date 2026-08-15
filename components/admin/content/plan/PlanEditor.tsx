@@ -205,18 +205,20 @@ export function PlanEditor({
   // (`plan-add-lesson`, see readiness-anchors.ts) always resolves to exactly
   // one focusable element.
   const addLessonButton = (
+    // ONE prominent style whether the plan is empty or not (owner:
+    // « terrible UX » — the non-empty variant used to be a tiny underlined
+    // text link, invisible exactly when a teacher is mid-flow adding
+    // lesson after lesson). A real button, always.
     <button
       id="plan-add-lesson"
       type="button"
       onClick={() => act(() => actions.addLesson(slug))}
       className={cn(
-        'inline-flex items-center gap-1.5 rounded font-mono text-[11px] text-teal hover:underline',
+        'inline-flex items-center gap-1.5 rounded-lg border border-teal/40 bg-teal/10 px-4 py-2.5 font-mono text-[12px] font-semibold text-teal transition-colors hover:bg-teal/15',
         focusRing,
-        isEmpty &&
-          'rounded-lg border border-teal/40 bg-teal/10 px-4 py-2.5 text-[12px] font-semibold no-underline hover:bg-teal/15 hover:no-underline',
       )}
     >
-      <IconPlus size={isEmpty ? 15 : 13} /> {t('add')}
+      <IconPlus size={15} /> {t('add')}
     </button>
   );
 

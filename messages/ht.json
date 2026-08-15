@@ -2216,6 +2216,14 @@
         "tagsCount": "{count}/{max} tag",
         "tagsRemove": "Retire tag « {tag} »",
         "tagsDeferred": "Anrejistre — men tag yo ap aplike apre yon ti mizajou sèvè. Pa efase yo, y ap pati otomatikman.",
+        "sections": {
+          "optional": "Opsyonèl",
+          "identity": { "title": "Idantite kou a", "hint": "Non, akwòch, kategori, tag — sa vizitè yo wè an premye." },
+          "price": { "title": "Pri", "hint": "Konbyen elèv la peye — oswa Gratis, si se chwa w." },
+          "audience": { "title": "Pou ki moun", "hint": "Ki moun kou a fèt pou, ki nivo, ki sa yo bezwen deja." },
+          "content": { "title": "Sa elèv la ap jwenn", "hint": "Sa y ap konn fè, pwomès la, pwoblèm ou rezoud, sa yo resevwa." },
+          "faq": { "title": "FAQ", "hint": "Repons pou kesyon achtè yo poze pi souvan." }
+        },
         "priceModePaid": "Peye",
         "priceModeFree": "Gratis",
         "priceFreeNote": "Fòmasyon an ap GRATIS — nenpòt moun ap ka enskri san peye anyen. Ou p ap touche kòb sou li.",

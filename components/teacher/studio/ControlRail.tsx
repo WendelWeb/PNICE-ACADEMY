@@ -49,7 +49,10 @@ export function ControlRail({
   const router = useRouter();
   const missing = items.filter((i) => !i.ok).length;
 
-  const hrefForStep = (step: EditorStepKey) => (step === 'infos' ? basePath : `${basePath}?tab=${step}`);
+  // ALWAYS explicit `?tab=` — the BARE path is the smart landing (the page
+  // picks the step where work remains), so an explicit click must always
+  // pin its step or step ① becomes unreachable on an unfinished course.
+  const hrefForStep = (step: EditorStepKey) => `${basePath}?tab=${step}`;
 
   /** Review fix: a `?tab=` push swaps the active step's content out of the
    *  tree — killing any in-flight video upload with it. Never silently. */
