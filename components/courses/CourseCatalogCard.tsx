@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { IconBolt, IconCheck, IconShoppingCartPlus } from '@tabler/icons-react';
+import { IconCash, IconCheck, IconShoppingCart, IconShoppingCartFilled } from '@tabler/icons-react';
 import { Link } from '@/i18n/routing';
 import { Price, PriceSecondary } from '@/components/ui/Price';
 import { Stars } from '@/components/reviews/Stars';
@@ -105,9 +105,12 @@ export function CourseCatalogCard({
           </div>
         ) : null}
 
-        <div className="flex flex-1 flex-col p-4">
+        {/* pt tighter than the sides: the photo already provides the visual
+            break, so the title sits close under it (owner: « trop d'espace
+            entre image et nom du cours »). */}
+        <div className="flex flex-1 flex-col px-4 pb-2.5 pt-2.5">
         {!(imageSrcs && imageSrcs.length > 0) && (
-          <div className="mb-3">
+          <div className="mb-2 mt-1.5">
             <span
               className={cn(
                 'inline-flex rounded-full px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide',
@@ -124,7 +127,11 @@ export function CourseCatalogCard({
             title → author → rating → promise → proof bullets → price last
             and boldest. Same information as before, re-ordered into the
             grammar of the biggest course marketplace on earth. */}
-        <h3 className="mt-2 line-clamp-2 font-display text-[17px] font-bold leading-snug text-ink">
+        {/* min-h reserves the 2-line box even for 1-line titles — that's how
+            Udemy keeps every card the same height WITHOUT flex leftover
+            pooling above the price row (owner: « entre description et prix
+            beaucoup trop [d'espace] »). Same trick on the tagline below. */}
+        <h3 className="line-clamp-2 min-h-[2.75em] font-display text-[17px] font-bold leading-snug text-ink">
           {courseTitle(course, locale)}
         </h3>
 
@@ -147,11 +154,11 @@ export function CourseCatalogCard({
           </span>
         )}
 
-        <p className="mt-2 line-clamp-2 text-[13px] leading-relaxed text-graphite/75">
+        <p className="mt-1.5 line-clamp-2 min-h-[3.25em] text-[13px] leading-relaxed text-graphite/75">
           {courseTagline(course, locale)}
         </p>
 
-        <ul className="mt-2.5 space-y-1">
+        <ul className="mt-2 space-y-1">
           {learn.map((point, i) => (
             <li key={i} className="flex gap-2 text-[12px] leading-snug text-graphite/85">
               <IconCheck size={13} className="mt-0.5 shrink-0 text-teal" />
@@ -170,7 +177,7 @@ export function CourseCatalogCard({
           controls nested in an anchor are invalid HTML and break keyboard
           navigation). In the rare no-photo card the lesson count rides
           along here, since it has no thumbnail badge to live on. */}
-      <div className="flex items-center justify-between gap-3 border-t border-ink/10 px-4 py-3">
+      <div className="flex items-center justify-between gap-3 border-t border-ink/10 px-4 py-2.5">
         <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
           <Price usd={course.priceUsd} className="font-display text-xl font-black text-ink" />
           <PriceSecondary usd={course.priceUsd} className="font-mono text-[11px] text-graphite/55" />
@@ -241,12 +248,20 @@ function CardPhoto({ srcs, alt }: { srcs: string[]; alt: string }) {
 }
 
 /** The card's two actions as 44px icon circles (owner: « deux icônes, carte
- *  plus courte ») — cart first, then buy-now in ochre at the thumb-reach end.
- *  Icon-only, so EVERY control carries both `aria-label` and `title`: the
- *  screen reader and the mouse hover both get the full verb the label used
- *  to show. The cart circle renders from the SERVER paint (never gated on
- *  hydration — a button that waits for JavaScript is a button a slow phone
- *  never sees); hydration only flips it to the in-cart checkmark. */
+ *  plus courte ») — cart first, then buy in ochre at the thumb-reach end.
+ *
+ *  The cart circle is a TOGGLE, one glyph two states (owner spec): empty
+ *  outline cart = not in the basket, tap adds; FILLED teal cart = in the
+ *  basket, tap simply removes it again. Same place, same shape — the fill
+ *  is the state, exactly like a heart/favourite control. `aria-pressed`
+ *  says so to screen readers; label and tooltip name the action the NEXT
+ *  tap performs. The buy circle is a banknote — the money verb, not a
+ *  speed metaphor — in the ochre primary.
+ *
+ *  Icon-only, so every control carries both `aria-label` and `title`. The
+ *  cart circle renders from the SERVER paint (never gated on hydration — a
+ *  button that waits for JavaScript is a button a slow phone never sees);
+ *  hydration only flips its fill. */
 function CardActions({ course, title }: { course: Course; title: string }) {
   const t = useTranslations('panye');
   const tc = useTranslations('common');
@@ -255,34 +270,34 @@ function CardActions({ course, title }: { course: Course; title: string }) {
 
   return (
     <div className="flex shrink-0 items-center gap-2">
-      {cart &&
-        (inCart ? (
-          <Link
-            href="/panye"
-            aria-label={t('inCartShort')}
-            title={t('inCartShort')}
-            className="grid h-11 w-11 place-items-center rounded-full border border-teal/50 text-teal transition-colors hover:bg-teal/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal"
-          >
-            <IconCheck size={20} />
-          </Link>
-        ) : (
-          <button
-            type="button"
-            onClick={() => cart.add({ slug: course.slug, title, priceUsd: course.priceUsd })}
-            aria-label={t('addShort')}
-            title={t('addShort')}
-            className="grid h-11 w-11 place-items-center rounded-full border border-ink/25 text-ink/70 transition-colors hover:border-ochre hover:text-ochre focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ochre"
-          >
-            <IconShoppingCartPlus size={20} />
-          </button>
-        ))}
+      {cart && (
+        <button
+          type="button"
+          onClick={() =>
+            inCart
+              ? cart.remove(course.slug)
+              : cart.add({ slug: course.slug, title, priceUsd: course.priceUsd })
+          }
+          aria-pressed={inCart}
+          aria-label={inCart ? t('removeLabel', { title }) : t('addShort')}
+          title={inCart ? t('removeLabel', { title }) : t('addShort')}
+          className={cn(
+            'grid h-11 w-11 place-items-center rounded-full border transition-colors',
+            inCart
+              ? 'border-teal bg-teal/10 text-teal hover:bg-teal/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal'
+              : 'border-ink/25 text-ink/70 hover:border-ochre hover:text-ochre focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ochre',
+          )}
+        >
+          {inCart ? <IconShoppingCartFilled size={20} /> : <IconShoppingCart size={20} />}
+        </button>
+      )}
       <Link
         href={`/checkout?course=${course.slug}`}
         aria-label={tc('buy')}
         title={tc('buy')}
         className="grid h-11 w-11 place-items-center rounded-full bg-ochre text-[#1b1207] transition-transform hover:-translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ochre"
       >
-        <IconBolt size={20} />
+        <IconCash size={20} />
       </Link>
     </div>
   );
