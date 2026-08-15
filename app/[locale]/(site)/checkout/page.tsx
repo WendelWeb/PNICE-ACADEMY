@@ -284,7 +284,11 @@ export default async function CheckoutPage({
                     </p>
                   )}
                   <PaymentMethods
-                    payLabel={`${t('pay')} ${formatUsd(amountUsd)}`}
+                    // The BUTTON itself speaks both currencies (owner ask):
+                    // USD is the reference price, but the wallets debit
+                    // gourdes — the figure on the very control that commits
+                    // the buyer must show what leaves their account.
+                    payLabel={`${t('pay')} ${formatUsd(amountUsd)}${walletExactHtg ? ` · ${walletExactHtg}` : ''}`}
                     methods={liveMethods}
                     comingSoon={comingSoonMethods}
                     productType={isSub ? 'subscription' : 'course'}

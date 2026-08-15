@@ -249,7 +249,12 @@ export function CartView({
                 {busy && <IconLoader2 size={18} className="mr-2 animate-spin" />}
                 {busy
                   ? tc('redirect')
-                  : t('payCta', { count: cart.count, amount: formatUsd(totalUsd) })}
+                  : t('payCta', {
+                      count: cart.count,
+                      // Both currencies on the committing control — the
+                      // wallets debit gourdes, so the button says gourdes.
+                      amount: `${formatUsd(totalUsd)} · ${formatHtg(toHtgAt(totalUsd, fxRateHtg))}`,
+                    })}
               </button>
             </>
           )}
