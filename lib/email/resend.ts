@@ -52,7 +52,7 @@ export function emailConfigured(): boolean {
  *  test-email card can show the admin exactly which address will be used
  *  (this default domain is almost certainly NOT verified in a fresh Resend
  *  account — the UI warns when this is the effective sender). */
-export const DEFAULT_FROM = 'PNICE Academy <no-reply@pnice.academy>';
+export const DEFAULT_FROM = 'PNICE Academy <no-reply@pniceacademy.com>';
 
 export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
   const key = process.env.RESEND_API_KEY;

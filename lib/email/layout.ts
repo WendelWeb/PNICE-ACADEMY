@@ -31,7 +31,7 @@
  *  path, or a cron route). Override via NEXT_PUBLIC_SITE_URL if ever needed;
  *  falls back to the production domain used elsewhere in the codebase
  *  (lib/pdf/certificate.test.ts, lib/courses/source.test.ts). */
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://pnice.academy';
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://pniceacademy.com';
 
 export const COLORS = {
   ink: '#10204A',
@@ -152,7 +152,18 @@ export function emailButton(label: string, url: string): string {
 }
 
 function footerHtml(input: { locale: 'fr' | 'ht'; footerNote: string }): string {
-  const siteLabel = 'pnice.academy';
+  // Derived from SITE_URL rather than hardcoded: this label sits right next
+  // to the link in every receipt's footer, and it used to say
+  // 'pnice.academy' — a domain that does not exist — under emails sent from
+  // pniceacademy.com. A reader checking the domain (exactly what we teach
+  // people to do with payment emails) would conclude phishing.
+  const siteLabel = (() => {
+    try {
+      return new URL(SITE_URL).host;
+    } catch {
+      return 'pniceacademy.com';
+    }
+  })();
   return `
     <tr>
       <td class="pnice-px" style="padding:22px 32px 40px;text-align:center;">
