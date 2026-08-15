@@ -8,6 +8,7 @@ import { Link } from '@/i18n/routing';
 import { buttonClasses } from '@/components/ui/Button';
 import { formatUsd } from '@/lib/money';
 import { getCourseBySlug } from '@/lib/courses/source';
+import { ClearCartOnSuccess } from '@/components/cart/ClearCartOnSuccess';
 import {
   stripeConfigured,
   getStripeCheckoutSession,
@@ -53,6 +54,10 @@ export default async function MerciPage({
   // Either Haitian wallet lands here the same way — the return route appends
   // its own flag, and from this page's point of view the two are identical:
   // a gourde purchase whose amount and reference live on the gateway's side.
+  // Basket size (« panye ») — the return routes append ?count=N for a
+  // multi-course purchase so this page can speak of N formations instead of
+  // naming only the first.
+  const cartCount = typeof searchParams.count === 'string' ? Math.max(1, parseInt(searchParams.count, 10) || 1) : 1;
   const paidWithMoncash = searchParams.moncash === '1';
   const paidWithNatcash = searchParams.natcash === '1';
   const paidWithWallet = paidWithMoncash || paidWithNatcash;
@@ -61,9 +66,10 @@ export default async function MerciPage({
     typeof searchParams.course === 'string' ? searchParams.course : undefined;
   const moncashCourse =
     paidWithWallet && moncashCourseSlug ? await getCourseBySlug(moncashCourseSlug) : null;
-  const moncashItemName = moncashCourse
+  const singleItemName = moncashCourse
     ? (locale === 'fr' ? moncashCourse.title_fr : moncashCourse.title_ht) || moncashCourse.title_ht
     : null;
+  const moncashItemName = cartCount > 1 ? t('walletCartItems', { count: cartCount }) : singleItemName;
 
   // PENDING VERIFICATION. `/api/payments/moncash/retour` sends the buyer here
   // with `?pending=1&order=…` when it could not get a definitive answer out of
@@ -242,7 +248,10 @@ export default async function MerciPage({
           {/* MonCash: the amount and reference live on Digicel's side, and the
               return URL carries neither. Naming the course is both honest and
               the only thing the buyer actually needs to see confirmed. */}
-          {paidWithWallet && moncashItemName && (
+          {paidWithWallet && !pendingOrderId && (
+        <ClearCartOnSuccess courseSlug={moncashCourseSlug ?? null} count={cartCount} />
+      )}
+      {paidWithWallet && moncashItemName && (
             <dl className="mt-6 space-y-2.5 border-t border-ink/10 pt-5 text-left">
               <div className="flex items-baseline justify-between gap-3">
                 <dt className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-ink/45">

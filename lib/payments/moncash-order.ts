@@ -15,10 +15,11 @@
  */
 import { db } from '@/db';
 import { checkoutSessions, webhookLogs } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { retrieveMoncashOrderFrom, moncashConfigured } from './moncash';
 import type { MoncashProviderId } from './moncash';
 import { fulfillMoncashOrder } from './moncash-fulfill';
+import { allocateHtgShares } from './cart';
 
 /**
  * Best-effort ops signal for MonCash — the platform's only live real-money
@@ -197,7 +198,7 @@ export function isMoncashRef(ref: string | null | undefined): boolean {
 }
 
 export type SettleResult =
-  | { status: 'granted' | 'already'; locale: 'ht' | 'fr'; courseSlug: string }
+  | { status: 'granted' | 'already'; locale: 'ht' | 'fr'; courseSlug: string; courseCount?: number }
   | { status: 'unpaid' | 'unknown_order' | 'not_configured' | 'error'; locale: 'ht' | 'fr'; courseSlug?: string };
 
 /**
@@ -205,81 +206,138 @@ export type SettleResult =
  * access. NEVER THROWS — callers are HTTP endpoints that must answer calmly
  * even when MonCash or the DB is having a bad minute.
  */
+/** One checkout row, as settlement needs it. */
+type SettleRow = {
+  id: string;
+  userId: string | null;
+  courseSlug: string | null;
+  amountCents: number;
+  sessionId: string | null;
+  completedAt: Date | null;
+};
+
+const SETTLE_COLUMNS = {
+  id: checkoutSessions.id,
+  userId: checkoutSessions.userId,
+  courseSlug: checkoutSessions.courseSlug,
+  amountCents: checkoutSessions.amountCents,
+  sessionId: checkoutSessions.sessionId,
+  completedAt: checkoutSessions.completedAt,
+};
+
+/**
+ * Every checkout row `orderId` stands for: the single row whose own id it
+ * is, OR every row of the basket whose cartId it is (« panye », migration
+ * 0021 — the wallets take one payment for a whole basket, so the CART id is
+ * what travels to the gateway).
+ *
+ * The cart lookup is wrapped separately because a live DB that still lags
+ * the migration throws on the `cart_id` column — and on such a DB no cart
+ * can exist (checkout refuses baskets without the column), so "no rows" is
+ * the truthful answer, not an error.
+ */
+async function settleRowsFor(orderId: string): Promise<SettleRow[]> {
+  const byId = await db
+    .select(SETTLE_COLUMNS)
+    .from(checkoutSessions)
+    .where(eq(checkoutSessions.id, orderId))
+    .limit(1);
+  if (byId.length > 0) return byId;
+  try {
+    return await db
+      .select(SETTLE_COLUMNS)
+      .from(checkoutSessions)
+      .where(eq(checkoutSessions.cartId, orderId));
+  } catch {
+    return [];
+  }
+}
+
 export async function settleMoncashOrder(orderId: string): Promise<SettleResult> {
   if (!moncashConfigured() || !process.env.DATABASE_URL) {
     return { status: 'not_configured', locale: 'ht' };
   }
   try {
-    const row = (
-      await db
-        .select({
-          id: checkoutSessions.id,
-          userId: checkoutSessions.userId,
-          courseSlug: checkoutSessions.courseSlug,
-          amountCents: checkoutSessions.amountCents,
-          sessionId: checkoutSessions.sessionId,
-          completedAt: checkoutSessions.completedAt,
-        })
-        .from(checkoutSessions)
-        .where(eq(checkoutSessions.id, orderId))
-        .limit(1)
-    )[0];
-
-    if (!row || !row.userId || !row.courseSlug) {
+    const rows = (await settleRowsFor(orderId)).filter((r) => r.userId && r.courseSlug);
+    if (rows.length === 0) {
       await logMoncashFailure(orderId, 'order.unknown', 'checkout_sessions row not found or incomplete');
       return { status: 'unknown_order', locale: 'ht' };
     }
-    const locale = decodeMoncashLocale(row.sessionId);
+    // Basket rows were written in one INSERT with identical refs — any row
+    // speaks for the order. Locale too: one buyer, one basket, one language.
+    const first = rows[0];
+    const locale = decodeMoncashLocale(first.sessionId);
 
     // Verify by the PROVIDER's reference when we have one. Digicel answers to
     // our own order id, but Bazik only answers to the `BZK_…` id it minted, so
     // assuming our id here would make every Bazik payment unverifiable.
-    const providerRef = decodeMoncashProviderRef(row.sessionId) ?? orderId;
+    const providerRef = decodeMoncashProviderRef(first.sessionId) ?? orderId;
     // Ask the SAME provider that created the order, not whichever one the
     // current env resolves to — see `retrieveMoncashOrderFrom`'s header.
-    const providerId = decodeMoncashProviderId(row.sessionId);
+    const providerId = decodeMoncashProviderId(first.sessionId);
 
     const remote = await retrieveWithRetry(providerId, providerRef);
     if (!remote.ok) {
       console.error('[moncash/order] retrieval failed:', remote.message);
       await logMoncashFailure(orderId, 'order.retrieve', remote.message);
-      return { status: 'error', locale, courseSlug: row.courseSlug };
+      return { status: 'error', locale, courseSlug: first.courseSlug! };
     }
     if (!remote.paid) {
       // Abandoned or still pending. Not an error — the buyer may simply have
       // backed out; nothing is granted and nothing is recorded.
-      return { status: 'unpaid', locale, courseSlug: row.courseSlug };
+      return { status: 'unpaid', locale, courseSlug: first.courseSlug! };
     }
 
-    const outcome = await fulfillMoncashOrder({
-      orderId,
-      userDbId: row.userId,
-      courseSlug: row.courseSlug,
-      // What MonCash says it took, falling back to what we asked for.
-      amountHtg: remote.amountHtg ?? 0,
-      usdCentsEquivalent: row.amountCents,
-      transactionId: remote.transactionId,
-      locale,
-    });
-    if (outcome === 'error') {
-      await logMoncashFailure(orderId, 'order.fulfill', 'fulfillMoncashOrder returned error');
-      return { status: 'error', locale, courseSlug: row.courseSlug };
+    // ONE payment verified → one fulfilment PER COURSE, each through the
+    // same idempotent single-course path (its own payments row keyed on the
+    // ROW id, its own enrollment, its own teacher's 70%). The gourdes the
+    // provider reports for the whole basket are allocated per course so
+    // every receipt shows a real figure and the shares sum to the debit
+    // (lib/payments/cart.ts). Sequential on purpose — these share DB
+    // connections inside one webhook invocation.
+    const shares = allocateHtgShares(remote.amountHtg ?? 0, rows.map((r) => r.amountCents));
+    let processed = 0;
+    let already = 0;
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const outcome = await fulfillMoncashOrder({
+        orderId: row.id,
+        userDbId: row.userId!,
+        courseSlug: row.courseSlug!,
+        // This course's exact share of what MonCash took; 0 ⇒ the receipt's
+        // estimate path, same as a provider that disclosed nothing.
+        amountHtg: shares[i],
+        usdCentsEquivalent: row.amountCents,
+        transactionId: remote.transactionId,
+        locale,
+      });
+      if (outcome === 'error') {
+        // Stop the tally but DON'T abort the loop: the remaining courses'
+        // money already moved, and each fulfilment is independent. The
+        // webhook log + reconcile cron re-drive whatever failed here.
+        await logMoncashFailure(row.id, 'order.fulfill', 'fulfillMoncashOrder returned error');
+        return { status: 'error', locale, courseSlug: row.courseSlug! };
+      }
+      if (outcome === 'processed') processed += 1;
+      else already += 1;
     }
 
-    // Mark the cart closed so the abandoned-cart cron stops chasing it. Best
-    // effort and idempotent; access has already been granted above.
-    if (!row.completedAt) {
+    // Mark every row closed so the abandoned-cart cron stops chasing them.
+    // Best effort and idempotent; access has already been granted above.
+    const openIds = rows.filter((r) => !r.completedAt).map((r) => r.id);
+    if (openIds.length > 0) {
       await db
         .update(checkoutSessions)
         .set({ completedAt: new Date() })
-        .where(eq(checkoutSessions.id, orderId))
+        .where(inArray(checkoutSessions.id, openIds))
         .catch(() => {});
     }
 
     return {
-      status: outcome === 'processed' ? 'granted' : 'already',
+      status: processed > 0 ? 'granted' : 'already',
       locale,
-      courseSlug: row.courseSlug,
+      courseSlug: first.courseSlug!,
+      courseCount: rows.length,
     };
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);

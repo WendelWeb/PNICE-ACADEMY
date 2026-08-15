@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(
         `${origin}/${locale}/checkout/merci?moncash=1${
           result.courseSlug ? `&course=${encodeURIComponent(result.courseSlug)}` : ''
-        }`,
+        }${result.courseCount && result.courseCount > 1 ? `&count=${result.courseCount}` : ''}`,
         { status: 303 },
       );
 

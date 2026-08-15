@@ -14,15 +14,16 @@
  *   - NO PROMO CODES YET, same as MonCash: refused outright instead of being
  *     silently ignored at full price.
  */
+import { randomUUID } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
-import { db } from '@/db';
+import { db, isMissingColumnError } from '@/db';
 import { users, checkoutSessions } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { clerkEnabled } from '@/lib/clerk';
 import { natcashConfigured, createNatcashOrder, usdCentsToHtg, HTG_WALLET_MAX } from '@/lib/payments/natcash';
 import { encodeNatcashRef } from '@/lib/payments/natcash-order';
-import { resolveProduct } from '@/lib/payments/products';
+import { resolveProduct, type ResolvedProduct } from '@/lib/payments/products';
 import { parseCheckoutBody } from '@/lib/payments/checkout-body';
 import { hasCourseAccess } from '@/lib/learner/access';
 import { getFxRate } from '@/lib/fx';
@@ -52,14 +53,25 @@ export async function POST(req: NextRequest) {
   if (!body) return NextResponse.json({ error: 'bad_request' }, { status: 400 });
   if (body.promoCode) return NextResponse.json({ error: 'promo_unsupported' }, { status: 400 });
 
-  const product = await resolveProduct(body);
-  if (!product) return NextResponse.json({ error: 'unknown_product' }, { status: 400 });
-  if (product.productType !== 'course' || !product.courseSlug) {
+  if (body.productType !== 'course' || body.courseSlugs.length === 0) {
     return NextResponse.json({ error: 'subscription_unsupported' }, { status: 400 });
   }
 
-  if (await hasCourseAccess(clerkId, product.courseSlug)) {
-    return NextResponse.json({ error: 'already_owned' }, { status: 409 });
+  // Basket of ≥1, mirroring /api/checkout/moncash exactly — see that route
+  // for the reasoning on refusing whole baskets over one bad slug.
+  const products: ResolvedProduct[] = [];
+  for (const slug of body.courseSlugs) {
+    const product = await resolveProduct({ productType: 'course', courseSlug: slug });
+    if (!product || product.productType !== 'course' || !product.courseSlug) {
+      return NextResponse.json({ error: 'unknown_product', courseSlug: slug }, { status: 400 });
+    }
+    products.push(product);
+  }
+
+  for (const product of products) {
+    if (await hasCourseAccess(clerkId, product.courseSlug!)) {
+      return NextResponse.json({ error: 'already_owned', courseSlug: product.courseSlug }, { status: 409 });
+    }
   }
 
   // Upsert the users row (the Clerk webhook may not have landed yet).
@@ -83,9 +95,11 @@ export async function POST(req: NextRequest) {
   }
 
   const rate = await getFxRate();
-  const amountHtg = usdCentsToHtg(product.amountCents, rate);
+  const totalCents = products.reduce((a, p) => a + p.amountCents, 0);
+  // One conversion of the basket TOTAL — see /api/checkout/moncash.
+  const amountHtg = usdCentsToHtg(totalCents, rate);
   if (amountHtg <= 0) {
-    console.error('[checkout/natcash] refusing a zero-gourde charge', { rate, cents: product.amountCents });
+    console.error('[checkout/natcash] refusing a zero-gourde charge', { rate, cents: totalCents });
     return NextResponse.json({ error: 'bad_amount' }, { status: 400 });
   }
   if (amountHtg > HTG_WALLET_MAX) {
@@ -94,26 +108,48 @@ export async function POST(req: NextRequest) {
   }
 
   const locale = body.locale === 'fr' ? 'fr' : 'ht';
-  const order = (
-    await db
+
+  // One row per course; a basket's rows share a cartId which becomes the
+  // gateway orderId — the mirror of /api/checkout/moncash, same fallback
+  // when the live DB still lags migration 0021.
+  const cartId = products.length > 1 ? randomUUID() : null;
+  let orderId: string;
+  let rowIds: string[];
+  try {
+    const inserted = await db
       .insert(checkoutSessions)
-      .values({
-        userId: row.id,
-        productType: 'course',
-        courseSlug: product.courseSlug,
-        amountCents: product.amountCents,
-        sessionId: encodeNatcashRef(locale),
-      })
-      .returning({ id: checkoutSessions.id })
-  )[0];
+      .values(
+        products.map((p) => ({
+          userId: row.id,
+          productType: 'course' as const,
+          courseSlug: p.courseSlug,
+          amountCents: p.amountCents,
+          sessionId: encodeNatcashRef(locale),
+          cartId,
+        })),
+      )
+      .returning({ id: checkoutSessions.id });
+    rowIds = inserted.map((r) => r.id);
+    orderId = cartId ?? rowIds[0];
+  } catch (err) {
+    if (cartId && isMissingColumnError(err)) {
+      console.error('[checkout/natcash] cart refused — checkout_sessions.cart_id missing, run `npm run db:push`.');
+      return NextResponse.json({ error: 'cart_unavailable' }, { status: 503 });
+    }
+    throw err;
+  }
 
   const origin = req.nextUrl.origin;
   const created = await createNatcashOrder({
-    orderId: order.id,
+    orderId,
     amountHtg,
-    description: product.courseSlug,
-    successUrl: `${origin}/api/payments/natcash/retour?orderId=${encodeURIComponent(order.id)}`,
-    errorUrl: `${origin}/${locale}/checkout?course=${encodeURIComponent(product.courseSlug)}`,
+    description:
+      products.length === 1 ? products[0].courseSlug! : `PNICE Academy — ${products.length} kou`,
+    successUrl: `${origin}/api/payments/natcash/retour?orderId=${encodeURIComponent(orderId)}`,
+    errorUrl:
+      products.length === 1
+        ? `${origin}/${locale}/checkout?course=${encodeURIComponent(products[0].courseSlug!)}`
+        : `${origin}/${locale}/panye`,
     webhookUrl: `${origin}/api/webhooks/natcash`,
   });
   if (!created.ok) {
@@ -129,13 +165,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Persist Kobara's own payment id: it is not derivable from our order id,
-  // and without it neither the return page nor any later check can ask about
-  // this payment at all.
+  // Persist Kobara's own payment id — on EVERY row of the basket, so any
+  // single row can be recovered on its own. It is not derivable from our
+  // order id, and without it neither the return page nor any later check
+  // can ask about this payment at all.
   await db
     .update(checkoutSessions)
     .set({ sessionId: encodeNatcashRef(locale, created.providerRef) })
-    .where(eq(checkoutSessions.id, order.id));
+    .where(inArray(checkoutSessions.id, rowIds));
 
-  return NextResponse.json({ url: created.redirectUrl, amountHtg, orderId: order.id });
+  return NextResponse.json({ url: created.redirectUrl, amountHtg, orderId });
 }

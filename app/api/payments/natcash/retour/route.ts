@@ -43,7 +43,10 @@ export async function GET(req: NextRequest) {
   switch (result.status) {
     case 'granted':
     case 'already':
-      return NextResponse.redirect(`${origin}/${locale}/checkout/merci?natcash=1${course}`, { status: 303 });
+      return NextResponse.redirect(
+        `${origin}/${locale}/checkout/merci?natcash=1${course}${'courseCount' in result && result.courseCount && result.courseCount > 1 ? `&count=${result.courseCount}` : ''}`,
+        { status: 303 },
+      );
 
     case 'unpaid':
       // A definitive refusal from the gateway — they backed out. Back to the

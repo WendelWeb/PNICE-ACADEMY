@@ -3,6 +3,7 @@ import { SignedIn, SignedOut } from '@clerk/nextjs';
 import { IconSchool } from '@tabler/icons-react';
 import { Link } from '@/i18n/routing';
 import { AvatarLink } from '@/components/auth/AvatarLink';
+import { CartLink } from '@/components/cart/CartLink';
 import { AdminLink } from '@/components/admin/AdminLink';
 import { StudioLink } from '@/components/teacher/StudioLink';
 import { clerkEnabled } from '@/lib/clerk';
@@ -44,6 +45,7 @@ export async function Nav() {
 
   const authSlot = clerkEnabled ? (
     <>
+      <CartLink />
       <SignedOut>
         <Link
           href="/sign-in"
@@ -60,12 +62,15 @@ export async function Nav() {
       </SignedIn>
     </>
   ) : (
-    <Link
-      href="/sign-in"
-      className="hidden text-sm text-ink/75 transition-colors hover:text-ink sm:inline"
-    >
-      {t('login')}
-    </Link>
+    <>
+      <CartLink />
+      <Link
+        href="/sign-in"
+        className="hidden text-sm text-ink/75 transition-colors hover:text-ink sm:inline"
+      >
+        {t('login')}
+      </Link>
+    </>
   );
 
   // The mobile-menu mirror of the dashboard entry — the panel closes on

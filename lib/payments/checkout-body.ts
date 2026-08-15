@@ -1,6 +1,16 @@
+import { parseCartSlugs } from './cart';
+
 export type CheckoutBody = {
   productType: 'course' | 'subscription';
   courseSlug: string | null;
+  /**
+   * The « panye » (multi-course wallet purchase): every distinct course in
+   * the basket, in the order the client sent them. For the ordinary
+   * single-course checkout this is simply `[courseSlug]`, so consumers can
+   * treat EVERY course purchase as a basket of ≥1 and never fork on shape.
+   * Always `[]` for a subscription.
+   */
+  courseSlugs: string[];
   /** `/prof/[slug]`'s own slug (Task: per-teacher subscription checkout) —
    *  set only for a subscription purchase; ignored for a course purchase
    *  (the course's owner is resolved from `courses.owner_user_id` instead,
@@ -36,19 +46,33 @@ export function parseCheckoutBody(raw: unknown): CheckoutBody | null {
     return {
       productType: 'subscription',
       courseSlug: null,
+      courseSlugs: [],
       teacherSlug: readTeacherSlug(b),
       promoCode: readPromoCode(b),
       locale,
     };
-  if (
-    b.productType === 'course' &&
-    typeof b.courseSlug === 'string' &&
-    b.courseSlug.length > 0 &&
-    b.courseSlug.length <= 100
-  )
+  if (b.productType !== 'course') return null;
+
+  // The « panye » shape: an explicit list of slugs. Wins over `courseSlug`
+  // when both are present — a client that sends a basket means the basket.
+  if (b.courseSlugs !== undefined) {
+    const slugs = parseCartSlugs(b.courseSlugs);
+    if (!slugs) return null;
+    return {
+      productType: 'course',
+      courseSlug: slugs[0],
+      courseSlugs: slugs,
+      teacherSlug: null,
+      promoCode: readPromoCode(b),
+      locale,
+    };
+  }
+
+  if (typeof b.courseSlug === 'string' && b.courseSlug.length > 0 && b.courseSlug.length <= 100)
     return {
       productType: 'course',
       courseSlug: b.courseSlug,
+      courseSlugs: [b.courseSlug],
       teacherSlug: null,
       promoCode: readPromoCode(b),
       locale,

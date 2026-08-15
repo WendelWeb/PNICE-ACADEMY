@@ -7,6 +7,7 @@ import { UtmCapture } from '@/components/UtmCapture';
 import { getPlatform } from '@/lib/admin/platform/store';
 import { getFxRate } from '@/lib/fx';
 import { FxRateProvider } from '@/components/ui/FxRateProvider';
+import { CartProvider } from '@/components/cart/cart-context';
 import { clerkEnabled } from '@/lib/clerk';
 
 // Dynamic so the maintenance toggle takes effect live on every public route.

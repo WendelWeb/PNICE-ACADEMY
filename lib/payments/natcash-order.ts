@@ -17,9 +17,10 @@
  */
 import { db } from '@/db';
 import { checkoutSessions, webhookLogs } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { fulfillMoncashOrder } from './moncash-fulfill';
 import { natcashConfigured, retrieveNatcashOrder } from './natcash';
+import { allocateHtgShares } from './cart';
 
 const REF_PREFIX = 'natcash:';
 
@@ -55,8 +56,17 @@ export function isNatcashRef(ref: string | null | undefined): boolean {
   return typeof ref === 'string' && ref.startsWith(REF_PREFIX);
 }
 
+const SETTLE_COLUMNS = {
+  id: checkoutSessions.id,
+  userId: checkoutSessions.userId,
+  courseSlug: checkoutSessions.courseSlug,
+  amountCents: checkoutSessions.amountCents,
+  sessionId: checkoutSessions.sessionId,
+  completedAt: checkoutSessions.completedAt,
+};
+
 export type NatcashSettleResult =
-  | { status: 'granted' | 'already'; locale: 'ht' | 'fr'; courseSlug: string }
+  | { status: 'granted' | 'already'; locale: 'ht' | 'fr'; courseSlug: string; courseCount?: number }
   | { status: 'pending' | 'unpaid' | 'unknown_order' | 'not_configured' | 'error'; locale: 'ht' | 'fr'; courseSlug?: string };
 
 /** Best-effort ops signal, mirroring the MonCash rail's. NEVER THROWS. */
@@ -93,53 +103,71 @@ export type NatcashProof = {
 export async function settleNatcashWithProof(orderId: string, proof: NatcashProof): Promise<NatcashSettleResult> {
   if (!process.env.DATABASE_URL) return { status: 'not_configured', locale: 'ht' };
   try {
-    const row = (
-      await db
-        .select({
-          id: checkoutSessions.id,
-          userId: checkoutSessions.userId,
-          courseSlug: checkoutSessions.courseSlug,
-          amountCents: checkoutSessions.amountCents,
-          sessionId: checkoutSessions.sessionId,
-          completedAt: checkoutSessions.completedAt,
-        })
-        .from(checkoutSessions)
-        .where(eq(checkoutSessions.id, orderId))
-        .limit(1)
-    )[0];
+    // `orderId` is either one row's own id, or a basket's cartId (« panye »)
+    // — same resolution rule as the MonCash rail. The cart lookup tolerates
+    // a DB that still lags migration 0021: no column ⇒ no cart can exist.
+    let rows = await db
+      .select(SETTLE_COLUMNS)
+      .from(checkoutSessions)
+      .where(eq(checkoutSessions.id, orderId))
+      .limit(1);
+    if (rows.length === 0) {
+      try {
+        rows = await db.select(SETTLE_COLUMNS).from(checkoutSessions).where(eq(checkoutSessions.cartId, orderId));
+      } catch {
+        rows = [];
+      }
+    }
+    rows = rows.filter((r) => r.userId && r.courseSlug);
 
-    if (!row || !row.userId || !row.courseSlug) {
+    if (rows.length === 0) {
       await logNatcashFailure(orderId, 'order.unknown', 'checkout_sessions row not found or incomplete');
       return { status: 'unknown_order', locale: 'ht' };
     }
-    const locale = decodeNatcashLocale(row.sessionId);
-    if (!proof.paid) return { status: 'unpaid', locale, courseSlug: row.courseSlug };
+    const first = rows[0];
+    const locale = decodeNatcashLocale(first.sessionId);
+    if (!proof.paid) return { status: 'unpaid', locale, courseSlug: first.courseSlug! };
 
-    const outcome = await fulfillMoncashOrder({
-      rail: 'natcash',
-      orderId,
-      userDbId: row.userId,
-      courseSlug: row.courseSlug,
-      amountHtg: proof.amountHtg ?? 0,
-      // The USD price the order was created from — the platform's one
-      // accounting unit, and what the teacher's 70% is computed on.
-      usdCentsEquivalent: row.amountCents,
-      transactionId: proof.transactionId,
-      locale,
-    });
-    if (outcome === 'error') {
-      await logNatcashFailure(orderId, 'order.fulfill', 'fulfillMoncashOrder returned error');
-      return { status: 'error', locale, courseSlug: row.courseSlug };
+    // One verified payment → one fulfilment PER COURSE through the shared
+    // idempotent path; the basket's disclosed gourdes are allocated per
+    // course so the receipts sum to the real debit (lib/payments/cart.ts).
+    const shares = allocateHtgShares(proof.amountHtg ?? 0, rows.map((r) => r.amountCents));
+    let processed = 0;
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const outcome = await fulfillMoncashOrder({
+        rail: 'natcash',
+        orderId: row.id,
+        userDbId: row.userId!,
+        courseSlug: row.courseSlug!,
+        amountHtg: shares[i],
+        // The USD price the order was created from — the platform's one
+        // accounting unit, and what the teacher's 70% is computed on.
+        usdCentsEquivalent: row.amountCents,
+        transactionId: proof.transactionId,
+        locale,
+      });
+      if (outcome === 'error') {
+        await logNatcashFailure(row.id, 'order.fulfill', 'fulfillMoncashOrder returned error');
+        return { status: 'error', locale, courseSlug: row.courseSlug! };
+      }
+      if (outcome === 'processed') processed += 1;
     }
 
-    if (!row.completedAt) {
+    const openIds = rows.filter((r) => !r.completedAt).map((r) => r.id);
+    if (openIds.length > 0) {
       await db
         .update(checkoutSessions)
         .set({ completedAt: new Date() })
-        .where(eq(checkoutSessions.id, orderId))
+        .where(inArray(checkoutSessions.id, openIds))
         .catch(() => {});
     }
-    return { status: outcome === 'processed' ? 'granted' : 'already', locale, courseSlug: row.courseSlug };
+    return {
+      status: processed > 0 ? 'granted' : 'already',
+      locale,
+      courseSlug: first.courseSlug!,
+      courseCount: rows.length,
+    };
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     console.error('[natcash/order] settle failed:', message);
@@ -163,29 +191,37 @@ export async function settleNatcashOrder(orderId: string): Promise<NatcashSettle
     return { status: 'not_configured', locale: 'ht' };
   }
   try {
-    const row = (
-      await db
-        .select({
-          courseSlug: checkoutSessions.courseSlug,
-          sessionId: checkoutSessions.sessionId,
-          completedAt: checkoutSessions.completedAt,
-        })
-        .from(checkoutSessions)
-        .where(eq(checkoutSessions.id, orderId))
-        .limit(1)
-    )[0];
-    if (!row || !row.courseSlug) return { status: 'unknown_order', locale: 'ht' };
+    // Same by-id-then-by-cart resolution as `settleNatcashWithProof`: for a
+    // basket the return URL carries the CART id, which no row's own id equals.
+    let rows = await db
+      .select(SETTLE_COLUMNS)
+      .from(checkoutSessions)
+      .where(eq(checkoutSessions.id, orderId))
+      .limit(1);
+    if (rows.length === 0) {
+      try {
+        rows = await db.select(SETTLE_COLUMNS).from(checkoutSessions).where(eq(checkoutSessions.cartId, orderId));
+      } catch {
+        rows = [];
+      }
+    }
+    const usable = rows.filter((r) => r.courseSlug);
+    if (usable.length === 0) return { status: 'unknown_order', locale: 'ht' };
+    const first = usable[0];
 
-    const locale = decodeNatcashLocale(row.sessionId);
-    // Already settled by the webhook — say so without a network call.
-    if (row.completedAt) return { status: 'already', locale, courseSlug: row.courseSlug };
+    const locale = decodeNatcashLocale(first.sessionId);
+    // Already settled by the webhook — say so without a network call. For a
+    // basket, EVERY row must be closed before this shortcut is honest.
+    if (usable.every((r) => r.completedAt)) {
+      return { status: 'already', locale, courseSlug: first.courseSlug!, courseCount: usable.length };
+    }
 
-    const providerRef = decodeNatcashProviderRef(row.sessionId);
-    if (!providerRef) return { status: 'pending', locale, courseSlug: row.courseSlug };
+    const providerRef = decodeNatcashProviderRef(first.sessionId);
+    if (!providerRef) return { status: 'pending', locale, courseSlug: first.courseSlug! };
 
     const remote = await retrieveNatcashOrder(providerRef);
     if (!remote.ok || !remote.paid) {
-      return { status: 'pending', locale, courseSlug: row.courseSlug };
+      return { status: 'pending', locale, courseSlug: first.courseSlug! };
     }
     return settleNatcashWithProof(orderId, {
       paid: true,

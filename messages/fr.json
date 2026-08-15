@@ -837,7 +837,8 @@
       "recheck": "Vérifier maintenant",
       "reassure": "Tu peux fermer cette page. Nous continuons de vérifier de notre côté, et tu recevras un e-mail dès que ton accès est prêt.",
       "contact": "Nous écrire avec cette référence"
-    }
+    },
+    "walletCartItems": "{count} formations"
   },
   "dashboard": {
     "title": "Tableau de bord",
@@ -3549,5 +3550,23 @@
     "contactBody": "Écris-nous directement — nous répondons par e-mail.",
     "contactCta": "Aller à la page contact",
     "browseLink": "voir les formations"
+  },
+  "panye": {
+    "title": "Ton panier",
+    "add": "Ajouter au panier",
+    "inCartGo": "Dans le panier ✓ — voir ({count})",
+    "linkLabel": "Ton panier — {count} formations",
+    "removeLabel": "Retirer {title} du panier",
+    "payCta": "Payer {count, plural, one {1 formation} other {# formations}} — {amount}",
+    "empty": {
+      "title": "Ton panier est vide",
+      "body": "Ajoute une ou plusieurs formations, puis paie le tout en un seul paiement MonCash ou NatCash.",
+      "cta": "Voir les formations"
+    },
+    "err": {
+      "ownedRemoved": "Tu possèdes déjà « {title} » — nous l’avons retiré du panier. Tu peux payer le reste.",
+      "goneRemoved": "« {title} » n’est plus disponible — nous l’avons retiré du panier.",
+      "unavailable": "Le panier n’est pas encore disponible côté serveur. Tu peux acheter les formations une par une pour l’instant."
+    }
   }
 }

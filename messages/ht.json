@@ -837,7 +837,8 @@
       "recheck": "Verifye kounye a",
       "reassure": "Ou ka fèmen paj sa a. Nou kontinye verifye poukont nou, epi w ap resevwa yon imel lè aksè w pare.",
       "contact": "Kontakte nou ak referans lan"
-    }
+    },
+    "walletCartItems": "{count} fòmasyon"
   },
   "dashboard": {
     "title": "Tablo debò",
@@ -3549,5 +3550,23 @@
     "contactBody": "Ekri nou dirèkteman — n ap reponn pa imèl.",
     "contactCta": "Ale sou paj kontak la",
     "browseLink": "gade fòmasyon yo"
+  },
+  "panye": {
+    "title": "Panye w",
+    "add": "Ajoute nan panye",
+    "inCartGo": "Nan panye ✓ — ale wè ({count})",
+    "linkLabel": "Panye w — {count} fòmasyon",
+    "removeLabel": "Retire {title} nan panye a",
+    "payCta": "Peye {count, plural, one {1 fòmasyon} other {# fòmasyon}} — {amount}",
+    "empty": {
+      "title": "Panye w vid",
+      "body": "Ajoute youn oswa plizyè fòmasyon, epi peye yo tout ansanm ak yon sèl peman MonCash oswa NatCash.",
+      "cta": "Gade fòmasyon yo"
+    },
+    "err": {
+      "ownedRemoved": "Ou gen « {title} » deja — nou retire l nan panye a. Ou ka peye rès la.",
+      "goneRemoved": "« {title} » pa disponib ankò — nou retire l nan panye a.",
+      "unavailable": "Panye a poko disponib sou sèvè a. Ou ka achte fòmasyon yo youn pa youn pou kounye a."
+    }
   }
 }

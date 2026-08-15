@@ -4,12 +4,12 @@ import { parseCheckoutBody } from '@/lib/payments/checkout-body';
 describe('parseCheckoutBody', () => {
   it('accepts a subscription request', () => {
     expect(parseCheckoutBody({ productType: 'subscription', locale: 'fr' }))
-      .toEqual({ productType: 'subscription', courseSlug: null, teacherSlug: null, promoCode: null, locale: 'fr' });
+      .toEqual({ productType: 'subscription', courseSlug: null, courseSlugs: [], teacherSlug: null, promoCode: null, locale: 'fr' });
   });
 
   it('accepts a course request and defaults locale to ht', () => {
     expect(parseCheckoutBody({ productType: 'course', courseSlug: 'abc' }))
-      .toEqual({ productType: 'course', courseSlug: 'abc', teacherSlug: null, promoCode: null, locale: 'ht' });
+      .toEqual({ productType: 'course', courseSlug: 'abc', courseSlugs: ['abc'], teacherSlug: null, promoCode: null, locale: 'ht' });
   });
 
   it('rejects junk', () => {
@@ -26,7 +26,7 @@ describe('parseCheckoutBody', () => {
   describe('teacherSlug (subscription only)', () => {
     it('carries a valid teacherSlug through for a subscription request', () => {
       expect(parseCheckoutBody({ productType: 'subscription', teacherSlug: 'pnice-academy', locale: 'ht' }))
-        .toEqual({ productType: 'subscription', courseSlug: null, teacherSlug: 'pnice-academy', promoCode: null, locale: 'ht' });
+        .toEqual({ productType: 'subscription', courseSlug: null, courseSlugs: [], teacherSlug: 'pnice-academy', promoCode: null, locale: 'ht' });
     });
 
     it('a subscription request with no teacherSlug still resolves (platform default)', () => {
@@ -42,7 +42,7 @@ describe('parseCheckoutBody', () => {
 
     it('a teacherSlug on a course request is ignored — course ownership resolves via the course itself', () => {
       expect(parseCheckoutBody({ productType: 'course', courseSlug: 'abc', teacherSlug: 'someone-else' }))
-        .toEqual({ productType: 'course', courseSlug: 'abc', teacherSlug: null, promoCode: null, locale: 'ht' });
+        .toEqual({ productType: 'course', courseSlug: 'abc', courseSlugs: ['abc'], teacherSlug: null, promoCode: null, locale: 'ht' });
     });
   });
 

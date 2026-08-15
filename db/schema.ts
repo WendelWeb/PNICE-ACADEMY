@@ -436,6 +436,16 @@ export const checkoutSessions = pgTable('checkout_sessions', {
   productType: text('product_type').$type<'course' | 'subscription'>().notNull(),
   courseSlug: text('course_slug'),
   amountCents: integer('amount_cents').notNull(),
+  /**
+   * Multi-course wallet purchase (« panye », migration 0021): rows bought
+   * together share one cartId, and THAT id — not any row's own — is the
+   * orderId sent to MonCash/NatCash, since the wallets take one payment for
+   * the whole basket. Settlement resolves cartId → every row and fulfils
+   * each one through the same idempotent single-course path (its own
+   * payments row keyed on the ROW id, its own enrollment, its own teacher
+   * share). NULL = the ordinary single-item checkout, unchanged.
+   */
+  cartId: uuid('cart_id'),
   startedAt: timestamp('started_at', { withTimezone: true }).defaultNow().notNull(),
   completedAt: timestamp('completed_at', { withTimezone: true }),
   // Filled by the 2h cron when a session never completes.

@@ -20,6 +20,7 @@ import { CourseSlideshow } from '@/components/courses/CourseSlideshow';
 import { ManifestList, type ManifestRow } from '@/components/courses/ManifestList';
 import { ResourceLinks } from '@/components/courses/ResourceLinks';
 import { MobileBuyBar } from '@/components/courses/MobileBuyBar';
+import { AddToCartButton } from '@/components/cart/AddToCartButton';
 import { AuthCta } from '@/components/auth/AuthCta';
 import { RatingSummary } from '@/components/reviews/RatingSummary';
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
@@ -583,6 +584,16 @@ export default async function CourseDetail({
                 >
                   {tc('buy')}
                 </AuthCta>
+
+                {/* « Panye » — the second buying path: stack several courses
+                    into ONE wallet payment. Client-gated: renders nothing
+                    until the cart context has hydrated. */}
+                <AddToCartButton
+                  slug={course.slug}
+                  title={courseTitle(course, locale)}
+                  priceUsd={course.priceUsd}
+                  className="mt-2.5"
+                />
 
                 <div className="my-4 flex items-center gap-3 text-xs text-ink/40">
                   <span className="h-px flex-1 bg-ink/10" />
