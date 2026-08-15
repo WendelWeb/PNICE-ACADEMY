@@ -17,8 +17,14 @@ const focusRing =
  * effectively invisible on the very devices our teachers use. This bar shows
  * the 4 steps permanently (icon + short label + step number, ≥44px touch
  * targets) and navigates EXACTLY like `ControlRail`'s step buttons: same
- * `?tab=` URLs, same frozen keys. Hidden from `lg:` up, where the desktop
- * rail already shows the steps.
+ * `?tab=` URLs, same frozen keys.
+ *
+ * NOW VISIBLE AT ALL SIZES (owner: « il n'y a pas de partie contenu du
+ * cours » — while looking at an editor whose step ② IS that part): on
+ * desktop the only step navigation used to be the ControlRail, which reads
+ * as a CHECKLIST (« Bon de kontwòl »), not as tabs — the owner himself
+ * never found step ②. Four permanent tab buttons, full step titles from
+ * `lg:` up, is the fix; the rail stays what it looks like: a checklist.
  *
  * ALWAYS visible for real (review fix): the bar renders INSIDE
  * `BordereauHeader`'s sticky container (the editor page slots it in as
@@ -45,7 +51,7 @@ export function MobileStepBar({
   return (
     <nav
       aria-label={t('stepsNav')}
-      className="-mx-4 -mb-3 mt-2 border-t border-ink/12 px-1 sm:px-2 lg:hidden"
+      className="-mx-4 -mb-3 mt-2 border-t border-ink/12 px-1 sm:px-2"
     >
       <div className="grid grid-cols-4">
         {EDITOR_STEPS.map(({ key, number }) => {
@@ -78,8 +84,14 @@ export function MobileStepBar({
                 </span>
                 <Icon size={16} aria-hidden className={active ? 'text-ochre' : undefined} />
               </span>
-              <span className="font-mono text-[9px] uppercase leading-none tracking-wide">
+              <span className="font-mono text-[9px] uppercase leading-none tracking-wide lg:hidden">
                 {t(`steps.${key}.short`)}
+              </span>
+              {/* Desktop earns the FULL step title — « Leson ak videyo yo »
+                  says what lives behind the tab; a 9px abbreviation
+                  doesn't. */}
+              <span className="hidden font-mono text-[11px] uppercase leading-none tracking-wide lg:block">
+                {t(`steps.${key}.title`)}
               </span>
             </button>
           );
