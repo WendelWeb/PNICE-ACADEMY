@@ -30,7 +30,12 @@ export async function Nav() {
 
   const links = [
     { href: '/formations' as const, label: t('formations') },
-    { href: '/enseigner' as const, label: t('teach') },
+    // « Enseigner » is a RECRUITMENT pitch — an approved teacher already
+    // has their Studio link in this same nav (owner: « si le boug est déjà
+    // prof, pourquoi le bouton enseigner en haut ? »). Selling the job to
+    // someone who has it is noise; the slot disappears for them, on
+    // desktop and in the mobile menu alike (same array feeds both).
+    ...(approvedTeacher ? [] : [{ href: '/enseigner' as const, label: t('teach') }]),
     // The /pri pricing page ships next stage — the nav entry lands now
     // (Stage: the living manifest); the home triptych keeps the historic
     // /#pri anchor alive in the meantime.
