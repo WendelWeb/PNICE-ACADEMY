@@ -11,8 +11,14 @@ import { useCart } from '@/components/cart/cart-context';
  * « Ajoute nan panye » — the second path to buying, next to the direct
  * « Achte » CTA on a course sales page. Toggles into a link to the cart once
  * the course is in it, so the same spot always answers "what now?".
- * Renders nothing outside the CartProvider or before hydration — a wrong
- * flash of state on a MONEY button is worse than a late one.
+ *
+ * IN THE SERVER HTML from the first paint. This used to render null until
+ * hydration, which meant: no button at all on a slow phone, in data-saver
+ * mode, or whenever a chunk failed — the owner looked at the page and saw
+ * nothing. Pre-hydration it renders its neutral "add" state (a click before
+ * React attaches simply does nothing, exactly like any not-yet-hydrated
+ * button); hydration then flips it to the real in-cart state if needed.
+ * Only a missing CartProvider (non-shop contexts) renders nothing.
  */
 export function AddToCartButton({
   slug,
@@ -30,10 +36,11 @@ export function AddToCartButton({
 }) {
   const t = useTranslations('panye');
   const cart = useCart();
-  if (!cart || !cart.hydrated) return null;
+  if (!cart) return null;
+  const inCart = cart.hydrated && cart.has(slug);
 
   if (compact) {
-    return cart.has(slug) ? (
+    return inCart ? (
       <Link
         href="/panye"
         aria-label={t('inCartGo', { count: cart.count })}
@@ -59,7 +66,7 @@ export function AddToCartButton({
     );
   }
 
-  if (cart.has(slug)) {
+  if (inCart) {
     return (
       <Link href="/panye" className={cn(buttonClasses('ghost', 'lg', 'w-full'), className)}>
         <IconCheck size={16} className="text-teal" />

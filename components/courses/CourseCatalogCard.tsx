@@ -169,7 +169,10 @@ function CardActions({ course, title }: { course: Course; title: string }) {
       >
         {tc('buy')}
       </Link>
-      {cart && cart.hydrated && (
+      {/* Present from the SERVER paint (never gated on hydration — a button
+          that waits for JavaScript is a button a slow phone never sees);
+          hydration only flips it to the in-cart state when needed. */}
+      {cart && (
         inCart ? (
           <Link
             href="/panye"
