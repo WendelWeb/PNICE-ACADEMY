@@ -2,7 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { IconCash, IconCheck, IconShoppingCart, IconShoppingCartFilled } from '@tabler/icons-react';
+import {
+  IconCash,
+  IconChalkboardTeacher,
+  IconCheck,
+  IconShoppingCart,
+  IconShoppingCartFilled,
+} from '@tabler/icons-react';
 import { Link } from '@/i18n/routing';
 import { Price, PriceSecondary } from '@/components/ui/Price';
 import { Stars } from '@/components/reviews/Stars';
@@ -139,7 +145,10 @@ export function CourseCatalogCard({
             purpose (a nested anchor inside the card link is invalid HTML);
             the clickable prof profile lives on the course page. */}
         {teacher && (
-          <p className="mt-0.5 truncate text-[12px] text-graphite/60">{teacher.name}</p>
+          <p className="mt-0.5 flex items-center gap-1 text-[12px] text-graphite/60">
+            <IconChalkboardTeacher size={13} className="shrink-0 text-graphite/50" />
+            <span className="truncate">{teacher.name}</span>
+          </p>
         )}
 
         {/* The Udemy signature row: bold amber score, stars, muted count.
