@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { IconCheck, IconShoppingCartPlus } from '@tabler/icons-react';
+import { IconBolt, IconCheck, IconShoppingCartPlus } from '@tabler/icons-react';
 import { Link } from '@/i18n/routing';
 import { Price, PriceSecondary } from '@/components/ui/Price';
 import { Stars } from '@/components/reviews/Stars';
@@ -95,6 +95,13 @@ export function CourseCatalogCard({
             >
               {t(`categories.${course.category}`)}
             </span>
+            {/* Lesson count as a YouTube-style thumbnail badge — the pattern
+                every phone on earth already knows how to read. Frees the
+                price row below for the icon actions. */}
+            <span className="absolute bottom-2 right-2 rounded bg-ink/80 px-1.5 py-0.5 font-mono text-[10px] text-paper-light">
+              {tCourse('lessonsCount', { count: course.lessons.length })}
+              {!bilingual && ` · ${t(`languageBadge.${primary}`)}`}
+            </span>
           </div>
         ) : null}
 
@@ -153,30 +160,29 @@ export function CourseCatalogCard({
           ))}
         </ul>
 
-        {/* Spacer so every card's price row sits on the same baseline
-            regardless of text length — the grid reads as ONE system. */}
-        <div className="flex-1" />
-
-        <div className="mt-3 flex items-end justify-between gap-3 border-t border-ink/10 pt-3">
-          <div className="flex items-baseline gap-1.5">
-            <Price usd={course.priceUsd} className="font-display text-xl font-black text-ink" />
-            <PriceSecondary usd={course.priceUsd} className="font-mono text-[11px] text-graphite/55" />
-          </div>
-          <span className="shrink-0 font-mono text-[11px] text-graphite/55">
-            {tCourse('lessonsCount', { count: course.lessons.length })}
-            {!bilingual && <span className="ml-1.5">· {t(`languageBadge.${primary}`)}</span>}
-          </span>
-        </div>
         </div>
       </Link>
 
-      {/* ACTION ROW — every marketplace card answers "and now what?" without
-          a click-through: buy this course now, or stack it in the basket.
-          Its own real controls, siblings of the two Links above (never
-          nested inside an anchor). The cart button flips to a confirmation
-          the moment the course is in — instant feedback is what makes an
-          add-to-cart feel like it worked. */}
-      <CardActions course={course} title={courseTitle(course, locale)} />
+      {/* FOOTER — one row does the work three used to (owner: « deux icônes,
+          carte plus courte ») : price left, boldest thing on the card; the
+          two actions as 44px icon circles right, buy-now in ochre at the
+          thumb-reach end. A real sibling of the course Link (interactive
+          controls nested in an anchor are invalid HTML and break keyboard
+          navigation). In the rare no-photo card the lesson count rides
+          along here, since it has no thumbnail badge to live on. */}
+      <div className="flex items-center justify-between gap-3 border-t border-ink/10 px-4 py-3">
+        <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
+          <Price usd={course.priceUsd} className="font-display text-xl font-black text-ink" />
+          <PriceSecondary usd={course.priceUsd} className="font-mono text-[11px] text-graphite/55" />
+          {!(imageSrcs && imageSrcs.length > 0) && (
+            <span className="w-full font-mono text-[10px] text-graphite/55">
+              {tCourse('lessonsCount', { count: course.lessons.length })}
+              {!bilingual && ` · ${t(`languageBadge.${primary}`)}`}
+            </span>
+          )}
+        </div>
+        <CardActions course={course} title={courseTitle(course, locale)} />
+      </div>
     </div>
   );
 }
@@ -234,8 +240,13 @@ function CardPhoto({ srcs, alt }: { srcs: string[]; alt: string }) {
   );
 }
 
-/** The card's buy/cart footer. Renders the buy link alone until the cart
- *  context has hydrated — never a flash of wrong cart state. */
+/** The card's two actions as 44px icon circles (owner: « deux icônes, carte
+ *  plus courte ») — cart first, then buy-now in ochre at the thumb-reach end.
+ *  Icon-only, so EVERY control carries both `aria-label` and `title`: the
+ *  screen reader and the mouse hover both get the full verb the label used
+ *  to show. The cart circle renders from the SERVER paint (never gated on
+ *  hydration — a button that waits for JavaScript is a button a slow phone
+ *  never sees); hydration only flips it to the in-cart checkmark. */
 function CardActions({ course, title }: { course: Course; title: string }) {
   const t = useTranslations('panye');
   const tc = useTranslations('common');
@@ -243,36 +254,36 @@ function CardActions({ course, title }: { course: Course; title: string }) {
   const inCart = Boolean(cart?.hydrated && cart.has(course.slug));
 
   return (
-    <div className="flex flex-col gap-2 rounded-b-xl border-t border-ink/10 p-3">
-      <Link
-        href={`/checkout?course=${course.slug}`}
-        className="flex w-full items-center justify-center whitespace-nowrap rounded-lg bg-ochre px-3 py-2.5 font-display text-[13px] font-bold text-[#1b1207] transition-transform hover:-translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ochre"
-      >
-        {tc('buy')}
-      </Link>
-      {/* Present from the SERVER paint (never gated on hydration — a button
-          that waits for JavaScript is a button a slow phone never sees);
-          hydration only flips it to the in-cart state when needed. */}
-      {cart && (
-        inCart ? (
+    <div className="flex shrink-0 items-center gap-2">
+      {cart &&
+        (inCart ? (
           <Link
             href="/panye"
-            className="flex w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-teal/50 px-3 py-2.5 font-mono text-[12px] font-medium text-teal transition-colors hover:bg-teal/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal"
+            aria-label={t('inCartShort')}
+            title={t('inCartShort')}
+            className="grid h-11 w-11 place-items-center rounded-full border border-teal/50 text-teal transition-colors hover:bg-teal/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal"
           >
-            <IconCheck size={14} />
-            {t('inCartShort')}
+            <IconCheck size={20} />
           </Link>
         ) : (
           <button
             type="button"
             onClick={() => cart.add({ slug: course.slug, title, priceUsd: course.priceUsd })}
-            className="flex w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-ink/25 px-3 py-2.5 font-mono text-[12px] font-medium text-ink/75 transition-colors hover:border-ochre hover:text-ochre focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ochre"
+            aria-label={t('addShort')}
+            title={t('addShort')}
+            className="grid h-11 w-11 place-items-center rounded-full border border-ink/25 text-ink/70 transition-colors hover:border-ochre hover:text-ochre focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ochre"
           >
-            <IconShoppingCartPlus size={14} />
-            {t('addShort')}
+            <IconShoppingCartPlus size={20} />
           </button>
-        )
-      )}
+        ))}
+      <Link
+        href={`/checkout?course=${course.slug}`}
+        aria-label={tc('buy')}
+        title={tc('buy')}
+        className="grid h-11 w-11 place-items-center rounded-full bg-ochre text-[#1b1207] transition-transform hover:-translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ochre"
+      >
+        <IconBolt size={20} />
+      </Link>
     </div>
   );
 }
