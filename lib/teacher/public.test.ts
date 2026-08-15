@@ -158,7 +158,7 @@ describe('getPublicTeacher — gated fallback, no DATABASE_URL', () => {
   it('teacher #1 renders identically to today via the static fallback', async () => {
     const teacher = await getPublicTeacher('daceus-dadlyn', 'ht');
     expect(teacher).not.toBeNull();
-    expect(teacher!.displayName).toBe('Daceus Dadlyn');
+    expect(teacher!.displayName).toBe('Dacéus Dadlyn');
     expect(teacher!.photoUrl).toBeNull(); // no live DB profile -> branded placeholder
     expect(teacher!.rating).toEqual({ avg: null, count: 0 });
     expect(teacher!.studentCount).toBeNull();
@@ -214,6 +214,6 @@ describe('getAllPublicTeachers — gated fallback, no DATABASE_URL', () => {
   it('with no DB the roster is exactly the static registry (teacher #1 still shows)', async () => {
     const roster = await getAllPublicTeachers('ht');
     expect(roster.map((t) => t.slug)).toEqual(teachers.map((t) => t.slug));
-    expect(roster[0]!.displayName).toBe('Daceus Dadlyn');
+    expect(roster[0]!.displayName).toBe('Dacéus Dadlyn');
   });
 });

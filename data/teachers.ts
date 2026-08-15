@@ -35,7 +35,7 @@ export type Teacher = {
 export const teachers: Teacher[] = [
   {
     slug: 'daceus-dadlyn',
-    displayName: 'Daceus Dadlyn',
+    displayName: 'Dacéus Dadlyn',
     initials: 'DD',
     bio_ht:
       'Mwen kòmanse ak yon biznis senp: pote pakè ant Miami ak Ayiti. Sou wout la, mwen te wè menm baryè a chak jou — moun ki gen talan, men san kat pou peye sou entènèt, san zouti pou vann, san konfyans nan dijital la. Se konsa fòmasyon sa yo fèt: chak ladan yo soti nan yon pwoblèm mwen te rezoud toutbon, ak pwòp lajan mwen, nan reyalite Ayiti a. Pa gen teyori pou plezi — se etap konkrè, an kreyòl, ou ka aplike menm jou a.',

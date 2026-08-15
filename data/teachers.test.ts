@@ -13,7 +13,7 @@ describe('teachers data', () => {
   it('has teacher #1: the platform account owning all 9 launch courses', () => {
     const t = getTeacher('daceus-dadlyn');
     expect(t).toBeDefined();
-    expect(t!.displayName).toBe('Daceus Dadlyn');
+    expect(t!.displayName).toBe('Dacéus Dadlyn');
     expect(t!.courseSlugs).toHaveLength(9);
     expect(t!.joinedYear).toBe(2026);
   });
