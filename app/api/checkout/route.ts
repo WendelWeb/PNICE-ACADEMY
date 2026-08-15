@@ -77,6 +77,11 @@ export async function POST(req: NextRequest) {
     if (await hasCourseAccess(clerkId, product.courseSlug)) {
       return NextResponse.json({ error: 'already_owned' }, { status: 409 });
     }
+    // Free course (pricing-rules.ts): nothing to charge — enrols via
+    // /api/enroll/free, never through Stripe.
+    if (product.amountCents === 0) {
+      return NextResponse.json({ error: 'free_course', courseSlug: product.courseSlug }, { status: 400 });
+    }
   } else if (product.productType === 'subscription') {
     const conflict = await hasSubscriptionConflict(clerkId, {
       kind: product.kind ?? 'platform',

@@ -29,6 +29,7 @@ import { cn } from '@/lib/cn';
 import { buttonClasses } from '@/components/ui/Button';
 import { COURSE_CATEGORIES } from '@/data/courses';
 import { sanitizeTags, MAX_COURSE_TAGS, MAX_TAG_LENGTH } from '@/lib/courses/tags';
+import { validateCoursePriceCents } from '@/lib/courses/pricing-rules';
 import type { AdminCourse, CoursePatch } from '@/lib/courses/write';
 import { CourseIcon } from '@/components/courses/CourseIcon';
 import { Field, BilingualText, PairedList, FaqEditor, inputCls, type FaqItem } from './fields';
@@ -71,14 +72,22 @@ export function CourseEditor({
   const [save, setSave] = useState<SaveState>('idle');
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [c, setC] = useState(course);
-  const [priceDollars, setPriceDollars] = useState(String(Math.round(course.priceCents / 100)));
+  // « Gratis » is an explicit mode, never an accident of an empty field
+  // (owner rule) — a stored 0 means the choice was already made.
+  const [freeCourse, setFreeCourse] = useState(course.priceCents === 0);
+  const [priceDollars, setPriceDollars] = useState(
+    course.priceCents === 0 ? '' : String(Math.round(course.priceCents / 100)),
+  );
 
   const set = <K extends keyof AdminCourse>(k: K, v: AdminCourse[K]) => {
     setC((prev) => ({ ...prev, [k]: v }));
     setSave('idle');
   };
 
-  const newPriceCents = Math.round((Number(priceDollars) || 0) * 100);
+  const newPriceCents = freeCourse ? 0 : Math.round((Number(priceDollars) || 0) * 100);
+  // Client-side mirror of lib/courses/pricing-rules.ts — the save button
+  // refuses locally with the same message the server would send.
+  const priceInvalid = !freeCourse && !validateCoursePriceCents(newPriceCents).ok;
   const projectedRevenue = newPriceCents * salesCount;
   const overMax = priciest && newPriceCents > priciest.priceCents && course.code !== priciest.code;
 
@@ -86,6 +95,11 @@ export function CourseEditor({
 
   const onSave = () =>
     start(async () => {
+      if (priceInvalid) {
+        setSave('error');
+        setSaveMessage(t('priceTooLow'));
+        return;
+      }
       setSave('saving');
       setSaveMessage(null);
       const res = await updateAction(course.slug, {
@@ -121,7 +135,13 @@ export function CourseEditor({
       if (res.ok) {
         setSaveMessage(res.message === 'tags_deferred' ? t('tagsDeferred') : null);
         router.refresh();
-      } else setSaveMessage(res.message ?? null);
+      } else {
+        setSaveMessage(
+          res.message === 'price_too_low' || res.message === 'invalid_price'
+            ? t('priceTooLow')
+            : res.message ?? null,
+        );
+      }
     });
 
   return (
@@ -254,21 +274,54 @@ export function CourseEditor({
           <PairedList icon={IconListCheck} label={t('learn')} hint={t('hints.learn')} example={t('examples.learn')} mono={mono} ht={c.learn_ht} fr={c.learn_fr} onChange={(ht, fr) => { set('learn_ht', ht); set('learn_fr', fr); }} />
 
           {/* Price + impact (task 3) — `id` is the studio bon-de-contrôle
-              rail's jump target for `pricePositive` (Task D1). */}
-          <Field icon={IconCurrencyDollar} label={t('price')} hint={t('hints.price')} example={t('examples.price')} filled={Number(priceDollars) > 0} id="field-price">
-            <span className="flex items-center gap-1 font-mono text-sm text-ink/55">$<input type="number" min="0" value={priceDollars} onChange={(e) => { setPriceDollars(e.target.value); setSave('idle'); }} aria-label={t('price')} className={cn(inputCls, 'w-24')} /></span>
+              rail's jump target for `pricePositive` (Task D1).
+              GRATIS IS A MODE, NOT A NUMBER (owner: « impossible de mettre
+              0 $ — gratuit est une option explicite ») : the paid mode
+              refuses anything under $1, and 0 exists only behind the
+              deliberate « Gratis » chip. */}
+          <Field icon={IconCurrencyDollar} label={t('price')} hint={t('hints.price')} example={t('examples.price')} filled={freeCourse || Number(priceDollars) >= 1} id="field-price">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setFreeCourse(false); setSave('idle'); }}
+                  className={cn(buttonClasses(!freeCourse ? 'primary' : 'ghost', 'sm'), 'text-[11px]')}
+                >
+                  {t('priceModePaid')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setFreeCourse(true); setSave('idle'); }}
+                  className={cn(buttonClasses(freeCourse ? 'primary' : 'ghost', 'sm'), 'text-[11px]')}
+                >
+                  {t('priceModeFree')}
+                </button>
+                {!freeCourse && (
+                  <span className="flex items-center gap-1 font-mono text-sm text-ink/55">
+                    $<input type="number" min="1" value={priceDollars} onChange={(e) => { setPriceDollars(e.target.value); setSave('idle'); }} aria-label={t('price')} className={cn(inputCls, 'w-24')} />
+                  </span>
+                )}
+              </div>
+              {freeCourse ? (
+                <p className="mt-1.5 text-[11px] leading-snug text-teal">{t('priceFreeNote')}</p>
+              ) : priceInvalid && priceDollars !== '' ? (
+                <p className="mt-1.5 text-[11px] leading-snug text-stampred">{t('priceTooLow')}</p>
+              ) : null}
+            </div>
           </Field>
-          <div className="rounded-lg bg-paper p-3 text-xs">
-            <p className="font-mono text-[10px] uppercase tracking-wide text-ink/45">{t('impact')}</p>
-            <p className="mt-1 text-graphite/80">
-              {t('impactRevenue', { count: salesCount, revenue: '$' + Math.round(projectedRevenue / 100).toLocaleString('en-US') })}
-            </p>
-            {overMax && (
-              <p className="mt-1.5 flex items-center gap-1 text-stampred">
-                <IconAlertTriangle size={13} /> {t('impactWarn', { code: priciest!.code })}
+          {!freeCourse && (
+            <div className="rounded-lg bg-paper p-3 text-xs">
+              <p className="font-mono text-[10px] uppercase tracking-wide text-ink/45">{t('impact')}</p>
+              <p className="mt-1 text-graphite/80">
+                {t('impactRevenue', { count: salesCount, revenue: '$' + Math.round(projectedRevenue / 100).toLocaleString('en-US') })}
               </p>
-            )}
-          </div>
+              {overMax && (
+                <p className="mt-1.5 flex items-center gap-1 text-stampred">
+                  <IconAlertTriangle size={13} /> {t('impactWarn', { code: priciest!.code })}
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </section>
 

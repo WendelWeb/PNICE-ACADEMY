@@ -277,6 +277,20 @@ function CardActions({ course, title }: { course: Course; title: string }) {
   const cart = useCart();
   const inCart = Boolean(cart?.hydrated && cart.has(course.slug));
 
+  // Explicitly-free course (pricing-rules.ts): nothing to pay, nothing to
+  // basket — one teal pill straight to the course page, where the enrol
+  // button lives.
+  if (course.priceUsd === 0) {
+    return (
+      <Link
+        href={`/formations/${course.slug}`}
+        className="flex h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-teal px-4 font-display text-[13px] font-bold text-paper-light transition-transform hover:-translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal"
+      >
+        {tc('free')}
+      </Link>
+    );
+  }
+
   return (
     <div className="flex shrink-0 items-center gap-2">
       {cart && (

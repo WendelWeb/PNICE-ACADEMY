@@ -73,6 +73,11 @@ export async function POST(req: NextRequest) {
     if (await hasCourseAccess(clerkId, product.courseSlug!)) {
       return NextResponse.json({ error: 'already_owned', courseSlug: product.courseSlug }, { status: 409 });
     }
+    // Same rule as the MonCash route: a free course never enters a wallet
+    // charge — /api/enroll/free is its path.
+    if (product.amountCents === 0) {
+      return NextResponse.json({ error: 'free_course', courseSlug: product.courseSlug }, { status: 400 });
+    }
   }
 
   // Upsert the users row (the Clerk webhook may not have landed yet).

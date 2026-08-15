@@ -37,9 +37,12 @@
     "perMonth": "/mois",
     "oneTime": "une seule fois",
     "lifetime": "à vie",
+    "freeCta": "S’inscrire gratuitement",
+    "freeErr": "L’inscription a échoué. Réessaie.",
     "included": "Inclus dans l'abonnement",
     "buy": "Acheter la formation",
     "buyShort": "Acheter",
+    "free": "Gratuit",
     "subscribe": "Prendre l'abonnement",
     "seeAll": "Voir toutes les formations",
     "or": "ou",
@@ -718,6 +721,10 @@
         "titleSingle": "Titre",
         "price": "Prix ($)",
         "draftNote": "Créée en brouillon — visible seulement par toi jusqu'à validation par notre équipe.",
+      "priceModePaid": "Payant",
+      "priceModeFree": "Gratuit",
+      "priceFreeNote": "La formation sera GRATUITE — tout le monde pourra s’inscrire sans payer.",
+      "priceTooLow": "Prix minimum : 1 $. Pour l’offrir, choisis « Gratuit ».",
         "submit": "Créer en brouillon",
         "titleRequired": "Un titre est requis.",
         "error": "Erreur."
@@ -2209,6 +2216,10 @@
         "tagsCount": "{count}/{max} tags",
         "tagsRemove": "Retirer le tag « {tag} »",
         "tagsDeferred": "Enregistré — mais les tags s’appliqueront après une petite mise à jour du serveur. Ne les efface pas, ils partiront automatiquement.",
+        "priceModePaid": "Payant",
+        "priceModeFree": "Gratuit",
+        "priceFreeNote": "La formation sera GRATUITE — tout le monde pourra s’inscrire sans payer. Tu ne toucheras rien dessus.",
+        "priceTooLow": "Prix minimum : 1 $. Pour offrir la formation, choisis « Gratuit » — 0 $ n’est pas un prix, c’est un choix.",
         "iconNames": {
           "credit-card": "Paiement / carte",
           "shopping-cart": "Vente / commerce",
@@ -2496,7 +2507,7 @@
             "location": "Plan du cours"
           },
           "pricePositive": {
-            "label": "Le prix du cours est supérieur à 0 $",
+            "label": "Prix défini : 1 $ ou plus, ou bien Gratuit (un choix explicite)",
             "location": "Général & prix"
           },
           "promiseFilled": {
@@ -3585,6 +3596,7 @@
     "err": {
       "ownedRemoved": "Tu possèdes déjà « {title} » — nous l’avons retiré du panier. Tu peux payer le reste.",
       "goneRemoved": "« {title} » n’est plus disponible — nous l’avons retiré du panier.",
+        "freeRemoved": "« {title} » est devenu GRATUIT — plus besoin de payer. Inscris-toi directement sur la page du cours.",
       "unavailable": "Le panier n’est pas encore disponible côté serveur. Tu peux acheter les formations une par une pour l’instant."
     },
     "addShort": "Ajouter au panier",

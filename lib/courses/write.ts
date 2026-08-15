@@ -44,6 +44,7 @@ import { db, schema, isMissingColumnError } from '@/db';
 import { coursesPre0022 } from '@/db/courses-compat';
 import { COURSE_CATEGORIES } from '@/data/courses';
 import { sanitizeTags } from './tags';
+import { validateCoursePriceCents } from './pricing-rules';
 import { dbConfigured, selectCourseRows, selectCourseRowBySlug } from './source';
 import { bootstrapEmails } from '@/lib/admin/access';
 import { recordAudit } from '@/lib/admin/data/real/users';
@@ -677,6 +678,10 @@ export async function createCourse(
   }
   const primaryLocale: 'ht' | 'fr' = input.primaryLocale ?? 'ht';
 
+  // Same price legality as updateCourse — 0 = explicitly free, else $1 min.
+  const createPriceCheck = validateCoursePriceCents(input.priceCents ?? 0);
+  if (!createPriceCheck.ok) return { ok: false, message: createPriceCheck.message };
+
   const code = input.code?.trim() || (await getNextCourseCode());
   let slug = input.slug?.trim() || slugify(input.title_fr || input.title_ht) || `course-${Date.now()}`;
 
@@ -801,6 +806,15 @@ export async function updateCourse(slug: string, patch: CoursePatch, actor: Admi
 
   if (patch.category !== undefined && !COURSE_CATEGORIES.includes(patch.category)) {
     return { ok: false, message: 'invalid_category' };
+  }
+
+  // Price legality (owner: « impossible de mettre 0 $ — gratuit est un choix
+  // explicite ») — 0 means FREE and is allowed; 1-99 cents, negatives, junk
+  // and absurd amounts are refused. Also closes the review-noted hole where
+  // a hand-crafted patch could store a negative price.
+  if (patch.priceCents !== undefined) {
+    const priceCheck = validateCoursePriceCents(patch.priceCents);
+    if (!priceCheck.ok) return { ok: false, message: priceCheck.message };
   }
 
   const set: Partial<typeof T.courses.$inferInsert> = { updatedAt: new Date() };

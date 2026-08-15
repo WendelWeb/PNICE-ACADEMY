@@ -102,9 +102,12 @@ describe('computeCourseReadiness — chapters', () => {
 });
 
 describe('computeCourseReadiness — price / promise / preview / image', () => {
-  it('flags pricePositive when priceCents is 0', () => {
-    const items = computeCourseReadiness(baseCourse({ priceCents: 0 }));
-    expect(items.find((i) => i.key === 'pricePositive')?.ok).toBe(false);
+  it('accepts priceCents 0 (explicit FREE mode — owner rule) and >= $1, refuses the 1-99¢ accident band', () => {
+    // 0 = the studio's deliberate « Gratis » toggle: a legitimate, READY state.
+    expect(computeCourseReadiness(baseCourse({ priceCents: 0 })).find((i) => i.key === 'pricePositive')?.ok).toBe(true);
+    // 1-99 cents can only be a mistake — never ready.
+    expect(computeCourseReadiness(baseCourse({ priceCents: 50 })).find((i) => i.key === 'pricePositive')?.ok).toBe(false);
+    expect(computeCourseReadiness(baseCourse({ priceCents: 100 })).find((i) => i.key === 'pricePositive')?.ok).toBe(true);
   });
 
   it('flags promiseFilled when either language is blank', () => {
@@ -129,7 +132,9 @@ describe('computeCourseReadiness — price / promise / preview / image', () => {
 
 describe('countMissingReadiness', () => {
   it('counts the number of ✗ items', () => {
-    const items = computeCourseReadiness(baseCourse({ lessons: [], priceCents: 0 }));
+    // priceCents 50 (not 0 — 0 is now the legitimate FREE mode): the 1-99¢
+    // accident band still counts as missing.
+    const items = computeCourseReadiness(baseCourse({ lessons: [], priceCents: 50 }));
     // hasLesson, allLessonsHaveVideo, allLessonsTitled, pricePositive, hasPreviewLesson = 5
     expect(countMissingReadiness(items)).toBe(5);
   });

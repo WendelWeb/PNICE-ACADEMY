@@ -83,7 +83,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       has: (slug) => items.some((i) => i.slug === slug),
       add: (item) =>
         setItems((prev) =>
-          prev.some((i) => i.slug === item.slug) || prev.length >= MAX_CART_ITEMS
+          // A non-positive price never enters the basket: free courses
+          // enrol directly (FreeEnrollButton) and the wallet routes would
+          // refuse the line anyway — refusing here keeps the UI honest.
+          item.priceUsd <= 0 ||
+          prev.some((i) => i.slug === item.slug) ||
+          prev.length >= MAX_CART_ITEMS
             ? prev
             : [...prev, item],
         ),

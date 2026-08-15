@@ -3,6 +3,7 @@ import { Price, PriceSecondary } from '@/components/ui/Price';
 import { buttonClasses } from '@/components/ui/Button';
 import { AuthCta } from '@/components/auth/AuthCta';
 import { AddToCartButton } from '@/components/cart/AddToCartButton';
+import { FreeEnrollButton } from '@/components/courses/FreeEnrollButton';
 
 /**
  * The mobile counterpart of the sticky desktop buy-card: a fixed, compact
@@ -44,15 +45,23 @@ export function MobileBuyBar({
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          {/* One tap into the basket without leaving the page — the bar is
-              where mobile buyers already look, and mobile IS the audience. */}
-          <AddToCartButton slug={courseSlug} title={courseTitle} priceUsd={priceUsd} compact />
-          <AuthCta
-            href={`/checkout?course=${courseSlug}`}
-            className={buttonClasses('primary', 'md')}
-          >
-            {ctaLabel}
-          </AuthCta>
+          {priceUsd === 0 ? (
+            /* Explicitly-free course: nothing to pay, nothing to stack in a
+               basket — one enrol button. */
+            <FreeEnrollButton courseSlug={courseSlug} />
+          ) : (
+            <>
+              {/* One tap into the basket without leaving the page — the bar is
+                  where mobile buyers already look, and mobile IS the audience. */}
+              <AddToCartButton slug={courseSlug} title={courseTitle} priceUsd={priceUsd} compact />
+              <AuthCta
+                href={`/checkout?course=${courseSlug}`}
+                className={buttonClasses('primary', 'md')}
+              >
+                {ctaLabel}
+              </AuthCta>
+            </>
+          )}
         </div>
       </div>
     </div>

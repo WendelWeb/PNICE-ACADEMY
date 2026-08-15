@@ -37,9 +37,12 @@
     "perMonth": "/mwa",
     "oneTime": "yon sèl fwa",
     "lifetime": "a vi",
+    "freeCta": "Enskri gratis",
+    "freeErr": "Nou pa t ka enskri w. Eseye ankò.",
     "included": "Nan abonman an",
     "buy": "Achte fòmasyon an",
     "buyShort": "Achte",
+    "free": "Gratis",
     "subscribe": "Pran abonman an",
     "seeAll": "Wè tout fòmasyon yo",
     "or": "oswa",
@@ -718,6 +721,10 @@
         "titleSingle": "Tit",
         "price": "Pri ($)",
         "draftNote": "Kreye an bwouyon — se sèl ou ki wè l jiskaske ekip nou an valide l.",
+      "priceModePaid": "Peye",
+      "priceModeFree": "Gratis",
+      "priceFreeNote": "Fòmasyon an ap GRATIS — nenpòt moun ap ka enskri san peye anyen.",
+      "priceTooLow": "Pri minimòm se 1 $. Si ou vle bay li gratis, chwazi « Gratis ».",
         "submit": "Kreye an bwouyon",
         "titleRequired": "Yon tit obligatwa.",
         "error": "Erè."
@@ -2209,6 +2216,10 @@
         "tagsCount": "{count}/{max} tag",
         "tagsRemove": "Retire tag « {tag} »",
         "tagsDeferred": "Anrejistre — men tag yo ap aplike apre yon ti mizajou sèvè. Pa efase yo, y ap pati otomatikman.",
+        "priceModePaid": "Peye",
+        "priceModeFree": "Gratis",
+        "priceFreeNote": "Fòmasyon an ap GRATIS — nenpòt moun ap ka enskri san peye anyen. Ou p ap touche kòb sou li.",
+        "priceTooLow": "Pri minimòm se 1 $. Si ou vle bay fòmasyon an gratis, chwazi « Gratis » — 0 $ pa yon pri, se yon chwa.",
         "iconNames": {
           "credit-card": "Peman / kat",
           "shopping-cart": "Lavant / komès",
@@ -2496,7 +2507,7 @@
             "location": "Plan kou a"
           },
           "pricePositive": {
-            "label": "Pri kou a pi gran pase 0 $",
+            "label": "Pri a defini : swa 1 $ oswa plis, swa Gratis (yon chwa klè)",
             "location": "Jeneral & pri"
           },
           "promiseFilled": {
@@ -3585,6 +3596,7 @@
     "err": {
       "ownedRemoved": "Ou gen « {title} » deja — nou retire l nan panye a. Ou ka peye rès la.",
       "goneRemoved": "« {title} » pa disponib ankò — nou retire l nan panye a.",
+        "freeRemoved": "« {title} » vin GRATIS — ou pa bezwen peye pou li ankò. Al enskri dirèkteman sou paj kou a.",
       "unavailable": "Panye a poko disponib sou sèvè a. Ou ka achte fòmasyon yo youn pa youn pou kounye a."
     },
     "addShort": "Ajoute nan panye",

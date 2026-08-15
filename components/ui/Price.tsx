@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { clerkEnabled } from '@/lib/clerk';
 import { useDisplayCurrency } from '@/lib/useDisplayCurrency';
 import { useFxRate } from '@/components/ui/FxRateProvider';
@@ -9,10 +10,20 @@ import { formatUsd, htgLabelAt } from '@/lib/money';
  * Primary price in the user's preferred display currency (USD by default).
  * Env-gated: with Clerk off (no keys) it renders USD statically so public pages
  * keep working without a ClerkProvider.
+ *
+ * A price of EXACTLY 0 renders the word (« Gratis »/« Gratuit »), never
+ * « 0 $ » — 0 only exists behind the studio's explicit free toggle
+ * (lib/courses/pricing-rules.ts), so the display honours the choice.
  */
 export function Price({ usd, className }: { usd: number; className?: string }) {
+  if (usd === 0) return <FreeLabel className={className} />;
   if (!clerkEnabled) return <span className={className}>{formatUsd(usd)}</span>;
   return <PricePrimary usd={usd} className={className} />;
+}
+
+function FreeLabel({ className }: { className?: string }) {
+  const t = useTranslations('common');
+  return <span className={className}>{t('free')}</span>;
 }
 
 function PricePrimary({ usd, className }: { usd: number; className?: string }) {
@@ -28,6 +39,8 @@ export function PriceSecondary({
   usd: number;
   className?: string;
 }) {
+  // Free course: « Gratis » needs no gourde conversion beside it.
+  if (usd === 0) return null;
   if (!clerkEnabled) return <PriceSecondaryStatic usd={usd} className={className} />;
   return <PriceSecondaryInner usd={usd} className={className} />;
 }

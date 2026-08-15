@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { auth } from '@clerk/nextjs/server';
 import { IconLock, IconShieldCheck, IconCircleCheck, IconClock } from '@tabler/icons-react';
@@ -54,6 +54,10 @@ export default async function CheckoutPage({
   // lib/payments/checkout-target.ts; mirrors the teacher-slug branch below).
   const mode = checkoutMode({ courseRequested: Boolean(courseSlug), courseResolved: Boolean(course) });
   if (mode === 'not_found') notFound();
+  // An explicitly-FREE course (pricing-rules.ts) has no checkout: its
+  // enrol button lives on the sales page, and the API routes refuse a $0
+  // charge anyway — bounce there instead of rendering a pay UI for 0.
+  if (course && course.priceUsd === 0) redirect(`/${locale}/formations/${course.slug}`);
   const isSub = mode === 'subscription';
 
   // Task: per-teacher subscription checkout — the AMOUNT charged always

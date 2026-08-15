@@ -21,6 +21,7 @@ import { ManifestList, type ManifestRow } from '@/components/courses/ManifestLis
 import { ResourceLinks } from '@/components/courses/ResourceLinks';
 import { MobileBuyBar } from '@/components/courses/MobileBuyBar';
 import { AddToCartButton } from '@/components/cart/AddToCartButton';
+import { FreeEnrollButton } from '@/components/courses/FreeEnrollButton';
 import { AuthCta } from '@/components/auth/AuthCta';
 import { RatingSummary } from '@/components/reviews/RatingSummary';
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
@@ -642,16 +643,23 @@ export default async function CourseDetail({
                   {t('buyCard.guarantee')}
                 </p>
 
+                {course.priceUsd === 0 ? (
+                  /* Explicitly-free course (pricing-rules.ts): the aside's
+                     whole job becomes ONE enrol button — no pay, no basket. */
+                  <FreeEnrollButton courseSlug={course.slug} className="mt-5" />
+                ) : (
                 <AuthCta
                   href={`/checkout?course=${course.slug}`}
                   className={buttonClasses('primary', 'lg', 'mt-5 w-full')}
                 >
                   {tc('buy')}
                 </AuthCta>
+                )}
 
                 {/* « Panye » — the second buying path: stack several courses
                     into ONE wallet payment. Client-gated: renders nothing
-                    until the cart context has hydrated. */}
+                    until the cart context has hydrated (and renders nothing
+                    for a free course — see AddToCartButton itself). */}
                 <AddToCartButton
                   slug={course.slug}
                   title={courseTitle(course, locale)}
@@ -720,12 +728,16 @@ export default async function CourseDetail({
             {t('ctaText')}
           </p>
           <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <AuthCta
-              href={`/checkout?course=${course.slug}`}
-              className={buttonClasses('primary', 'lg')}
-            >
-              {tc('buy')} · <Price usd={course.priceUsd} />
-            </AuthCta>
+            {course.priceUsd === 0 ? (
+              <FreeEnrollButton courseSlug={course.slug} />
+            ) : (
+              <AuthCta
+                href={`/checkout?course=${course.slug}`}
+                className={buttonClasses('primary', 'lg')}
+              >
+                {tc('buy')} · <Price usd={course.priceUsd} />
+              </AuthCta>
+            )}
             {/* Stage 4 — the subscription CTA mirrors the purchase card:
                 this teacher's own pass when they sell one, the platform
                 pass otherwise. */}

@@ -37,6 +37,9 @@ export function AddToCartButton({
   const t = useTranslations('panye');
   const cart = useCart();
   if (!cart) return null;
+  // A FREE course has nothing to pay — the basket is a payment vehicle, so
+  // the button simply doesn't exist for it (FreeEnrollButton takes over).
+  if (priceUsd === 0) return null;
   const inCart = cart.hydrated && cart.has(slug);
 
   if (compact) {

@@ -12,6 +12,7 @@
  * badge next to the studio's submit button / the admin's publish button.
  */
 import type { AdminCourse } from './write';
+import { MIN_COURSE_PRICE_CENTS } from './pricing-rules';
 
 export type ReadinessKey =
   | 'hasLesson'
@@ -62,7 +63,10 @@ export function computeCourseReadiness(course: ReadinessCourse): ReadinessItem[]
       key: 'allChaptersTitled',
       ok: chapters.length === 0 || chapters.every((c) => c.title_ht.trim() !== '' && c.title_fr.trim() !== ''),
     },
-    { key: 'pricePositive', ok: course.priceCents > 0 },
+    // 0 = explicitly FREE (a legitimate, ready state since the owner's
+    // « gratuit est un choix » rule); otherwise the $1 minimum applies —
+    // 1-99 cents is an accident the save path refuses anyway.
+    { key: 'pricePositive', ok: course.priceCents === 0 || course.priceCents >= MIN_COURSE_PRICE_CENTS },
     { key: 'promiseFilled', ok: course.promise_ht.trim() !== '' && course.promise_fr.trim() !== '' },
     { key: 'hasPreviewLesson', ok: lessons.some((l) => l.isPreview) },
     { key: 'mainImageSet', ok: Boolean(course.mainImage) },

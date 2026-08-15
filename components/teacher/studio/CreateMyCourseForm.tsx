@@ -7,6 +7,7 @@ import { IconLoader2, IconPlus } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
 import { buttonClasses } from '@/components/ui/Button';
 import { createMyCourseAction } from '@/lib/teacher/studio-actions';
+import { validateCoursePriceCents } from '@/lib/courses/pricing-rules';
 
 const inputCls = 'w-full rounded-lg border border-ink/15 bg-paper px-3 py-2 text-sm text-ink';
 
@@ -35,9 +36,15 @@ export function CreateMyCourseForm() {
   const [titleFr, setTitleFr] = useState('');
   const [titleSingle, setTitleSingle] = useState('');
   const [price, setPrice] = useState('');
+  // « Gratis » is a deliberate choice, never the residue of an empty price
+  // field (owner rule — pricing-rules.ts is the server-side mirror).
+  const [freeCourse, setFreeCourse] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const canSubmit = bilingual ? Boolean(titleHt || titleFr) : Boolean(titleSingle.trim());
+  const priceCents = freeCourse ? 0 : Math.round((Number(price) || 0) * 100);
+  const priceOk = validateCoursePriceCents(priceCents).ok;
+  const canSubmit =
+    (bilingual ? Boolean(titleHt || titleFr) : Boolean(titleSingle.trim())) && priceOk;
 
   return (
     <form
@@ -47,14 +54,14 @@ export function CreateMyCourseForm() {
           setErr(null);
           const res = await createMyCourseAction(
             bilingual
-              ? { title_ht: titleHt.trim(), title_fr: titleFr.trim(), priceCents: Math.round((Number(price) || 0) * 100), bilingual: true }
+              ? { title_ht: titleHt.trim(), title_fr: titleFr.trim(), priceCents, bilingual: true }
               : {
                   // The non-primary title is sent empty — the server mirrors
                   // the primary value into both columns regardless (see this
                   // component's own doc comment).
                   title_ht: primaryLocale === 'ht' ? titleSingle.trim() : '',
                   title_fr: primaryLocale === 'fr' ? titleSingle.trim() : '',
-                  priceCents: Math.round((Number(price) || 0) * 100),
+                  priceCents,
                   bilingual: false,
                   primaryLocale,
                 },
@@ -120,12 +127,35 @@ export function CreateMyCourseForm() {
         </label>
       )}
 
-      <label className="block">
+      <div className="block">
         <span className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-ink/55">{t('price')}</span>
-        <span className="flex items-center gap-1 font-mono text-sm text-ink/55">
-          $<input type="number" min="0" value={price} onChange={(e) => setPrice(e.target.value)} className={cn(inputCls, 'w-24')} />
-        </span>
-      </label>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setFreeCourse(false)}
+            className={cn(buttonClasses(!freeCourse ? 'primary' : 'ghost', 'sm'), 'text-[11px]')}
+          >
+            {t('priceModePaid')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setFreeCourse(true)}
+            className={cn(buttonClasses(freeCourse ? 'primary' : 'ghost', 'sm'), 'text-[11px]')}
+          >
+            {t('priceModeFree')}
+          </button>
+          {!freeCourse && (
+            <span className="flex items-center gap-1 font-mono text-sm text-ink/55">
+              $<input type="number" min="1" value={price} onChange={(e) => setPrice(e.target.value)} className={cn(inputCls, 'w-24')} />
+            </span>
+          )}
+        </div>
+        {freeCourse ? (
+          <p className="mt-1.5 text-[11px] leading-snug text-teal">{t('priceFreeNote')}</p>
+        ) : !priceOk && price !== '' ? (
+          <p className="mt-1.5 text-[11px] leading-snug text-stampred">{t('priceTooLow')}</p>
+        ) : null}
+      </div>
       <p className="font-mono text-[10px] text-ink/45">{t('draftNote')}</p>
       {err && <p className="font-mono text-[11px] text-stampred">{err}</p>}
       <button type="submit" disabled={pending || !canSubmit} className={cn(buttonClasses('primary', 'md'), 'text-xs')}>

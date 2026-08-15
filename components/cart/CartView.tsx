@@ -61,6 +61,11 @@ export function CartView({
       if (!fresh) {
         cart.remove(item.slug);
         setErrorMsg(t('err.goneRemoved', { title: item.title }));
+      } else if (fresh.priceUsd === 0) {
+        // Turned FREE since it was added — nothing to pay for; drop the line
+        // and say why (the buyer enrols from the course page instead).
+        cart.remove(item.slug);
+        setErrorMsg(t('err.freeRemoved', { title: fresh.title }));
       } else if (fresh.priceUsd !== item.priceUsd || fresh.title !== item.title) {
         cart.remove(item.slug);
         cart.add({ slug: item.slug, title: fresh.title, priceUsd: fresh.priceUsd });
@@ -134,6 +139,11 @@ export function CartView({
         const gone = cart.items.find((i) => i.slug === data.courseSlug);
         cart.remove(data.courseSlug);
         setErrorMsg(t('err.goneRemoved', { title: gone?.title ?? data.courseSlug }));
+      } else if (data.error === 'free_course' && data.courseSlug) {
+        // Turned free between render and tap — drop it, the rest can retry.
+        const freed = cart.items.find((i) => i.slug === data.courseSlug);
+        cart.remove(data.courseSlug);
+        setErrorMsg(t('err.freeRemoved', { title: freed?.title ?? data.courseSlug }));
       } else if (data.error === 'price_changed') {
         // A price moved between render and tap. Reload: the server shell
         // re-resolves the catalogue, the reconciler updates the lines, and
