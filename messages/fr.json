@@ -164,11 +164,11 @@
     "teach": {
       "eyebrow": "Enseigner sur PNICE",
       "title": "Tu maîtrises un savoir-faire ? Les candidatures sont ouvertes.",
-      "body": "Crée tes propres formations sur la plateforme. Tu fixes ton prix, tu gardes 70 % de chaque vente, tu demandes ton retrait dès 25 $ (MonCash, NatCash, PayPal ou banque), et un admin relit chaque cours avant sa mise en ligne.",
+      "body": "Crée tes propres formations sur la plateforme. Tu fixes ton prix, tu gardes 70 % de chaque vente, tu demandes ton retrait dès 25 $ US (MonCash, NatCash, PayPal ou banque), et un admin relit chaque cours avant sa mise en ligne.",
       "facts": [
         "70 % pour toi",
         "Tu fixes ton prix",
-        "Retrait dès 25 $",
+        "Retrait dès 25 $ US",
         "Relecture avant publication"
       ],
       "cta": "Commencer ma candidature",
@@ -526,7 +526,7 @@
         "summary": [
           "Tu touches 70 % sur chaque vente — 30 % vont à la plateforme.",
           "Nous vérifions chaque cours avant sa publication pour maintenir le niveau de la plateforme.",
-          "Les retraits se font sur demande, à partir de 25 $, selon le moyen de paiement choisi."
+          "Les retraits se font sur demande, à partir de 25 $ US, selon le moyen de paiement choisi."
         ],
         "checkbox": "J'ai lu et j'accepte les conditions.",
         "errorTerms": "Tu dois accepter les conditions pour continuer."
@@ -724,7 +724,7 @@
       "priceModePaid": "Payant",
       "priceModeFree": "Gratuit",
       "priceFreeNote": "La formation sera GRATUITE — tout le monde pourra s’inscrire sans payer.",
-      "priceTooLow": "Prix minimum : 1 $. Pour l’offrir, choisis « Gratuit ».",
+      "priceTooLow": "Prix minimum : 1 $ US. Pour l’offrir, choisis « Gratuit ».",
         "submit": "Créer en brouillon",
         "titleRequired": "Un titre est requis.",
         "error": "Erreur."
@@ -2219,7 +2219,7 @@
         "priceModePaid": "Payant",
         "priceModeFree": "Gratuit",
         "priceFreeNote": "La formation sera GRATUITE — tout le monde pourra s’inscrire sans payer. Tu ne toucheras rien dessus.",
-        "priceTooLow": "Prix minimum : 1 $. Pour offrir la formation, choisis « Gratuit » — 0 $ n’est pas un prix, c’est un choix.",
+        "priceTooLow": "Prix minimum : 1 $ US. Pour offrir la formation, choisis « Gratuit » — 0 $ US n’est pas un prix, c’est un choix.",
         "iconNames": {
           "credit-card": "Paiement / carte",
           "shopping-cart": "Vente / commerce",
@@ -2507,7 +2507,7 @@
             "location": "Plan du cours"
           },
           "pricePositive": {
-            "label": "Prix défini : 1 $ ou plus, ou bien Gratuit (un choix explicite)",
+            "label": "Prix défini : 1 $ US ou plus, ou bien Gratuit (un choix explicite)",
             "location": "Général & prix"
           },
           "promiseFilled": {
@@ -3564,7 +3564,7 @@
       },
       "minimum": {
         "q": "Quand puis-je faire un retrait ?",
-        "a": "Dès que ton solde atteint 25 $ ou plus, tu peux demander un retrait depuis ton studio. Chaque demande est traitée par une personne de l'équipe — cela peut prendre un peu de temps, mais ça arrive."
+        "a": "Dès que ton solde atteint 25 $ US ou plus, tu peux demander un retrait depuis ton studio. Chaque demande est traitée par une personne de l'équipe — cela peut prendre un peu de temps, mais ça arrive."
       },
       "jwenn-setifika": {
         "q": "Comment obtenir mon certificat ?",

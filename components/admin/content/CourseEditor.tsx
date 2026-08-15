@@ -297,8 +297,9 @@ export function CourseEditor({
                   {t('priceModeFree')}
                 </button>
                 {!freeCourse && (
-                  <span className="flex items-center gap-1 font-mono text-sm text-ink/55">
-                    $<input type="number" min="1" value={priceDollars} onChange={(e) => { setPriceDollars(e.target.value); setSave('idle'); }} aria-label={t('price')} className={cn(inputCls, 'w-24')} />
+                  <span className="flex items-center gap-1.5 font-mono text-sm text-ink/55">
+                    <input type="number" min="1" value={priceDollars} onChange={(e) => { setPriceDollars(e.target.value); setSave('idle'); }} aria-label={t('price')} className={cn(inputCls, 'w-24')} />
+                    $ US
                   </span>
                 )}
               </div>
@@ -313,7 +314,7 @@ export function CourseEditor({
             <div className="rounded-lg bg-paper p-3 text-xs">
               <p className="font-mono text-[10px] uppercase tracking-wide text-ink/45">{t('impact')}</p>
               <p className="mt-1 text-graphite/80">
-                {t('impactRevenue', { count: salesCount, revenue: '$' + Math.round(projectedRevenue / 100).toLocaleString('en-US') })}
+                {t('impactRevenue', { count: salesCount, revenue: Math.round(projectedRevenue / 100).toLocaleString('fr-FR') + ' $ US' })}
               </p>
               {overMax && (
                 <p className="mt-1.5 flex items-center gap-1 text-stampred">

@@ -164,11 +164,11 @@
     "teach": {
       "eyebrow": "Anseye sou PNICE",
       "title": "Ou metrize yon konesans? Aplikasyon yo louvri.",
-      "body": "Kreye pwòp fòmasyon w sou platfòm nan. Ou fikse pri w, ou touche 70% sou chak vant, ou mande retrè w depi $25 (MonCash, NatCash, PayPal oswa bank), epi yon admin revize chak kou anvan li parèt an piblik.",
+      "body": "Kreye pwòp fòmasyon w sou platfòm nan. Ou fikse pri w, ou touche 70% sou chak vant, ou mande retrè w depi 25 $ US (MonCash, NatCash, PayPal oswa bank), epi yon admin revize chak kou anvan li parèt an piblik.",
       "facts": [
         "70% pou ou",
         "Ou fikse pri w",
-        "Retrè depi $25",
+        "Retrè depi 25 $ US",
         "Revizyon anvan piblikasyon"
       ],
       "cta": "Kòmanse aplikasyon w",
@@ -526,7 +526,7 @@
         "summary": [
           "Ou touche 70% sou chak vant — 30% ale nan platfòm nan.",
           "Nou revize chak kou anvan li pibliye pou kenbe kalite platfòm nan.",
-          "Retrè yo fèt sou demand, apati $25, nan mwayen peman ou chwazi a."
+          "Retrè yo fèt sou demand, apati 25 $ US, nan mwayen peman ou chwazi a."
         ],
         "checkbox": "Mwen li epi mwen aksepte kondisyon yo.",
         "errorTerms": "Ou dwe aksepte kondisyon yo pou kontinye."
@@ -724,7 +724,7 @@
       "priceModePaid": "Peye",
       "priceModeFree": "Gratis",
       "priceFreeNote": "Fòmasyon an ap GRATIS — nenpòt moun ap ka enskri san peye anyen.",
-      "priceTooLow": "Pri minimòm se 1 $. Si ou vle bay li gratis, chwazi « Gratis ».",
+      "priceTooLow": "Pri minimòm se 1 $ US. Si ou vle bay li gratis, chwazi « Gratis ».",
         "submit": "Kreye an bwouyon",
         "titleRequired": "Yon tit obligatwa.",
         "error": "Erè."
@@ -2219,7 +2219,7 @@
         "priceModePaid": "Peye",
         "priceModeFree": "Gratis",
         "priceFreeNote": "Fòmasyon an ap GRATIS — nenpòt moun ap ka enskri san peye anyen. Ou p ap touche kòb sou li.",
-        "priceTooLow": "Pri minimòm se 1 $. Si ou vle bay fòmasyon an gratis, chwazi « Gratis » — 0 $ pa yon pri, se yon chwa.",
+        "priceTooLow": "Pri minimòm se 1 $ US. Si ou vle bay fòmasyon an gratis, chwazi « Gratis » — 0 $ US pa yon pri, se yon chwa.",
         "iconNames": {
           "credit-card": "Peman / kat",
           "shopping-cart": "Lavant / komès",
@@ -2507,7 +2507,7 @@
             "location": "Plan kou a"
           },
           "pricePositive": {
-            "label": "Pri a defini : swa 1 $ oswa plis, swa Gratis (yon chwa klè)",
+            "label": "Pri a defini : swa 1 $ US oswa plis, swa Gratis (yon chwa klè)",
             "location": "Jeneral & pri"
           },
           "promiseFilled": {
@@ -3564,7 +3564,7 @@
       },
       "minimum": {
         "q": "Kilè m ka fè yon retrè?",
-        "a": "Depi balans ou rive sou $25 oswa plis, ou ka mande yon retrè nan estidyo w la. Se yon moun nan ekip la ki trete chak demann — sa ka pran yon ti tan, men li rive."
+        "a": "Depi balans ou rive sou 25 $ US oswa plis, ou ka mande yon retrè nan estidyo w la. Se yon moun nan ekip la ki trete chak demann — sa ka pran yon ti tan, men li rive."
       },
       "jwenn-setifika": {
         "q": "Kijan pou m jwenn sètifika mwen?",

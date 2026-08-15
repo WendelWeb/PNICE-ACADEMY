@@ -4,8 +4,8 @@ import { usdCentsToHtg } from './payments/moncash/types';
 
 describe('money', () => {
   it('formats a usd amount with a dollar suffix', () => {
-    expect(formatUsd(79)).toBe('79$');
-    expect(formatUsd(9)).toBe('9$');
+    expect(formatUsd(79)).toBe('79 $ US');
+    expect(formatUsd(9)).toBe('9 $ US');
   });
 
   it('formats a gourdes amount with the HTG suffix', () => {

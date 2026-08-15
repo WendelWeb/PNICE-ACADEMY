@@ -7,7 +7,9 @@ import { toHtgAt } from '@/lib/money';
 
 /** "$12,480" — whole-dollar, thousands-separated. */
 export function fmtUsdCents(cents: number): string {
-  return '$' + Math.round(cents / 100).toLocaleString('en-US');
+  // « US » explicit + French thousands (spaces) — same owner rule as
+  // lib/money.ts's formatUsd: a bare $ is ambiguous in Haiti.
+  return Math.round(cents / 100).toLocaleString('fr-FR') + ' $ US';
 }
 
 /**

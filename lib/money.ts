@@ -45,8 +45,14 @@ export function toHtgAt(usd: number, rateHtg: number): number {
   return Math.round(usd * rateHtg);
 }
 
+/**
+ * « 2 $ US » — the « US » is NOT optional (owner rule, août 2026): in Haiti
+ * a bare « $ » is ambiguous — the « dollar haïtien » (5 gourdes) still
+ * lives in everyday speech — so every US-dollar figure on the site names
+ * its currency. ONE formatter, so it can never be half-applied.
+ */
 export function formatUsd(usd: number): string {
-  return `${usd}$`;
+  return `${usd} $ US`;
 }
 
 /**
@@ -60,7 +66,7 @@ export function formatUsd(usd: number): string {
  */
 export function formatUsdCentsExact(cents: number): string {
   return (
-    (cents / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $'
+    (cents / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $ US'
   );
 }
 

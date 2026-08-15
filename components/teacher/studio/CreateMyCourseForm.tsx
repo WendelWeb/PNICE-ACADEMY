@@ -145,8 +145,9 @@ export function CreateMyCourseForm() {
             {t('priceModeFree')}
           </button>
           {!freeCourse && (
-            <span className="flex items-center gap-1 font-mono text-sm text-ink/55">
-              $<input type="number" min="1" value={price} onChange={(e) => setPrice(e.target.value)} className={cn(inputCls, 'w-24')} />
+            <span className="flex items-center gap-1.5 font-mono text-sm text-ink/55">
+              <input type="number" min="1" value={price} onChange={(e) => setPrice(e.target.value)} className={cn(inputCls, 'w-24')} />
+              $ US
             </span>
           )}
         </div>

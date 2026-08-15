@@ -39,7 +39,7 @@ const METHOD_COLORS: Record<PaymentMethod, string> = {
   crypto: C.lightOchre,
 };
 
-const usd = (cents: number) => '$' + Math.round(cents / 100).toLocaleString('en-US');
+const usd = (cents: number) => Math.round(cents / 100).toLocaleString('fr-FR') + ' $ US';
 const tickFont = { fontSize: 10, fill: C.axis, fontFamily: 'IBM Plex Mono, monospace' };
 const tooltipStyle = {
   contentStyle: {
@@ -134,8 +134,8 @@ export function AnalyticsCharts({
             <BarChart data={revenue} margin={{ top: 4, right: 8, left: 4, bottom: 0 }}>
               <CartesianGrid stroke={C.grid} vertical={false} />
               <XAxis dataKey="bucket" tick={tickFont} tickLine={false} axisLine={{ stroke: C.grid }} />
-              <YAxis tick={tickFont} tickLine={false} axisLine={false} tickFormatter={(v) => '$' + v} width={48} />
-              <Tooltip {...tooltipStyle} formatter={(v) => '$' + Number(v).toLocaleString('en-US')} />
+              <YAxis tick={tickFont} tickLine={false} axisLine={false} tickFormatter={(v) => v + ' $'} width={52} />
+              <Tooltip {...tooltipStyle} formatter={(v) => Number(v).toLocaleString('fr-FR') + ' $ US'} />
               <Legend wrapperStyle={{ fontSize: 11, fontFamily: 'IBM Plex Mono, monospace' }} />
               <Bar dataKey="sub" stackId="r" name={t('charts.subscription')} fill={C.teal} radius={[0, 0, 0, 0]} />
               <Bar dataKey="course" stackId="r" name={t('charts.course')} fill={C.ochre} radius={[3, 3, 0, 0]} />
@@ -213,11 +213,11 @@ export function AnalyticsCharts({
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={byCourse} layout="vertical" margin={{ top: 4, right: 40, left: 8, bottom: 0 }}>
               <CartesianGrid stroke={C.grid} horizontal={false} />
-              <XAxis type="number" tick={tickFont} tickLine={false} axisLine={false} tickFormatter={(v) => '$' + v} />
+              <XAxis type="number" tick={tickFont} tickLine={false} axisLine={false} tickFormatter={(v) => v + ' $'} />
               <YAxis type="category" dataKey="name" tick={tickFont} tickLine={false} axisLine={{ stroke: C.grid }} width={56} />
               <Tooltip
                 {...tooltipStyle}
-                formatter={(v) => '$' + Number(v).toLocaleString('en-US')}
+                formatter={(v) => Number(v).toLocaleString('fr-FR') + ' $ US'}
                 labelFormatter={(_, p) => (p && p[0] ? (p[0].payload as { label: string }).label : '')}
               />
               <Bar dataKey="revenue" name={t('charts.revenue')} fill={C.ochre} radius={[0, 3, 3, 0]}>

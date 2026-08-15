@@ -72,7 +72,7 @@ describe('buildReceiptHtml', () => {
     const { subject, html } = buildReceiptHtml({ ...base, locale: 'fr' });
     expect(subject).toContain('Reçu');
     expect(html).toContain('Zouti finansye dijital');
-    expect(html).toContain('$9.00');
+    expect(html).toContain('9,00 $ US');
     expect(html).toContain('pi_123');
     expect(html).toContain('Jean');
   });
@@ -80,7 +80,7 @@ describe('buildReceiptHtml', () => {
   it('builds a Kreyòl receipt', () => {
     const { subject, html } = buildReceiptHtml({ ...base, locale: 'ht' });
     expect(subject).toContain('Resi');
-    expect(html).toContain('$9.00');
+    expect(html).toContain('9,00 $ US');
   });
 
   it('falls back gracefully without a name', () => {
@@ -153,7 +153,7 @@ describe('buildCartReminderHtml', () => {
     const { subject, html } = buildCartReminderHtml({ ...base, locale: 'fr' });
     expect(subject).toContain('Kòmès sou entènèt');
     expect(html).toContain('Kòmès sou entènèt');
-    expect(html).toContain('$49.00');
+    expect(html).toContain('49,00 $ US');
     expect(html).toContain('Jean');
   });
 
@@ -195,7 +195,7 @@ describe('buildDailyDigestHtml', () => {
   it('builds a French digest with all counts', () => {
     const { subject, html } = buildDailyDigestHtml({ ...base, locale: 'fr' });
     expect(subject).toContain('Résumé quotidien');
-    expect(html).toContain('$158.00');
+    expect(html).toContain('158,00 $ US');
     expect(html).toContain('>3<');
     expect(html).toContain('>2<');
     expect(html).toContain('>1<');
@@ -338,8 +338,8 @@ describe('buildRefundConfirmationHtml', () => {
     const { subject, html, text } = buildRefundConfirmationHtml({ locale: 'ht', name: 'Jean', itemName: 'Kòmès sou entènèt', amountCents: 4900 });
     expect(subject).toContain('Ranbousman');
     expect(html).toContain('Kòmès sou entènèt');
-    expect(html).toContain('$49.00');
-    expect(text).toContain('$49.00');
+    expect(html).toContain('49,00 $ US');
+    expect(text).toContain('49,00 $ US');
   });
 
   it('escapes the item name (fr)', () => {
@@ -419,9 +419,9 @@ describe('buildTeacherSaleHtml', () => {
   it("says 'Ou fè yon vant' with the net amount and real share pct", () => {
     const { subject, html, text } = buildTeacherSaleHtml({ locale: 'ht', name: 'Jan', itemName: 'Kouti pou debitan', netCents: 5530, netPct: 70 });
     expect(subject).toBe('Ou fè yon vant — Kouti pou debitan');
-    expect(html).toContain('+$55.30');
+    expect(html).toContain('+55,30 $ US');
     expect(html).toContain('(70%)');
-    expect(text).toContain('+$55.30');
+    expect(text).toContain('+55,30 $ US');
   });
 
   it('builds in French and escapes the item name', () => {
@@ -436,7 +436,7 @@ describe('payout lifecycle emails', () => {
   it('requested confirms amount and method', () => {
     const { subject, html } = buildPayoutRequestedHtml({ locale: 'ht', name: 'Jan', amountCents: 5000, method: 'moncash' });
     expect(subject).toContain('Nou resevwa demann retrè w');
-    expect(html).toContain('$50.00');
+    expect(html).toContain('50,00 $ US');
     expect(html).toContain('moncash');
   });
 
@@ -459,15 +459,15 @@ describe('payout lifecycle emails', () => {
 describe('buildPlatformPassSplitHtml', () => {
   it("subject follows 'Pass PNICE — {month}: +$X' (ht)", () => {
     const { subject, html } = buildPlatformPassSplitHtml({ locale: 'ht', name: 'Jan', period: '2026-07', amountCents: 1234 });
-    expect(subject).toBe('Pass PNICE — jiyè 2026: +$12.34');
-    expect(html).toContain('+$12.34');
+    expect(subject).toBe('Pass PNICE — jiyè 2026: +12,34 $ US');
+    expect(html).toContain('+12,34 $ US');
     expect(html).toContain('jiyè 2026');
   });
 
   it('builds in French with the French month', () => {
     const { subject } = buildPlatformPassSplitHtml({ locale: 'fr', name: null, period: '2026-07', amountCents: 1234 });
     expect(subject).toContain('juillet 2026');
-    expect(subject).toContain('+$12.34');
+    expect(subject).toContain('+12,34 $ US');
   });
 });
 
@@ -549,8 +549,8 @@ describe('plain-text alternative (deliverability)', () => {
     expect(reply.text).not.toMatch(HTML_TAG);
 
     expect(receipt.text).toContain('Zouti finansye dijital');
-    expect(receipt.text).toContain('$9.00');
+    expect(receipt.text).toContain('9,00 $ US');
     expect(cart.text).toContain('https://pnice.academy/fr/checkout?course=x');
-    expect(digest.text).toContain('$158.00');
+    expect(digest.text).toContain('158,00 $ US');
   });
 });

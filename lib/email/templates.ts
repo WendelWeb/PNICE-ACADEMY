@@ -29,7 +29,10 @@ import { DEFAULT_FROM } from '@/lib/email/resend';
  */
 type HtgSource = { htgExact: number; rateHtg?: number } | { htgExact?: undefined; rateHtg: number };
 
-const usd = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+// « US » explicit (owner rule): a bare $ is ambiguous in Haiti — the
+// « dollar haïtien » (5 HTG) is still common speech. Same rule as
+// lib/money.ts's formatUsd.
+const usd = (cents: number) => `${(cents / 100).toFixed(2).replace('.', ',')} $ US`;
 
 /** Shared "Bonjour X," / "Bonjou X," greeting, used by both the HTML body
  *  (escaped) and the plain-text alternative (raw) — `esc` is the identity
