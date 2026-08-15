@@ -227,8 +227,18 @@ export function ChapterGroup({
         <span className="flex shrink-0 flex-col gap-0.5">
           <button type="button" onClick={() => onAct(() => actions.reorderChapter(slug, chapter.id, 'up'))} disabled={index === 0} aria-label={t('moveUp')} title={t('moveUp')} className={iconBtn}><IconChevronUp size={12} /></button>
           <button type="button" onClick={() => onAct(() => actions.reorderChapter(slug, chapter.id, 'down'))} disabled={index === total - 1} aria-label={t('moveDown')} title={t('moveDown')} className={iconBtn}><IconChevronDown size={12} /></button>
+          {/* Same visible weight as the lesson rows' trash (owner: delete
+              was « inexistant » — a 12px icon read as decoration). */}
           {!confirmDelete && (
-            <button type="button" aria-label={t('deleteChapterAria')} title={t('deleteChapterAria')} onClick={() => setConfirmDelete(true)} className={cn(iconBtn, 'text-stampred')}><IconTrash size={12} /></button>
+            <button
+              type="button"
+              aria-label={t('deleteChapterAria')}
+              title={t('deleteChapterAria')}
+              onClick={() => setConfirmDelete(true)}
+              className={cn('grid h-8 w-8 shrink-0 place-items-center rounded border border-stampred/25 text-stampred/70 hover:bg-stampred/10 hover:text-stampred', focusRing)}
+            >
+              <IconTrash size={14} />
+            </button>
           )}
         </span>
       </div>

@@ -4,7 +4,6 @@ import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
-  IconTrash,
   IconAlertTriangle,
   IconLoader2,
   IconTag,
@@ -108,7 +107,6 @@ export function LessonEditPanel({
   const [resources, setResources] = useState<CourseResource[]>(lesson.resources);
   const [resourcesErr, setResourcesErr] = useState<string | null>(null);
   const [resourcesSave, setResourcesSave] = useState<SaveState>('idle');
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [rp, rStart] = useTransition();
 
   const noVideo = !lesson.bunnyVideoId;
@@ -190,18 +188,26 @@ export function LessonEditPanel({
           onManualIdCommit={(guid) => commit({ bunnyVideoId: guid })}
           onPhaseChange={(phase, pct) => onUploadPhase?.(lesson.id, phase, pct)}
         />
-        <div className="mt-2 flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-1.5 font-mono text-[10px] text-ink/55" title={t('hints.duration')}>
-            <IconClock size={12} className="text-ink/40" aria-hidden />
-            {t('duration')}
-            <input value={dur} onChange={(e) => setDur(e.target.value)} onBlur={() => commit({ durationSeconds: mmssToSec(dur) })} placeholder="mm:ss" aria-label={t('duration')} className={cn(inputCls, 'w-16 text-center')} />
-          </label>
-          <label className="flex items-center gap-1 font-mono text-[10px] text-ink/60" title={t('hints.preview')}>
-            <IconEye size={13} className="text-ink/40" aria-hidden />
-            <input type="checkbox" checked={lesson.isPreview} onChange={(e) => commit({ isPreview: e.target.checked })} className="h-3.5 w-3.5 accent-ochre" />
-            {t('preview')}
-          </label>
-        </div>
+        {/* Apèsi gratis — a real, readable switch row (owner: it was a 10px
+            mono checkbox with its explanation hidden in a tooltip). This is
+            a MARKETING decision — the course's free front door — so it gets
+            words, not a title attribute. The duration field moved to « Plis
+            detay »: it auto-fills from the upload, manual correction is the
+            rare case. */}
+        <label className="mt-2 flex cursor-pointer items-start gap-2.5 rounded-lg border border-ink/10 bg-paper p-2.5 transition-colors hover:border-ochre/40">
+          <input
+            type="checkbox"
+            checked={lesson.isPreview}
+            onChange={(e) => commit({ isPreview: e.target.checked })}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-ochre"
+          />
+          <span className="min-w-0">
+            <span className="flex items-center gap-1.5 text-[13px] font-semibold text-ink">
+              <IconEye size={14} className="text-ochre" aria-hidden /> {t('preview')}
+            </span>
+            <span className="block text-[11px] leading-snug text-graphite/60">{t('hints.preview')}</span>
+          </span>
+        </label>
         {noVideo && !isDraft && (
           <p className="mt-1.5 flex items-center gap-1 font-mono text-[10px] text-stampred"><IconAlertTriangle size={11} /> {t('noVideoWarn')}</p>
         )}
@@ -214,21 +220,6 @@ export function LessonEditPanel({
         hint={t('hints.lessonTitle')}
         example={t('examples.lessonTitle')}
         filled={mono ? hasText(mono === 'ht' ? titleHt : titleFr) : hasText(titleHt) && hasText(titleFr)}
-        extra={
-          <label className="flex items-center gap-1.5 font-mono text-[10px] text-ink/55">
-            {t('moveTo')}
-            <select
-              value={lesson.chapterId ?? ''}
-              onChange={(e) => onAct(() => actions.moveLessonToChapter(slug, lesson.id, e.target.value || null))}
-              className={cn(inputCls, 'w-auto cursor-pointer py-1 font-mono text-[11px]')}
-            >
-              <option value="">{t('ungrouped')}</option>
-              {chapters.map((c) => (
-                <option key={c.id} value={c.id}>{c.title_ht || c.title_fr || `#${c.sortOrder}`}</option>
-              ))}
-            </select>
-          </label>
-        }
       >
         {mono ? (
           mono === 'ht' ? (
@@ -257,6 +248,34 @@ export function LessonEditPanel({
           )}
         </summary>
         <div className="space-y-2 px-2.5 pb-2.5">
+          {/* Housekeeping controls, out of the main path (owner: « Deplase
+              vè… San chapit » sat in the TITLE header, even on courses with
+              zero chapters): chapter assignment only exists once chapters
+              do; the mm:ss duration is the manual fallback behind the
+              auto-filled upload value. */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            {chapters.length > 0 && (
+              <label className="flex items-center gap-1.5 font-mono text-[10px] text-ink/55">
+                {t('moveTo')}
+                <select
+                  value={lesson.chapterId ?? ''}
+                  onChange={(e) => onAct(() => actions.moveLessonToChapter(slug, lesson.id, e.target.value || null))}
+                  className={cn(inputCls, 'w-auto cursor-pointer py-1 font-mono text-[11px]')}
+                >
+                  <option value="">{t('ungrouped')}</option>
+                  {chapters.map((c) => (
+                    <option key={c.id} value={c.id}>{c.title_ht || c.title_fr || `#${c.sortOrder}`}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <label className="flex items-center gap-1.5 font-mono text-[10px] text-ink/55" title={t('hints.duration')}>
+              <IconClock size={12} className="text-ink/40" aria-hidden />
+              {t('duration')}
+              <input value={dur} onChange={(e) => setDur(e.target.value)} onBlur={() => commit({ durationSeconds: mmssToSec(dur) })} placeholder="mm:ss" aria-label={t('duration')} className={cn(inputCls, 'w-16 text-center')} />
+            </label>
+          </div>
+
           <EditPanelSection
             title={sectionTitle(t('sectionDescription'))}
             icon={IconFileDescription}
@@ -378,37 +397,10 @@ export function LessonEditPanel({
         </div>
       </EditPanelSection>
 
-      <div className="flex justify-end">
-        {!confirmDelete ? (
-          <button
-            type="button"
-            onClick={() => setConfirmDelete(true)}
-            className={cn('inline-flex items-center gap-1 font-mono text-[10px] text-stampred hover:underline', focusRing)}
-          >
-            <IconTrash size={12} /> {t('deleteLesson')}
-          </button>
-        ) : (
-          <div className="rounded-lg border border-stampred/30 bg-stampred/5 p-2.5 text-right">
-            <p className="text-left text-xs leading-snug text-graphite/80">{t('deleteLessonConfirm')}</p>
-            <div className="mt-2 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => onAct(() => actions.deleteLesson(slug, lesson.id))}
-                className={cn('rounded bg-stampred px-2.5 py-1 font-mono text-[10px] font-semibold text-paper-light', focusRing)}
-              >
-                {t('deleteLessonYes')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(false)}
-                className={cn('rounded border border-ink/15 px-2.5 py-1 font-mono text-[10px] text-ink/60 hover:bg-ink/[0.04]', focusRing)}
-              >
-                {t('deleteLessonNo')}
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+      {/* Delete moved to the LESSON ROW itself (owner: « option supprimer
+          leçon inexistante et pas évidente » — it was a 10px link at the
+          bottom of the EXPANDED panel, invisible unless you already knew).
+          The row's trash icon + inline confirm is now the one delete path. */}
     </div>
   );
 }

@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { IconChevronUp, IconChevronDown, IconChevronRight, IconVideo, IconPaperclip, IconAlertTriangle } from '@tabler/icons-react';
+import { IconChevronUp, IconChevronDown, IconChevronRight, IconVideo, IconPaperclip, IconAlertTriangle, IconTrash } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
 import type { AdminLesson, AdminChapter } from '@/lib/courses/write';
 import { jumpToAnchor } from '@/components/teacher/studio/jump';
@@ -61,6 +62,7 @@ export function LessonRow({
 }) {
   const t = useTranslations('admin.cms.lessons');
   const locale = useLocale();
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const expanded = expandedId === lesson.id;
   const noVideo = !lesson.bunnyVideoId;
   const docsCount = lesson.resources.length;
@@ -144,6 +146,19 @@ export function LessonRow({
         <span className="flex shrink-0 items-center gap-0.5">
           <button type="button" onClick={() => onAct(() => actions.moveLesson(slug, lesson.id, 'up'))} disabled={index === 0} className={iconBtn} aria-label={t('moveUp')} title={t('moveUp')}><IconChevronUp size={12} /></button>
           <button type="button" onClick={() => onAct(() => actions.moveLesson(slug, lesson.id, 'down'))} disabled={index === total - 1} className={iconBtn} aria-label={t('moveDown')} title={t('moveDown')}><IconChevronDown size={12} /></button>
+          {/* Delete ON THE ROW (owner: « option supprimer leçon inexistante
+              et pas évidente » — it used to be a 10px link at the bottom of
+              the expanded panel). Trash → inline confirm strip below. */}
+          <button
+            type="button"
+            onClick={() => setConfirmDelete((v) => !v)}
+            aria-expanded={confirmDelete}
+            aria-label={t('deleteLesson')}
+            title={t('deleteLesson')}
+            className={cn('grid h-8 w-8 shrink-0 place-items-center rounded border border-stampred/25 text-stampred/70 hover:bg-stampred/10 hover:text-stampred', focusRing)}
+          >
+            <IconTrash size={14} />
+          </button>
           {/* Bigger, unmissable expand affordance (Stage 1). */}
           <button
             type="button"
@@ -157,6 +172,32 @@ export function LessonRow({
           </button>
         </span>
       </div>
+
+      {/* The delete confirm strip — right under the row it deletes, with the
+          lesson's name in the question, same pattern as ChapterGroup's. */}
+      {confirmDelete && (
+        <div className="border-t border-stampred/20 bg-stampred/5 p-2.5">
+          <p className="flex items-start gap-1.5 text-xs leading-snug text-graphite/80">
+            <IconAlertTriangle size={14} className="mt-0.5 shrink-0 text-stampred" /> {t('deleteLessonConfirm')}
+          </p>
+          <div className="mt-2 flex gap-2">
+            <button
+              type="button"
+              onClick={() => onAct(() => actions.deleteLesson(slug, lesson.id))}
+              className={cn('rounded bg-stampred px-2.5 py-1 font-mono text-[10px] font-semibold text-paper-light', focusRing)}
+            >
+              {t('deleteLessonYes')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(false)}
+              className={cn('rounded border border-ink/15 px-2.5 py-1 font-mono text-[10px] text-ink/60 hover:bg-ink/[0.04]', focusRing)}
+            >
+              {t('deleteLessonNo')}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Stage 5 — the collapsed-row upload strip: while this lesson's video
           upload is in flight (or stopped on an error awaiting "Eseye ankò"),

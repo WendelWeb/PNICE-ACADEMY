@@ -498,12 +498,12 @@ export function VideoUpload({
               <IconCheck size={14} />
             </span>
             {t('uploadReady')}
+            {/* File name only — never the raw Bunny guid (owner: « ID videyo:
+                9b6bab82… » means nothing to a teacher and reads as debug
+                noise; the technical ID still lives in the Avanse
+                disclosure below for the rare manual case). */}
             {view.fileName ? (
               <span className="min-w-0 truncate text-ink/60">— {view.fileName}</span>
-            ) : initialVideoId ? (
-              <span className="truncate text-ink/45">
-                — {t('uploadExistingId')}: {initialVideoId.slice(0, 8)}…
-              </span>
             ) : null}
           </span>
           <button
