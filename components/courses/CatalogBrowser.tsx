@@ -84,7 +84,7 @@ export function CatalogBrowser({
   teacherChips?: Record<string, TeacherChip>;
   /** Server-resolved slug → face-photo URL (courseMainImage is fs-bound,
    *  so the server page passes resolved URLs down). */
-  imageBySlug?: Record<string, string>;
+  imageBySlug?: Record<string, string[]>;
 }) {
   const t = useTranslations('catalog');
   const locale = useLocale();
@@ -350,7 +350,7 @@ export function CatalogBrowser({
         <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((c, i) => (
             <Reveal key={c.code} delay={(i % 3) * 60}>
-              <CourseCatalogCard course={c} teacher={chipFor(c.slug)} imageSrc={imageBySlug?.[c.slug]} />
+              <CourseCatalogCard course={c} teacher={chipFor(c.slug)} imageSrcs={imageBySlug?.[c.slug]} />
             </Reveal>
           ))}
         </div>

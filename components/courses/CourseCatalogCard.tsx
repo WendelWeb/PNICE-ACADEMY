@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { IconCheck, IconShoppingCartPlus } from '@tabler/icons-react';
 import { Link } from '@/i18n/routing';
@@ -39,21 +40,21 @@ export function CourseCatalogCard({
   course,
   rating,
   teacher: teacherProp,
-  imageSrc,
+  imageSrcs,
 }: {
   course: Course;
   rating?: RatingSummary | null;
   teacher?: { name: string; slug: string } | null;
   /**
-   * The course's face photo, RESOLVED SERVER-SIDE (lib/courseImage.ts's
-   * `courseMainImage` reads the filesystem, so this client card can't call
-   * it). When present, the card opens on the photo — on mobile it's the
-   * thumbnail that stops the thumb — with the course seal stamped across
-   * its bottom edge and the category chip floated over the image. Omitted ⇒
-   * the pre-image text-first card, byte-identical, so untouched call sites
-   * keep working.
+   * The course's photos, RESOLVED SERVER-SIDE (lib/courseImage.ts reads the
+   * filesystem, so this client card can't call it). When present, the card
+   * opens on the first photo — on mobile it's the thumbnail that stops the
+   * thumb — with the course seal stamped across its bottom edge and the
+   * category chip floated over the image. Two or more photos rotate as a
+   * slow, staggered crossfade (see `CardPhoto`). Omitted ⇒ the pre-image
+   * text-first card, byte-identical, so untouched call sites keep working.
    */
-  imageSrc?: string | null;
+  imageSrcs?: string[] | null;
 }) {
   const locale = useLocale();
   const t = useTranslations('catalog');
@@ -76,7 +77,7 @@ export function CourseCatalogCard({
         href={`/formations/${course.slug}`}
         className="flex flex-1 flex-col rounded-t-xl outline-none focus-visible:ring-2 focus-visible:ring-ochre focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
       >
-        {imageSrc ? (
+        {imageSrcs && imageSrcs.length > 0 ? (
           /* PHOTO HEADER — the image is the hook; the brand rides it rather
              than competing: category chip floated top-right on a blurred
              paper backdrop (readable over any photo), and the course seal
@@ -87,13 +88,7 @@ export function CourseCatalogCard({
              data-priced connections. */
           <div className="relative">
             <div className="relative aspect-[16/9] overflow-hidden rounded-t-xl bg-paper">
-              <SmartImage
-                src={imageSrc}
-                alt={courseTitle(course, locale)}
-                fill
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px"
-                className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
-              />
+              <CardPhoto srcs={imageSrcs} alt={courseTitle(course, locale)} />
               <span
                 className={cn(
                   'absolute right-3 top-3 rounded-full px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide backdrop-blur-sm',
@@ -117,8 +112,8 @@ export function CourseCatalogCard({
           </div>
         ) : null}
 
-        <div className={cn('flex flex-1 flex-col p-5', imageSrc && 'pt-7')}>
-        {!imageSrc && (
+        <div className={cn('flex flex-1 flex-col p-5', imageSrcs && imageSrcs.length > 0 && 'pt-7')}>
+        {!(imageSrcs && imageSrcs.length > 0) && (
           <div className="flex items-start justify-between gap-3">
             <Sceau
               size="xs"
@@ -207,6 +202,59 @@ export function CourseCatalogCard({
           add-to-cart feel like it worked. */}
       <CardActions course={course} title={courseTitle(course, locale)} />
     </div>
+  );
+}
+
+/** Slow, staggered crossfade between a course's photos.
+ *
+ * Ambient motion with three deliberate restraints, because the audience
+ *  pays for its data and its attention:
+ *   1. Cards are DESYNCHRONISED — each starts at a random point in the
+ *      cycle, so the grid never blinks in unison like a slot machine.
+ *   2. The extra photos only MOUNT after the first cycle fires: a visitor
+ *      who bounces in five seconds never downloads images they never saw.
+ *   3. `prefers-reduced-motion` freezes the first photo, full stop.
+ * The first photo always server-renders — the crossfade is enhancement,
+ * never the delivery mechanism. */
+function CardPhoto({ srcs, alt }: { srcs: string[]; alt: string }) {
+  const [idx, setIdx] = useState(0);
+  const [started, setStarted] = useState(false);
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (srcs.length < 2) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    // Random initial delay (4–9s) desynchronises the grid; then a steady 6s.
+    const kickoff = setTimeout(() => {
+      setStarted(true);
+      setIdx((i) => (i + 1) % srcs.length);
+      timer.current = setInterval(() => setIdx((i) => (i + 1) % srcs.length), 6000);
+    }, 4000 + Math.random() * 5000);
+    return () => {
+      clearTimeout(kickoff);
+      if (timer.current) clearInterval(timer.current);
+    };
+  }, [srcs.length]);
+
+  const visible = started ? srcs : srcs.slice(0, 1);
+  return (
+    <>
+      {visible.map((src, i) => (
+        <SmartImage
+          key={src}
+          src={src}
+          alt={i === 0 ? alt : ''}
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px"
+          className={cn(
+            'object-cover transition-opacity duration-1000 ease-in-out',
+            i === idx % visible.length ? 'opacity-100' : 'opacity-0',
+            // The hover zoom rides along on whichever photo is showing.
+            'transition-[opacity,transform] duration-1000 group-hover:scale-[1.04]',
+          )}
+        />
+      ))}
+    </>
   );
 }
 

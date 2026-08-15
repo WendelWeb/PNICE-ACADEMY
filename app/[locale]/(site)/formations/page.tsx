@@ -4,7 +4,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Section, Container, Eyebrow } from '@/components/ui/Section';
 import { Sceau } from '@/components/ui/Sceau';
 import { CatalogBrowser } from '@/components/courses/CatalogBrowser';
-import { courseMainImage } from '@/lib/courseImage';
+import { courseImageList } from '@/lib/courseImage';
 import { CourseCatalogCard } from '@/components/courses/CourseCatalogCard';
 import { getPublishedCourses } from '@/lib/courses/source';
 import { getCourseTeacherChips } from '@/lib/home/source';
@@ -60,7 +60,7 @@ export default async function FormationsPage({
   // Course face photos, resolved HERE because lib/courseImage.ts reads the
   // filesystem (server-only) and the cards are client components.
   const imageBySlug = Object.fromEntries(
-    courses.map((c) => [c.slug, courseMainImage(c.images, c.code)]),
+    courses.map((c) => [c.slug, courseImageList(c.images, c.code)]),
   );
 
   return (

@@ -13,7 +13,7 @@ import { Price, PriceSecondary } from '@/components/ui/Price';
 import { AuthCta } from '@/components/auth/AuthCta';
 import { CourseCatalogCard } from '@/components/courses/CourseCatalogCard';
 import { SUBSCRIPTION_USD, teacherPassPerks } from '@/data/pricing';
-import { absoluteImageUrl, siteImageSrc, courseMainImage } from '@/lib/courseImage';
+import { absoluteImageUrl, siteImageSrc, courseImageList } from '@/lib/courseImage';
 import { SITE_URL } from '@/lib/email/layout';
 import { getPublicTeacher } from '@/lib/teacher/public';
 
@@ -244,7 +244,7 @@ export default async function ProfPage({
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {courses.map((course, i) => (
               <Reveal key={course.code} delay={(i % 3) * 70} className="h-full">
-                <CourseCatalogCard course={course} imageSrc={courseMainImage(course.images, course.code)} />
+                <CourseCatalogCard course={course} imageSrcs={courseImageList(course.images, course.code)} />
               </Reveal>
             ))}
           </div>
