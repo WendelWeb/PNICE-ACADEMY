@@ -99,7 +99,7 @@
       },
       "showcase": {
         "live": "En vente maintenant",
-        "by": "par {name}",
+        "by": "Prof. {name}",
         "more": "+{count} autres formations"
       }
     },
