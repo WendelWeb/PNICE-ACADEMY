@@ -17,8 +17,41 @@
  * `subscriptions.kind` the same way) — this is that pattern's payments-table
  * twin, shared so every call site doesn't reinvent its own column list.
  */
+import { integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { payments } from './schema';
 import { isMissingColumnError } from './index';
+
+/**
+ * WRITE-side twin of the compat idiom: the `payments` table AS THE LIVE DB
+ * KNOWS IT before migration 0019 — i.e. WITHOUT `amount_htg`.
+ *
+ * WHY A WHOLE SECOND TABLE DEFINITION: drizzle names EVERY schema column in
+ * every INSERT it builds, supplying `default` for keys you omit — verified
+ * empirically against this repo's drizzle (`.toSQL()` on an insert with the
+ * key removed still reads `..., "amount_htg") values (..., default)`). So
+ * the old "retry the insert without the amountHtg KEY" fallback in
+ * lib/payments/moncash-fulfill.ts never worked: the retry emitted the same
+ * unknown column and failed identically — on the LIVE money path, after the
+ * buyer's gourdes had already moved. Omitting a column from the SQL requires
+ * a table object that does not know the column exists. This is that object.
+ *
+ * MUST list exactly the columns migration 0018-era production has. It maps
+ * to the same physical table ('payments'), so it must never be used for
+ * anything but the missing-column retry.
+ */
+export const paymentsPre0019 = pgTable('payments', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull(),
+  provider: text('provider').$type<'stripe' | 'paypal' | 'moncash' | 'natcash' | 'crypto'>().notNull(),
+  providerRef: text('provider_ref'),
+  amountCents: integer('amount_cents').notNull(),
+  currency: text('currency').notNull(),
+  status: text('status').notNull(),
+  productType: text('product_type').$type<'course' | 'subscription'>().notNull(),
+  courseSlug: text('course_slug'),
+  relatedSubscriptionId: uuid('related_subscription_id'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
 
 /** Every `payments` column except the possibly-missing `amount_htg`. */
 export const PAYMENTS_COLUMNS_PRE_0019 = {

@@ -41,6 +41,7 @@
  * the "(~X HTG)" line of the receipt.
  */
 import { db, isMissingColumnError } from '@/db';
+import { paymentsPre0019 } from '@/db/payments-compat';
 import { payments, users } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { ensureCourseEnrollment } from './fulfill';
@@ -88,8 +89,19 @@ async function insertMoncashPayment(values: NewMoncashPaymentRow): Promise<{ id:
     console.warn(
       '[moncash/fulfill] payments insert fell back to pre-migration columns (no amount_htg) — run `npm run db:push`.',
     );
+    // THE RETRY MUST GO THROUGH THE PRE-0019 TWIN TABLE, not through
+    // `payments` with the key dropped: drizzle names every schema column in
+    // the INSERT it builds (`…, "amount_htg") values (…, default)`) whether
+    // or not the key is present, so the old key-dropping retry re-emitted
+    // the very column the live DB lacks and failed identically — after the
+    // buyer's money had already moved. See db/payments-compat.ts's
+    // `paymentsPre0019` header for the empirical proof.
     const { amountHtg: _amountHtg, ...rest } = values;
-    return await db.insert(payments).values(rest).onConflictDoNothing().returning({ id: payments.id });
+    return await db
+      .insert(paymentsPre0019)
+      .values(rest)
+      .onConflictDoNothing()
+      .returning({ id: paymentsPre0019.id });
   }
 }
 
