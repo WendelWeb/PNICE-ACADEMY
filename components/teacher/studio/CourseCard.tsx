@@ -7,7 +7,8 @@ import { IconLoader2, IconPencil, IconSend, IconWorldOff, IconAlertTriangle } fr
 import { cn } from '@/lib/cn';
 import { buttonClasses } from '@/components/ui/Button';
 import { Link } from '@/i18n/routing';
-import { fmtUsdCents, fmtDate } from '@/lib/admin/format';
+import { fmtDate } from '@/lib/admin/format';
+import { formatUsdCentsExact } from '@/lib/money';
 import { submitMyCourseForReviewAction, unpublishMyCourseAction } from '@/lib/teacher/studio-actions';
 import type { MyCourseRow } from '@/lib/teacher/studio';
 
@@ -66,7 +67,7 @@ export function CourseCard({ course, locale }: { course: MyCourseRow; locale: st
       <dl className="mt-3 grid grid-cols-3 gap-2 font-mono text-[11px] text-ink/60">
         <div>
           <dt className="text-ink/40">{t('col.price')}</dt>
-          <dd className="tabular-nums text-ink">{fmtUsdCents(course.priceCents)}</dd>
+          <dd className="tabular-nums text-ink">{formatUsdCentsExact(course.priceCents)}</dd>
         </div>
         <div>
           <dt className="text-ink/40">{t('col.sales')}</dt>
@@ -74,7 +75,7 @@ export function CourseCard({ course, locale }: { course: MyCourseRow; locale: st
         </div>
         <div>
           <dt className="text-ink/40">{t('col.revenue')}</dt>
-          <dd className="tabular-nums text-ink">{fmtUsdCents(course.revenueCents)}</dd>
+          <dd className="tabular-nums text-ink">{formatUsdCentsExact(course.revenueCents)}</dd>
         </div>
       </dl>
 

@@ -92,23 +92,19 @@
         "placeholder": "Ki konesans w vle metrize?",
         "cta": "Chèche"
       },
-      "manifest": {
-        "docTitle": "Manifès · PNICE Academy",
-        "docNo": "Nº PA-2026",
-        "colCode": "Kòd",
-        "colItem": "Deziyasyon",
-        "colPrice": "Pri",
-        "more": "+{count} lòt fòmasyon",
-        "sealBottom": "Ofisyèl"
-      },
       "trust": {
         "secure": "Peye ak {providers}",
         "certificate": "Sètifika enkli",
         "languages": "Kreyòl + Franse"
+      },
+      "showcase": {
+        "live": "An vant kounye a",
+        "by": "pa {name}",
+        "more": "+{count} lòt fòmasyon"
       }
     },
     "stats": {
-      "label": "Rejis la",
+      "label": "An chif",
       "courses": "{count, plural, one {1 fòmasyon} other {# fòmasyon}}",
       "teachers": "{count, plural, one {1 anseyan} other {# anseyan}}",
       "students": "{count, plural, one {1 elèv} other {# elèv}}",
@@ -126,9 +122,9 @@
       "recruitCta": "Vin anseyan"
     },
     "manifest": {
-      "eyebrow": "Manifès la",
+      "eyebrow": "Katalòg la",
       "title": "{count} fòmasyon, chak se yon konpetans ou ka vann",
-      "subtitle": "Chak liy se yon konpetans ki anbake sou non ou. Pran yo youn pa youn, oswa louvri tout yon katalòg ak yon pass."
+      "subtitle": "Chak fòmasyon se yon konpetans reyèl, ak yon pwofesè reyèl dèyè l. Pran yo youn pa youn, oswa louvri tout yon katalòg ak yon pass."
     },
     "pricing": {
       "eyebrow": "Pri yo",
@@ -171,18 +167,6 @@
       "interestCta": "Vin Anseyan",
       "sealTop": "Anseyan",
       "sealBottom": "Louvri"
-    },
-    "founder": {
-      "eyebrow": "Moun ki dèyè platfòm nan",
-      "title": "Kreyatè platfòm nan — e anseyan #1 li",
-      "body": "PNICE te kòmanse kòm yon biznis senp: pote pakè ant Miami ak Ayiti. Chak jou, menm baryè a te repete — moun ki gen talan, men san aksè pou vann konesans yo. Academy a se repons nou: yon mache kote anseyan ayisyen vann konesans pratik yo an kreyòl. Fondatè a bati platfòm nan — epi li anseye sou li tou, kòm anseyan #1, ak menm règ tout lòt anseyan yo: menm revizyon, menm pataj 70/30, menm paj piblik.",
-      "points": [
-        "Konesans ki soti nan vrè biznis, pa nan teyori",
-        "Egzanp konkrè ki fèt pou mache Ayisyen an",
-        "Tout bagay disponib an kreyòl ak an franse"
-      ],
-      "imgCaption": "PNICE Shipping · Miami ⇄ Ayiti",
-      "profileLink": "Wè pwofil anseyan li a"
     },
     "testimonials": {
       "eyebrow": "Sa moun ap di",
@@ -233,7 +217,7 @@
     "finalCta": {
       "title": "Chak jou san konpetans se yon jou san lajan anplis",
       "subtitle": "Ou pa bezwen tann pou w kòmanse. Chwazi yon fòmasyon, oswa pran yon pass ki louvri tout yon katalòg — an kreyòl, sou telefòn ou, nan pwòp rit ou.",
-      "cta": "Kòmanse vwayaj ou"
+      "cta": "Kòmanse jodi a"
     }
   },
   "catalog": {
@@ -347,7 +331,7 @@
       "title": "Sou anseyan an"
     },
     "courses": {
-      "eyebrow": "Manifès · {count, plural, one {1 fòmasyon} other {# fòmasyon}}",
+      "eyebrow": "Katalòg · {count, plural, one {1 fòmasyon} other {# fòmasyon}}",
       "title": "Fòmasyon li yo"
     },
     "sub": {
@@ -358,7 +342,7 @@
     },
     "cta": {
       "title": "Pare pou w kòmanse?",
-      "body": "Chwazi yon fòmasyon nan manifès la, oswa louvri tout fòmasyon li yo ak abonman an.",
+      "body": "Chwazi yon fòmasyon nan katalòg li a, oswa louvri tout fòmasyon li yo ak abonman an.",
       "primary": "Kòmanse aprann",
       "secondary": "Gade tout katalòg la",
       "teachLink": "Ou metrize yon konesans tou? Vin anseyan"

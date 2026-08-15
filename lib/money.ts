@@ -49,6 +49,21 @@ export function formatUsd(usd: number): string {
   return `${usd}$`;
 }
 
+/**
+ * "1,40 $" — EXACT dollars from cents, always two decimals, comma as the
+ * decimal separator (the convention of both site languages).
+ *
+ * Exists because money OWED TO A PERSON was displayed through a rounding
+ * formatter: a teacher whose ledger held 140 net cents saw "Balans ou $1" —
+ * their real balance silently shaved. Catalogue prices may round for
+ * display; a balance, a ledger line or a withdrawal never may.
+ */
+export function formatUsdCentsExact(cents: number): string {
+  return (
+    (cents / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $'
+  );
+}
+
 export function formatHtg(htg: number): string {
   return `${htg.toLocaleString('fr-FR')} HTG`;
 }

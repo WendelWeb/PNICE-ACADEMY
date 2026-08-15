@@ -6,7 +6,8 @@ import { useTranslations } from 'next-intl';
 import { IconLoader2, IconSend, IconAlertTriangle, IconCheck } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
 import { buttonClasses } from '@/components/ui/Button';
-import { fmtUsdCents, fmtDate, fmtPeriodLabel } from '@/lib/admin/format';
+import { fmtDate, fmtPeriodLabel } from '@/lib/admin/format';
+import { formatUsdCentsExact, formatHtg, toHtgAt } from '@/lib/money';
 import { requestWithdrawalAction } from '@/lib/teacher/studio-actions';
 import type { LedgerRow, WithdrawalRow } from '@/lib/teacher/profile';
 
@@ -44,6 +45,7 @@ export function WithdrawalPanel({
   thresholdCents,
   pendingWithdrawalCents,
   videoQuotaMinutes,
+  fxRateHtg,
   ledger,
   withdrawals,
   locale,
@@ -52,6 +54,9 @@ export function WithdrawalPanel({
   thresholdCents: number;
   pendingWithdrawalCents: number | null;
   videoQuotaMinutes: number | null;
+  /** Live USD→HTG rate (lib/fx.ts) — payouts leave in gourdes via MonCash,
+   *  so every money figure here shows its HTG equivalent alongside. */
+  fxRateHtg: number;
   ledger: LedgerRow[];
   /** Every withdrawal request this teacher has made, newest first (Task
    *  Stage 7 — money visibility: a rejected payout, and the admin's note
@@ -91,8 +96,9 @@ export function WithdrawalPanel({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="font-mono text-[11px] uppercase tracking-wide text-ink/50">{t('balance.title')}</p>
-          <p className="mt-1 font-display text-3xl font-black text-ink">{fmtUsdCents(balanceCents)}</p>
-          <p className="mt-1 font-mono text-[11px] text-ink/45">{t('balance.threshold', { amount: fmtUsdCents(thresholdCents) })}</p>
+          <p className="mt-1 font-display text-3xl font-black text-ink tabular-nums">{formatUsdCentsExact(balanceCents)}</p>
+          <p className="font-mono text-[12px] text-teal">≈ {formatHtg(toHtgAt(balanceCents / 100, fxRateHtg))}</p>
+          <p className="mt-1 font-mono text-[11px] text-ink/45">{t('balance.threshold', { amount: `${formatUsdCentsExact(thresholdCents)} (≈ ${formatHtg(toHtgAt(thresholdCents / 100, fxRateHtg))})` })}</p>
           {videoQuotaMinutes != null && (
             <p className="mt-1 font-mono text-[11px] text-ink/45">{t('balance.quota', { minutes: videoQuotaMinutes })}</p>
           )}
@@ -106,7 +112,7 @@ export function WithdrawalPanel({
         <div className="text-right">
           {hasPending ? (
             <p className="font-mono text-[11px] text-ochre">
-              {t('balance.pendingNote', { amount: fmtUsdCents(pendingWithdrawalCents!) })}
+              {t('balance.pendingNote', { amount: formatUsdCentsExact(pendingWithdrawalCents!) })}
             </p>
           ) : !open ? (
             <button
@@ -168,7 +174,7 @@ export function WithdrawalPanel({
                 </span>
                 <span className={cn('tabular-nums', row.netCents < 0 ? 'text-stampred' : 'text-ink')}>
                   {row.netCents < 0 ? '-' : '+'}
-                  {fmtUsdCents(Math.abs(row.netCents))}
+                  {formatUsdCentsExact(Math.abs(row.netCents))}
                 </span>
               </li>
             ))}
@@ -187,7 +193,7 @@ export function WithdrawalPanel({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="font-mono text-[11px] text-ink/60">{fmtDate(w.createdAt, locale as 'ht' | 'fr')}</span>
                   <span className="flex items-center gap-2">
-                    <span className="font-mono text-[12px] font-medium tabular-nums text-ink">{fmtUsdCents(w.amountCents)}</span>
+                    <span className="font-mono text-[12px] font-medium tabular-nums text-ink">{formatUsdCentsExact(w.amountCents)}</span>
                     <span className={cn('rounded px-1.5 py-0.5 font-mono text-[9px] font-medium uppercase tracking-wide', WITHDRAWAL_STATUS_TONE[w.status])}>
                       {t(`balance.history.status.${w.status}`)}
                     </span>

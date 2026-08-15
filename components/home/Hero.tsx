@@ -2,21 +2,18 @@ import { getLocale, getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/routing';
 import { Container, Eyebrow } from '@/components/ui/Section';
 import { buttonClasses } from '@/components/ui/Button';
-import { ManifestCard } from '@/components/home/ManifestCard';
+import { HeroShowcase } from '@/components/home/HeroShowcase';
 import { HeroSearch } from '@/components/home/HeroSearch';
-import { RouteLine } from '@/components/layout/RouteLine';
-import { courseTitle } from '@/lib/courseFields';
 import { activeProviderLabels } from '@/lib/payments/providers';
 import type { Course } from '@/data/courses';
 
-/** Catalog entries shown on the manifest; the rest go in the « +N » footer row. */
-const MANIFEST_ROWS = 5;
-
 /**
- * The hero (Stage: the living manifest, rebuilt A-Z) — the marketplace's
- * thesis in huge kreyòl display type on the left, the stamped cargo-manifest
- * document (REAL catalog data — the page's one signature moment) on the
- * right, the teal route thread starting under it.
+ * The hero — the marketplace's thesis in huge kreyòl display type on the
+ * left; on the right, a stack of REAL course cards signed by their own
+ * teachers (HeroShowcase). It used to be a stamped cargo-manifest document —
+ * replaced on the owner's decision (août 2026): the site must read as a
+ * marketplace where anyone sells, and a sealed manifest read as one
+ * person's app.
  *
  * Every path out of here is honest: the primary CTA browses the catalogue
  * (/formations — never a bare pay screen), the secondary recruits teachers
@@ -26,18 +23,10 @@ const MANIFEST_ROWS = 5;
  * if no rail is live.
  */
 export async function Hero({ courses }: { courses: Course[] }) {
-  const [t, locale, payments] = await Promise.all([
+  const [t, payments] = await Promise.all([
     getTranslations('home.hero'),
-    getLocale(),
     activeProviderLabels(),
   ]);
-
-  const rows = courses.slice(0, MANIFEST_ROWS).map((c) => ({
-    code: c.code,
-    title: courseTitle(c, locale),
-    priceUsd: c.priceUsd,
-  }));
-  const moreCount = courses.length - rows.length;
 
   const trust = [
     // Only claim payment when a rail is actually live — brand labels straight
@@ -73,23 +62,8 @@ export async function Hero({ courses }: { courses: Course[] }) {
             </div>
           </div>
 
-          {/* the living manifest — the page's one signature moment */}
-          <div className="w-full lg:max-w-[30rem] lg:justify-self-end">
-            <ManifestCard
-              rows={rows}
-              labels={{
-                docTitle: t('manifest.docTitle'),
-                docNo: t('manifest.docNo'),
-                colCode: t('manifest.colCode'),
-                colItem: t('manifest.colItem'),
-                colPrice: t('manifest.colPrice'),
-                more: t('manifest.more', { count: moreCount }),
-                sealBottom: t('manifest.sealBottom'),
-              }}
-            />
-            {/* the route starts under the manifest */}
-            <RouteLine tone="teal" align="center" />
-          </div>
+          {/* the marketplace, live — the page's one signature moment */}
+          <HeroShowcase courses={courses} />
         </div>
       </Container>
 

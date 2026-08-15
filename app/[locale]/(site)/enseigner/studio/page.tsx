@@ -110,6 +110,7 @@ export default async function StudioPage({
             thresholdCents={summary.thresholdCents}
             pendingWithdrawalCents={summary.pendingWithdrawalCents}
             videoQuotaMinutes={summary.videoQuotaMinutes}
+            fxRateHtg={fxRateHtg}
             ledger={summary.ledger}
             withdrawals={summary.withdrawals}
             locale={locale}

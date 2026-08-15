@@ -92,23 +92,19 @@
         "placeholder": "Quel savoir-faire veux-tu maîtriser ?",
         "cta": "Chercher"
       },
-      "manifest": {
-        "docTitle": "Manifeste · PNICE Academy",
-        "docNo": "Nº PA-2026",
-        "colCode": "Code",
-        "colItem": "Désignation",
-        "colPrice": "Prix",
-        "more": "+{count} autres formations",
-        "sealBottom": "Officiel"
-      },
       "trust": {
         "secure": "Paiement par {providers}",
         "certificate": "Certificat inclus",
         "languages": "Créole + Français"
+      },
+      "showcase": {
+        "live": "En vente maintenant",
+        "by": "par {name}",
+        "more": "+{count} autres formations"
       }
     },
     "stats": {
-      "label": "Le registre",
+      "label": "En chiffres",
       "courses": "{count, plural, one {1 formation} other {# formations}}",
       "teachers": "{count, plural, one {1 enseignant} other {# enseignants}}",
       "students": "{count, plural, one {1 apprenant} other {# apprenants}}",
@@ -126,9 +122,9 @@
       "recruitCta": "Devenir enseignant"
     },
     "manifest": {
-      "eyebrow": "Le manifeste",
+      "eyebrow": "Le catalogue",
       "title": "{count} formations, chacune une compétence que tu peux vendre",
-      "subtitle": "Chaque ligne est une compétence embarquée à ton nom. Prends-les une par une, ou débloque tout un catalogue avec un pass."
+      "subtitle": "Chaque formation est une compétence réelle, portée par un professeur réel. Prends-les une par une, ou débloque tout un catalogue avec un pass."
     },
     "pricing": {
       "eyebrow": "Les tarifs",
@@ -171,18 +167,6 @@
       "interestCta": "Devenir enseignant",
       "sealTop": "Formateur",
       "sealBottom": "Ouvert"
-    },
-    "founder": {
-      "eyebrow": "Celui derrière la plateforme",
-      "title": "Le créateur de la plateforme — et son enseignant nº1",
-      "body": "PNICE a commencé comme un business simple : transporter des colis entre Miami et Haïti. Chaque jour, la même barrière se répétait — des gens pleins de talent, mais sans accès pour vendre leur savoir. L'Academy est notre réponse : un marché où des enseignants haïtiens vendent leurs savoir-faire pratiques en créole. Le fondateur a bâti la plateforme — et il y enseigne aussi, comme enseignant nº1, avec les mêmes règles que tous les autres : même relecture, même partage 70/30, même page publique.",
-      "points": [
-        "Un savoir issu d'un vrai business, pas de la théorie",
-        "Des exemples concrets pensés pour le marché haïtien",
-        "Tout est disponible en créole et en français"
-      ],
-      "imgCaption": "PNICE Shipping · Miami ⇄ Ayiti",
-      "profileLink": "Voir son profil d'enseignant"
     },
     "testimonials": {
       "eyebrow": "Ce qu'ils en disent",
@@ -233,7 +217,7 @@
     "finalCta": {
       "title": "Chaque jour sans compétence est un jour sans revenu en plus",
       "subtitle": "Tu n'as pas besoin d'attendre pour commencer. Choisis une formation, ou prends un pass qui débloque tout un catalogue — en créole, depuis ton téléphone, à ton rythme.",
-      "cta": "Commencer ton voyage"
+      "cta": "Commencer aujourd’hui"
     }
   },
   "catalog": {
@@ -347,7 +331,7 @@
       "title": "À propos de l'enseignant"
     },
     "courses": {
-      "eyebrow": "Manifeste · {count, plural, one {1 formation} other {# formations}}",
+      "eyebrow": "Catalogue · {count, plural, one {1 formation} other {# formations}}",
       "title": "Ses formations"
     },
     "sub": {
@@ -358,7 +342,7 @@
     },
     "cta": {
       "title": "Prêt à commencer ?",
-      "body": "Choisis une formation dans le manifeste, ou débloque toutes ses formations avec l'abonnement.",
+      "body": "Choisis une formation dans son catalogue, ou débloque toutes ses formations avec l’abonnement.",
       "primary": "Commencer à apprendre",
       "secondary": "Voir tout le catalogue",
       "teachLink": "Tu maîtrises un savoir-faire toi aussi ? Deviens enseignant"
