@@ -2496,6 +2496,7 @@
       "readiness": {
         "title": "Préparation du cours",
         "complete": "Tout est prêt ✓",
+        "doneCount": "{count, plural, one {1 point réglé} other {# points réglés}}",
         "missingCount": "{count, plural, one {1 point à compléter} other {# points à compléter}}",
         "items": {
           "hasLesson": {
@@ -2507,23 +2508,23 @@
             "location": "Plan du cours"
           },
           "allLessonsTitled": {
-            "label": "Chaque leçon a un titre en Kreyòl ET en français",
+            "label": "Chaque leçon a un titre (2 langues)",
             "location": "Plan du cours"
           },
           "allChaptersTitled": {
-            "label": "Chaque chapitre a un titre en Kreyòl ET en français",
+            "label": "Chaque chapitre a un titre (2 langues)",
             "location": "Plan du cours"
           },
           "pricePositive": {
-            "label": "Prix défini : 1 $ US ou plus, ou bien Gratuit (un choix explicite)",
+            "label": "Prix défini (ou Gratuit)",
             "location": "Général & prix"
           },
           "promiseFilled": {
-            "label": "La promesse du cours est remplie dans les deux langues",
+            "label": "La promesse est remplie",
             "location": "Page de vente"
           },
           "hasPreviewLesson": {
-            "label": "Au moins une leçon en aperçu gratuit",
+            "label": "Une leçon en aperçu gratuit",
             "location": "Plan du cours"
           },
           "mainImageSet": {

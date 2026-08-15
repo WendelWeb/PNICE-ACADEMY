@@ -2496,6 +2496,7 @@
       "readiness": {
         "title": "Preparasyon kou a",
         "complete": "Tout bagay pare ✓",
+        "doneCount": "{count, plural, one {1 bagay regle} other {# bagay regle}}",
         "missingCount": "{count, plural, one {1 pwen pou konplete} other {# pwen pou konplete}}",
         "items": {
           "hasLesson": {
@@ -2507,23 +2508,23 @@
             "location": "Plan kou a"
           },
           "allLessonsTitled": {
-            "label": "Chak leson gen tit nan Kreyòl AK Fransè",
+            "label": "Chak leson gen tit (2 lang)",
             "location": "Plan kou a"
           },
           "allChaptersTitled": {
-            "label": "Chak chapit gen tit nan Kreyòl AK Fransè",
+            "label": "Chak chapit gen tit (2 lang)",
             "location": "Plan kou a"
           },
           "pricePositive": {
-            "label": "Pri a defini : swa 1 $ US oswa plis, swa Gratis (yon chwa klè)",
+            "label": "Pri a defini (oswa Gratis)",
             "location": "Jeneral & pri"
           },
           "promiseFilled": {
-            "label": "Pwomès kou a ranpli nan de lang yo",
+            "label": "Pwomès la ranpli",
             "location": "Paj vant"
           },
           "hasPreviewLesson": {
-            "label": "Omwen yon leson an apèsi gratis",
+            "label": "Yon leson apèsi gratis",
             "location": "Plan kou a"
           },
           "mainImageSet": {
