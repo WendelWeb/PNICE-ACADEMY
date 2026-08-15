@@ -194,11 +194,11 @@
       "items": [
         {
           "q": "Comment est-ce que je paie aujourd’hui ?",
-          "a": "Avec MonCash ou avec une carte Visa/Mastercard. MonCash est le moyen le plus simple depuis Haïti : tu confirmes sur ton téléphone et ton accès s’ouvre aussitôt. Chaque prix s’affiche en dollars avec le montant exact en gourdes."
+          "a": "Avec MonCash ou NatCash — les deux paiements mobiles d’Haïti. Tu confirmes sur ton téléphone et ton accès s’ouvre aussitôt, sans carte bancaire. Chaque prix s’affiche en dollars avec le montant exact en gourdes. La carte Visa/Mastercard arrive bientôt pour la diaspora."
         },
         {
-          "q": "Puis-je payer avec MonCash ?",
-          "a": "Oui, MonCash fonctionne dès maintenant. Tu le choisis sur la page de paiement, tu confirmes avec ton code secret sur ton téléphone, et la formation s’ouvre immédiatement — aucune carte nécessaire. NatCash n’est pas encore prêt ; il apparaîtra automatiquement sur la page de paiement dès qu’il le sera."
+          "q": "Puis-je payer avec MonCash ou NatCash ?",
+          "a": "Oui, les deux fonctionnent dès maintenant. Tu en choisis un sur la page de paiement, tu confirmes avec ton code secret sur ton téléphone, et la formation s’ouvre immédiatement. La carte Visa/Mastercard n’est pas encore prête — elle apparaîtra automatiquement sur la page de paiement dès qu’elle le sera, bientôt."
         },
         {
           "q": "Le prix est-il le même pour Haïti et la diaspora ?",
@@ -778,7 +778,7 @@
     "total": "Total",
     "pay": "Payer",
     "secure": "Ton paiement est sécurisé",
-    "secureNote": "Paiement sécurisé par Stripe. Ton accès s'active automatiquement après confirmation.",
+    "secureNote": "Ton paiement est sécurisé. Ton accès s’active automatiquement après confirmation.",
     "payErr": "Le paiement n'a pas pu démarrer. Réessaie dans un instant.",
     "payPending": "On voit un paiement tout juste effectué pour ceci — on le confirme. Patiente quelques secondes puis vérifie ton tableau de bord.",
     "redirect": "Redirection vers le paiement sécurisé…",
@@ -828,7 +828,12 @@
     "walletSubscription": "{wallet} ne peut pas faire de paiement récurrent. Pour un abonnement, utilise une carte.",
     "walletPromo": "Les codes promo ne fonctionnent pas encore avec {wallet} — utilise une carte.",
     "walletAmountTooLarge": "Ce montant dépasse la limite {wallet} (75 000 HTG). Pour cet achat, paie avec une carte.",
-    "natcashExactNote": "Montant exact prélevé par NatCash sur votre compte."
+    "natcashExactNote": "Montant exact prélevé par NatCash sur votre compte.",
+    "subSoon": {
+      "title": "Les abonnements arrivent bientôt",
+      "body": "Pour l’instant, tu peux acheter chaque formation à l’unité — un seul paiement MonCash ou NatCash, et l’accès est à vie. Les abonnements (Pass) seront disponibles avec l’arrivée du paiement par carte Visa/Mastercard, bientôt.",
+      "cta": "Voir les formations"
+    }
   },
   "merci": {
     "title": "Merci ! Paiement reçu",
@@ -3493,11 +3498,11 @@
       },
       "kat": {
         "q": "Comment est-ce que je paie aujourd’hui ?",
-        "a": "Avec MonCash ou avec une carte Visa/Mastercard. MonCash est le moyen le plus simple depuis Haïti : tu confirmes sur ton téléphone et ton accès s’ouvre aussitôt. Chaque prix s’affiche en dollars avec le montant exact en gourdes."
+        "a": "Avec MonCash ou NatCash — les deux paiements mobiles d’Haïti. Tu confirmes sur ton téléphone et ton accès s’ouvre aussitôt, sans carte bancaire. Chaque prix s’affiche en dollars avec le montant exact en gourdes. La carte Visa/Mastercard arrive bientôt pour la diaspora."
       },
       "moncash": {
-        "q": "Puis-je payer avec MonCash ?",
-        "a": "Oui, MonCash fonctionne dès maintenant. Tu le choisis sur la page de paiement, tu confirmes avec ton code secret sur ton téléphone, et la formation s’ouvre immédiatement — aucune carte nécessaire. NatCash n’est pas encore prêt ; il apparaîtra automatiquement sur la page de paiement dès qu’il le sera."
+        "q": "Puis-je payer avec MonCash ou NatCash ?",
+        "a": "Oui, les deux fonctionnent dès maintenant. Tu en choisis un sur la page de paiement, tu confirmes avec ton code secret sur ton téléphone, et la formation s’ouvre immédiatement. La carte Visa/Mastercard n’est pas encore prête — elle apparaîtra automatiquement sur la page de paiement dès qu’elle le sera, bientôt."
       },
       "sel-pri": {
         "q": "Le prix est-il le même pour Haïti et la diaspora ?",

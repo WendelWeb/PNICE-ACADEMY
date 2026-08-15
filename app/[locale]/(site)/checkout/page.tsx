@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { auth } from '@clerk/nextjs/server';
-import { IconLock, IconShieldCheck, IconCircleCheck } from '@tabler/icons-react';
+import { IconLock, IconShieldCheck, IconCircleCheck, IconClock } from '@tabler/icons-react';
 import { Section, Container } from '@/components/ui/Section';
 import { Sceau } from '@/components/ui/Sceau';
 import { SmartImage } from '@/components/ui/SmartImage';
@@ -247,6 +247,30 @@ export default async function CheckoutPage({
                     className={buttonClasses('primary', 'lg', 'mt-6 w-full')}
                   >
                     {t('owned.cta')}
+                  </Link>
+                </div>
+              ) : isSub && !live.includes('card') ? (
+                // SUBSCRIPTIONS NEED A CARD, AND CARD IS NOT LIVE YET (owner's
+                // wallets-first launch, août 2026). The wallets cannot renew
+                // anything, so offering them here would only collect a tap and
+                // answer "refused" — instead the page says the honest thing:
+                // passes arrive with card payment, and courses can be bought
+                // à l'unité with MonCash/NatCash today. This block deletes
+                // itself: the moment a LIVE Stripe key lands, `cardSellable()`
+                // puts 'card' back in `live` and the selector returns.
+                <div className="rounded-2xl border border-ochre/40 bg-paper p-7">
+                  <p className="flex items-center gap-2 font-display text-xl font-bold text-ink">
+                    <IconClock size={24} className="shrink-0 text-ochre" />
+                    {t('subSoon.title')}
+                  </p>
+                  <p className="mt-3 text-[15px] leading-relaxed text-graphite/80">
+                    {t('subSoon.body')}
+                  </p>
+                  <Link
+                    href="/formations"
+                    className={buttonClasses('primary', 'lg', 'mt-6 w-full')}
+                  >
+                    {t('subSoon.cta')}
                   </Link>
                 </div>
               ) : (

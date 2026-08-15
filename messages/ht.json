@@ -194,11 +194,11 @@
       "items": [
         {
           "q": "Kijan pou m peye jodi a?",
-          "a": "Ak MonCash oswa ak yon kat Visa/Mastercard. MonCash se metòd la pi fasil an Ayiti: ou konfime sou telefòn ou epi aksè w louvri menm moman an. Chak pri parèt an dola ansanm ak montan egzak la an goud."
+          "a": "Ak MonCash oswa NatCash — de metòd peman mobil Ayiti yo. Ou konfime sou telefòn ou epi aksè w louvri menm moman an, san kat labank. Chak pri parèt an dola ansanm ak montan egzak la an goud. Kat Visa/Mastercard ap vini byento pou dyaspora a."
         },
         {
-          "q": "Èske m ka peye ak MonCash?",
-          "a": "Wi, MonCash ap mache kounye a. Ou chwazi l sou paj peman an, ou konfime ak kòd sekrè w sou telefòn ou, epi kou a louvri tousuit — pa gen kat ki nesesè. NatCash poko pare; l ap parèt otomatikman sou paj peman an lè li pare."
+          "q": "Èske m ka peye ak MonCash oswa NatCash?",
+          "a": "Wi, toude ap mache kounye a. Ou chwazi youn sou paj peman an, ou konfime ak kòd sekrè w sou telefòn ou, epi fòmasyon an louvri tousuit. Kat Visa/Mastercard poko pare — l ap parèt otomatikman sou paj peman an lè li pare, byento."
         },
         {
           "q": "Èske se yon sèl pri pou Ayiti ak dyaspora?",
@@ -778,7 +778,7 @@
     "total": "Total",
     "pay": "Peye",
     "secure": "Peman ou an sekirize",
-    "secureNote": "Peman sekirize pa Stripe. Aksè w ap aktive otomatikman apre konfimasyon.",
+    "secureNote": "Peman ou an sekirize. Aksè w ap louvri otomatikman apre konfimasyon an.",
     "payErr": "Peman an pa t ka kòmanse. Eseye ankò talè.",
     "payPending": "Nou wè yon peman ki fèk fèt pou sa a — n ap konfime l. Tann kèk segond epi tcheke tablodbò w.",
     "redirect": "N ap voye w sou paj peman sekirize a…",
@@ -828,7 +828,12 @@
     "walletSubscription": "{wallet} pa ka fè peman ki repete. Pou yon abònman, sèvi ak yon kat.",
     "walletPromo": "Kòd rabè yo pa mache ak {wallet} pou kounye a — sèvi ak yon kat.",
     "walletAmountTooLarge": "Montan sa a depase limit {wallet} la (75 000 HTG). Pou acha sa a, peye ak yon kat.",
-    "natcashExactNote": "Se montan egzak sa a NatCash ap pran sou kont ou."
+    "natcashExactNote": "Se montan egzak sa a NatCash ap pran sou kont ou.",
+    "subSoon": {
+      "title": "Abònman yo ap vini byento",
+      "body": "Pou kounye a, ou ka achte chak fòmasyon apa — ou peye yon sèl fwa ak MonCash oswa NatCash, epi aksè a se pou tout vi w. Abònman yo (Pass) ap disponib lè peman ak kat Visa/Mastercard louvri, byento.",
+      "cta": "Gade fòmasyon yo"
+    }
   },
   "merci": {
     "title": "Mèsi! Peman an resevwa",
@@ -3493,11 +3498,11 @@
       },
       "kat": {
         "q": "Kijan pou m peye jodi a?",
-        "a": "Ak MonCash oswa ak yon kat Visa/Mastercard. MonCash se metòd la pi fasil an Ayiti: ou konfime sou telefòn ou epi aksè w louvri menm moman an. Chak pri parèt an dola ansanm ak montan egzak la an goud."
+        "a": "Ak MonCash oswa NatCash — de metòd peman mobil Ayiti yo. Ou konfime sou telefòn ou epi aksè w louvri menm moman an, san kat labank. Chak pri parèt an dola ansanm ak montan egzak la an goud. Kat Visa/Mastercard ap vini byento pou dyaspora a."
       },
       "moncash": {
-        "q": "Èske m ka peye ak MonCash?",
-        "a": "Wi, MonCash ap mache kounye a. Ou chwazi l sou paj peman an, ou konfime ak kòd sekrè w sou telefòn ou, epi kou a louvri tousuit — pa gen kat ki nesesè. NatCash poko pare; l ap parèt otomatikman sou paj peman an lè li pare."
+        "q": "Èske m ka peye ak MonCash oswa NatCash?",
+        "a": "Wi, toude ap mache kounye a. Ou chwazi youn sou paj peman an, ou konfime ak kòd sekrè w sou telefòn ou, epi fòmasyon an louvri tousuit. Kat Visa/Mastercard poko pare — l ap parèt otomatikman sou paj peman an lè li pare, byento."
       },
       "sel-pri": {
         "q": "Èske se yon sèl pri pou Ayiti ak dyaspora?",

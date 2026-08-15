@@ -24,15 +24,39 @@ import { moncashConfigured, moncashMode } from './moncash';
 import { natcashConfigured, natcashMode } from './natcash';
 
 /**
- * Rails with a real, live charge path. Card = Stripe checkout, always built.
+ * Card may be SOLD only when the Stripe key can actually charge a real card.
  *
- * MonCash is CONDITIONALLY implemented: the code path exists end to end
- * (lib/payments/moncash.ts + /api/checkout/moncash + both callbacks), but it
- * can only charge anybody once the owner's Digicel merchant credentials are
- * set. Advertising it before then would be exactly the "demo rail on the money
- * page" dishonesty this module exists to prevent — so it joins the list only
- * when `moncashConfigured()` is true, and the site's claims follow
- * automatically, everywhere, with no other edit.
+ * This check did not exist for a long time because card was assumed to be
+ * "always built" — and it is built, but BUILT is not LIVE. The production
+ * deployment ran with an `sk_test_` key, so the checkout offered
+ * Visa/Mastercard to real buyers whose real cards a test-mode Stripe session
+ * can only refuse. The owner's decision (août 2026) is wallets-first: MonCash
+ * and NatCash sell today, card is announced as "Byento" until a LIVE Stripe
+ * key exists (Atlas path). This function is what makes that announcement
+ * flip to a real, selectable rail automatically the day `sk_live_…` lands in
+ * the environment — no code change, same as the MonCash/NatCash gates.
+ *
+ * Same shape as `moncashSellable`: live key, or any non-production deploy
+ * (dev/preview may exercise the test rail freely).
+ */
+export function cardSellable(): boolean {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) return false;
+  if (key.startsWith('sk_live_')) return true;
+  return process.env.VERCEL_ENV !== 'production';
+}
+
+/**
+ * Rails with a real, live charge path — EVERY rail is conditional now.
+ *
+ * Each one joins the list only when its own gate says it can actually take a
+ * real buyer's money today: MonCash and NatCash when their gateway
+ * credentials are live, card when the Stripe key is a LIVE key
+ * (`cardSellable` — a test key on production used to slip through here and
+ * offer Visa/Mastercard it could only refuse). Advertising a rail before its
+ * gate opens is exactly the "demo rail on the money page" dishonesty this
+ * module exists to prevent; the day a gate opens, every claim on the site
+ * updates together, with no other edit.
  */
 export function implementedProviders(): ProviderKey[] {
   // Same mobile-money-first order as `checkoutProviders()` so the badge rows
@@ -40,7 +64,7 @@ export function implementedProviders(): ProviderKey[] {
   return [
     ...(moncashSellable() ? (['moncash'] as ProviderKey[]) : []),
     ...(natcashSellable() ? (['natcash'] as ProviderKey[]) : []),
-    'card',
+    ...(cardSellable() ? (['card'] as ProviderKey[]) : []),
   ];
 }
 
@@ -99,7 +123,7 @@ export async function checkoutProviders(): Promise<ProviderKey[]> {
   return [
     ...(moncashOfferable() ? (['moncash'] as ProviderKey[]) : []),
     ...(natcashSellable() ? (['natcash'] as ProviderKey[]) : []),
-    'card',
+    ...(cardSellable() ? (['card'] as ProviderKey[]) : []),
   ];
 }
 
