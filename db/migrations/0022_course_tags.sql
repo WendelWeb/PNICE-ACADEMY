@@ -1,0 +1,14 @@
+-- Tags libres sur les cours (owner, août 2026 : « quand un prof crée un
+-- cours il peut ajouter tags, catégories etc »). La catégorie existait déjà
+-- (colonne `category`, l'un des 4 rayons fixes du catalogue) ; les tags sont
+-- la granularité EN DESSOUS — des mots que le prof choisit librement
+-- (« shein », « ladwàn », « moncash »...), affichés sur la page de vente et
+-- cherchables dans le catalogue, même logique que les learn bullets : jsonb
+-- string[] (voir le bloc de commentaires au-dessus de `learn_ht` dans
+-- db/schema.ts pour pourquoi jsonb et pas text[]).
+--
+-- Additif et nullable : NULL = pas de tags — tous les cours existants et
+-- tout INSERT d'avant la migration restent valides. Le filet pré-migration
+-- côté code est db/courses-compat.ts (jumelle d'INSERT + projection de
+-- lecture), même patron que db/checkout-compat.ts pour 0021.
+ALTER TABLE "courses" ADD COLUMN IF NOT EXISTS "tags" jsonb;

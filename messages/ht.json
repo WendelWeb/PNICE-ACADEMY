@@ -26,6 +26,10 @@
     "dashboard": "Tablo debò",
     "login": "Konekte",
     "cta": "Kòmanse",
+    "searchPlaceholder": "Chèche yon fòmasyon...",
+    "searchLabel": "Chèche nan tout fòmasyon yo",
+    "searchNoResults": "Nou pa jwenn anyen",
+    "searchSeeAll": "Wè tout rezilta pou « {query} »",
     "openMenu": "Louvri meni",
     "closeMenu": "Fèmen meni"
   },
@@ -244,7 +248,11 @@
       "teacherLabel": "Filtre pa anseyan",
       "teacherAll": "Tout anseyan yo",
       "sortLabel": "Triye pa",
+      "tagLabel": "Filtre pa tag",
       "sort": {
+        "relevance": "Pi relevan",
+        "rated": "Miyò nòt",
+        "new": "Nouvo",
         "priceAsc": "Pri ↑",
         "priceDesc": "Pri ↓",
         "az": "A–Z"
@@ -255,7 +263,8 @@
     "empty": {
       "titleQuery": "Nou pa jwenn anyen pou « {query} »",
       "titleFilters": "Nou pa jwenn okenn fòmasyon ak filt sa yo",
-      "subtitle": "Eseye yon lòt mo, oswa retire filt yo."
+      "subtitle": "Eseye yon lòt mo, oswa retire filt yo.",
+      "suggestions": "Men kèk fòmasyon ki ka enterese w"
     }
   },
   "course": {
@@ -2194,6 +2203,12 @@
         "resourcesAudienceNote": "Tout moun k ap vizite paj vant lan ap wè lyen sa yo.",
         "resourcesCrossLink": "Pou bay elèv yo yon dokiman pou yon leson :",
         "resourcesCrossLinkCta": "Leson ak videyo yo",
+        "category": "Kategori",
+        "tags": "Tag yo",
+        "tagsPlaceholder": "Ekri yon mo, peze Antre",
+        "tagsCount": "{count}/{max} tag",
+        "tagsRemove": "Retire tag « {tag} »",
+        "tagsDeferred": "Anrejistre — men tag yo ap aplike apre yon ti mizajou sèvè. Pa efase yo, y ap pati otomatikman.",
         "iconNames": {
           "credit-card": "Peman / kat",
           "shopping-cart": "Lavant / komès",
@@ -2212,6 +2227,8 @@
         "unsaved": "Chanjman pa anrejistre",
         "error": "Erè",
         "hints": {
+          "category": "Chwazi etajè kote fòmasyon an ap parèt nan katalòg la.",
+          "tags": "Mo moun ap chèche : peze Antre apre chak mo. Yo ede achtè jwenn fòmasyon w lan.",
           "code": "Kòd sa a fèt otomatikman — ou pa ka chanje l.",
           "slug": "Adrès entènèt kou a — li fèt otomatikman tou.",
           "icon": "Ikòn ki reprezante kategori kou a nan katalòg la.",
@@ -2238,6 +2255,7 @@
           "problem": "Ou pa konn kijan pou kòmanse: ki depo, ki pri, ki dokiman.",
           "deliverables": "Yon modèl pou kalkile pri pa pwa",
           "requirements": "Yon ti bidjè pou kòmanse",
+          "tags": "shein · ladwàn · moncash",
           "faqQ": "Èske m bezwen anpil lajan pou kòmanse?",
           "faqA": "Non, ou ka kòmanse piti epi grandi avèk premye kliyan yo."
         },

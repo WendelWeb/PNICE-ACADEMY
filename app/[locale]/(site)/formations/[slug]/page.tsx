@@ -83,14 +83,19 @@ export async function generateMetadata({
   const c = await getPublishedCourseBySlug(slug);
   if (!c) notFound();
   const title = `${locale === 'ht' ? c.title_ht : c.title_fr} — PNICE Academy`;
+  // The tagline IS the meta description (conversion audit: Google was
+  // composing its own snippet from whatever it grabbed) — the one sentence
+  // the teacher wrote to sell the course, shown under the blue link.
+  const description = locale === 'ht' ? c.tagline_ht : c.tagline_fr;
   // Stage 3 — WhatsApp is how Haiti shares links: og/twitter image is the
   // course's resolved main photo (teacher-set DB image first, static file
   // path otherwise) as an ABSOLUTE url — WhatsApp ignores relative paths.
   const image = absoluteImageUrl(courseMainImage(c.images, c.code), SITE_URL);
   return {
     title,
-    openGraph: { title, images: [image] },
-    twitter: { card: 'summary_large_image', title, images: [image] },
+    description,
+    openGraph: { title, description, images: [image] },
+    twitter: { card: 'summary_large_image', title, description, images: [image] },
   };
 }
 
@@ -219,6 +224,39 @@ export default async function CourseDetail({
   const teacherPassUsd = teacher?.hasPlan
     ? (teacher.plan?.priceCentsMonthly ?? SUBSCRIPTION_USD * 100) / 100
     : null;
+  // JSON-LD Course schema (conversion audit — the repo had ZERO structured
+  // data): name/description/price/instructor, and the aggregate rating ONLY
+  // when real reviews exist. Everything in it is already true on this page —
+  // structured data must never claim what the visible page doesn't.
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Course',
+    name: courseTitle(course, locale),
+    description: courseTagline(course, locale),
+    url: `${SITE_URL}/${locale}/formations/${course.slug}`,
+    image: absoluteImageUrl(courseMainImage(course.images, course.code), SITE_URL),
+    provider: { '@type': 'Organization', name: 'PNICE Academy', url: SITE_URL },
+    inLanguage: bilingual ? ['ht', 'fr'] : [coursePrimary],
+    ...(teacher ? { instructor: { '@type': 'Person', name: teacher.displayName } } : {}),
+    ...(course.tags?.length ? { keywords: course.tags.join(', ') } : {}),
+    offers: {
+      '@type': 'Offer',
+      price: course.priceUsd.toFixed(2),
+      priceCurrency: 'USD',
+      availability: 'https://schema.org/InStock',
+      url: `${SITE_URL}/${locale}/formations/${course.slug}`,
+    },
+    ...(rating.avg !== null
+      ? {
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: rating.avg.toFixed(1),
+            reviewCount: rating.count,
+          },
+        }
+      : {}),
+  };
+
   const testimonial = await getCourseTestimonial(course.slug);
   const testimonialQuote = testimonial
     ? locale === 'ht'
@@ -228,6 +266,16 @@ export default async function CourseDetail({
 
   return (
     <div className="pb-24 lg:pb-0">
+      {/* Structured data for Google's Course rich results — see `jsonLd`'s
+          construction note above. The `<` escape is NOT optional: the HTML
+          parser ends a <script> at the first literal `</script>` regardless
+          of JSON string context, and title/tagline/tags are teacher-authored
+          text on a multi-teacher marketplace — without it, a hostile tagline
+          is stored XSS on the page that hosts the buy buttons. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
+      />
       <Section>
         <Container>
           <Link
@@ -299,6 +347,22 @@ export default async function CourseDetail({
                     >
                       {tCatalog('teacherLine', { name: teacher.displayName })}
                     </Link>
+                  )}
+                  {/* Teacher-chosen tags (0022) — each links into the
+                      catalogue filtered on itself: a tag is a doorway, not
+                      a decoration. */}
+                  {(course.tags?.length ?? 0) > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {course.tags!.map((tag) => (
+                        <Link
+                          key={tag}
+                          href={`/formations?tag=${encodeURIComponent(tag)}`}
+                          className="rounded-full border border-ink/15 px-2.5 py-1 font-mono text-[10px] text-ink/55 transition-colors hover:border-teal hover:text-teal"
+                        >
+                          #{tag}
+                        </Link>
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>

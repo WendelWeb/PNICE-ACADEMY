@@ -98,6 +98,8 @@ export function mapDbCourseToCourse(row: DbCourseRow, lessonRows: DbLessonRow[])
     // `courseImageList`). `undefined` (not null) when the row has none, so a
     // DB course without photos falls back exactly like a static one.
     images: row.images ?? undefined,
+    tags: row.tags ?? undefined,
+    published_at: row.publishedAt ? row.publishedAt.toISOString() : undefined,
   };
 }
 
@@ -156,9 +158,30 @@ const LEGACY_COURSE_COLUMNS = {
 
 type LegacyCourseRow = { [K in keyof typeof LEGACY_COURSE_COLUMNS]: DbCourseRow[K] };
 
-/** Fills in the two columns `LEGACY_COURSE_COLUMNS` can't select, with the same defaults the DB migration itself uses. */
+/** Fills in the columns `LEGACY_COURSE_COLUMNS` can't select, with the same defaults the DB migrations themselves use. */
 function withLegacyCourseDefaults(row: LegacyCourseRow): DbCourseRow {
-  return { ...row, primaryLocale: 'ht', bilingual: true } as DbCourseRow;
+  return { ...row, primaryLocale: 'ht', bilingual: true, tags: null } as DbCourseRow;
+}
+
+/**
+ * Every `courses` column EXCEPT `tags` (migration 0022) — the middle tier of
+ * the read retry below. The live DB is expected to sit here for the window
+ * between deploying this code and the owner running `npm run db:push`: it
+ * HAS primary_locale/bilingual (their migration shipped long ago), only
+ * `tags` is missing — so falling all the way back to `LEGACY_COURSE_COLUMNS`
+ * would silently mislabel a monolingual course as bilingual. This projection
+ * loses NOTHING but tags.
+ */
+const PRE_0022_COURSE_COLUMNS = {
+  ...LEGACY_COURSE_COLUMNS,
+  primaryLocale: T.courses.primaryLocale,
+  bilingual: T.courses.bilingual,
+} as const;
+
+type Pre0022CourseRow = { [K in keyof typeof PRE_0022_COURSE_COLUMNS]: DbCourseRow[K] };
+
+function withPre0022Defaults(row: Pre0022CourseRow): DbCourseRow {
+  return { ...row, tags: null } as DbCourseRow;
 }
 
 /**
@@ -171,9 +194,15 @@ export async function selectCourseRows(): Promise<DbCourseRow[]> {
   try {
     return await db.select().from(T.courses);
   } catch (err) {
-    const rows = await db.select(LEGACY_COURSE_COLUMNS).from(T.courses);
-    console.warn('[courses/source] course read fell back to pre-migration columns (missing primary_locale/bilingual) — run `npm run db:push`.');
-    return rows.map(withLegacyCourseDefaults);
+    try {
+      const rows = await db.select(PRE_0022_COURSE_COLUMNS).from(T.courses);
+      console.warn('[courses/source] course read fell back to pre-0022 columns (missing tags) — run `npm run db:push`.');
+      return rows.map(withPre0022Defaults);
+    } catch {
+      const rows = await db.select(LEGACY_COURSE_COLUMNS).from(T.courses);
+      console.warn('[courses/source] course read fell back to pre-migration columns (missing primary_locale/bilingual) — run `npm run db:push`.');
+      return rows.map(withLegacyCourseDefaults);
+    }
   }
 }
 
@@ -183,9 +212,15 @@ export async function selectCourseRowBySlug(slug: string): Promise<DbCourseRow |
     const [row] = await db.select().from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
     return row;
   } catch (err) {
-    const [row] = await db.select(LEGACY_COURSE_COLUMNS).from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
-    console.warn('[courses/source] course read fell back to pre-migration columns (missing primary_locale/bilingual) — run `npm run db:push`.');
-    return row ? withLegacyCourseDefaults(row) : undefined;
+    try {
+      const [row] = await db.select(PRE_0022_COURSE_COLUMNS).from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
+      console.warn('[courses/source] course read fell back to pre-0022 columns (missing tags) — run `npm run db:push`.');
+      return row ? withPre0022Defaults(row) : undefined;
+    } catch {
+      const [row] = await db.select(LEGACY_COURSE_COLUMNS).from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
+      console.warn('[courses/source] course read fell back to pre-migration columns (missing primary_locale/bilingual) — run `npm run db:push`.');
+      return row ? withLegacyCourseDefaults(row) : undefined;
+    }
   }
 }
 
@@ -194,9 +229,15 @@ export async function selectCourseRowsByOwner(ownerUserId: string): Promise<DbCo
   try {
     return await db.select().from(T.courses).where(eq(T.courses.ownerUserId, ownerUserId));
   } catch (err) {
-    const rows = await db.select(LEGACY_COURSE_COLUMNS).from(T.courses).where(eq(T.courses.ownerUserId, ownerUserId));
-    console.warn('[courses/source] course read fell back to pre-migration columns (missing primary_locale/bilingual) — run `npm run db:push`.');
-    return rows.map(withLegacyCourseDefaults);
+    try {
+      const rows = await db.select(PRE_0022_COURSE_COLUMNS).from(T.courses).where(eq(T.courses.ownerUserId, ownerUserId));
+      console.warn('[courses/source] course read fell back to pre-0022 columns (missing tags) — run `npm run db:push`.');
+      return rows.map(withPre0022Defaults);
+    } catch {
+      const rows = await db.select(LEGACY_COURSE_COLUMNS).from(T.courses).where(eq(T.courses.ownerUserId, ownerUserId));
+      console.warn('[courses/source] course read fell back to pre-migration columns (missing primary_locale/bilingual) — run `npm run db:push`.');
+      return rows.map(withLegacyCourseDefaults);
+    }
   }
 }
 

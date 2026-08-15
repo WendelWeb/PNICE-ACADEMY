@@ -26,6 +26,8 @@ export function NavClient({
   cta,
   authSlot,
   menuExtra,
+  searchSlot,
+  searchSlotMobile,
   openMenuLabel,
   closeMenuLabel,
 }: {
@@ -35,6 +37,11 @@ export function NavClient({
   /** Extra, already-rendered entries for the MOBILE panel only (e.g. the
    *  signed-in « Tablo debò » link, whose top-bar badge is sm-gated). */
   menuExtra?: React.ReactNode;
+  /** The global course search (NavSearch, server-built index) — desktop
+   *  instance sits between the links and LangToggle; the mobile instance is
+   *  the FIRST thing in the burger panel, where a thumb expects it. */
+  searchSlot?: React.ReactNode;
+  searchSlotMobile?: React.ReactNode;
   openMenuLabel: string;
   closeMenuLabel: string;
 }) {
@@ -104,6 +111,7 @@ export function NavClient({
                 })}
               </nav>
 
+              {searchSlot}
               <LangToggle />
               {authSlot}
 
@@ -132,12 +140,23 @@ export function NavClient({
           <div
             id="mobile-nav-panel"
             aria-hidden={!open}
+            // `inert` (set via ref — React 18's TS types don't know the
+            // attribute yet) removes the CLOSED panel from the tab order
+            // entirely: opacity/pointer-events hide it from eyes and mouse
+            // but not from the keyboard, and the search input inside
+            // (searchSlotMobile) is natively focusable — without this, a
+            // keyboard user below sm Tabs into an invisible input inside an
+            // aria-hidden subtree.
+            ref={(el) => {
+              if (el) (el as HTMLElement & { inert: boolean }).inert = !open;
+            }}
             className={cn(
               'absolute inset-x-0 top-full origin-top rounded-b-xl border-x border-b border-ink/10 bg-paper-light shadow-lg transition-[opacity,transform] duration-200 ease-out sm:hidden',
               open ? 'translate-y-0 opacity-100' : '-translate-y-2 pointer-events-none opacity-0',
             )}
           >
             <nav className="flex flex-col gap-1 px-4 py-4">
+              {searchSlotMobile && <div className="mb-2">{searchSlotMobile}</div>}
               {links.map((link) => (
                 <Link
                   key={link.href}

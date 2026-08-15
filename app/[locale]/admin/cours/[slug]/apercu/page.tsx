@@ -20,6 +20,9 @@ export default async function CoursePreviewPage({
   setRequestLocale(locale);
   if (!(await hasCap('courses.read'))) return <Forbidden />;
   const t = await getTranslations('admin.cms.preview');
+  // Category shown with the catalogue's own labels — the reviewer must see
+  // the exact shelf buyers will see.
+  const tCat = await getTranslations('catalog');
 
   const c = await getAdminCourse(slug);
   if (!c) notFound();
@@ -68,6 +71,27 @@ export default async function CoursePreviewPage({
         <span className="font-mono text-[10px] uppercase tracking-wide text-ink/40">{c.code}</span>
         <h1 className="mt-1 font-display text-3xl font-bold text-ink">{L(c.title_ht, c.title_fr)}</h1>
         <p className="mt-2 text-lg text-graphite/80">{L(c.tagline_ht, c.tagline_fr)}</p>
+
+        {/* Tags + catégorie (août 2026) — part of what the reviewer approves:
+            a course filed on the wrong shelf or stuffed with misleading tags
+            is a moderation call, so both are visible here. */}
+        {(c.category !== null || c.tags.length > 0) && (
+          <div className="mt-3 flex flex-wrap items-center gap-1.5">
+            {c.category !== null && (
+              <span className="rounded-full bg-ink/[0.06] px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide text-ink/65">
+                {tCat(`categories.${c.category}`)}
+              </span>
+            )}
+            {c.tags.map((tag) => (
+              <span
+                key={tag}
+                className="rounded-full border border-ink/15 px-2 py-0.5 font-mono text-[10px] text-ink/55"
+              >
+                #{tag}
+              </span>
+            ))}
+          </div>
+        )}
 
         <div className="mt-4 flex items-baseline gap-2">
           <span className="font-mono text-2xl font-bold text-ochre">{fmtUsdCents(c.priceCents)}</span>

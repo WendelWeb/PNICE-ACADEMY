@@ -40,7 +40,10 @@
  */
 import { asc, eq, and, ne } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
-import { db, schema } from '@/db';
+import { db, schema, isMissingColumnError } from '@/db';
+import { coursesPre0022 } from '@/db/courses-compat';
+import { COURSE_CATEGORIES } from '@/data/courses';
+import { sanitizeTags } from './tags';
 import { dbConfigured, selectCourseRows, selectCourseRowBySlug } from './source';
 import { bootstrapEmails } from '@/lib/admin/access';
 import { recordAudit } from '@/lib/admin/data/real/users';
@@ -137,6 +140,12 @@ export type AdminCourse = {
   code: string;
   slug: string;
   icon: string;
+  /** Catalogue shelf (one of data/courses.ts's COURSE_CATEGORIES) — editable
+   *  by the teacher since « tags + catégories » (août 2026); `null` on rows
+   *  seeded before the picker existed (public mapper shows 'lavi-pratik'). */
+  category: 'biznis' | 'dijital' | 'lajan' | 'lavi-pratik' | null;
+  /** Teacher-chosen free tags — canonical shape lib/courses/tags.ts. */
+  tags: string[];
   /**
    * Optional course translation (Task: course-language). `bilingual=false`
    * means the editor shows a SINGLE input per ht/fr field group (the
@@ -275,6 +284,8 @@ function mapRowToAdminCourse(
     code: row.code ?? row.slug,
     slug: row.slug,
     icon: row.icon ?? 'book',
+    category: row.category ?? null,
+    tags: row.tags ?? [],
     bilingual: row.bilingual ?? true,
     primary_locale: row.primaryLocale ?? 'ht',
     title_ht: row.titleHt ?? '',
@@ -706,7 +717,18 @@ export async function createCourse(
     primaryLocale,
   );
 
-  await db.insert(T.courses).values(values);
+  try {
+    await db.insert(T.courses).values(values);
+  } catch (err) {
+    // Pre-0022 window: drizzle names EVERY schema column in an INSERT (tags
+    // included, as `default`), so course creation would 42703 on a live DB
+    // the owner hasn't `db:push`ed yet. Retry through the twin table that
+    // predates the column (db/courses-compat.ts) — same proven pattern as
+    // the checkout routes' `checkoutSessionsPre0021`.
+    if (!isMissingColumnError(err)) throw err;
+    await db.insert(coursesPre0022).values(values);
+    console.warn('[courses/write] create fell back to pre-0022 insert (missing tags) — run `npm run db:push`.');
+  }
 
   await recordAudit({ action: 'create_course', userId: actor.id, admin: actor, detail: slug });
   return { ok: true, slug };
@@ -715,6 +737,10 @@ export async function createCourse(
 /** Editable general + sales-page fields (code/slug/status/lessons/images managed separately). */
 export type CoursePatch = Partial<{
   icon: string;
+  /** Catalogue shelf — validated against COURSE_CATEGORIES at save time. */
+  category: 'biznis' | 'dijital' | 'lajan' | 'lavi-pratik';
+  /** Free tags — passed through `sanitizeTags`, never stored raw. */
+  tags: string[];
   title_ht: string;
   title_fr: string;
   tagline_ht: string;
@@ -773,8 +799,14 @@ export async function updateCourse(slug: string, patch: CoursePatch, actor: Admi
     preparedResources = prepared.resources;
   }
 
+  if (patch.category !== undefined && !COURSE_CATEGORIES.includes(patch.category)) {
+    return { ok: false, message: 'invalid_category' };
+  }
+
   const set: Partial<typeof T.courses.$inferInsert> = { updatedAt: new Date() };
   if (patch.icon !== undefined) set.icon = patch.icon;
+  if (patch.category !== undefined) set.category = patch.category;
+  if (patch.tags !== undefined) set.tags = sanitizeTags(patch.tags);
   if (patch.title_ht !== undefined) set.titleHt = patch.title_ht;
   if (patch.title_fr !== undefined) set.titleFr = patch.title_fr;
   if (patch.tagline_ht !== undefined) set.taglineHt = patch.tagline_ht;
@@ -811,10 +843,26 @@ export async function updateCourse(slug: string, patch: CoursePatch, actor: Admi
   // the course's existing setting, not silently reset it.
   const mirroredSet = mirrorBilingualFields(set, bilingual, primaryLocale);
 
-  await db.update(T.courses).set(mirroredSet).where(eq(T.courses.slug, slug));
+  let tagsDeferred = false;
+  try {
+    await db.update(T.courses).set(mirroredSet).where(eq(T.courses.slug, slug));
+  } catch (err) {
+    // Pre-0022 window (an UPDATE only names the keys it is given, so only a
+    // save that actually carries tags can hit this): drop the one missing
+    // column and save the REST of the teacher's work rather than losing the
+    // whole save — but SAY SO in the result (adversarial review: returning a
+    // plain ok here made the editor show an unqualified « saved » while the
+    // typed tags were silently discarded; after db:push the row would hold
+    // NULL and the teacher's work would be gone without a trace).
+    if (!isMissingColumnError(err) || mirroredSet.tags === undefined) throw err;
+    const { tags: _droppedTags, ...withoutTags } = mirroredSet;
+    await db.update(T.courses).set(withoutTags).where(eq(T.courses.slug, slug));
+    tagsDeferred = true;
+    console.warn('[courses/write] update dropped `tags` (pre-0022 DB) — run `npm run db:push`.');
+  }
   await recordAudit({ action: 'update_course', userId: actor.id, admin: actor, detail: slug });
   if (wasPublished) revalidateCoursePaths(slug);
-  return { ok: true };
+  return tagsDeferred ? { ok: true, message: 'tags_deferred' } : { ok: true };
 }
 
 /**
@@ -1039,7 +1087,12 @@ export async function unpublishCourse(slug: string, actor: AdminActor): Promise<
 /** Blocked if the course has any enrollment (real `enrollments` table — the money path). */
 export async function deleteCourse(slug: string, confirmCode: string, actor: AdminActor): Promise<CourseWriteResult> {
   if (!dbConfigured()) return dbRequired();
-  const [current] = await db.select().from(T.courses).where(eq(T.courses.slug, slug)).limit(1);
+  // Via the retrying selector, NOT a bare db.select() (adversarial review):
+  // a bare select names EVERY schema column — `tags` included — and would
+  // 42703 on a pre-0022 live DB before any guard below runs, breaking course
+  // deletion for the whole deploy-to-db:push window. Only `code`/`status`
+  // are read here, both present in every fallback projection.
+  const current = await selectCourseRowBySlug(slug);
   if (!current) return { ok: false, message: 'not_found' };
 
   const enrollRows = await db.select({ id: T.enrollments.id }).from(T.enrollments).where(eq(T.enrollments.courseSlug, slug));

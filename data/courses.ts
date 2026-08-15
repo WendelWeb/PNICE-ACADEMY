@@ -82,6 +82,20 @@ export type Course = {
    * whenever the DB row carries images.
    */
   images?: CourseImages;
+  /**
+   * Teacher-chosen free-form tags (migration 0022) — the granularity below
+   * `category`: searchable in the catalogue, shown as chips on the sales
+   * page. OPTIONAL and `undefined` for the static entries below; set by
+   * `mapDbCourseToCourse` when the DB row carries tags. Canonical shape is
+   * lib/courses/tags.ts's `sanitizeTags` (lowercase, deduped, capped).
+   */
+  tags?: string[];
+  /**
+   * ISO timestamp of first publication — `undefined` for static entries
+   * (which predate the marketplace) and for not-yet-published rows. Feeds
+   * the catalogue's « Nouvo » sort; nothing money-critical reads it.
+   */
+  published_at?: string;
 };
 
 /** Shape of the DB `courses.images` jsonb as exposed publicly (see `Course.images`). */

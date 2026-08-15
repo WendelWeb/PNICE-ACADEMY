@@ -40,7 +40,7 @@ export const revalidate = 300;
  * ?teacher=pnice-academy must not flash the full unfiltered grid either.
  */
 const PENDING_FILTERS_SCRIPT = `(function(){
-  if (/[?&](q|cat|sort|teacher)=/.test(location.search)) {
+  if (/[?&](q|cat|sort|teacher|tag)=/.test(location.search)) {
     document.currentScript.parentElement.dataset.pendingFilters = '1';
   }
 })();`;

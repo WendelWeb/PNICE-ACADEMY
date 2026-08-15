@@ -26,6 +26,10 @@
     "dashboard": "Tableau de bord",
     "login": "Connexion",
     "cta": "Commencer",
+    "searchPlaceholder": "Chercher une formation...",
+    "searchLabel": "Rechercher dans toutes les formations",
+    "searchNoResults": "Aucun résultat",
+    "searchSeeAll": "Voir tous les résultats pour « {query} »",
     "openMenu": "Ouvrir le menu",
     "closeMenu": "Fermer le menu"
   },
@@ -244,7 +248,11 @@
       "teacherLabel": "Filtrer par enseignant",
       "teacherAll": "Tous les enseignants",
       "sortLabel": "Trier par",
+      "tagLabel": "Filtrer par tag",
       "sort": {
+        "relevance": "Pertinence",
+        "rated": "Mieux notés",
+        "new": "Nouveautés",
         "priceAsc": "Prix ↑",
         "priceDesc": "Prix ↓",
         "az": "A–Z"
@@ -255,7 +263,8 @@
     "empty": {
       "titleQuery": "Aucun résultat pour « {query} »",
       "titleFilters": "Aucune formation ne correspond à ces filtres",
-      "subtitle": "Essaie un autre mot, ou retire les filtres."
+      "subtitle": "Essaie un autre mot, ou retire les filtres.",
+      "suggestions": "Voici des formations qui pourraient t’intéresser"
     }
   },
   "course": {
@@ -2194,6 +2203,12 @@
         "resourcesAudienceNote": "Tous les visiteurs de la page de vente verront ces liens.",
         "resourcesCrossLink": "Pour donner un document aux élèves pour une leçon :",
         "resourcesCrossLinkCta": "Leçons et vidéos",
+        "category": "Catégorie",
+        "tags": "Tags",
+        "tagsPlaceholder": "Écris un mot, appuie sur Entrée",
+        "tagsCount": "{count}/{max} tags",
+        "tagsRemove": "Retirer le tag « {tag} »",
+        "tagsDeferred": "Enregistré — mais les tags s’appliqueront après une petite mise à jour du serveur. Ne les efface pas, ils partiront automatiquement.",
         "iconNames": {
           "credit-card": "Paiement / carte",
           "shopping-cart": "Vente / commerce",
@@ -2212,6 +2227,8 @@
         "unsaved": "Modifications non enregistrées",
         "error": "Erreur",
         "hints": {
+          "category": "Choisis le rayon où la formation apparaîtra dans le catalogue.",
+          "tags": "Les mots que les gens cherchent : appuie sur Entrée après chaque mot. Ils aident les acheteurs à trouver ta formation.",
           "code": "Ce code est généré automatiquement — tu ne peux pas le modifier.",
           "slug": "L'adresse web du cours — elle aussi générée automatiquement.",
           "icon": "L'icône qui représente la catégorie du cours dans le catalogue.",
@@ -2238,6 +2255,7 @@
           "problem": "Tu ne sais pas comment démarrer : quel entrepôt, quels prix, quels documents.",
           "deliverables": "Un modèle pour calculer le prix au poids",
           "requirements": "Un petit budget de départ",
+          "tags": "shein · douane · moncash",
           "faqQ": "Faut-il beaucoup d'argent pour démarrer ?",
           "faqA": "Non, tu peux démarrer petit et grandir avec tes premiers clients."
         },

@@ -21,9 +21,14 @@ import {
   IconPackage,
   IconClipboardCheck,
   IconHelpCircle,
+  IconLayoutGrid,
+  IconTags,
+  IconX,
 } from '@tabler/icons-react';
 import { cn } from '@/lib/cn';
 import { buttonClasses } from '@/components/ui/Button';
+import { COURSE_CATEGORIES } from '@/data/courses';
+import { sanitizeTags, MAX_COURSE_TAGS, MAX_TAG_LENGTH } from '@/lib/courses/tags';
 import type { AdminCourse, CoursePatch } from '@/lib/courses/write';
 import { CourseIcon } from '@/components/courses/CourseIcon';
 import { Field, BilingualText, PairedList, FaqEditor, inputCls, type FaqItem } from './fields';
@@ -58,6 +63,9 @@ export function CourseEditor({
   updateAction: UpdateAction;
 }) {
   const t = useTranslations('admin.cms.editor');
+  // The category chips show the EXACT labels buyers see on the catalogue
+  // (catalog.categories.*) — one vocabulary, no re-translation drift.
+  const tCat = useTranslations('catalog');
   const router = useRouter();
   const [pending, start] = useTransition();
   const [save, setSave] = useState<SaveState>('idle');
@@ -99,12 +107,21 @@ export function CourseEditor({
         // `bilingual` is false; this just carries the current toggle state.
         bilingual: c.bilingual,
         primaryLocale: c.primary_locale,
+        // Tags + catégorie (owner, août 2026) — category stays undefined
+        // (not null) when never chosen, so the patch simply omits it.
+        category: c.category ?? undefined,
+        tags: c.tags,
         // Course-level links/downloads ("liens en description") moved to
         // their own "Ressources" tab (Task A2) — see CourseResourcesPanel.
       });
       setSave(res.ok ? 'saved' : 'error');
-      if (res.ok) router.refresh();
-      else setSaveMessage(res.message ?? null);
+      // « tags_deferred » (pre-0022 live DB): the save SUCCEEDED except the
+      // tags column doesn't exist yet — tell the teacher honestly instead of
+      // an unqualified « saved » over silently-discarded work.
+      if (res.ok) {
+        setSaveMessage(res.message === 'tags_deferred' ? t('tagsDeferred') : null);
+        router.refresh();
+      } else setSaveMessage(res.message ?? null);
     });
 
   return (
@@ -149,6 +166,49 @@ export function CourseEditor({
                 </label>
               ))}
             </div>
+          </Field>
+
+          {/* Category (owner: « quand un prof crée un cours il peut ajouter
+              tags, catégories ») — the 4 catalogue shelves as radio chips,
+              same sr-only-radio pattern as the icon picker above, labelled
+              with the EXACT words buyers see on /formations. */}
+          <Field icon={IconLayoutGrid} label={t('category')} hint={t('hints.category')} filled={c.category !== null} id="field-category">
+            <div role="radiogroup" aria-label={t('category')} className="flex flex-wrap gap-1.5">
+              {COURSE_CATEGORIES.map((cat) => (
+                <label key={cat} className="cursor-pointer">
+                  <input
+                    type="radio"
+                    name="course-category"
+                    value={cat}
+                    checked={c.category === cat}
+                    onChange={() => set('category', cat)}
+                    className="peer sr-only"
+                    aria-label={tCat(`categories.${cat}`)}
+                  />
+                  <span
+                    className={cn(
+                      'inline-flex items-center rounded-full border border-ink/15 bg-paper px-3 py-1.5 font-mono text-[11px] uppercase tracking-wide text-ink/60 transition-colors hover:border-ink/35 motion-reduce:transition-none',
+                      'peer-checked:border-ochre peer-checked:bg-ochre/10 peer-checked:text-ochre peer-checked:ring-2 peer-checked:ring-ochre/60 peer-checked:ring-offset-1 peer-checked:ring-offset-paper-light',
+                      'peer-focus-visible:ring-2 peer-focus-visible:ring-ochre peer-focus-visible:ring-offset-1 peer-focus-visible:ring-offset-paper-light',
+                    )}
+                  >
+                    {tCat(`categories.${cat}`)}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </Field>
+
+          {/* Free tags — the teacher's own words for what the course touches
+              (« shein », « ladwàn »...), searchable in the catalogue. */}
+          <Field icon={IconTags} label={t('tags')} hint={t('hints.tags')} example={t('examples.tags')} filled={c.tags.length > 0} id="field-tags">
+            <TagsEditor
+              tags={c.tags}
+              onChange={(next) => set('tags', next)}
+              placeholder={t('tagsPlaceholder')}
+              counter={t('tagsCount', { count: c.tags.length, max: MAX_COURSE_TAGS })}
+              removeLabel={(tag) => t('tagsRemove', { tag })}
+            />
           </Field>
 
           {/* Optional course translation toggle (Task: course-language) —
@@ -242,7 +302,88 @@ export function CourseEditor({
         >
           {save === 'saved' ? t('saved') : save === 'error' ? t('error') : save === 'saving' ? t('saving') : t('unsaved')}
         </span>
+        {/* Detail line (was set but never rendered — dead state until the
+            tags_deferred honesty fix needed it): the server's qualifier on a
+            success, or the actual reason on a failure. */}
+        {saveMessage && (
+          <span className={cn('text-[11px] leading-snug', save === 'error' ? 'text-stampred' : 'text-ochre')}>
+            {saveMessage}
+          </span>
+        )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Chip input for course tags: type a word, Enter (or comma, or leaving the
+ * field) turns it into a chip; × removes it. Everything funnels through
+ * `sanitizeTags` — the SAME normalisation the server applies at save time —
+ * so what the teacher sees in the chips is exactly what will be stored
+ * (lowercase, deduped, capped), never a surprise after saving.
+ */
+function TagsEditor({
+  tags,
+  onChange,
+  placeholder,
+  counter,
+  removeLabel,
+}: {
+  tags: string[];
+  onChange: (next: string[]) => void;
+  placeholder: string;
+  counter: string;
+  removeLabel: (tag: string) => string;
+}) {
+  const [draft, setDraft] = useState('');
+  const full = tags.length >= MAX_COURSE_TAGS;
+
+  const commit = () => {
+    if (!draft.trim()) return;
+    const next = sanitizeTags([...tags, draft]);
+    setDraft('');
+    onChange(next);
+  };
+
+  return (
+    <div>
+      {tags.length > 0 && (
+        <div className="mb-2 flex flex-wrap gap-1.5">
+          {tags.map((tag) => (
+            <span
+              key={tag}
+              className="inline-flex items-center gap-1 rounded-full border border-teal/40 bg-teal/10 py-1 pl-2.5 pr-1 font-mono text-[11px] text-teal"
+            >
+              {tag}
+              <button
+                type="button"
+                onClick={() => onChange(tags.filter((x) => x !== tag))}
+                aria-label={removeLabel(tag)}
+                className="grid h-5 w-5 place-items-center rounded-full transition-colors hover:bg-teal/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal"
+              >
+                <IconX size={11} />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <input
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            commit();
+          }
+        }}
+        onBlur={commit}
+        placeholder={full ? '' : placeholder}
+        disabled={full}
+        maxLength={MAX_TAG_LENGTH}
+        aria-label={placeholder}
+        className={cn(inputCls, full && 'opacity-50')}
+      />
+      <p className="mt-1 font-mono text-[10px] text-ink/45">{counter}</p>
     </div>
   );
 }

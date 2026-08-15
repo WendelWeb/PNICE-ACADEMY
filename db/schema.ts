@@ -619,6 +619,11 @@ export const courses = pgTable('courses', {
   // Tabler icon key, mapped in components/courses/CourseIcon.tsx.
   icon: text('icon'),
   category: text('category').$type<'biznis' | 'dijital' | 'lajan' | 'lavi-pratik'>(),
+  // Free-form teacher-chosen tags (migration 0022) — the granularity BELOW
+  // the 4 fixed categories: searchable in the catalogue, shown on the sales
+  // page. jsonb string[] like learn_ht (see that header note). Nullable:
+  // NULL = no tags. Pre-migration DBs: db/courses-compat.ts.
+  tags: jsonb('tags').$type<string[]>(),
   // Optional course translation (Task: course-language): a teacher can author
   // a course in a SINGLE language instead of the mandatory ht+fr pair every
   // text field below implies. `bilingual=false` means every ht/fr pair is

@@ -28,6 +28,7 @@ describe('mapDbCourseToCourse — DB row → Course shape', () => {
     code: 'PA-TEST',
     icon: 'rocket',
     category: 'dijital' as const,
+    tags: null,
     primaryLocale: 'ht' as const,
     bilingual: true,
     titleHt: 'Tit an kreyòl',
@@ -197,6 +198,7 @@ describe('mapDbCourseToDetail — DB row → CourseDetail shape', () => {
     code: 'PA-01', // matches a real static entry — round-trip should be identical
     icon: 'rocket',
     category: 'dijital' as const,
+    tags: null,
     primaryLocale: 'ht' as const,
     bilingual: true,
     titleHt: 'Tit',

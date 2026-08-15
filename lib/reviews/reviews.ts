@@ -327,7 +327,17 @@ export async function listReviewsForAdmin(limit = 200): Promise<AdminReviewRow[]
   try {
     const [rows, reported] = await Promise.all([
       db
-        .select({ review: T.courseReviews, user: T.users, course: T.courses })
+        // NARROW course projection, not the whole table object (adversarial
+        // review): `T.courses` here would make drizzle name every courses
+        // column — including any newer-than-the-live-DB one like `tags`
+        // (0022) — and a single missing column would 42703 the whole query,
+        // silently emptying the admin moderation queue via the catch below.
+        // Only the three fields the mapper reads are selected.
+        .select({
+          review: T.courseReviews,
+          user: T.users,
+          course: { slug: T.courses.slug, titleHt: T.courses.titleHt, titleFr: T.courses.titleFr },
+        })
         .from(T.courseReviews)
         .innerJoin(T.users, eq(T.courseReviews.userId, T.users.id))
         .innerJoin(T.courses, eq(T.courseReviews.courseSlug, T.courses.slug)),

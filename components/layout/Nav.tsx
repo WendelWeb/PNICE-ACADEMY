@@ -9,9 +9,17 @@ import { StudioLink } from '@/components/teacher/StudioLink';
 import { clerkEnabled } from '@/lib/clerk';
 import { currentUserIsApprovedTeacher } from '@/lib/teacher/profile';
 import { NavClient } from '@/components/layout/NavClient';
+import { NavSearch } from '@/components/layout/NavSearch';
+import { getNavSearchIndex } from '@/lib/courses/nav-index';
 
 export async function Nav() {
   const t = await getTranslations('nav');
+
+  // The global search index (owner: « recherche pas évidente ») — resolved
+  // here because images/teachers are server-only; cached 2 min, a few KB.
+  // Gated + never-throws all the way down (getPublishedCourses falls back to
+  // the static catalogue), so the nav can never break for it.
+  const searchIndex = await getNavSearchIndex();
 
   // Task: studio access everywhere — resolved server-side (DB truth, no
   // Clerk metadata counterpart) and handed down to StudioLink as a plain
@@ -93,6 +101,8 @@ export async function Nav() {
       cta={t('cta')}
       authSlot={authSlot}
       menuExtra={menuExtra}
+      searchSlot={<NavSearch entries={searchIndex} variant="desktop" />}
+      searchSlotMobile={<NavSearch entries={searchIndex} variant="mobile" />}
       openMenuLabel={t('openMenu')}
       closeMenuLabel={t('closeMenu')}
     />
