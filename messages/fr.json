@@ -790,7 +790,7 @@
         "depleted": "Ce code a atteint sa limite.",
         "scheduled": "Ce code n'est pas encore actif.",
         "wrong_product": "Ce code ne s'applique pas à cet article.",
-        "too_small": "Avec ce code, le total devient trop bas pour un paiement par carte. Contacte le support pour qu'on t'aide."
+        "too_small": "Avec ce code, le total devient trop bas. Contacte le support pour qu’on t’aide."
       }
     },
     "trust": {
@@ -806,12 +806,12 @@
     "moncashDeclined": "Le paiement n’est pas passé. Tu peux réessayer.",
     "moncashTimeout": "Nous n’avons pas reçu ta réponse. Si tu as confirmé le paiement, ton accès s’ouvrira tout seul — vérifie ton tableau de bord dans quelques minutes.",
     "moncashTestNotice": "MODE TEST — MonCash est en simulation. Le paiement n’est pas réel : aucune gourde ne quittera ton compte. Réservé aux tests.",
-    "moncashDown": "MonCash ne répond pas en ce moment — le problème vient de Digicel. Réessaie dans quelques minutes, ou paie par carte.",
+    "moncashDown": "MonCash ne répond pas en ce moment — le problème vient de Digicel. Réessaie dans quelques minutes, ou paie avec NatCash.",
     "moncashExactNote": "Montant exact prélevé par MonCash sur votre compte.",
-    "natcashDown": "NatCash ne répond pas actuellement. Réessaie dans quelques minutes, ou paie avec MonCash ou une carte.",
-    "walletSubscription": "{wallet} ne peut pas faire de paiement récurrent. Pour un abonnement, utilise une carte.",
-    "walletPromo": "Les codes promo ne fonctionnent pas encore avec {wallet} — utilise une carte.",
-    "walletAmountTooLarge": "Ce montant dépasse la limite {wallet} (75 000 HTG). Pour cet achat, paie avec une carte.",
+    "natcashDown": "NatCash ne répond pas actuellement. Réessaie dans quelques minutes, ou paie avec MonCash.",
+    "walletSubscription": "{wallet} ne peut pas faire de paiement récurrent. Les abonnements seront disponibles avec l’arrivée du paiement par carte, bientôt.",
+    "walletPromo": "Les codes promo ne fonctionnent pas encore avec {wallet} — ils arriveront avec le paiement par carte, bientôt.",
+    "walletAmountTooLarge": "Ce montant dépasse la limite {wallet} (75 000 HTG). Contacte notre support pour trouver une solution pour cet achat.",
     "natcashExactNote": "Montant exact prélevé par NatCash sur votre compte.",
     "subSoon": {
       "title": "Les abonnements arrivent bientôt",
@@ -3423,12 +3423,12 @@
       "money": {
         "title": "Comment l'argent circule",
         "p": [
-          "Simple et public : sur chaque vente, 70 % vont à l'enseignant, 30 % restent à la plateforme — paiements, vidéo, certificats, support. Les paiements se font par carte (Visa/Mastercard) sur une connexion sécurisée ; nous ne stockons jamais ton numéro de carte."
+          "Simple et public : sur chaque vente, 70 % vont à l’enseignant, 30 % restent à la plateforme — paiements, vidéo, certificats, support. Les paiements se font avec MonCash ou NatCash, en gourdes, sur une connexion sécurisée — tu confirmes avec ton code secret sur ton propre téléphone, et nous ne le voyons jamais. Le paiement par carte (Visa/Mastercard) arrive bientôt."
         ],
         "facts": [
           "70 % pour l'enseignant",
           "30 % pour la plateforme",
-          "Paiement sécurisé par carte"
+          "Paiement sécurisé MonCash / NatCash"
         ]
       }
     },

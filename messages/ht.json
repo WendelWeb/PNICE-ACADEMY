@@ -790,7 +790,7 @@
         "depleted": "Kòd sa a rive nan limit li.",
         "scheduled": "Kòd sa a poko aktif.",
         "wrong_product": "Kòd sa a pa aplike sou atik sa a.",
-        "too_small": "Ak kòd sa a, total la vin twò piti pou yon peman kat. Kontakte sipò a pou n ede w."
+        "too_small": "Ak kòd sa a, total la vin twò piti. Kontakte sipò a pou n ede w."
       }
     },
     "trust": {
@@ -806,12 +806,12 @@
     "moncashDeclined": "Peman an pa pase. Ou ka eseye ankò.",
     "moncashTimeout": "Nou pa jwenn repons ou. Si w konfime peman an, aksè w ap louvri poukont li — tcheke tablodbò w nan kèk minit.",
     "moncashTestNotice": "MODE TÈS — MonCash nan mòd similasyon. Peman an pa reyèl: okenn goud p ap kite kont ou. Se pou tès sèlman.",
-    "moncashDown": "MonCash pa reponn kounye a — se yon pwoblèm bò kote Digicel. Eseye ankò nan kèk minit, oswa peye ak yon kat.",
+    "moncashDown": "MonCash pa reponn kounye a — se yon pwoblèm bò kote Digicel. Eseye ankò nan kèk minit, oswa peye ak NatCash.",
     "moncashExactNote": "Se montan egzak sa a MonCash ap pran sou kont ou.",
-    "natcashDown": "NatCash pa reponn kounye a. Eseye ankò nan kèk minit, oswa peye ak MonCash oswa yon kat.",
-    "walletSubscription": "{wallet} pa ka fè peman ki repete. Pou yon abònman, sèvi ak yon kat.",
-    "walletPromo": "Kòd rabè yo pa mache ak {wallet} pou kounye a — sèvi ak yon kat.",
-    "walletAmountTooLarge": "Montan sa a depase limit {wallet} la (75 000 HTG). Pou acha sa a, peye ak yon kat.",
+    "natcashDown": "NatCash pa reponn kounye a. Eseye ankò nan kèk minit, oswa peye ak MonCash.",
+    "walletSubscription": "{wallet} pa ka fè peman ki repete. Abònman yo ap disponib lè peman ak kat la louvri, byento.",
+    "walletPromo": "Kòd rabè yo poko mache ak {wallet} — y ap vini ansanm ak peman kat la, byento.",
+    "walletAmountTooLarge": "Montan sa a depase limit {wallet} la (75 000 HTG). Kontakte sipò nou pou nou jwenn yon solisyon pou acha sa a.",
     "natcashExactNote": "Se montan egzak sa a NatCash ap pran sou kont ou.",
     "subSoon": {
       "title": "Abònman yo ap vini byento",
@@ -3423,12 +3423,12 @@
       "money": {
         "title": "Kijan lajan an mache",
         "p": [
-          "Senp epi piblik: sou chak vant, 70% ale jwenn anseyan an, 30% rete pou platfòm nan — peman, videyo, sètifika, sipò. Peman yo fèt ak kat (Visa/Mastercard) sou yon koneksyon sekirize; nou pa janm sere nimewo kat ou."
+          "Senp epi piblik: sou chak vant, 70% ale jwenn anseyan an, 30% rete pou platfòm nan — peman, videyo, sètifika, sipò. Peman yo fèt ak MonCash oswa NatCash, an goud, sou yon koneksyon sekirize — ou konfime ak kòd sekrè w sou pwòp telefòn ou, nou pa janm wè l. Peman ak kat (Visa/Mastercard) ap vini byento."
         ],
         "facts": [
           "70% pou anseyan an",
           "30% pou platfòm nan",
-          "Peman sekirize ak kat"
+          "Peman sekirize MonCash / NatCash"
         ]
       }
     },
