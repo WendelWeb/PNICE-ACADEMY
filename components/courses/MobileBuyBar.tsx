@@ -2,6 +2,7 @@ import { useTranslations } from 'next-intl';
 import { Price, PriceSecondary } from '@/components/ui/Price';
 import { buttonClasses } from '@/components/ui/Button';
 import { AuthCta } from '@/components/auth/AuthCta';
+import { AddToCartButton } from '@/components/cart/AddToCartButton';
 
 /**
  * The mobile counterpart of the sticky desktop buy-card: a fixed, compact
@@ -12,10 +13,13 @@ import { AuthCta } from '@/components/auth/AuthCta';
  */
 export function MobileBuyBar({
   courseSlug,
+  courseTitle,
   priceUsd,
   ctaLabel,
 }: {
   courseSlug: string;
+  /** For the cart snapshot the compact add-to-cart button takes. */
+  courseTitle: string;
   priceUsd: number;
   ctaLabel: string;
 }) {
@@ -39,12 +43,17 @@ export function MobileBuyBar({
             </span>
           </div>
         </div>
-        <AuthCta
-          href={`/checkout?course=${courseSlug}`}
-          className={buttonClasses('primary', 'md', 'shrink-0')}
-        >
-          {ctaLabel}
-        </AuthCta>
+        <div className="flex shrink-0 items-center gap-2">
+          {/* One tap into the basket without leaving the page — the bar is
+              where mobile buyers already look, and mobile IS the audience. */}
+          <AddToCartButton slug={courseSlug} title={courseTitle} priceUsd={priceUsd} compact />
+          <AuthCta
+            href={`/checkout?course=${courseSlug}`}
+            className={buttonClasses('primary', 'md')}
+          >
+            {ctaLabel}
+          </AuthCta>
+        </div>
       </div>
     </div>
   );

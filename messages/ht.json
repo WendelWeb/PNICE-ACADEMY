@@ -3567,6 +3567,8 @@
       "ownedRemoved": "Ou gen « {title} » deja — nou retire l nan panye a. Ou ka peye rès la.",
       "goneRemoved": "« {title} » pa disponib ankò — nou retire l nan panye a.",
       "unavailable": "Panye a poko disponib sou sèvè a. Ou ka achte fòmasyon yo youn pa youn pou kounye a."
-    }
+    },
+    "addShort": "Panye +",
+    "inCartShort": "Nan panye"
   }
 }

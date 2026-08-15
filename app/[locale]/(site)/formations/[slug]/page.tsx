@@ -687,6 +687,7 @@ export default async function CourseDetail({
       {/* ---------- Purchase bar (mobile) ---------- */}
       <MobileBuyBar
         courseSlug={course.slug}
+        courseTitle={courseTitle(course, locale)}
         priceUsd={course.priceUsd}
         ctaLabel={tc('buy')}
       />

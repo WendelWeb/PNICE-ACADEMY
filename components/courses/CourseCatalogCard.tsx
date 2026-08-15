@@ -1,11 +1,12 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import { IconCheck } from '@tabler/icons-react';
+import { IconCheck, IconShoppingCartPlus } from '@tabler/icons-react';
 import { Link } from '@/i18n/routing';
 import { Sceau } from '@/components/ui/Sceau';
 import { Price, PriceSecondary } from '@/components/ui/Price';
 import { Stars } from '@/components/reviews/Stars';
+import { useCart } from '@/components/cart/cart-context';
 import { courseTitle, courseTagline, courseLearn, courseIsBilingual, coursePrimaryLocale } from '@/lib/courseFields';
 import { categoryTone } from '@/lib/courseCategory';
 import { cn } from '@/lib/cn';
@@ -135,10 +136,58 @@ export function CourseCatalogCard({
       {teacher && (
         <Link
           href={`/prof/${teacher.slug}`}
-          className="rounded-b-xl border-t border-ink/10 px-5 py-3 font-mono text-[11px] text-ink/60 transition-colors hover:text-ochre"
+          className="border-t border-ink/10 px-5 py-3 font-mono text-[11px] text-ink/60 transition-colors hover:text-ochre"
         >
           {t('teacherLine', { name: teacher.name })}
         </Link>
+      )}
+
+      {/* ACTION ROW — every marketplace card answers "and now what?" without
+          a click-through: buy this course now, or stack it in the basket.
+          Its own real controls, siblings of the two Links above (never
+          nested inside an anchor). The cart button flips to a confirmation
+          the moment the course is in — instant feedback is what makes an
+          add-to-cart feel like it worked. */}
+      <CardActions course={course} title={courseTitle(course, locale)} />
+    </div>
+  );
+}
+
+/** The card's buy/cart footer. Renders the buy link alone until the cart
+ *  context has hydrated — never a flash of wrong cart state. */
+function CardActions({ course, title }: { course: Course; title: string }) {
+  const t = useTranslations('panye');
+  const tc = useTranslations('common');
+  const cart = useCart();
+  const inCart = Boolean(cart?.hydrated && cart.has(course.slug));
+
+  return (
+    <div className="flex items-stretch gap-2 rounded-b-xl border-t border-ink/10 p-3">
+      <Link
+        href={`/checkout?course=${course.slug}`}
+        className="flex flex-1 items-center justify-center rounded-lg bg-ochre px-3 py-2 font-display text-[13px] font-bold text-[#1b1207] transition-transform hover:-translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ochre"
+      >
+        {tc('buy')}
+      </Link>
+      {cart && cart.hydrated && (
+        inCart ? (
+          <Link
+            href="/panye"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-teal/50 px-3 py-2 font-mono text-[12px] font-medium text-teal transition-colors hover:bg-teal/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal"
+          >
+            <IconCheck size={14} />
+            {t('inCartShort')}
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={() => cart.add({ slug: course.slug, title, priceUsd: course.priceUsd })}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-ink/25 px-3 py-2 font-mono text-[12px] font-medium text-ink/75 transition-colors hover:border-ochre hover:text-ochre focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ochre"
+          >
+            <IconShoppingCartPlus size={14} />
+            {t('addShort')}
+          </button>
+        )
       )}
     </div>
   );

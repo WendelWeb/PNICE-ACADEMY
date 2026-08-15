@@ -3567,6 +3567,8 @@
       "ownedRemoved": "Tu possèdes déjà « {title} » — nous l’avons retiré du panier. Tu peux payer le reste.",
       "goneRemoved": "« {title} » n’est plus disponible — nous l’avons retiré du panier.",
       "unavailable": "Le panier n’est pas encore disponible côté serveur. Tu peux acheter les formations une par une pour l’instant."
-    }
+    },
+    "addShort": "Panier +",
+    "inCartShort": "Dans le panier"
   }
 }
