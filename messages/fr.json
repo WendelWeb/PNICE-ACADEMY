@@ -3568,7 +3568,7 @@
       "goneRemoved": "« {title} » n’est plus disponible — nous l’avons retiré du panier.",
       "unavailable": "Le panier n’est pas encore disponible côté serveur. Tu peux acheter les formations une par une pour l’instant."
     },
-    "addShort": "Panier +",
+    "addShort": "Ajouter au panier",
     "inCartShort": "Dans le panier"
   }
 }
