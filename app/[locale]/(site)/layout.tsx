@@ -57,15 +57,22 @@ export default async function SiteLayout({
 
   return (
     <FxRateProvider rate={fxRate}>
-      <div className="flex min-h-screen flex-col">
-        {clerkEnabled && <UtmCapture />}
-        <Nav />
-        <main className="relative flex-1">
-          <RouteLine />
-          <div className="relative z-10">{children}</div>
-        </main>
-        <Footer />
-      </div>
+      {/* The cart context — MOUNTED HERE, wrapping the whole public site.
+          For one release this import existed without the JSX below, and
+          every cart affordance silently vanished at runtime (useCart() →
+          null → the add buttons rendered nothing, everywhere, for everyone).
+          If you remove this wrapper, remove the cart UI with it. */}
+      <CartProvider>
+        <div className="flex min-h-screen flex-col">
+          {clerkEnabled && <UtmCapture />}
+          <Nav />
+          <main className="relative flex-1">
+            <RouteLine />
+            <div className="relative z-10">{children}</div>
+          </main>
+          <Footer />
+        </div>
+      </CartProvider>
     </FxRateProvider>
   );
 }
