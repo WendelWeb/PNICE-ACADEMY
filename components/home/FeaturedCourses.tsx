@@ -6,6 +6,7 @@ import { buttonClasses } from '@/components/ui/Button';
 import { CourseCatalogCard } from '@/components/courses/CourseCatalogCard';
 import { getCourseRatings } from '@/lib/reviews/reviews';
 import { getCourseTeacherChips } from '@/lib/home/source';
+import { courseMainImage } from '@/lib/courseImage';
 import type { Course } from '@/data/courses';
 
 /** Featured slice — the full catalogue lives one click away on /formations. */
@@ -50,6 +51,7 @@ export async function FeaturedCourses({ courses }: { courses: Course[] }) {
                 course={course}
                 rating={ratings[course.slug] ?? null}
                 teacher={chips[course.slug] ?? null}
+                imageSrc={courseMainImage(course.images, course.code)}
               />
             </Reveal>
           ))}

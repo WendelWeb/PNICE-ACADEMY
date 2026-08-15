@@ -6,6 +6,7 @@ import { Link } from '@/i18n/routing';
 import { Sceau } from '@/components/ui/Sceau';
 import { Price, PriceSecondary } from '@/components/ui/Price';
 import { Stars } from '@/components/reviews/Stars';
+import { SmartImage } from '@/components/ui/SmartImage';
 import { useCart } from '@/components/cart/cart-context';
 import { courseTitle, courseTagline, courseLearn, courseIsBilingual, coursePrimaryLocale } from '@/lib/courseFields';
 import { categoryTone } from '@/lib/courseCategory';
@@ -38,10 +39,21 @@ export function CourseCatalogCard({
   course,
   rating,
   teacher: teacherProp,
+  imageSrc,
 }: {
   course: Course;
   rating?: RatingSummary | null;
   teacher?: { name: string; slug: string } | null;
+  /**
+   * The course's face photo, RESOLVED SERVER-SIDE (lib/courseImage.ts's
+   * `courseMainImage` reads the filesystem, so this client card can't call
+   * it). When present, the card opens on the photo — on mobile it's the
+   * thumbnail that stops the thumb — with the course seal stamped across
+   * its bottom edge and the category chip floated over the image. Omitted ⇒
+   * the pre-image text-first card, byte-identical, so untouched call sites
+   * keep working.
+   */
+  imageSrc?: string | null;
 }) {
   const locale = useLocale();
   const t = useTranslations('catalog');
@@ -62,29 +74,73 @@ export function CourseCatalogCard({
     <div className="card-hover group flex h-full flex-col rounded-xl border border-ink/12 bg-paper-light outline-none transition-colors hover:border-ink/35">
       <Link
         href={`/formations/${course.slug}`}
-        className="flex flex-1 flex-col rounded-t-xl p-5 outline-none focus-visible:ring-2 focus-visible:ring-ochre focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
+        className="flex flex-1 flex-col rounded-t-xl outline-none focus-visible:ring-2 focus-visible:ring-ochre focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
       >
-        <div className="flex items-start justify-between gap-3">
-          <Sceau
-            size="xs"
-            tone="ochre"
-            rotate={-6}
-            print
-            className="card-hover-seal shrink-0"
-          >
-            <span className="font-display text-[12px] font-black leading-none">
-              {course.code}
+        {imageSrc ? (
+          /* PHOTO HEADER — the image is the hook; the brand rides it rather
+             than competing: category chip floated top-right on a blurred
+             paper backdrop (readable over any photo), and the course seal
+             STAMPED across the image's bottom edge, half on the photo, half
+             on the card — the same stamp gesture as the sales page and the
+             certificates, doing real work as the visual anchor. Subtle zoom
+             on hover; tight `sizes` so the optimizer ships small files to
+             data-priced connections. */
+          <div className="relative">
+            <div className="relative aspect-[16/9] overflow-hidden rounded-t-xl bg-paper">
+              <SmartImage
+                src={imageSrc}
+                alt={courseTitle(course, locale)}
+                fill
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px"
+                className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+              />
+              <span
+                className={cn(
+                  'absolute right-3 top-3 rounded-full px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide backdrop-blur-sm',
+                  categoryTone[course.category],
+                )}
+              >
+                {t(`categories.${course.category}`)}
+              </span>
+            </div>
+            <Sceau
+              size="xs"
+              tone="ochre"
+              rotate={-6}
+              print
+              className="card-hover-seal absolute -bottom-4 left-4 shadow-[0_6px_14px_-6px_rgba(16,32,74,0.45)]"
+            >
+              <span className="font-display text-[12px] font-black leading-none">
+                {course.code}
+              </span>
+            </Sceau>
+          </div>
+        ) : null}
+
+        <div className={cn('flex flex-1 flex-col p-5', imageSrc && 'pt-7')}>
+        {!imageSrc && (
+          <div className="flex items-start justify-between gap-3">
+            <Sceau
+              size="xs"
+              tone="ochre"
+              rotate={-6}
+              print
+              className="card-hover-seal shrink-0"
+            >
+              <span className="font-display text-[12px] font-black leading-none">
+                {course.code}
+              </span>
+            </Sceau>
+            <span
+              className={cn(
+                'rounded-full px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide',
+                categoryTone[course.category],
+              )}
+            >
+              {t(`categories.${course.category}`)}
             </span>
-          </Sceau>
-          <span
-            className={cn(
-              'rounded-full px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide',
-              categoryTone[course.category],
-            )}
-          >
-            {t(`categories.${course.category}`)}
-          </span>
-        </div>
+          </div>
+        )}
 
         <h3 className="mt-4 font-display text-xl font-bold leading-tight text-ink">
           {courseTitle(course, locale)}
@@ -130,6 +186,7 @@ export function CourseCatalogCard({
           <span className="shrink-0 font-mono text-[11px] text-graphite/55">
             {tCourse('lessonsCount', { count: course.lessons.length })}
           </span>
+        </div>
         </div>
       </Link>
 

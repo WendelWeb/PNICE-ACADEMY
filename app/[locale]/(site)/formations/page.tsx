@@ -4,6 +4,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Section, Container, Eyebrow } from '@/components/ui/Section';
 import { Sceau } from '@/components/ui/Sceau';
 import { CatalogBrowser } from '@/components/courses/CatalogBrowser';
+import { courseMainImage } from '@/lib/courseImage';
 import { CourseCatalogCard } from '@/components/courses/CourseCatalogCard';
 import { getPublishedCourses } from '@/lib/courses/source';
 import { getCourseTeacherChips } from '@/lib/home/source';
@@ -56,6 +57,11 @@ export default async function FormationsPage({
   // registry as fallback — the same batch read the home grid uses. Gated +
   // never-throws; no DB ⇒ exactly the static mapping as before.
   const teacherChips = await getCourseTeacherChips(courses.map((c) => c.slug));
+  // Course face photos, resolved HERE because lib/courseImage.ts reads the
+  // filesystem (server-only) and the cards are client components.
+  const imageBySlug = Object.fromEntries(
+    courses.map((c) => [c.slug, courseMainImage(c.images, c.code)]),
+  );
 
   return (
     <Section>
@@ -112,7 +118,7 @@ export default async function FormationsPage({
                 </div>
               }
             >
-              <CatalogBrowser courses={courses} teacherChips={teacherChips} />
+              <CatalogBrowser courses={courses} teacherChips={teacherChips} imageBySlug={imageBySlug} />
             </Suspense>
           </div>
         </div>
