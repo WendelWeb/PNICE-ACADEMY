@@ -10,6 +10,7 @@ import { CourseCatalogCard } from '@/components/courses/CourseCatalogCard';
 import { COURSE_CATEGORIES, type Course, type CourseCategory } from '@/data/courses';
 import { getCourseTeacher } from '@/data/teachers';
 import type { TeacherChip } from '@/lib/home/source';
+import type { RatingSummary } from '@/lib/reviews/reviews';
 
 type SortKey = 'priceAsc' | 'priceDesc' | 'az';
 const SORTS: SortKey[] = ['priceAsc', 'priceDesc', 'az'];
@@ -78,6 +79,7 @@ export function CatalogBrowser({
   courses,
   teacherChips,
   imageBySlug,
+  ratingsBySlug,
 }: {
   courses: Course[];
   /** Server-resolved slug → { name, slug } attribution map (DB-first). */
@@ -85,6 +87,9 @@ export function CatalogBrowser({
   /** Server-resolved slug → face-photo URL (courseMainImage is fs-bound,
    *  so the server page passes resolved URLs down). */
   imageBySlug?: Record<string, string[]>;
+  /** Server-resolved slug → real review summary — the card only renders a
+   *  star row when count > 0 (no reviews, no claim). */
+  ratingsBySlug?: Record<string, RatingSummary>;
 }) {
   const t = useTranslations('catalog');
   const locale = useLocale();
@@ -350,7 +355,12 @@ export function CatalogBrowser({
         <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((c, i) => (
             <Reveal key={c.code} delay={(i % 3) * 60}>
-              <CourseCatalogCard course={c} teacher={chipFor(c.slug)} imageSrcs={imageBySlug?.[c.slug]} />
+              <CourseCatalogCard
+                course={c}
+                teacher={chipFor(c.slug)}
+                imageSrcs={imageBySlug?.[c.slug]}
+                rating={ratingsBySlug?.[c.slug]}
+              />
             </Reveal>
           ))}
         </div>

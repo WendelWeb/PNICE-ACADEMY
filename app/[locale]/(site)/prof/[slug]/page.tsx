@@ -14,6 +14,7 @@ import { AuthCta } from '@/components/auth/AuthCta';
 import { CourseCatalogCard } from '@/components/courses/CourseCatalogCard';
 import { SUBSCRIPTION_USD, teacherPassPerks } from '@/data/pricing';
 import { absoluteImageUrl, siteImageSrc, courseImageList } from '@/lib/courseImage';
+import { getCourseRatings } from '@/lib/reviews/reviews';
 import { SITE_URL } from '@/lib/email/layout';
 import { getPublicTeacher } from '@/lib/teacher/public';
 
@@ -76,6 +77,9 @@ export default async function ProfPage({
 
   const courses = teacher.courses;
   const lessonCount = courses.reduce((sum, c) => sum + c.lessons.length, 0);
+  // Real per-course ratings on this teacher's catalogue cards — same batch
+  // read as /formations (gated + never-throws; zero reviews ⇒ no star row).
+  const courseRatings = await getCourseRatings(courses.map((c) => c.slug));
   const bio = teacher.bio;
   // Stage 4 — honest scope: this block sells THIS teacher's pass, so the
   // perk list must promise only their own catalogue (data/pricing.ts's
@@ -244,7 +248,12 @@ export default async function ProfPage({
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {courses.map((course, i) => (
               <Reveal key={course.code} delay={(i % 3) * 70} className="h-full">
-                <CourseCatalogCard course={course} imageSrcs={courseImageList(course.images, course.code)} />
+                <CourseCatalogCard
+                  course={course}
+                  imageSrcs={courseImageList(course.images, course.code)}
+                  rating={courseRatings[course.slug]}
+                  teacher={{ name: teacher.displayName, slug }}
+                />
               </Reveal>
             ))}
           </div>

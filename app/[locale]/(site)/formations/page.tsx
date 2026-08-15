@@ -8,6 +8,7 @@ import { courseImageList } from '@/lib/courseImage';
 import { CourseCatalogCard } from '@/components/courses/CourseCatalogCard';
 import { getPublishedCourses } from '@/lib/courses/source';
 import { getCourseTeacherChips } from '@/lib/home/source';
+import { getCourseRatings } from '@/lib/reviews/reviews';
 
 export const metadata: Metadata = {
   title: 'Fòmasyon — PNICE Academy',
@@ -62,6 +63,12 @@ export default async function FormationsPage({
   const imageBySlug = Object.fromEntries(
     courses.map((c) => [c.slug, courseImageList(c.images, c.code)]),
   );
+  // Real ratings on the CATALOGUE cards (conversion audit #1 — the reviews
+  // existed but only the home grid showed them; the page where buyers
+  // actually compare courses showed none). One batch read, gated +
+  // never-throws; a course with zero reviews renders no star row — no
+  // reviews, no claim.
+  const ratings = await getCourseRatings(courses.map((c) => c.slug));
 
   return (
     <Section>
@@ -113,12 +120,19 @@ export default async function FormationsPage({
                       key={c.code}
                       course={c}
                       teacher={teacherChips[c.slug]}
+                      rating={ratings[c.slug]}
+                      imageSrcs={imageBySlug[c.slug]}
                     />
                   ))}
                 </div>
               }
             >
-              <CatalogBrowser courses={courses} teacherChips={teacherChips} imageBySlug={imageBySlug} />
+              <CatalogBrowser
+                courses={courses}
+                teacherChips={teacherChips}
+                imageBySlug={imageBySlug}
+                ratingsBySlug={ratings}
+              />
             </Suspense>
           </div>
         </div>

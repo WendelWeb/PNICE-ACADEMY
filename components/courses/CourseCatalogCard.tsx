@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { IconCheck, IconShoppingCartPlus } from '@tabler/icons-react';
 import { Link } from '@/i18n/routing';
-import { Sceau } from '@/components/ui/Sceau';
 import { Price, PriceSecondary } from '@/components/ui/Price';
 import { Stars } from '@/components/reviews/Stars';
 import { SmartImage } from '@/components/ui/SmartImage';
@@ -19,9 +18,10 @@ import type { RatingSummary } from '@/lib/reviews/reviews';
 /**
  * The catalogue's discovery card — used both by the interactive toolbar-driven
  * grid (CatalogBrowser) and the server-rendered fallback shown before it
- * hydrates. code + seal + title + category tag + 3 learn-bullets + price +
- * lesson count, per the U4 spec. Client component (next-intl hooks), but
- * composes fine inside a server-rendered subtree.
+ * hydrates. Udemy anatomy by owner request: photo → title → author → rating →
+ * tagline → 3 learn-bullets → price boldest and last. No internal codes
+ * (PA-02 etc.) — catalogue numbers mean nothing to a buyer. Client component
+ * (next-intl hooks), but composes fine inside a server-rendered subtree.
  *
  * Teacher attribution (M2): a subtle mono line at the card's foot, its own
  * real `<Link>` to /prof/[slug] — not nested inside the main course `<Link>`,
@@ -78,57 +78,32 @@ export function CourseCatalogCard({
         className="flex flex-1 flex-col rounded-t-xl outline-none focus-visible:ring-2 focus-visible:ring-ochre focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
       >
         {imageSrcs && imageSrcs.length > 0 ? (
-          /* PHOTO HEADER — the image is the hook; the brand rides it rather
-             than competing: category chip floated top-right on a blurred
-             paper backdrop (readable over any photo), and the course seal
-             STAMPED across the image's bottom edge, half on the photo, half
-             on the card — the same stamp gesture as the sales page and the
-             certificates, doing real work as the visual anchor. Subtle zoom
-             on hover; tight `sizes` so the optimizer ships small files to
-             data-priced connections. */
-          <div className="relative">
-            <div className="relative aspect-[16/9] overflow-hidden rounded-t-xl bg-paper">
-              <CardPhoto srcs={imageSrcs} alt={courseTitle(course, locale)} />
-              <span
-                className={cn(
-                  'absolute right-3 top-3 rounded-full px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide backdrop-blur-sm',
-                  categoryTone[course.category],
-                )}
-              >
-                {t(`categories.${course.category}`)}
-              </span>
-            </div>
-            <Sceau
-              size="xs"
-              tone="ochre"
-              rotate={-6}
-              print
-              className="card-hover-seal absolute -bottom-4 left-4 shadow-[0_6px_14px_-6px_rgba(16,32,74,0.45)]"
+          /* PHOTO HEADER — the image is the whole hook, Udemy-style: no
+             internal codes stamped on it (owner: « enlève les infos genre
+             PA-02 » — a catalogue number means something to us, nothing to
+             a buyer). Only the category chip floats top-right on a blurred
+             paper backdrop, readable over any photo. Subtle zoom on hover;
+             tight `sizes` so the optimizer ships small files to data-priced
+             connections. */
+          <div className="relative aspect-[16/9] overflow-hidden rounded-t-xl bg-paper">
+            <CardPhoto srcs={imageSrcs} alt={courseTitle(course, locale)} />
+            <span
+              className={cn(
+                'absolute right-3 top-3 rounded-full px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide backdrop-blur-sm',
+                categoryTone[course.category],
+              )}
             >
-              <span className="font-display text-[12px] font-black leading-none">
-                {course.code}
-              </span>
-            </Sceau>
+              {t(`categories.${course.category}`)}
+            </span>
           </div>
         ) : null}
 
-        <div className={cn('flex flex-1 flex-col p-5', imageSrcs && imageSrcs.length > 0 && 'pt-7')}>
+        <div className="flex flex-1 flex-col p-4">
         {!(imageSrcs && imageSrcs.length > 0) && (
-          <div className="flex items-start justify-between gap-3">
-            <Sceau
-              size="xs"
-              tone="ochre"
-              rotate={-6}
-              print
-              className="card-hover-seal shrink-0"
-            >
-              <span className="font-display text-[12px] font-black leading-none">
-                {course.code}
-              </span>
-            </Sceau>
+          <div className="mb-3">
             <span
               className={cn(
-                'rounded-full px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide',
+                'inline-flex rounded-full px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide',
                 categoryTone[course.category],
               )}
             >
@@ -137,62 +112,63 @@ export function CourseCatalogCard({
           </div>
         )}
 
-        <h3 className="mt-4 font-display text-xl font-bold leading-tight text-ink">
+        {/* UDEMY-ANATOMY CONTENT (owner ask): tight vertical rhythm, and the
+            marketplace hierarchy every buyer already knows how to read —
+            title → author → rating → promise → proof bullets → price last
+            and boldest. Same information as before, re-ordered into the
+            grammar of the biggest course marketplace on earth. */}
+        <h3 className="mt-2 line-clamp-2 font-display text-[17px] font-bold leading-snug text-ink">
           {courseTitle(course, locale)}
         </h3>
-        <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-graphite/75">
-          {courseTagline(course, locale)}
-        </p>
-        {!bilingual && (
-          <span className="mt-2 inline-flex w-fit items-center rounded-full border border-ink/12 bg-ink/[0.04] px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-ink/55">
-            {t(`languageBadge.${primary}`)}
+
+        {/* Author directly under the title, Udemy-style — plain text on
+            purpose (a nested anchor inside the card link is invalid HTML);
+            the clickable prof profile lives on the course page. */}
+        {teacher && (
+          <p className="mt-0.5 truncate text-[12px] text-graphite/60">{teacher.name}</p>
+        )}
+
+        {/* The Udemy signature row: bold amber score, stars, muted count.
+            Only when real reviews exist — no reviews, no claim. */}
+        {showStars && (
+          <span className="mt-1 flex items-center gap-1.5">
+            <span className="font-mono text-[13px] font-bold text-ochre">
+              {rating!.avg!.toFixed(1)}
+            </span>
+            <Stars value={rating!.avg!} size={13} />
+            <span className="font-mono text-[11px] text-ink/45">({rating!.count})</span>
           </span>
         )}
 
-        <ul className="mt-4 space-y-1.5">
+        <p className="mt-2 line-clamp-2 text-[13px] leading-relaxed text-graphite/75">
+          {courseTagline(course, locale)}
+        </p>
+
+        <ul className="mt-2.5 space-y-1">
           {learn.map((point, i) => (
-            <li key={i} className="flex gap-2 text-[13px] leading-snug text-graphite">
-              <IconCheck size={14} className="mt-0.5 shrink-0 text-teal" />
+            <li key={i} className="flex gap-2 text-[12px] leading-snug text-graphite/85">
+              <IconCheck size={13} className="mt-0.5 shrink-0 text-teal" />
               <span className="line-clamp-1">{point}</span>
             </li>
           ))}
         </ul>
 
-        {showStars && (
-          <span className="mt-3 flex items-center gap-1.5">
-            <Stars value={rating!.avg!} size={13} />
-            <span className="font-mono text-[11px] text-ink/55">
-              {rating!.avg!.toFixed(1)} ({rating!.count})
-            </span>
-          </span>
-        )}
+        {/* Spacer so every card's price row sits on the same baseline
+            regardless of text length — the grid reads as ONE system. */}
+        <div className="flex-1" />
 
-        <div className="mt-5 flex items-end justify-between gap-3 border-t border-ink/10 pt-4">
-          <div>
-            <Price
-              usd={course.priceUsd}
-              className="font-mono text-lg font-semibold text-ink"
-            />
-            <PriceSecondary
-              usd={course.priceUsd}
-              className="ml-1 font-mono text-[11px] text-graphite/55"
-            />
+        <div className="mt-3 flex items-end justify-between gap-3 border-t border-ink/10 pt-3">
+          <div className="flex items-baseline gap-1.5">
+            <Price usd={course.priceUsd} className="font-display text-xl font-black text-ink" />
+            <PriceSecondary usd={course.priceUsd} className="font-mono text-[11px] text-graphite/55" />
           </div>
           <span className="shrink-0 font-mono text-[11px] text-graphite/55">
             {tCourse('lessonsCount', { count: course.lessons.length })}
+            {!bilingual && <span className="ml-1.5">· {t(`languageBadge.${primary}`)}</span>}
           </span>
         </div>
         </div>
       </Link>
-
-      {teacher && (
-        <Link
-          href={`/prof/${teacher.slug}`}
-          className="border-t border-ink/10 px-5 py-3 font-mono text-[11px] text-ink/60 transition-colors hover:text-ochre"
-        >
-          {t('teacherLine', { name: teacher.name })}
-        </Link>
-      )}
 
       {/* ACTION ROW — every marketplace card answers "and now what?" without
           a click-through: buy this course now, or stack it in the basket.
