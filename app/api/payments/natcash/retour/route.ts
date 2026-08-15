@@ -53,6 +53,9 @@ export async function GET(req: NextRequest) {
       // course's checkout so retrying is one tap. Note that `settleNatcash-
       // Order` only ever returns this on a confirmed non-payment; anything
       // uncertain arrives below as 'pending'.
+      if ('courseCount' in result && result.courseCount && result.courseCount > 1) {
+        return NextResponse.redirect(`${origin}/${locale}/panye`, { status: 303 });
+      }
       return NextResponse.redirect(`${origin}/${locale}/checkout?${course.slice(1)}`, { status: 303 });
 
     default: {

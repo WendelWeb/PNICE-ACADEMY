@@ -15,9 +15,9 @@
  * `rail: 'natcash'` — so enrolment, the teacher's 70%, the receipt and the
  * idempotency rule are literally the same code, and cannot drift.
  */
-import { db } from '@/db';
+import { db, isMissingColumnError } from '@/db';
 import { checkoutSessions, webhookLogs } from '@/db/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { fulfillMoncashOrder } from './moncash-fulfill';
 import { natcashConfigured, retrieveNatcashOrder } from './natcash';
 import { allocateHtgShares } from './cart';
@@ -63,11 +63,75 @@ const SETTLE_COLUMNS = {
   amountCents: checkoutSessions.amountCents,
   sessionId: checkoutSessions.sessionId,
   completedAt: checkoutSessions.completedAt,
+  cartId: checkoutSessions.cartId,
 };
+
+/** SETTLE_COLUMNS as a pre-0021 DB can answer them (cartId → null there). */
+const SETTLE_COLUMNS_PRE_0021 = {
+  id: checkoutSessions.id,
+  userId: checkoutSessions.userId,
+  courseSlug: checkoutSessions.courseSlug,
+  amountCents: checkoutSessions.amountCents,
+  sessionId: checkoutSessions.sessionId,
+  completedAt: checkoutSessions.completedAt,
+};
+
+type SettleRow = {
+  id: string;
+  userId: string | null;
+  courseSlug: string | null;
+  amountCents: number;
+  sessionId: string | null;
+  completedAt: Date | null;
+  cartId: string | null;
+};
+
+/**
+ * Every row `orderId` stands for — ALWAYS the whole basket. Same three-way
+ * resolution as the MonCash rail's `settleRowsFor`, for the same reason: a
+ * basket row reached by its OWN id (recovery paths) must expand to its
+ * siblings before any gourde allocation, or the basket's total gets booked
+ * onto one course. ORDER BY id keeps the remainder-gourde split stable
+ * across retries; only the missing-column error is swallowed (pre-0021 DB —
+ * where no cart can exist), anything else rethrows.
+ */
+async function natcashSettleRowsFor(orderId: string): Promise<SettleRow[]> {
+  let byId: SettleRow[];
+  try {
+    byId = await db.select(SETTLE_COLUMNS).from(checkoutSessions).where(eq(checkoutSessions.id, orderId)).limit(1);
+  } catch (err) {
+    if (!isMissingColumnError(err)) throw err;
+    const rows = await db
+      .select(SETTLE_COLUMNS_PRE_0021)
+      .from(checkoutSessions)
+      .where(eq(checkoutSessions.id, orderId))
+      .limit(1);
+    return rows.map((r) => ({ ...r, cartId: null }));
+  }
+  if (byId.length > 0) {
+    const cartId = byId[0].cartId;
+    if (!cartId) return byId;
+    return db
+      .select(SETTLE_COLUMNS)
+      .from(checkoutSessions)
+      .where(eq(checkoutSessions.cartId, cartId))
+      .orderBy(checkoutSessions.id);
+  }
+  try {
+    return await db
+      .select(SETTLE_COLUMNS)
+      .from(checkoutSessions)
+      .where(eq(checkoutSessions.cartId, orderId))
+      .orderBy(checkoutSessions.id);
+  } catch (err) {
+    if (isMissingColumnError(err)) return [];
+    throw err;
+  }
+}
 
 export type NatcashSettleResult =
   | { status: 'granted' | 'already'; locale: 'ht' | 'fr'; courseSlug: string; courseCount?: number }
-  | { status: 'pending' | 'unpaid' | 'unknown_order' | 'not_configured' | 'error'; locale: 'ht' | 'fr'; courseSlug?: string };
+  | { status: 'pending' | 'unpaid' | 'unknown_order' | 'not_configured' | 'error'; locale: 'ht' | 'fr'; courseSlug?: string; courseCount?: number };
 
 /** Best-effort ops signal, mirroring the MonCash rail's. NEVER THROWS. */
 async function logNatcashFailure(orderId: string, eventType: string, message: string): Promise<void> {
@@ -103,22 +167,7 @@ export type NatcashProof = {
 export async function settleNatcashWithProof(orderId: string, proof: NatcashProof): Promise<NatcashSettleResult> {
   if (!process.env.DATABASE_URL) return { status: 'not_configured', locale: 'ht' };
   try {
-    // `orderId` is either one row's own id, or a basket's cartId (« panye »)
-    // — same resolution rule as the MonCash rail. The cart lookup tolerates
-    // a DB that still lags migration 0021: no column ⇒ no cart can exist.
-    let rows = await db
-      .select(SETTLE_COLUMNS)
-      .from(checkoutSessions)
-      .where(eq(checkoutSessions.id, orderId))
-      .limit(1);
-    if (rows.length === 0) {
-      try {
-        rows = await db.select(SETTLE_COLUMNS).from(checkoutSessions).where(eq(checkoutSessions.cartId, orderId));
-      } catch {
-        rows = [];
-      }
-    }
-    rows = rows.filter((r) => r.userId && r.courseSlug);
+    const rows = (await natcashSettleRowsFor(orderId)).filter((r) => r.userId && r.courseSlug);
 
     if (rows.length === 0) {
       await logNatcashFailure(orderId, 'order.unknown', 'checkout_sessions row not found or incomplete');
@@ -126,13 +175,19 @@ export async function settleNatcashWithProof(orderId: string, proof: NatcashProo
     }
     const first = rows[0];
     const locale = decodeNatcashLocale(first.sessionId);
-    if (!proof.paid) return { status: 'unpaid', locale, courseSlug: first.courseSlug! };
+    if (!proof.paid) return { status: 'unpaid', locale, courseSlug: first.courseSlug!, courseCount: rows.length };
 
     // One verified payment → one fulfilment PER COURSE through the shared
     // idempotent path; the basket's disclosed gourdes are allocated per
     // course so the receipts sum to the real debit (lib/payments/cart.ts).
+    //
+    // A failed course never aborts the loop, and each success closes its own
+    // row immediately — the mirror of the MonCash settle, and doubly vital
+    // here: Kobara gets a 200 either way (no redelivery), so the rows a
+    // premature return would have skipped had NO automatic path back at all.
     const shares = allocateHtgShares(proof.amountHtg ?? 0, rows.map((r) => r.amountCents));
     let processed = 0;
+    let failed = 0;
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const outcome = await fulfillMoncashOrder({
@@ -148,19 +203,22 @@ export async function settleNatcashWithProof(orderId: string, proof: NatcashProo
         locale,
       });
       if (outcome === 'error') {
+        failed += 1;
         await logNatcashFailure(row.id, 'order.fulfill', 'fulfillMoncashOrder returned error');
-        return { status: 'error', locale, courseSlug: row.courseSlug! };
+        continue;
       }
       if (outcome === 'processed') processed += 1;
+      if (!row.completedAt) {
+        await db
+          .update(checkoutSessions)
+          .set({ completedAt: new Date() })
+          .where(eq(checkoutSessions.id, row.id))
+          .catch(() => {});
+      }
     }
 
-    const openIds = rows.filter((r) => !r.completedAt).map((r) => r.id);
-    if (openIds.length > 0) {
-      await db
-        .update(checkoutSessions)
-        .set({ completedAt: new Date() })
-        .where(inArray(checkoutSessions.id, openIds))
-        .catch(() => {});
+    if (failed > 0) {
+      return { status: 'error', locale, courseSlug: first.courseSlug!, courseCount: rows.length };
     }
     return {
       status: processed > 0 ? 'granted' : 'already',
@@ -191,21 +249,8 @@ export async function settleNatcashOrder(orderId: string): Promise<NatcashSettle
     return { status: 'not_configured', locale: 'ht' };
   }
   try {
-    // Same by-id-then-by-cart resolution as `settleNatcashWithProof`: for a
-    // basket the return URL carries the CART id, which no row's own id equals.
-    let rows = await db
-      .select(SETTLE_COLUMNS)
-      .from(checkoutSessions)
-      .where(eq(checkoutSessions.id, orderId))
-      .limit(1);
-    if (rows.length === 0) {
-      try {
-        rows = await db.select(SETTLE_COLUMNS).from(checkoutSessions).where(eq(checkoutSessions.cartId, orderId));
-      } catch {
-        rows = [];
-      }
-    }
-    const usable = rows.filter((r) => r.courseSlug);
+    // Same whole-basket resolution as `settleNatcashWithProof`.
+    const usable = (await natcashSettleRowsFor(orderId)).filter((r) => r.courseSlug);
     if (usable.length === 0) return { status: 'unknown_order', locale: 'ht' };
     const first = usable[0];
 

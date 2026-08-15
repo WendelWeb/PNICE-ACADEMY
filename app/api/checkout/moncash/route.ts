@@ -22,6 +22,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { db, isMissingColumnError } from '@/db';
 import { users, checkoutSessions } from '@/db/schema';
+import { checkoutSessionsPre0021 } from '@/db/checkout-compat';
 import { eq, inArray } from 'drizzle-orm';
 import { clerkEnabled } from '@/lib/clerk';
 import { moncashConfigured, createMoncashOrder, usdCentsToHtg, MONCASH_MAX_HTG } from '@/lib/payments/moncash';
@@ -107,6 +108,13 @@ export async function POST(req: NextRequest) {
 
   const rate = await getFxRate();
   const totalCents = products.reduce((a, p) => a + p.amountCents, 0);
+  // PRICE-CHANGED GUARD: the client sends the total it DISPLAYED; if a
+  // teacher moved a price between render and tap, the buyer would authorise
+  // one figure and the wallet would debit another — refuse with the fresh
+  // total so the page re-shows it instead of charging through the surprise.
+  if (body.expectedTotalCents !== null && body.expectedTotalCents !== totalCents) {
+    return NextResponse.json({ error: 'price_changed', totalCents }, { status: 409 });
+  }
   // ONE conversion of the basket TOTAL — the same figure the cart page
   // displays, so summary and debit cannot disagree. Per-course gourdes are
   // allocated from the amount the provider actually reports at settlement
@@ -153,16 +161,32 @@ export async function POST(req: NextRequest) {
     rowIds = inserted.map((r) => r.id);
     orderId = cartId ?? rowIds[0];
   } catch (err) {
-    // A live DB that still lags migration 0021 (`cart_id`) cannot LINK the
-    // rows of a basket, and charging one total against unlinked rows would
-    // strand the buyer's money — refuse the basket honestly; single-course
-    // purchases don't carry the column and keep working. Money-critical
-    // fallback, same idiom as db/payments-compat.ts.
-    if (cartId && isMissingColumnError(err)) {
+    if (!isMissingColumnError(err)) throw err;
+    // A live DB that still lags migration 0021 (`cart_id`). Drizzle names
+    // every schema column in every INSERT (proved in db/checkout-compat.ts),
+    // so even a single-course insert trips over the missing column. Two
+    // honest outcomes:
+    //   - A BASKET cannot fall back — unlinked rows for one charged total
+    //     would strand the buyer's money. Refuse it plainly.
+    //   - A SINGLE purchase retries through the pre-0021 twin table and
+    //     keeps working exactly as before the column existed.
+    if (cartId) {
       console.error('[checkout/moncash] cart refused — checkout_sessions.cart_id missing, run `npm run db:push`.');
       return NextResponse.json({ error: 'cart_unavailable' }, { status: 503 });
     }
-    throw err;
+    console.warn('[checkout/moncash] insert fell back to pre-0021 columns — run `npm run db:push`.');
+    const inserted = await db
+      .insert(checkoutSessionsPre0021)
+      .values({
+        userId: row.id,
+        productType: 'course',
+        courseSlug: products[0].courseSlug,
+        amountCents: products[0].amountCents,
+        sessionId: encodeMoncashRef(locale),
+      })
+      .returning({ id: checkoutSessionsPre0021.id });
+    rowIds = inserted.map((r) => r.id);
+    orderId = rowIds[0];
   }
 
   const origin = req.nextUrl.origin;

@@ -23,12 +23,26 @@ export type CheckoutBody = {
    *  a clear error if it no longer applies. The client never sends amounts,
    *  only the code. `null` = no code applied. */
   promoCode: string | null;
+  /**
+   * The TOTAL (in cents) the client DISPLAYED when the buyer tapped pay —
+   * never used to price anything (the server always re-resolves), only to
+   * REFUSE when the display was stale: a wallet debits right after the
+   * redirect, so a buyer must never authorise one figure and be charged
+   * another. `null` = legacy caller, guard skipped.
+   */
+  expectedTotalCents: number | null;
   locale: 'fr' | 'ht';
 };
 
 function readTeacherSlug(b: Record<string, unknown>): string | null {
   return typeof b.teacherSlug === 'string' && b.teacherSlug.length > 0 && b.teacherSlug.length <= 100
     ? b.teacherSlug
+    : null;
+}
+
+function readExpectedTotal(b: Record<string, unknown>): number | null {
+  return typeof b.expectedTotalCents === 'number' && Number.isInteger(b.expectedTotalCents) && b.expectedTotalCents > 0 && b.expectedTotalCents <= 100_000_000
+    ? b.expectedTotalCents
     : null;
 }
 
@@ -49,6 +63,7 @@ export function parseCheckoutBody(raw: unknown): CheckoutBody | null {
       courseSlugs: [],
       teacherSlug: readTeacherSlug(b),
       promoCode: readPromoCode(b),
+      expectedTotalCents: readExpectedTotal(b),
       locale,
     };
   if (b.productType !== 'course') return null;
@@ -64,6 +79,7 @@ export function parseCheckoutBody(raw: unknown): CheckoutBody | null {
       courseSlugs: slugs,
       teacherSlug: null,
       promoCode: readPromoCode(b),
+      expectedTotalCents: readExpectedTotal(b),
       locale,
     };
   }
@@ -75,6 +91,7 @@ export function parseCheckoutBody(raw: unknown): CheckoutBody | null {
       courseSlugs: [b.courseSlug],
       teacherSlug: null,
       promoCode: readPromoCode(b),
+      expectedTotalCents: readExpectedTotal(b),
       locale,
     };
   return null;

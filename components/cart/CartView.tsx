@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
   IconTrash,
@@ -29,10 +29,15 @@ import type { CheckoutMethod } from '@/components/checkout/PaymentMethods';
 export function CartView({
   methods,
   fxRateHtg,
+  catalog,
 }: {
   /** Live wallet rails, resolved server-side (splitProviders). */
   methods: CheckoutMethod[];
   fxRateHtg: number;
+  /** CURRENT titles/prices of every published course, resolved by the
+   *  server shell — the truth the localStorage snapshots are reconciled
+   *  against on mount, so the totals shown are the totals charged. */
+  catalog: Record<string, { title: string; priceUsd: number }>;
 }) {
   const t = useTranslations('panye');
   const tc = useTranslations('checkout');
@@ -41,6 +46,28 @@ export function CartView({
   const [selected, setSelected] = useState(methods[0]?.id ?? '');
   const [busy, setBusy] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // RECONCILIATION: snapshots taken at add-to-cart time drift — a teacher
+  // renames or reprices, a course gets unpublished. The server passed the
+  // current catalogue; every line is refreshed against it, and a vanished
+  // course is dropped with a message rather than silently charged-for.
+  // Backed server-side by the routes' own price_changed refusal, so even a
+  // page left open for hours can never authorise one figure and debit
+  // another.
+  useEffect(() => {
+    if (!cart || !cart.hydrated) return;
+    for (const item of cart.items) {
+      const fresh = catalog[item.slug];
+      if (!fresh) {
+        cart.remove(item.slug);
+        setErrorMsg(t('err.goneRemoved', { title: item.title }));
+      } else if (fresh.priceUsd !== item.priceUsd || fresh.title !== item.title) {
+        cart.remove(item.slug);
+        cart.add({ slug: item.slug, title: fresh.title, priceUsd: fresh.priceUsd });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reconcile per hydration/catalog
+  }, [cart?.hydrated, catalog]);
 
   if (!cart || !cart.hydrated) {
     return <IconLoader2 size={22} className="mx-auto mt-16 animate-spin text-ink/40" />;
@@ -74,6 +101,10 @@ export function CartView({
         body: JSON.stringify({
           productType: 'course',
           courseSlugs: cart.items.map((i) => i.slug),
+          // The total the buyer is LOOKING AT — the route refuses with
+          // price_changed when the fresh server total differs, so a stale
+          // page can never authorise one figure and debit another.
+          expectedTotalCents: Math.round(totalUsd * 100),
           locale,
         }),
       });
@@ -103,6 +134,12 @@ export function CartView({
         const gone = cart.items.find((i) => i.slug === data.courseSlug);
         cart.remove(data.courseSlug);
         setErrorMsg(t('err.goneRemoved', { title: gone?.title ?? data.courseSlug }));
+      } else if (data.error === 'price_changed') {
+        // A price moved between render and tap. Reload: the server shell
+        // re-resolves the catalogue, the reconciler updates the lines, and
+        // the buyer sees the REAL total before approving anything.
+        window.location.reload();
+        return;
       } else if (data.error === 'cart_unavailable') {
         setErrorMsg(t('err.unavailable'));
       } else if (data.error === 'amount_too_large') {

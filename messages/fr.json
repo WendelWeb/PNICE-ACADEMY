@@ -3555,7 +3555,7 @@
     "title": "Ton panier",
     "add": "Ajouter au panier",
     "inCartGo": "Dans le panier ✓ — voir ({count})",
-    "linkLabel": "Ton panier — {count} formations",
+    "linkLabel": "Ton panier — {count, plural, one {1 formation} other {# formations}}",
     "removeLabel": "Retirer {title} du panier",
     "payCta": "Payer {count, plural, one {1 formation} other {# formations}} — {amount}",
     "empty": {

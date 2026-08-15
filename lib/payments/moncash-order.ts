@@ -13,7 +13,7 @@
  * only accepted proof is MonCash's own `RetrieveOrderPayment` answering
  * `message: "successful"` for our order id.
  */
-import { db } from '@/db';
+import { db, isMissingColumnError } from '@/db';
 import { checkoutSessions, webhookLogs } from '@/db/schema';
 import { eq, inArray } from 'drizzle-orm';
 import { retrieveMoncashOrderFrom, moncashConfigured } from './moncash';
@@ -199,7 +199,7 @@ export function isMoncashRef(ref: string | null | undefined): boolean {
 
 export type SettleResult =
   | { status: 'granted' | 'already'; locale: 'ht' | 'fr'; courseSlug: string; courseCount?: number }
-  | { status: 'unpaid' | 'unknown_order' | 'not_configured' | 'error'; locale: 'ht' | 'fr'; courseSlug?: string };
+  | { status: 'unpaid' | 'unknown_order' | 'not_configured' | 'error'; locale: 'ht' | 'fr'; courseSlug?: string; courseCount?: number };
 
 /**
  * Verifies `orderId` against MonCash and, if it really was paid, grants
@@ -214,6 +214,7 @@ type SettleRow = {
   amountCents: number;
   sessionId: string | null;
   completedAt: Date | null;
+  cartId: string | null;
 };
 
 const SETTLE_COLUMNS = {
@@ -223,33 +224,76 @@ const SETTLE_COLUMNS = {
   amountCents: checkoutSessions.amountCents,
   sessionId: checkoutSessions.sessionId,
   completedAt: checkoutSessions.completedAt,
+  cartId: checkoutSessions.cartId,
+};
+
+/** SETTLE_COLUMNS as a pre-0021 DB can answer them — `cartId` grandfathered
+ *  to null, which is the truth there: no cart can exist without the column. */
+const SETTLE_COLUMNS_PRE_0021 = {
+  id: checkoutSessions.id,
+  userId: checkoutSessions.userId,
+  courseSlug: checkoutSessions.courseSlug,
+  amountCents: checkoutSessions.amountCents,
+  sessionId: checkoutSessions.sessionId,
+  completedAt: checkoutSessions.completedAt,
 };
 
 /**
- * Every checkout row `orderId` stands for: the single row whose own id it
- * is, OR every row of the basket whose cartId it is (« panye », migration
- * 0021 — the wallets take one payment for a whole basket, so the CART id is
- * what travels to the gateway).
+ * Every checkout row `orderId` stands for — ALWAYS the whole basket.
  *
- * The cart lookup is wrapped separately because a live DB that still lags
- * the migration throws on the `cart_id` column — and on such a DB no cart
- * can exist (checkout refuses baskets without the column), so "no rows" is
- * the truthful answer, not an error.
+ * `orderId` can be three things: a single purchase's own row id, a basket's
+ * cartId (what the gateway callbacks carry), or — the case that used to
+ * corrupt the books — ONE ROW of a basket, arriving alone from the
+ * reconcile cron's per-row sweep. That last caller would settle the single
+ * row, and since the provider only knows the basket's TOTAL gourdes, the
+ * whole total was allocated to that one course: books and receipts inflated
+ * up to N×. So whenever a row resolved by id belongs to a cart, this
+ * EXPANDS to every sibling before anything is allocated — settlement is
+ * per-basket by construction, whoever asked.
+ *
+ * ORDER BY id everywhere a basket is loaded: `allocateHtgShares` breaks
+ * remainder ties by position, so a stable order is what keeps a partial
+ * failure's retry allocating the same split instead of inventing a gourde.
+ *
+ * Pre-0021 tolerance: `cartId` reads fall back to the pre-migration column
+ * list (grandfathered null) — but ONLY on the missing-column error. Any
+ * other failure rethrows: swallowing a transient DB error here would turn a
+ * real, paid basket into 'unknown_order'.
  */
 async function settleRowsFor(orderId: string): Promise<SettleRow[]> {
-  const byId = await db
-    .select(SETTLE_COLUMNS)
-    .from(checkoutSessions)
-    .where(eq(checkoutSessions.id, orderId))
-    .limit(1);
-  if (byId.length > 0) return byId;
+  let byId: SettleRow[];
+  try {
+    byId = await db.select(SETTLE_COLUMNS).from(checkoutSessions).where(eq(checkoutSessions.id, orderId)).limit(1);
+  } catch (err) {
+    if (!isMissingColumnError(err)) throw err;
+    const rows = await db
+      .select(SETTLE_COLUMNS_PRE_0021)
+      .from(checkoutSessions)
+      .where(eq(checkoutSessions.id, orderId))
+      .limit(1);
+    return rows.map((r) => ({ ...r, cartId: null }));
+  }
+  if (byId.length > 0) {
+    const cartId = byId[0].cartId;
+    if (!cartId) return byId;
+    // A basket row reached by its own id — settle the WHOLE basket.
+    return db
+      .select(SETTLE_COLUMNS)
+      .from(checkoutSessions)
+      .where(eq(checkoutSessions.cartId, cartId))
+      .orderBy(checkoutSessions.id);
+  }
+  // Not a row id — try it as a cartId. On a pre-0021 DB this throws on the
+  // column; no cart can exist there, so "no rows" is the truthful answer.
   try {
     return await db
       .select(SETTLE_COLUMNS)
       .from(checkoutSessions)
-      .where(eq(checkoutSessions.cartId, orderId));
-  } catch {
-    return [];
+      .where(eq(checkoutSessions.cartId, orderId))
+      .orderBy(checkoutSessions.id);
+  } catch (err) {
+    if (isMissingColumnError(err)) return [];
+    throw err;
   }
 }
 
@@ -270,8 +314,11 @@ export async function settleMoncashOrder(orderId: string): Promise<SettleResult>
 
     // Verify by the PROVIDER's reference when we have one. Digicel answers to
     // our own order id, but Bazik only answers to the `BZK_…` id it minted, so
-    // assuming our id here would make every Bazik payment unverifiable.
-    const providerRef = decodeMoncashProviderRef(first.sessionId) ?? orderId;
+    // assuming our id here would make every Bazik payment unverifiable. When
+    // no ref was ever persisted (crash between create and the sessionId
+    // update), the id the provider knew is the CART id for a basket — never a
+    // row id, which is what `orderId` is when the reconcile cron called.
+    const providerRef = decodeMoncashProviderRef(first.sessionId) ?? first.cartId ?? orderId;
     // Ask the SAME provider that created the order, not whichever one the
     // current env resolves to — see `retrieveMoncashOrderFrom`'s header.
     const providerId = decodeMoncashProviderId(first.sessionId);
@@ -285,7 +332,7 @@ export async function settleMoncashOrder(orderId: string): Promise<SettleResult>
     if (!remote.paid) {
       // Abandoned or still pending. Not an error — the buyer may simply have
       // backed out; nothing is granted and nothing is recorded.
-      return { status: 'unpaid', locale, courseSlug: first.courseSlug! };
+      return { status: 'unpaid', locale, courseSlug: first.courseSlug!, courseCount: rows.length };
     }
 
     // ONE payment verified → one fulfilment PER COURSE, each through the
@@ -295,9 +342,19 @@ export async function settleMoncashOrder(orderId: string): Promise<SettleResult>
     // every receipt shows a real figure and the shares sum to the debit
     // (lib/payments/cart.ts). Sequential on purpose — these share DB
     // connections inside one webhook invocation.
+    //
+    // A failed course NEVER aborts the loop: the buyer paid for every line,
+    // each fulfilment is independent, and stopping early would leave the
+    // remaining courses paid-but-undelivered AND rob the succeeded ones of
+    // their completedAt (the abandoned-cart cron would then chase — and
+    // email about — a basket that was largely delivered). Each success is
+    // closed immediately; failures are logged per-row and 'error' is only
+    // returned at the end, so the webhook/cron re-drive retries exactly the
+    // rows that need it (fulfilment is idempotent — re-driving the whole
+    // basket cannot double anything).
     const shares = allocateHtgShares(remote.amountHtg ?? 0, rows.map((r) => r.amountCents));
     let processed = 0;
-    let already = 0;
+    let failed = 0;
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const outcome = await fulfillMoncashOrder({
@@ -312,25 +369,27 @@ export async function settleMoncashOrder(orderId: string): Promise<SettleResult>
         locale,
       });
       if (outcome === 'error') {
-        // Stop the tally but DON'T abort the loop: the remaining courses'
-        // money already moved, and each fulfilment is independent. The
-        // webhook log + reconcile cron re-drive whatever failed here.
+        failed += 1;
         await logMoncashFailure(row.id, 'order.fulfill', 'fulfillMoncashOrder returned error');
-        return { status: 'error', locale, courseSlug: row.courseSlug! };
+        continue;
       }
       if (outcome === 'processed') processed += 1;
-      else already += 1;
+      // Close THIS row the moment its fulfilment stands — never held hostage
+      // by a sibling's failure. Best effort and idempotent.
+      if (!row.completedAt) {
+        await db
+          .update(checkoutSessions)
+          .set({ completedAt: new Date() })
+          .where(eq(checkoutSessions.id, row.id))
+          .catch(() => {});
+      }
     }
 
-    // Mark every row closed so the abandoned-cart cron stops chasing them.
-    // Best effort and idempotent; access has already been granted above.
-    const openIds = rows.filter((r) => !r.completedAt).map((r) => r.id);
-    if (openIds.length > 0) {
-      await db
-        .update(checkoutSessions)
-        .set({ completedAt: new Date() })
-        .where(inArray(checkoutSessions.id, openIds))
-        .catch(() => {});
+    if (failed > 0) {
+      // Some course(s) still owed — surface 'error' so the return page shows
+      // the honest pending state and the reconcile cron re-drives the open
+      // rows. Whatever succeeded above is already granted and closed.
+      return { status: 'error', locale, courseSlug: first.courseSlug!, courseCount: rows.length };
     }
 
     return {

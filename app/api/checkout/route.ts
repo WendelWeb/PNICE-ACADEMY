@@ -34,8 +34,9 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
-import { db } from '@/db';
+import { db, isMissingColumnError } from '@/db';
 import { users, checkoutSessions } from '@/db/schema';
+import { checkoutSessionsPre0021 } from '@/db/checkout-compat';
 import { and, desc, eq, gte, isNull, isNotNull } from 'drizzle-orm';
 import { clerkEnabled } from '@/lib/clerk';
 import { stripeConfigured, createStripeCheckout, getStripeCheckoutSessionStatus } from '@/lib/payments/stripe';
@@ -47,6 +48,7 @@ import { applyPromo } from '@/lib/payments/promo';
 import { rateLimit, ipFromHeaders, RATE_LIMITS } from '@/lib/rate-limit';
 import { decidePendingCheckout } from '@/lib/payments/checkout-guard';
 import { isMoncashRef } from '@/lib/payments/moncash-order';
+import { isNatcashRef } from '@/lib/payments/natcash-order';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -169,13 +171,16 @@ export async function POST(req: NextRequest) {
       .orderBy(desc(checkoutSessions.startedAt))
       .limit(1)
   )[0];
-  // A MonCash order also lives in `checkout_sessions`, but its `sessionId` is
-  // a locale marker (`moncash:ht`), never a Stripe id — asking Stripe about it
-  // would burn a round trip to be told "no such session". Skipping it is also
-  // correct behaviour, not just an optimisation: an abandoned MonCash attempt
-  // must not block, or be "resumed" as, a card checkout.
+  // A WALLET order (MonCash or NatCash) also lives in `checkout_sessions`,
+  // but its `sessionId` is a rail marker (`moncash:ht…` / `natcash:ht…`),
+  // never a Stripe id — asking Stripe about it would burn a round trip to be
+  // told "no such session". Skipping it is also correct behaviour, not just
+  // an optimisation: an abandoned wallet attempt must not block, or be
+  // "resumed" as, a card checkout. BOTH prefixes must be excluded — this
+  // guard originally knew only `moncash:` and would have handed a NatCash
+  // marker to the Stripe API as if it were a session id.
   const pendingStatus =
-    pendingRow?.sessionId && !isMoncashRef(pendingRow.sessionId)
+    pendingRow?.sessionId && !isMoncashRef(pendingRow.sessionId) && !isNatcashRef(pendingRow.sessionId)
       ? await getStripeCheckoutSessionStatus(pendingRow.sessionId)
       : null;
   const decision = decidePendingCheckout(pendingStatus);
@@ -186,19 +191,40 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ url: decision.url });
   }
 
-  const cs = (
-    await db
-      .insert(checkoutSessions)
-      .values({
-        userId: row.id,
-        productType: product.productType,
-        courseSlug: product.courseSlug,
-        // The amount actually charged (post-promo) — cart/abandon reporting
-        // must reflect real money, not the undiscounted list price.
-        amountCents,
-      })
-      .returning({ id: checkoutSessions.id })
-  )[0];
+  let cs: { id: string };
+  try {
+    cs = (
+      await db
+        .insert(checkoutSessions)
+        .values({
+          userId: row.id,
+          productType: product.productType,
+          courseSlug: product.courseSlug,
+          // The amount actually charged (post-promo) — cart/abandon reporting
+          // must reflect real money, not the undiscounted list price.
+          amountCents,
+        })
+        .returning({ id: checkoutSessions.id })
+    )[0];
+  } catch (err) {
+    if (!isMissingColumnError(err)) throw err;
+    // Pre-0021 DB (`cart_id` not applied yet): drizzle names every schema
+    // column in every INSERT, so even this route — which never heard of
+    // carts — trips over the missing column. Retry through the twin table
+    // (db/checkout-compat.ts) so card checkout keeps working until db:push.
+    console.warn('[checkout] insert fell back to pre-0021 columns — run `npm run db:push`.');
+    cs = (
+      await db
+        .insert(checkoutSessionsPre0021)
+        .values({
+          userId: row.id,
+          productType: product.productType,
+          courseSlug: product.courseSlug,
+          amountCents,
+        })
+        .returning({ id: checkoutSessionsPre0021.id })
+    )[0];
+  }
 
   const origin = req.nextUrl.origin;
   const result = await createStripeCheckout({

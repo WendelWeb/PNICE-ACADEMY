@@ -25,7 +25,7 @@
  * a row from null → set, never re-email an already-handled cart. Safe with
  * no DATABASE_URL (returns zeros) and no RESEND_API_KEY (sendEmail no-ops).
  */
-import { and, eq, isNull, isNotNull, lt } from 'drizzle-orm';
+import { and, eq, inArray, isNull, isNotNull, lt } from 'drizzle-orm';
 import { db, schema } from '@/db';
 import { getCourseBySlug } from '@/lib/courses/source';
 import { sendEmail } from '@/lib/email/resend';
@@ -80,19 +80,36 @@ export async function GET(req: Request): Promise<Response> {
         ),
       );
 
+    // GROUP BY BASKET (« panye »): an abandoned basket of N courses is N
+    // checkout_sessions rows sharing a cartId — but ONE abandonment. Without
+    // grouping, one abandoned basket fired N separate reminder emails, each
+    // quoting one course's price, none quoting the total the buyer actually
+    // saw. Rows without a cartId group alone (the pre-cart behaviour,
+    // unchanged); the claim below is taken on EVERY row of a group, so
+    // concurrent runs still can't double-send.
+    const groups = new Map<string, typeof candidates>();
     for (const session of candidates) {
-      if (!session.userId) continue; // narrows for TS; isNotNull(userId) already guarantees this
-      const [user] = await db.select().from(T.users).where(eq(T.users.id, session.userId)).limit(1);
+      const key = session.cartId ?? session.id;
+      const bucket = groups.get(key);
+      if (bucket) bucket.push(session);
+      else groups.set(key, [session]);
+    }
 
-      // Atomic claim: only the run that successfully UPDATEs remindedAt to now sends the email.
-      // This ensures concurrent invocations never double-send: one wins the claim, the other
-      // gets empty result and skips the send.
-      const [claimed] = await db
+    for (const group of groups.values()) {
+      const first = group[0];
+      if (!first.userId) continue; // narrows for TS; isNotNull(userId) already guarantees this
+      const [user] = await db.select().from(T.users).where(eq(T.users.id, first.userId)).limit(1);
+
+      // Atomic claim on the whole group: only the run that successfully
+      // UPDATEs remindedAt sends the email. Claiming every row (not just the
+      // first) keeps re-runs from resurrecting the group's other rows.
+      const ids = group.map((s) => s.id);
+      const claimed = await db
         .update(T.checkoutSessions)
         .set({ remindedAt: new Date() })
-        .where(and(eq(T.checkoutSessions.id, session.id), isNull(T.checkoutSessions.remindedAt)))
+        .where(and(inArray(T.checkoutSessions.id, ids), isNull(T.checkoutSessions.remindedAt)))
         .returning({ id: T.checkoutSessions.id });
-      if (!claimed) continue; // a concurrent run already claimed this cart
+      if (claimed.length === 0) continue; // a concurrent run already claimed this cart
       if (!user?.email) continue;
 
       const locale: 'fr' | 'ht' = user.localePref === 'fr' ? 'fr' : 'ht';
@@ -100,24 +117,30 @@ export async function GET(req: Request): Promise<Response> {
       // the old static data/courses.ts map made every DB-created course fall
       // through to its raw slug. Subscription carts (teacher pass or Pass
       // PNICE — checkout_sessions stores no plan reference) keep the generic
-      // subscription label.
-      const course = session.courseSlug ? await getCourseBySlug(session.courseSlug) : undefined;
-      const itemName =
-        session.productType === 'subscription'
+      // subscription label. A BASKET is named « N fòmasyon » and its amount
+      // is the TOTAL the buyer saw, resuming on /panye.
+      const isBasket = group.length > 1;
+      const course = !isBasket && first.courseSlug ? await getCourseBySlug(first.courseSlug) : undefined;
+      const itemName = isBasket
+        ? locale === 'fr'
+          ? `${group.length} formations`
+          : `${group.length} fòmasyon`
+        : first.productType === 'subscription'
           ? locale === 'fr'
             ? 'Abonnement mensuel'
             : 'Abònman mansyèl'
-          : (course ? (locale === 'fr' ? course.title_fr : course.title_ht) : (session.courseSlug ?? '—'));
-      const resumeUrl =
-        session.productType === 'course' && session.courseSlug
-          ? `${origin}/${locale}/checkout?course=${encodeURIComponent(session.courseSlug)}`
+          : (course ? (locale === 'fr' ? course.title_fr : course.title_ht) : (first.courseSlug ?? '—'));
+      const resumeUrl = isBasket
+        ? `${origin}/${locale}/panye`
+        : first.productType === 'course' && first.courseSlug
+          ? `${origin}/${locale}/checkout?course=${encodeURIComponent(first.courseSlug)}`
           : `${origin}/${locale}/checkout`;
 
       const { subject, html, text } = buildCartReminderHtml({
         locale,
         name: user.name,
         itemName,
-        amountCents: session.amountCents,
+        amountCents: group.reduce((a, s) => a + s.amountCents, 0),
         resumeUrl,
         rateHtg,
       });

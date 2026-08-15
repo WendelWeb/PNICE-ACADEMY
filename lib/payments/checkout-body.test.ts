@@ -4,12 +4,12 @@ import { parseCheckoutBody } from '@/lib/payments/checkout-body';
 describe('parseCheckoutBody', () => {
   it('accepts a subscription request', () => {
     expect(parseCheckoutBody({ productType: 'subscription', locale: 'fr' }))
-      .toEqual({ productType: 'subscription', courseSlug: null, courseSlugs: [], teacherSlug: null, promoCode: null, locale: 'fr' });
+      .toEqual({ productType: 'subscription', courseSlug: null, courseSlugs: [], teacherSlug: null, promoCode: null, expectedTotalCents: null, locale: 'fr' });
   });
 
   it('accepts a course request and defaults locale to ht', () => {
     expect(parseCheckoutBody({ productType: 'course', courseSlug: 'abc' }))
-      .toEqual({ productType: 'course', courseSlug: 'abc', courseSlugs: ['abc'], teacherSlug: null, promoCode: null, locale: 'ht' });
+      .toEqual({ productType: 'course', courseSlug: 'abc', courseSlugs: ['abc'], teacherSlug: null, promoCode: null, expectedTotalCents: null, locale: 'ht' });
   });
 
   it('rejects junk', () => {
@@ -26,7 +26,7 @@ describe('parseCheckoutBody', () => {
   describe('teacherSlug (subscription only)', () => {
     it('carries a valid teacherSlug through for a subscription request', () => {
       expect(parseCheckoutBody({ productType: 'subscription', teacherSlug: 'pnice-academy', locale: 'ht' }))
-        .toEqual({ productType: 'subscription', courseSlug: null, courseSlugs: [], teacherSlug: 'pnice-academy', promoCode: null, locale: 'ht' });
+        .toEqual({ productType: 'subscription', courseSlug: null, courseSlugs: [], teacherSlug: 'pnice-academy', promoCode: null, expectedTotalCents: null, locale: 'ht' });
     });
 
     it('a subscription request with no teacherSlug still resolves (platform default)', () => {
@@ -42,7 +42,7 @@ describe('parseCheckoutBody', () => {
 
     it('a teacherSlug on a course request is ignored — course ownership resolves via the course itself', () => {
       expect(parseCheckoutBody({ productType: 'course', courseSlug: 'abc', teacherSlug: 'someone-else' }))
-        .toEqual({ productType: 'course', courseSlug: 'abc', courseSlugs: ['abc'], teacherSlug: null, promoCode: null, locale: 'ht' });
+        .toEqual({ productType: 'course', courseSlug: 'abc', courseSlugs: ['abc'], teacherSlug: null, promoCode: null, expectedTotalCents: null, locale: 'ht' });
     });
   });
 
@@ -62,5 +62,43 @@ describe('parseCheckoutBody', () => {
       expect(parseCheckoutBody({ productType: 'course', courseSlug: 'abc', promoCode: 'x'.repeat(65) })?.promoCode).toBeNull();
       expect(parseCheckoutBody({ productType: 'course', courseSlug: 'abc', promoCode: 42 })?.promoCode).toBeNull();
     });
+  });
+});
+
+describe('parseCheckoutBody — « panye » (courseSlugs)', () => {
+  it('parses a basket and mirrors slug #1 into courseSlug for legacy readers', () => {
+    expect(parseCheckoutBody({ productType: 'course', courseSlugs: ['a', 'b'], locale: 'ht' })).toEqual({
+      productType: 'course',
+      courseSlug: 'a',
+      courseSlugs: ['a', 'b'],
+      teacherSlug: null,
+      promoCode: null,
+      expectedTotalCents: null,
+      locale: 'ht',
+    });
+  });
+
+  it('the basket wins over a stray courseSlug sent alongside it', () => {
+    const parsed = parseCheckoutBody({ productType: 'course', courseSlug: 'z', courseSlugs: ['a'], locale: 'ht' });
+    expect(parsed?.courseSlugs).toEqual(['a']);
+    expect(parsed?.courseSlug).toBe('a');
+  });
+
+  it('carries the displayed total for the price_changed guard, refusing nonsense', () => {
+    expect(
+      parseCheckoutBody({ productType: 'course', courseSlug: 'a', expectedTotalCents: 1100, locale: 'ht' })
+        ?.expectedTotalCents,
+    ).toBe(1100);
+    for (const bad of [-1, 0, 1.5, '1100', null, 200_000_000]) {
+      expect(
+        parseCheckoutBody({ productType: 'course', courseSlug: 'a', expectedTotalCents: bad, locale: 'ht' })
+          ?.expectedTotalCents,
+      ).toBeNull();
+    }
+  });
+
+  it('refuses a malformed basket outright', () => {
+    expect(parseCheckoutBody({ productType: 'course', courseSlugs: [], locale: 'ht' })).toBeNull();
+    expect(parseCheckoutBody({ productType: 'course', courseSlugs: ['a', 3], locale: 'ht' })).toBeNull();
   });
 });

@@ -19,6 +19,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { db, isMissingColumnError } from '@/db';
 import { users, checkoutSessions } from '@/db/schema';
+import { checkoutSessionsPre0021 } from '@/db/checkout-compat';
 import { eq, inArray } from 'drizzle-orm';
 import { clerkEnabled } from '@/lib/clerk';
 import { natcashConfigured, createNatcashOrder, usdCentsToHtg, HTG_WALLET_MAX } from '@/lib/payments/natcash';
@@ -96,6 +97,11 @@ export async function POST(req: NextRequest) {
 
   const rate = await getFxRate();
   const totalCents = products.reduce((a, p) => a + p.amountCents, 0);
+  // PRICE-CHANGED GUARD — same as /api/checkout/moncash: never debit a
+  // figure the buyer didn't see.
+  if (body.expectedTotalCents !== null && body.expectedTotalCents !== totalCents) {
+    return NextResponse.json({ error: 'price_changed', totalCents }, { status: 409 });
+  }
   // One conversion of the basket TOTAL — see /api/checkout/moncash.
   const amountHtg = usdCentsToHtg(totalCents, rate);
   if (amountHtg <= 0) {
@@ -132,11 +138,27 @@ export async function POST(req: NextRequest) {
     rowIds = inserted.map((r) => r.id);
     orderId = cartId ?? rowIds[0];
   } catch (err) {
-    if (cartId && isMissingColumnError(err)) {
+    if (!isMissingColumnError(err)) throw err;
+    // Pre-0021 DB — same two honest outcomes as /api/checkout/moncash: a
+    // basket refuses (unlinked rows would strand the buyer's money), a
+    // single purchase retries via the twin table and keeps working.
+    if (cartId) {
       console.error('[checkout/natcash] cart refused — checkout_sessions.cart_id missing, run `npm run db:push`.');
       return NextResponse.json({ error: 'cart_unavailable' }, { status: 503 });
     }
-    throw err;
+    console.warn('[checkout/natcash] insert fell back to pre-0021 columns — run `npm run db:push`.');
+    const inserted = await db
+      .insert(checkoutSessionsPre0021)
+      .values({
+        userId: row.id,
+        productType: 'course',
+        courseSlug: products[0].courseSlug,
+        amountCents: products[0].amountCents,
+        sessionId: encodeNatcashRef(locale),
+      })
+      .returning({ id: checkoutSessionsPre0021.id });
+    rowIds = inserted.map((r) => r.id);
+    orderId = rowIds[0];
   }
 
   const origin = req.nextUrl.origin;

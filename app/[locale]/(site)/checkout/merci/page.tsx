@@ -9,6 +9,7 @@ import { buttonClasses } from '@/components/ui/Button';
 import { formatUsd } from '@/lib/money';
 import { getCourseBySlug } from '@/lib/courses/source';
 import { ClearCartOnSuccess } from '@/components/cart/ClearCartOnSuccess';
+import { MAX_CART_ITEMS } from '@/lib/payments/cart';
 import {
   stripeConfigured,
   getStripeCheckoutSession,
@@ -57,7 +58,14 @@ export default async function MerciPage({
   // Basket size (« panye ») — the return routes append ?count=N for a
   // multi-course purchase so this page can speak of N formations instead of
   // naming only the first.
-  const cartCount = typeof searchParams.count === 'string' ? Math.max(1, parseInt(searchParams.count, 10) || 1) : 1;
+  // Capped at the real basket ceiling: ?count is a URL param anyone can
+  // forge, and an uncapped one let a shared link stamp « 999 formations » on
+  // a fake confirmation. It is also only ever TRUSTED alongside a course
+  // slug that actually resolves (below) — same rule as before carts existed.
+  const cartCount = Math.min(
+    MAX_CART_ITEMS,
+    typeof searchParams.count === 'string' ? Math.max(1, parseInt(searchParams.count, 10) || 1) : 1,
+  );
   const paidWithMoncash = searchParams.moncash === '1';
   const paidWithNatcash = searchParams.natcash === '1';
   const paidWithWallet = paidWithMoncash || paidWithNatcash;
@@ -69,7 +77,10 @@ export default async function MerciPage({
   const singleItemName = moncashCourse
     ? (locale === 'fr' ? moncashCourse.title_fr : moncashCourse.title_ht) || moncashCourse.title_ht
     : null;
-  const moncashItemName = cartCount > 1 ? t('walletCartItems', { count: cartCount }) : singleItemName;
+  // « N formations » only when the course param resolved to a REAL course —
+  // a forged bare ?count must not conjure a purchase block out of nothing.
+  const moncashItemName =
+    cartCount > 1 && moncashCourse ? t('walletCartItems', { count: cartCount }) : singleItemName;
 
   // PENDING VERIFICATION. `/api/payments/moncash/retour` sends the buyer here
   // with `?pending=1&order=…` when it could not get a definitive answer out of
@@ -248,9 +259,12 @@ export default async function MerciPage({
           {/* MonCash: the amount and reference live on Digicel's side, and the
               return URL carries neither. Naming the course is both honest and
               the only thing the buyer actually needs to see confirmed. */}
-          {paidWithWallet && !pendingOrderId && (
-        <ClearCartOnSuccess courseSlug={moncashCourseSlug ?? null} count={cartCount} />
-      )}
+          {/* Cart cleanup ONLY on a confirmation anchored to a real course —
+              never on a forged bare ?count link, which could otherwise wipe
+              any visitor's basket. */}
+          {paidWithWallet && !pendingOrderId && moncashCourse && (
+            <ClearCartOnSuccess courseSlug={moncashCourseSlug ?? null} count={cartCount} />
+          )}
       {paidWithWallet && moncashItemName && (
             <dl className="mt-6 space-y-2.5 border-t border-ink/10 pt-5 text-left">
               <div className="flex items-baseline justify-between gap-3">

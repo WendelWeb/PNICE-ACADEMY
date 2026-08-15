@@ -58,8 +58,13 @@ export async function GET(req: NextRequest) {
       );
 
     case 'unpaid':
-      // They backed out or the payment never cleared. Return them to the
-      // course's checkout so retrying is one tap, not a hunt.
+      // They backed out or the payment never cleared. A BASKET goes back to
+      // /panye — its lines are still in the buyer's cart, and the single-
+      // course checkout would quietly sell them 1 course out of N. A single
+      // purchase returns to that course's checkout, one tap to retry.
+      if (result.courseCount && result.courseCount > 1) {
+        return NextResponse.redirect(`${origin}/${locale}/panye`, { status: 303 });
+      }
       return NextResponse.redirect(
         `${origin}/${locale}/checkout${result.courseSlug ? `?course=${encodeURIComponent(result.courseSlug)}` : ''}`,
         { status: 303 },
