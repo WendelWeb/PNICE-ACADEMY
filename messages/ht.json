@@ -452,7 +452,7 @@
       },
       {
         "q": "Kijan m ap resevwa lajan mwen?",
-        "a": "Retrè an MonCash pou kòmanse. Lòt metòd yo (NatCash, PayPal, viman) ap vini apre."
+        "a": "Ou ka resevwa retrè w an MonCash, NatCash oswa PayPal — ou chwazi metòd la nan estidyo w. Viman labank ap vini apre."
       },
       {
         "q": "Kisa m bezwen pou m kòmanse?",
@@ -3584,7 +3584,7 @@
       },
       "metod-retre": {
         "q": "Kijan m ap resevwa lajan mwen?",
-        "a": "Retrè an MonCash pou kòmanse. Lòt metòd yo (NatCash, PayPal, viman) ap vini apre."
+        "a": "Ou ka resevwa retrè w an MonCash, NatCash oswa PayPal — ou chwazi metòd la nan estidyo w. Viman labank ap vini apre."
       },
       "minimum": {
         "q": "Kilè m ka fè yon retrè?",

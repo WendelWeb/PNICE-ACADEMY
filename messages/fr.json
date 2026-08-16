@@ -452,7 +452,7 @@
       },
       {
         "q": "Comment vais-je recevoir mon argent ?",
-        "a": "Retrait en MonCash pour commencer. Les autres méthodes (NatCash, PayPal, virement) arriveront ensuite."
+        "a": "Tu peux recevoir tes retraits en MonCash, NatCash ou PayPal — tu choisis la méthode dans ton studio. Le virement bancaire arrivera ensuite."
       },
       {
         "q": "De quoi ai-je besoin pour commencer ?",
@@ -3584,7 +3584,7 @@
       },
       "metod-retre": {
         "q": "Comment vais-je recevoir mon argent ?",
-        "a": "Retraits en MonCash pour commencer. Les autres méthodes (NatCash, PayPal, virement) arriveront ensuite."
+        "a": "Tu peux recevoir tes retraits en MonCash, NatCash ou PayPal — tu choisis la méthode dans ton studio. Le virement bancaire arrivera ensuite."
       },
       "minimum": {
         "q": "Quand puis-je faire un retrait ?",
