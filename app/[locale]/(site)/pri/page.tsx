@@ -136,12 +136,10 @@ export default async function PriPage({
                 <p className="mt-2.5 text-sm leading-relaxed text-graphite">
                   {tHome('teacher.text')}
                 </p>
-                {/* checkout's OWN scope promise — can't drift */}
-                <p className="mt-2.5 text-xs leading-snug text-teal">
-                  {example
-                    ? tCheckout('subTeacherOnlyNote', { name: example.name })
-                    : tHome('teacher.scopeGeneric')}
-                </p>
+                {/* GENERIC scope wording here (owner: a named teacher on the
+                    pricing page « semble favoritisme ») — checkout keeps the
+                    named version where it really is that teacher's pass. */}
+                <p className="mt-2.5 text-xs leading-snug text-teal">{tHome('teacher.scopeGeneric')}</p>
                 <ul className="mt-4 space-y-2">
                   {teacherPerks.map((perk, i) => (
                     <li key={i} className={perkRow}>
@@ -150,25 +148,23 @@ export default async function PriPage({
                     </li>
                   ))}
                 </ul>
+                {/* Framed as an EXAMPLE — see PricingTriptych's identical
+                    block: tag, concept sentence, then the illustrative name. */}
                 {example && (
-                  <p className="mt-5">
-                    <span className="block font-mono text-[11px] uppercase tracking-wide text-ink/50">
-                      {tHome('teacher.example', { name: example.name })}
+                  <div className="mt-5 rounded-lg border border-dashed border-ink/20 bg-paper/60 p-3">
+                    <span className="rounded bg-ink/[0.07] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-ink/50">
+                      {tHome('teacher.exampleTag')}
                     </span>
-                    <span className="mt-1 flex items-baseline gap-1">
-                      <Price
-                        usd={example.priceCentsMonthly / 100}
-                        className="font-display text-3xl font-black text-ink"
-                      />
-                      <span className="font-mono text-xs text-graphite/60">{tc('perMonth')}</span>
-                    </span>
-                  </p>
+                    <p className="mt-1.5 text-[11px] leading-snug text-graphite/65">{tHome('teacher.exampleNote')}</p>
+                    <p className="mt-1 font-mono text-[12px] text-ink/75">
+                      {tHome('teacher.exampleLine', { name: example.name })} —{' '}
+                      <Price usd={example.priceCentsMonthly / 100} className="font-semibold" />
+                      {tc('perMonth')}
+                    </p>
+                  </div>
                 )}
                 <span className="mt-auto block pt-6">
-                  <Link
-                    href={example ? `/prof/${example.slug}` : '/prof'}
-                    className={buttonClasses('ghost', 'md', 'w-full')}
-                  >
+                  <Link href="/prof" className={buttonClasses('ghost', 'md', 'w-full')}>
                     {tHome('teacher.cta')}
                   </Link>
                 </span>

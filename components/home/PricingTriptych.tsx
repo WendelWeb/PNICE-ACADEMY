@@ -104,31 +104,30 @@ export async function PricingTriptych({
                 {t('teacher.title')}
               </h3>
               <p className="mt-2.5 text-sm leading-relaxed text-graphite">{t('teacher.text')}</p>
-              {/* the same scope promise checkout itself prints */}
-              <p className="mt-2.5 text-xs leading-snug text-teal">
-                {example
-                  ? tCheckout('subTeacherOnlyNote', { name: example.name })
-                  : t('teacher.scopeGeneric')}
-              </p>
+              {/* GENERIC scope wording on this marketing card (owner: naming
+                  one teacher here « semble favoritisme ») — the NAMED scope
+                  note stays at checkout, where it really is that teacher's
+                  pass being bought. */}
+              <p className="mt-2.5 text-xs leading-snug text-teal">{t('teacher.scopeGeneric')}</p>
+              {/* The example is FRAMED as an example: dashed box, « Egzanp »
+                  tag, and the sentence that sells the concept (« each teacher
+                  sets their own price ») before any name appears — the name
+                  illustrates, it never headlines. */}
               {example && (
-                <p className="mt-5">
-                  <span className="block font-mono text-[11px] uppercase tracking-wide text-ink/50">
-                    {t('teacher.example', { name: example.name })}
+                <div className="mt-5 rounded-lg border border-dashed border-ink/20 bg-paper/60 p-3">
+                  <span className="rounded bg-ink/[0.07] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-ink/50">
+                    {t('teacher.exampleTag')}
                   </span>
-                  <span className="mt-1 flex items-baseline gap-1">
-                    <Price
-                      usd={example.priceCentsMonthly / 100}
-                      className="font-display text-3xl font-black text-ink"
-                    />
-                    <span className="font-mono text-xs text-graphite/60">{tc('perMonth')}</span>
-                  </span>
-                </p>
+                  <p className="mt-1.5 text-[11px] leading-snug text-graphite/65">{t('teacher.exampleNote')}</p>
+                  <p className="mt-1 font-mono text-[12px] text-ink/75">
+                    {t('teacher.exampleLine', { name: example.name })} —{' '}
+                    <Price usd={example.priceCentsMonthly / 100} className="font-semibold" />
+                    {tc('perMonth')}
+                  </p>
+                </div>
               )}
               <span className="mt-auto block pt-6">
-                <Link
-                  href={example ? `/prof/${example.slug}` : '/formations'}
-                  className={buttonClasses('ghost', 'md', 'w-full')}
-                >
+                <Link href="/prof" className={buttonClasses('ghost', 'md', 'w-full')}>
                   {t('teacher.cta')}
                 </Link>
               </span>

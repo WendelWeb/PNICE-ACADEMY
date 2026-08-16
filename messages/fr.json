@@ -150,8 +150,10 @@
         "title": "Le pass d'un enseignant",
         "text": "Un abonnement mensuel qui débloque toutes les formations d'UN enseignant — y compris chaque nouveau cours qu'il publie. C'est l'enseignant qui fixe le prix de son pass.",
         "scopeGeneric": "Accès uniquement aux cours de cet enseignant — pas d'accès aux autres professeurs.",
-        "example": "Exemple : le pass de {name}",
-        "cta": "Voir le pass enseignant"
+        "exampleTag": "Exemple",
+        "exampleNote": "Chaque enseignant fixe son propre prix. En voici un, juste pour donner une idée :",
+        "exampleLine": "Pass {name}",
+        "cta": "Voir tous les enseignants"
       },
       "platform": {
         "badge": "Pass PNICE",

@@ -150,8 +150,10 @@
         "title": "Pass yon anseyan",
         "text": "Yon abònman chak mwa ki louvri tout fòmasyon YON anseyan — ansanm ak chak nouvo kou li pibliye. Se anseyan an ki fikse pri pass li.",
         "scopeGeneric": "Aksè sèlman a kou anseyan sa a — pa gen aksè a lòt pwofesè.",
-        "example": "Egzanp: pass {name}",
-        "cta": "Wè pass anseyan an"
+        "exampleTag": "Egzanp",
+        "exampleNote": "Chak anseyan fikse pwòp pri pa l. Men youn, jis pou bay yon lide:",
+        "exampleLine": "Pass {name}",
+        "cta": "Wè tout anseyan yo"
       },
       "platform": {
         "badge": "Pass PNICE",
