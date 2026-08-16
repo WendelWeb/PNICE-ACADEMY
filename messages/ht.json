@@ -398,6 +398,14 @@
     "metaTitle": "Anseye sou PNICE Academy",
     "metaDescription": "Ou metrize yon konesans? Kreye fòmasyon pa w sou PNICE Academy, fikse pri w epi touche 70% sou chak vant, peye an MonCash. Soumèt kandidati w kounye a.",
     "eyebrow": "Vin anseyan",
+    "already": {
+      "eyebrow": "Ou deja ladan",
+      "title": "Ou deja yon anseyan sou PNICE, {name}",
+      "titleNoName": "Ou deja yon anseyan sou PNICE",
+      "body": "Paj sa a fèt pou moun ki poko anseyan. Travay ou an ap tann ou nan estidyo w la — kou ou yo, videyo yo, lajan w.",
+      "studioCta": "Ale nan estidyo mwen",
+      "publicCta": "Wè paj piblik mwen"
+    },
     "openBadge": "Kandidati louvri",
     "title": "Ou metrize yon konesans? Anseye l.",
     "subtitle": "Kreye fòmasyon pa w sou PNICE Academy. Ou fikse pri w, ou touche 70% sou chak vant, elèv yo peye an MonCash. Kandidati yo louvri kounye a — soumèt pa w pi ba a.",

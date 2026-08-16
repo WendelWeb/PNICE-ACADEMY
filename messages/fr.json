@@ -398,6 +398,14 @@
     "metaTitle": "Enseigner sur PNICE Academy",
     "metaDescription": "Tu maîtrises un savoir-faire ? Crée ta formation sur PNICE Academy, fixe ton prix et touche 70 % sur chaque vente, payé en MonCash. Soumets ta candidature dès maintenant.",
     "eyebrow": "Devenir enseignant",
+    "already": {
+      "eyebrow": "Tu en fais déjà partie",
+      "title": "Tu es déjà enseignant sur PNICE, {name}",
+      "titleNoName": "Tu es déjà enseignant sur PNICE",
+      "body": "Cette page s’adresse à ceux qui ne le sont pas encore. Ton travail t’attend dans ton studio — tes cours, tes vidéos, ton argent.",
+      "studioCta": "Aller dans mon studio",
+      "publicCta": "Voir ma page publique"
+    },
     "openBadge": "Candidatures ouvertes",
     "title": "Tu maîtrises un savoir-faire ? Enseigne-le.",
     "subtitle": "Crée tes propres formations sur PNICE Academy. Tu fixes ton prix, tu touches 70 % sur chaque vente, les élèves paient en MonCash. Les candidatures sont ouvertes maintenant — soumets la tienne plus bas.",

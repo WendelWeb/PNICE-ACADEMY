@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { auth } from '@clerk/nextjs/server';
+import { IconSchool } from '@tabler/icons-react';
 import { Link } from '@/i18n/routing';
 import { Section, Container, Eyebrow } from '@/components/ui/Section';
 import { Reveal } from '@/components/ui/Reveal';
@@ -65,6 +66,44 @@ export default async function EnseignerPage({
       const internalId = await resolveUserId(clerkId);
       if (internalId) profile = await getTeacherProfile(internalId);
     }
+  }
+
+  // AN APPROVED TEACHER GETS A DIFFERENT PAGE (owner: « si je suis déjà
+  // prof cette page devrait afficher autre chose ») — selling the job to
+  // someone who has it is noise. The recruitment pitch is replaced by a
+  // short « ou deja anseyan » screen whose only job is routing them to
+  // where their real work lives: the studio, their public page, their
+  // money. Pending/rejected applicants still get the full page — their
+  // candidature status machine lives at #kandidati below.
+  if (profile?.status === 'approved') {
+    return (
+      <Section>
+        <Container className="max-w-xl">
+          <div className="mx-auto mt-8 rounded-2xl border border-teal/30 bg-paper-light p-8 text-center">
+            <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-teal/10">
+              <IconSchool size={30} className="text-teal" />
+            </span>
+            <Eyebrow className="mt-5">{t('already.eyebrow')}</Eyebrow>
+            <h1 className="mt-2 font-display text-3xl font-black leading-tight text-ink">
+              {profile.displayName
+                ? t('already.title', { name: profile.displayName })
+                : t('already.titleNoName')}
+            </h1>
+            <p className="mt-3 text-[15px] leading-relaxed text-graphite/80">{t('already.body')}</p>
+            <div className="mt-6 flex flex-col gap-2.5">
+              <Link href="/enseigner/studio" className={buttonClasses('primary', 'lg', 'w-full justify-center')}>
+                {t('already.studioCta')}
+              </Link>
+              {profile.slug && (
+                <Link href={`/prof/${profile.slug}`} className={buttonClasses('ghost', 'md', 'w-full justify-center')}>
+                  {t('already.publicCta')}
+                </Link>
+              )}
+            </div>
+          </div>
+        </Container>
+      </Section>
+    );
   }
 
   const openBadge = (
