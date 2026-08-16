@@ -13,6 +13,7 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { IconReceipt2, IconAlertTriangle } from '@tabler/icons-react';
 import { hasCap } from '@/lib/admin/guard';
 import { getPlatformPassPriceCents } from '@/lib/platformPrice';
+import { isPlatformPassEnabled } from '@/lib/admin/platform/store';
 import { getAuditLog } from '@/lib/admin/data';
 import { fmtDateTime } from '@/lib/admin/format';
 import { Forbidden } from '@/components/admin/Forbidden';
@@ -27,6 +28,7 @@ export default async function PlatformPassPricePage({ params: { locale } }: { pa
 
   const t = await getTranslations('admin.prix');
   const priceCents = await getPlatformPassPriceCents();
+  const passEnabled = await isPlatformPassEnabled();
   const lastEdit = await getAuditLog({ action: 'set_platform_pass_price', pageSize: 1 });
   const lastEditAdmin = lastEdit.rows[0]?.adminName ?? null;
   // Same reasoning as /admin/taux: platform_settings.updatedAt is shared by
@@ -51,7 +53,7 @@ export default async function PlatformPassPricePage({ params: { locale } }: { pa
         </p>
       )}
 
-      <PlatformPricePanel priceUsd={priceCents / 100} updatedAt={updatedAt} canEdit locale={locale} />
+      <PlatformPricePanel priceUsd={priceCents / 100} updatedAt={updatedAt} canEdit locale={locale} passEnabled={passEnabled} />
 
       <p className="font-mono text-[10px] text-ink/45">
         <IconReceipt2 size={11} className="inline" />{' '}

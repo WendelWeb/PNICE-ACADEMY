@@ -34,6 +34,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
+import { isPlatformPassEnabled } from '@/lib/admin/platform/store';
 import { db, isMissingColumnError } from '@/db';
 import { users, checkoutSessions } from '@/db/schema';
 import { checkoutSessionsPre0021 } from '@/db/checkout-compat';
@@ -83,6 +84,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'free_course', courseSlug: product.courseSlug }, { status: 400 });
     }
   } else if (product.productType === 'subscription') {
+    // The Pass PNICE master switch (/admin/prix): a PLATFORM-kind
+    // subscription cannot be bought while off sale — a page gate is not a
+    // security boundary, so the refusal lives here too. Per-teacher plans
+    // pass through untouched.
+    if ((product.kind ?? 'platform') === 'platform' && !(await isPlatformPassEnabled())) {
+      return NextResponse.json({ error: 'not_available' }, { status: 400 });
+    }
     const conflict = await hasSubscriptionConflict(clerkId, {
       kind: product.kind ?? 'platform',
       teacherPlanId: product.teacherPlanId,

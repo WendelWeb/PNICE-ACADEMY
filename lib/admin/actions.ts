@@ -21,6 +21,7 @@ import { isAdminRole, type AdminRole } from '@/lib/admin/roles';
 import { can, type Capability } from '@/lib/admin/permissions';
 import { setFxRate, getFxRate } from '@/lib/fx';
 import { setPlatformPassPriceCents } from '@/lib/platformPrice';
+import { setPlatformPassEnabled } from '@/lib/admin/platform/store';
 import {
   grantCourseAccess,
   revokeCourseAccess,
@@ -216,6 +217,30 @@ export async function setPlatformPassPriceAction(usd: number): Promise<ActionRes
     const cents = Math.round(usd * 100);
     await setPlatformPassPriceCents(cents);
     await recordAudit({ action: 'set_platform_pass_price', userId: actor.id, admin: actor, detail: String(cents) });
+    revalidatePath('/[locale]', 'layout');
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/**
+ * The « Pass PNICE » master ON/OFF (owner: « bouton pour désactiver le
+ * pass — quand je désactive il n'est pas affiché »). OFF hides every pass
+ * sales surface (home, /pri, sales pages, FAQ entry) and makes checkout
+ * refuse NEW platform-pass purchases; existing subscribers keep their
+ * access untouched — their rows and the access checks never read this flag.
+ */
+export async function setPlatformPassEnabledAction(enabled: boolean): Promise<ActionResult> {
+  try {
+    const { actor } = await requireAdmin('settings.manage');
+    await setPlatformPassEnabled(enabled);
+    await recordAudit({
+      action: 'set_platform_pass_enabled',
+      userId: actor.id,
+      admin: actor,
+      detail: enabled ? 'on' : 'off',
+    });
     revalidatePath('/[locale]', 'layout');
     return { ok: true };
   } catch (e) {

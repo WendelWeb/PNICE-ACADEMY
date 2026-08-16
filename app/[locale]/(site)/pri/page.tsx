@@ -9,6 +9,7 @@ import { AuthCta } from '@/components/auth/AuthCta';
 import { Price, PriceSecondary } from '@/components/ui/Price';
 import { getPublishedCourses } from '@/lib/courses/source';
 import { getPlatformPassPriceCents } from '@/lib/platformPrice';
+import { isPlatformPassEnabled } from '@/lib/admin/platform/store';
 import { pickPlanExample, minCoursePriceUsd } from '@/lib/home/source';
 import { getAllPublicTeachers } from '@/lib/teacher/public';
 import {
@@ -47,6 +48,7 @@ export default async function PriPage({
   params: { locale: string };
 }) {
   setRequestLocale(locale);
+  const passEnabled = await isPlatformPassEnabled();
   const [t, tHome, tCheckout, tc, platformPassCents, courses, teachers] =
     await Promise.all([
       getTranslations('pri'),
@@ -89,7 +91,7 @@ export default async function PriPage({
           </Reveal>
 
           {/* ---------- The three ways, honest scope ---------- */}
-          <div className="mx-auto mt-12 grid max-w-5xl gap-5 md:grid-cols-3">
+          <div className={passEnabled ? 'mx-auto mt-12 grid max-w-5xl gap-5 md:grid-cols-3' : 'mx-auto mt-12 grid max-w-3xl gap-5 md:grid-cols-2'}>
             {/* 1 — à l'unité */}
             <Reveal className="h-full">
               <div className={`${cardBase} border-ink/15 bg-paper-light`}>
@@ -173,7 +175,8 @@ export default async function PriPage({
               </div>
             </Reveal>
 
-            {/* 3 — Pass PNICE */}
+            {/* 3 — Pass PNICE — only while ON SALE (/admin/prix switch). */}
+            {passEnabled && (
             <Reveal delay={140} className="h-full">
               <div
                 className={`${cardBase} border-2 border-ochre bg-ochre/[0.06] shadow-lg shadow-ochre/10`}
@@ -222,6 +225,7 @@ export default async function PriPage({
                 </span>
               </div>
             </Reveal>
+            )}
           </div>
 
           {/* ---------- Worked examples — real numbers as document data ---------- */}
@@ -254,6 +258,7 @@ export default async function PriPage({
                     </span>
                   </li>
                 )}
+                {passEnabled && (
                 <li className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-5 py-4 md:px-7">
                   <span className="min-w-0 text-sm text-graphite">
                     {t('examples.platformLine')}
@@ -263,6 +268,7 @@ export default async function PriPage({
                     {tc('perMonth')}
                   </span>
                 </li>
+                )}
               </ul>
               <p className="border-t border-ink/10 px-5 py-3 text-xs leading-relaxed text-graphite/60 md:px-7">
                 {t('examples.note')}

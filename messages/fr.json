@@ -3019,6 +3019,11 @@
       "neverEdited": "Jamais modifié depuis l’admin",
       "panel": {
         "title": "Prix du Pass PNICE",
+        "saleTitle": "Vente du Pass",
+        "saleOn": "En vente",
+        "saleOff": "Hors vente",
+        "saleOnNote": "Le Pass est visible et achetable sur tout le site.",
+        "saleOffNote": "Le Pass est MASQUÉ sur tout le site — aucun nouvel abonnement. Les abonnés existants gardent intégralement leur accès.",
         "help": "Prix de l'abonnement donnant accès à TOUTES les formations PNICE, chaque mois.",
         "label": "Prix mensuel",
         "perMonth": "/ mois",

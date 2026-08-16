@@ -3019,6 +3019,11 @@
       "neverEdited": "Pa janm modifye depi admin",
       "panel": {
         "title": "Pri Pass PNICE la",
+        "saleTitle": "Vann Pass la",
+        "saleOn": "An vant",
+        "saleOff": "Pa an vant",
+        "saleOnNote": "Pass la vizib epi li ka achte sou tout sit la.",
+        "saleOffNote": "Pass la KACHE sou tout sit la — okenn nouvo abònman. Moun ki gen abònman deja yo kenbe aksè yo nèt.",
         "help": "Pri abònman ki bay aksè a TOUT kou sou PNICE, chak mwa.",
         "label": "Pri chak mwa",
         "perMonth": "/ mwa",

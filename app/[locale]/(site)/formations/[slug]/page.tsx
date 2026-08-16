@@ -39,6 +39,7 @@ import { getCourseTestimonial } from '@/lib/admin/site/ops';
 import { absoluteImageUrl, courseImageList, courseMainImage, siteImageSrc } from '@/lib/courseImage';
 import { SITE_URL } from '@/lib/email/layout';
 import { getPlatformPassPriceCents } from '@/lib/platformPrice';
+import { isPlatformPassEnabled } from '@/lib/admin/platform/store';
 import {
   courseTitle,
   courseTagline,
@@ -125,6 +126,9 @@ export default async function CourseDetail({
   // no-DB/no-settings-row FALLBACK `getPlatformPassPriceCents` itself falls
   // back to — see that module's header).
   const platformPassUsd = (await getPlatformPassPriceCents()) / 100;
+  // The pass master switch (owner: « quand je désactive il n'est pas
+  // affiché ») — gates every platform-pass mention in the aside below.
+  const passEnabled = await isPlatformPassEnabled();
   const rating = await getCourseRating(slug);
 
   const learn = courseLearn(course, locale);
@@ -690,6 +694,9 @@ export default async function CourseDetail({
                     <p className="mt-2 text-xs leading-snug text-teal">
                       {tCheckout('subTeacherOnlyNote', { name: teacher.displayName })}
                     </p>
+                    {/* Platform-pass mention only while it is ON SALE
+                        (/admin/prix master switch). */}
+                    {passEnabled && (
                     <p className="mt-3 text-center">
                       <AuthCta
                         href="/checkout?plan=sub"
@@ -698,8 +705,9 @@ export default async function CourseDetail({
                         {t('buyCard.platformPassAlso', { price: formatUsd(platformPassUsd) })}
                       </AuthCta>
                     </p>
+                    )}
                   </>
-                ) : (
+                ) : passEnabled ? (
                   <>
                     <AuthCta
                       href="/checkout?plan=sub"
@@ -711,7 +719,7 @@ export default async function CourseDetail({
                       {tCheckout('subAllCoursesNote')}
                     </p>
                   </>
-                )}
+                ) : null}
               </div>
             </aside>
           </div>

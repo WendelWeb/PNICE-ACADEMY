@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { IconArrowRight, IconRepeat, IconStack2, IconTag } from '@tabler/icons-react';
+import { cn } from '@/lib/cn';
 import { Link } from '@/i18n/routing';
 import { Section, Container, Eyebrow } from '@/components/ui/Section';
 import { Reveal } from '@/components/ui/Reveal';
@@ -7,6 +8,7 @@ import { buttonClasses } from '@/components/ui/Button';
 import { AuthCta } from '@/components/auth/AuthCta';
 import { Price, PriceSecondary } from '@/components/ui/Price';
 import { getPlatformPassPriceCents } from '@/lib/platformPrice';
+import { isPlatformPassEnabled } from '@/lib/admin/platform/store';
 import { pickPlanExample, minCoursePriceUsd } from '@/lib/home/source';
 import type { PublicTeacher } from '@/lib/teacher/public';
 import type { Course } from '@/data/courses';
@@ -34,11 +36,12 @@ export async function PricingTriptych({
   teachers: PublicTeacher[];
   courses: Course[];
 }) {
-  const [t, tCheckout, tc, platformPassCents] = await Promise.all([
+  const [t, tCheckout, tc, platformPassCents, passEnabled] = await Promise.all([
     getTranslations('home.pricing'),
     getTranslations('checkout'),
     getTranslations('common'),
     getPlatformPassPriceCents(),
+    isPlatformPassEnabled(),
   ]);
 
   const example = pickPlanExample(teachers);
@@ -60,7 +63,8 @@ export async function PricingTriptych({
           </p>
         </Reveal>
 
-        <div className="mx-auto mt-12 grid max-w-5xl gap-5 md:grid-cols-3">
+        {/* Two columns when the pass is off sale — never an empty hole. */}
+        <div className={cn('mx-auto mt-12 grid gap-5', passEnabled ? 'max-w-5xl md:grid-cols-3' : 'max-w-3xl md:grid-cols-2')}>
           {/* 1 — à l'unité */}
           <Reveal className="h-full">
             <div className={`${cardBase} border-ink/15 bg-paper-light`}>
@@ -131,7 +135,9 @@ export async function PricingTriptych({
             </div>
           </Reveal>
 
-          {/* 3 — Pass PNICE */}
+          {/* 3 — Pass PNICE — only while the owner has it ON SALE
+              (/admin/prix master switch): OFF removes the whole card. */}
+          {passEnabled && (
           <Reveal delay={140} className="h-full">
             <div className={`${cardBase} border-2 border-ochre bg-ochre/[0.06] shadow-lg shadow-ochre/10`}>
               <IconStack2 size={24} stroke={1.6} className="text-ochre" />
@@ -168,6 +174,7 @@ export async function PricingTriptych({
               </span>
             </div>
           </Reveal>
+          )}
         </div>
 
         <p className="mt-8 text-center">

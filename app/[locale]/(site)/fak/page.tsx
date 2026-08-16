@@ -5,6 +5,7 @@ import { Link } from '@/i18n/routing';
 import { Section, Container, Eyebrow } from '@/components/ui/Section';
 import { Reveal } from '@/components/ui/Reveal';
 import { buttonClasses } from '@/components/ui/Button';
+import { isPlatformPassEnabled } from '@/lib/admin/platform/store';
 
 /**
  * The page's structure lives in CODE (stable anchor ids + optional related
@@ -85,6 +86,17 @@ export default async function FakPage({
   const t = await getTranslations('fak');
   const tc = await getTranslations('common');
 
+  // A FAQ must describe the platform AS IT IS (owner: « mettre à jour FAQ
+  // et autres pages aussi ») — with the Pass off sale, the « quelle
+  // différence avec le Pass PNICE ? » entry answers a question no visitor
+  // can encounter anymore. Cancel-subscription etc. stay: teacher passes
+  // still sell, and existing pass subscribers still need those answers.
+  const passEnabled = await isPlatformPassEnabled();
+  const sections = FAK_SECTIONS.map((s) => ({
+    ...s,
+    items: s.items.filter((item) => passEnabled || item.id !== 'pass-diferans'),
+  }));
+
   return (
     <Section>
       <Container className="max-w-3xl">
@@ -97,7 +109,7 @@ export default async function FakPage({
 
           {/* section jump links */}
           <nav aria-label={t('tocLabel')} className="mt-6 flex flex-wrap gap-2">
-            {FAK_SECTIONS.map((s) => (
+            {sections.map((s) => (
               <a
                 key={s.id}
                 href={`#${s.id}`}
@@ -109,7 +121,7 @@ export default async function FakPage({
           </nav>
         </header>
 
-        {FAK_SECTIONS.map((section) => (
+        {sections.map((section) => (
           <section
             key={section.id}
             id={section.id}

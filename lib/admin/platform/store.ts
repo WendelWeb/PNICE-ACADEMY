@@ -34,6 +34,15 @@ type PlatformStore = {
   providers: Record<ProviderKey, boolean>;
   subscriptionUsd: number;
   maintenance: { enabled: boolean; message_ht: string; message_fr: string };
+  /** The « Pass PNICE » ON/OFF master switch (owner, août 2026 : « bouton
+   *  pour désactiver le pass — quand je désactive il n'est pas affiché »).
+   *  OFF hides every pass sales surface and refuses new pass checkouts;
+   *  EXISTING subscribers keep their access untouched (their subscription
+   *  rows and the access checks never read this flag). Stored INSIDE the
+   *  providers_json jsonb (reserved `platformPass` key) — deliberately NOT
+   *  a new column: adding one would 42703 every platform_settings
+   *  db.select() (fx rate included!) until the owner's next db:push. */
+  passEnabled: boolean;
 };
 
 function defaults(): PlatformStore {
@@ -41,6 +50,7 @@ function defaults(): PlatformStore {
     providers: { moncash: true, natcash: true, card: true, paypal: true, crypto: true },
     subscriptionUsd: SUBSCRIPTION_USD,
     maintenance: { enabled: false, message_ht: '', message_fr: '' },
+    passEnabled: true,
   };
 }
 
@@ -60,6 +70,20 @@ function parseProviders(raw: unknown): Record<ProviderKey, boolean> {
     if (typeof v === 'boolean') out[k] = v;
   }
   return out;
+}
+
+/** The reserved `platformPass` key of providers_json — absent/malformed ⇒
+ *  enabled (every deployment before the switch existed sold the pass). */
+function parsePassEnabled(raw: unknown): boolean {
+  if (typeof raw !== 'object' || raw === null) return true;
+  return (raw as Record<string, unknown>).platformPass !== false;
+}
+
+/** The FULL providers_json blob to persist — providers + the reserved
+ *  platformPass key. BOTH writers below must build from this: writing only
+ *  the provider keys would silently wipe the pass switch (and vice versa). */
+function blobFrom(store: PlatformStore): Record<string, boolean> {
+  return { ...store.providers, platformPass: store.passEnabled };
 }
 
 /**
@@ -83,6 +107,7 @@ export async function getPlatform(): Promise<PlatformStore> {
         message_ht: row.maintenanceMessageHt,
         message_fr: row.maintenanceMessageFr,
       },
+      passEnabled: parsePassEnabled(row.providersJson),
     };
   } catch (err) {
     console.error('[platform] getPlatform DB read failed, falling back to defaults:', err);
@@ -99,6 +124,30 @@ export async function isMaintenance(): Promise<boolean> {
   return (await getPlatform()).maintenance.enabled;
 }
 
+/** Is the « Pass PNICE » currently ON SALE? (Existing subscribers' access
+ *  never consults this — only sales surfaces and new-checkout guards do.) */
+export async function isPlatformPassEnabled(): Promise<boolean> {
+  return (await getPlatform()).passEnabled;
+}
+
+/** Persist the pass master switch — lives in providers_json (see the
+ *  PlatformStore doc comment for why it is not a column). */
+export async function setPlatformPassEnabled(enabled: boolean): Promise<void> {
+  if (!dbConfigured()) {
+    getMemory().passEnabled = enabled;
+    return;
+  }
+  const current = await getPlatform();
+  const blob = blobFrom({ ...current, passEnabled: enabled });
+  await db
+    .insert(T.platformSettings)
+    .values({ id: 'singleton', subscriptionUsdCents: SUB_CENTS, providersJson: blob })
+    .onConflictDoUpdate({
+      target: T.platformSettings.id,
+      set: { providersJson: blob, updatedAt: new Date() },
+    });
+}
+
 /**
  * Persist one provider toggle — upserts the singleton row's providers_json
  * (same insert-or-onConflictDoUpdate shape as lib/fx.ts's setFxRate). The
@@ -110,13 +159,16 @@ export async function setProviderEnabled(key: ProviderKey, enabled: boolean): Pr
     getMemory().providers[key] = enabled;
     return;
   }
-  const providers = { ...(await getPlatform()).providers, [key]: enabled };
+  // Through blobFrom, NOT the bare providers object — a bare write would
+  // silently wipe the platformPass switch stored in the same jsonb.
+  const current = await getPlatform();
+  const blob = blobFrom({ ...current, providers: { ...current.providers, [key]: enabled } });
   await db
     .insert(T.platformSettings)
-    .values({ id: 'singleton', subscriptionUsdCents: SUB_CENTS, providersJson: providers })
+    .values({ id: 'singleton', subscriptionUsdCents: SUB_CENTS, providersJson: blob })
     .onConflictDoUpdate({
       target: T.platformSettings.id,
-      set: { providersJson: providers, updatedAt: new Date() },
+      set: { providersJson: blob, updatedAt: new Date() },
     });
 }
 
