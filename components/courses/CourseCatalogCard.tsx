@@ -14,6 +14,7 @@ import { Price, PriceSecondary } from '@/components/ui/Price';
 import { Stars } from '@/components/reviews/Stars';
 import { SmartImage } from '@/components/ui/SmartImage';
 import { useCart } from '@/components/cart/cart-context';
+import { useOwnedCourses } from '@/components/learner/useOwnedCourses';
 import { courseTitle, courseTagline, courseLearn, courseIsBilingual, coursePrimaryLocale } from '@/lib/courseFields';
 import { categoryTone } from '@/lib/courseCategory';
 import { cn } from '@/lib/cn';
@@ -276,6 +277,24 @@ function CardActions({ course, title }: { course: Course; title: string }) {
   const tc = useTranslations('common');
   const cart = useCart();
   const inCart = Boolean(cart?.hydrated && cart.has(course.slug));
+  const ownedSet = useOwnedCourses();
+
+  // ALREADY OWNED (owner: « j'ai déjà acheté, pourquoi Achte sur les
+  // cartes ») — the cards live in a shared cache, so ownership arrives
+  // client-side (useOwnedCourses, one fetch per page) and flips the whole
+  // action row to the one honest CTA. Until known, the server-painted buy
+  // state shows — enhancement, never a gate.
+  if (ownedSet?.has(course.slug)) {
+    return (
+      <Link
+        href="/tableau-de-bord"
+        className="flex h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-teal/50 px-4 font-display text-[13px] font-bold text-teal transition-colors hover:bg-teal/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal"
+      >
+        <IconCheck size={15} />
+        {tc('ownedShort')}
+      </Link>
+    );
+  }
 
   // Explicitly-free course (pricing-rules.ts): nothing to pay, nothing to
   // basket — one teal pill straight to the course page, where the enrol
