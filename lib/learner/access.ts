@@ -35,7 +35,7 @@
  * NOT `getPublishedCourses()`: a learner keeps access to a course they
  * already bought/subscribed to even if it's later unpublished/archived.
  */
-import { and, eq, inArray, isNotNull } from 'drizzle-orm';
+import { and, eq, gt, inArray, isNotNull, isNull, or } from 'drizzle-orm';
 import { db, schema, isMissingColumnError } from '@/db';
 import { getAllCourses } from '@/lib/courses/source';
 import { clerkEnabled } from '@/lib/clerk';
@@ -65,8 +65,27 @@ export type SubscriptionGrant = {
  * once every migration lands ('platform' kind, no specific plan) — access
  * degrades to "as if universal" during the gap, never to "locked out".
  */
+/** How long past `current_period_end` an 'active' row still grants access.
+ *  The belt behind the webhook suspenders (owner: « à la fin du mois accès
+ *  totalement révoqué ? ») — status flips come from Stripe webhooks, and a
+ *  missed final webhook would otherwise leave an expired subscription
+ *  granting access FOREVER. 3 days mirrors Stripe's own webhook-retry
+ *  window and absorbs slow renewal invoices: a paying subscriber whose
+ *  `invoice_paid` arrives late is never cut mid-grace, while a truly-dead
+ *  subscription hard-stops days — not months — after its period ends. */
+const SUBSCRIPTION_GRACE_MS = 3 * 24 * 60 * 60 * 1000;
+
 async function getActiveSubscriptions(userId: string): Promise<SubscriptionGrant[]> {
-  const where = and(eq(T.subscriptions.userId, userId), eq(T.subscriptions.status, 'active'));
+  const where = and(
+    eq(T.subscriptions.userId, userId),
+    eq(T.subscriptions.status, 'active'),
+    // NULL period end (legacy/unknown rows) keeps granting on status alone —
+    // the belt only tightens where a real date exists to check.
+    or(
+      isNull(T.subscriptions.currentPeriodEnd),
+      gt(T.subscriptions.currentPeriodEnd, new Date(Date.now() - SUBSCRIPTION_GRACE_MS)),
+    ),
+  );
   try {
     return await db
       .select({ kind: T.subscriptions.kind, teacherPlanId: T.subscriptions.teacherPlanId })
