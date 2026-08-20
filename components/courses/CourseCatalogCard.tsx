@@ -78,12 +78,14 @@ export function CourseCatalogCard({
   const bilingual = courseIsBilingual(course);
   const primary = coursePrimaryLocale(course);
 
-  // NO h-full, NO reserved min-heights (owner: « carte si longue, toutes ces
-  // espaces pour rien ») — the card takes its NATURAL height and stops. Grid
-  // rows top-align; a shorter card leaves page background below its border,
-  // which is invisible, instead of stretched whitespace inside it.
+  // EQUAL heights per row, NO reserved min-heights (the synthesis of two
+  // owner complaints: « toutes ces espaces pour rien » killed the reserved
+  // 2-line boxes; « une carte est plus longue que l'autre » killed the
+  // ragged natural heights). h-full lets the grid row equalize; the only
+  // flexible spot is the small residual above the price row of the SHORTER
+  // card — real content variance only, never reserved blank.
   return (
-    <div className="card-hover group flex flex-col self-start rounded-xl border border-ink/12 bg-paper-light outline-none transition-colors hover:border-ink/35">
+    <div className="card-hover group flex h-full flex-col rounded-xl border border-ink/12 bg-paper-light outline-none transition-colors hover:border-ink/35">
       <Link
         href={`/formations/${course.slug}`}
         className="flex flex-1 flex-col rounded-t-xl outline-none focus-visible:ring-2 focus-visible:ring-ochre focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
