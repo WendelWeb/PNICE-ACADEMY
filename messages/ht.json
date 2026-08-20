@@ -37,6 +37,7 @@
     "perMonth": "/mwa",
     "oneTime": "yon sèl fwa",
     "lifetime": "a vi",
+    "owned": { "badge": "Ou gen kou sa a deja", "cta": "Kontinye aprann" },
     "freeCta": "Enskri gratis",
     "freeErr": "Nou pa t ka enskri w. Eseye ankò.",
     "included": "Nan abonman an",

@@ -37,6 +37,7 @@
     "perMonth": "/mois",
     "oneTime": "une seule fois",
     "lifetime": "à vie",
+    "owned": { "badge": "Tu as déjà ce cours", "cta": "Continuer à apprendre" },
     "freeCta": "S’inscrire gratuitement",
     "freeErr": "L’inscription a échoué. Réessaie.",
     "included": "Inclus dans l'abonnement",

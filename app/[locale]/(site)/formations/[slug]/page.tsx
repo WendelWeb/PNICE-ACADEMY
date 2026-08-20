@@ -40,6 +40,9 @@ import { absoluteImageUrl, courseImageList, courseMainImage, siteImageSrc } from
 import { SITE_URL } from '@/lib/email/layout';
 import { getPlatformPassPriceCents } from '@/lib/platformPrice';
 import { isPlatformPassEnabled } from '@/lib/admin/platform/store';
+import { auth } from '@clerk/nextjs/server';
+import { clerkEnabled } from '@/lib/clerk';
+import { hasCourseAccess } from '@/lib/learner/access';
 import {
   courseTitle,
   courseTagline,
@@ -129,6 +132,14 @@ export default async function CourseDetail({
   // The pass master switch (owner: « quand je désactive il n'est pas
   // affiché ») — gates every platform-pass mention in the aside below.
   const passEnabled = await isPlatformPassEnabled();
+  // Does the SIGNED-IN visitor already own this course? Per-request truth
+  // (the page is force-dynamic): owned ⇒ every buy surface below becomes
+  // « Kontinye aprann ». Gated + never-throws, signed-out ⇒ false.
+  let owned = false;
+  if (clerkEnabled) {
+    const { userId: ownClerkId } = await auth();
+    if (ownClerkId) owned = await hasCourseAccess(ownClerkId, course.slug);
+  }
   const rating = await getCourseRating(slug);
 
   const learn = courseLearn(course, locale);
@@ -642,6 +653,25 @@ export default async function CourseDetail({
                   </Sceau>
                 </div>
 
+                {owned ? (
+                  /* THE BUYER'S OWN PAGE (owner: « j'ai déjà acheté ce
+                     cours, pourquoi le bouton Achte ») — a page selling you
+                     what you already own reads as a page that doesn't know
+                     you. Owned ⇒ the whole pay stack (buy, cart,
+                     subscriptions) is replaced by the one true action. */
+                  <div className="mt-5">
+                    <p className="flex items-center gap-2 rounded-lg border border-teal/40 bg-teal/10 px-3 py-2.5 text-sm font-semibold text-teal">
+                      <IconCheck size={16} className="shrink-0" /> {t('owned.badge')}
+                    </p>
+                    <Link
+                      href="/tableau-de-bord"
+                      className={buttonClasses('primary', 'lg', 'mt-3 w-full justify-center')}
+                    >
+                      {t('owned.cta')}
+                    </Link>
+                  </div>
+                ) : (
+                <>
                 <p className="mt-5 flex items-start gap-2 text-xs leading-snug text-graphite/70">
                   <IconShieldCheck size={16} className="mt-0.5 shrink-0 text-teal" />
                   {t('buyCard.guarantee')}
@@ -720,6 +750,8 @@ export default async function CourseDetail({
                     </p>
                   </>
                 ) : null}
+                </>
+                )}
               </div>
             </aside>
           </div>
@@ -736,7 +768,11 @@ export default async function CourseDetail({
             {t('ctaText')}
           </p>
           <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            {course.priceUsd === 0 ? (
+            {owned ? (
+              <Link href="/tableau-de-bord" className={buttonClasses('primary', 'lg')}>
+                {t('owned.cta')}
+              </Link>
+            ) : course.priceUsd === 0 ? (
               <FreeEnrollButton courseSlug={course.slug} />
             ) : (
               <AuthCta
@@ -774,6 +810,7 @@ export default async function CourseDetail({
         courseTitle={courseTitle(course, locale)}
         priceUsd={course.priceUsd}
         ctaLabel={tc('buy')}
+        owned={owned}
       />
     </div>
   );

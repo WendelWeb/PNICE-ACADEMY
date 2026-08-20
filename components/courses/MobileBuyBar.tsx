@@ -1,4 +1,5 @@
 import { useTranslations } from 'next-intl';
+import { IconCheck } from '@tabler/icons-react';
 import { Price, PriceSecondary } from '@/components/ui/Price';
 import { buttonClasses } from '@/components/ui/Button';
 import { AuthCta } from '@/components/auth/AuthCta';
@@ -17,14 +18,33 @@ export function MobileBuyBar({
   courseTitle,
   priceUsd,
   ctaLabel,
+  owned = false,
 }: {
   courseSlug: string;
   /** For the cart snapshot the compact add-to-cart button takes. */
   courseTitle: string;
   priceUsd: number;
   ctaLabel: string;
+  /** The signed-in visitor already owns this course (server-resolved) —
+   *  the bar's one job becomes « Kontinye aprann ». */
+  owned?: boolean;
 }) {
   const t = useTranslations('course');
+
+  if (owned) {
+    return (
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-ink/12 bg-paper-light/95 px-4 py-3 shadow-[0_-10px_28px_-18px_rgba(16,32,74,0.35)] backdrop-blur-sm lg:hidden">
+        <div className="mx-auto flex max-w-page items-center justify-between gap-4">
+          <span className="flex min-w-0 items-center gap-1.5 text-sm font-semibold text-teal">
+            <IconCheck size={16} className="shrink-0" /> {t('owned.badge')}
+          </span>
+          <AuthCta href="/tableau-de-bord" className={buttonClasses('primary', 'md')}>
+            {t('owned.cta')}
+          </AuthCta>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 border-t border-ink/12 bg-paper-light/95 px-4 py-3 shadow-[0_-10px_28px_-18px_rgba(16,32,74,0.35)] backdrop-blur-sm lg:hidden">
